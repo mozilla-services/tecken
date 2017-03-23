@@ -1,0 +1,14 @@
+[run]
+source = tecken
+branch = True
+data_file = /tmp/.coverage
+
+[report]
+omit =
+    tests/*
+    *migrations*
+    *management*
+    *management/commands*
+
+[xml]
+output = /tmp/coverage.xml

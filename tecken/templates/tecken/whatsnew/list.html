@@ -1,0 +1,17 @@
+{% extends "atmo/base.html" %}
+{% load staticfiles %}
+
+{% block page_title %}What's new{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>What's new <small class="hidden-xs hidden-sm">Notable changes and updates you should be aware of.</small></h2>
+</div>
+<div class="row">
+  <div class="col-sm-6">
+    {{ whatsnew.render|safe }}
+    Not all code changes are listed here. More details in the
+    <a href="https://github.com/mozilla/telemetry-analysis-service/blob/master/CHANGELOG.md">changelog</a>.
+  </div>
+</div>
+{% endblock %}

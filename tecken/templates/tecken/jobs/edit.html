@@ -1,0 +1,24 @@
+{% extends "atmo/base.html" %}
+{% load staticfiles %}
+
+{% block page_title %}Edit Spark job {{ form.instance }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Edit Spark job <small>{{ form.instance }}</small></h2>
+</div>
+<div class="row">
+  <div class="col-sm-6">
+    <form action="{% url 'jobs-edit' id=form.instance.id %}" method="POST" enctype="multipart/form-data" autocomplete="off">
+      {% csrf_token %}
+      {% include "atmo/_form.html" %}
+      <button type="submit" class="btn btn-primary btn-md">
+        <span class="glyphicon glyphicon-save" aria-hidden="true"></span>
+        <span class="submit-button">Update job</span>
+      </button>
+      <button type="reset" class="btn btn-default btn-md hidden">Reset</button>
+      <a class="btn btn-default btn-md" href="{{ form.instance.get_absolute_url }}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

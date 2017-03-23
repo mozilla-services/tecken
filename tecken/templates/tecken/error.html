@@ -1,0 +1,24 @@
+{% extends "atmo/base.html" %}
+
+{% block head_title %}Error {% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-9">
+    <div class="page-header">
+      <h2>
+        {% block error_name %}{% endblock %}
+        <small>{% block error_code %}{% endblock %}</small>
+      </h2>
+    </div>
+    <p class="lead">
+      {% block error_excuse %}{% endblock %}
+    </p>
+    <p>
+      If the error shows up a lot, please open a
+      <a href="https://github.com/mozilla/telemetry-analysis-service/issues/new">GitHub issue</a>{% if request.sentry.id %}
+      and reference this error with Sentry error ID
+      <strong>{{ request.sentry.id }}</strong>{% endif %}.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% load account socialaccount staticfiles %}<!DOCTYPE html>
+<html>
+  <head>
+    <title>Telemetry Analysis Service - {% block head_title %}Welcome{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="{% static "public/favicon.ico" %}">
+    <link rel="stylesheet" href="{% static "npm/bootstrap/dist/css/bootstrap.min.css" %}">
+    <link rel="stylesheet" href="{% static "npm/bootstrap-datetime-picker/css/bootstrap-datetimepicker.min.css" %}">
+    <link href="{% static "css/base.css" %}" rel="stylesheet" />
+    <link href="{% static "css/fileinput.css" %}" rel="stylesheet" />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body role="document" {% block body_attrs %}{% endblock %} data-sentry-public-dsn="{{ settings.SENTRY_PUBLIC_DSN }}">
+    <nav class="navbar-dev navbar navbar-inverse navbar-static-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <i class="glyphicon glyphicon-menu-down"></i>
+          </button>
+          <a class="navbar-brand" href="{% url 'dashboard' %}">Telemetry Analysis Service</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="{% url 'dashboard' %}" class="navbar-link">Dashboard</a></li>
+            <li><a href="{% url 'keys-list' %}" class="navbar-link">SSH Keys</a></li>
+            {% if request.user.is_staff %}
+            <li><a href="{% url 'admin:index' %}" class="navbar-link">Admin</a></li>
+            {% endif %}
+          </ul>
+          <p class="navbar-text navbar-right">
+          {% if request.user.is_authenticated %}
+            <span class="hidden-xs">Logged in as {% user_display request.user %}</span>
+            <a href="{% url 'account_logout' %}" class="navbar-link">Logout</a></p>
+          {% else %}
+            <a href="{% provider_login_url "google" next=redirect_field_value %}" class="navbar-link">Login</a>
+          {% endif %}
+          </p>
+        </div>
+      </div>
+    </nav>
+    <div class="container" id="content-container">
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="alert alert-info alert-dismissible hidden" id="modified-date-alert" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            <h4>{% block modified_date_title %}Page modified{% endblock modified_date_title %}</h4>
+            {% block modified_date_description %}This page contains elements that have been updated on the server.{% endblock modified_date_description %}
+            <b><a href="{{ request.build_absolute_uri }}">Please refresh</a></b> this page to see the latest version.
+          </div>
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} alert-dismissible alert-dragons" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% block content %}
+      {% endblock %}
+    </div>
+
+    <div class="modal" id="whatsnew-modal" tabindex="-1" role="dialog" aria-labelledby="whatsnew-label">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="whatsnew-label">
+              What's new?
+              <small>Notable changes and updates you should be aware of.</small>
+            </h4>
+          </div>
+          <div class="modal-body">Loading&hellip;</div>
+          <div class="modal-footer">
+            Not all code changes are listed here. More details in the
+            <a href="https://github.com/mozilla/telemetry-analysis-service/blob/master/CHANGELOG.md">changelog</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#footer" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <i class="glyphicon glyphicon-menu-up"></i>
+          </button>
+        </div>
+        <div id="footer" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href="https://wiki.mozilla.org/Telemetry">Docs</a></li>
+            <li><a href="https://wiki.mozilla.org/Telemetry/Custom_analysis_with_spark">Tutorial</a></li>
+            <li><a href="https://github.com/mozilla/telemetry-analysis-service/issues">Bugs</a></li>
+            <li><a href="https://github.com/mozilla/telemetry-analysis-service">Code</a></li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li class="hidden">
+              <a href="{% url 'whatsnew-list' %}" {% if version or commit %}data-popover="popover" title="Current version" data-content="{% firstof version commit %}" data-toggle="modal" data-trigger="hover" data-placement="top"{% endif %} data-remote="false" data-target="#whatsnew-modal" class="navbar-link" >
+              What's new?
+              <span class="label label-success hidden" id="whatsnew-check" data-url="{% url 'whatsnew-check' %}">NEW</span></a>
+            </li>
+            <li><a data-popover="popover" data-trigger="hover" data-placement="top" id="time" title="Current time">All times in UTC</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <script type="text/javascript" src="{% static "npm/jquery/dist/jquery.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "npm/bootstrap/dist/js/bootstrap.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "npm/bootstrap-confirmation2/bootstrap-confirmation.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "npm/moment/min/moment.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "npm/bootstrap-datetime-picker/js/bootstrap-datetimepicker.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "npm/parsleyjs/dist/parsley.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "npm/clipboard/dist/clipboard.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/base.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/fileinput.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/forms.js" %}"></script>
+    {% if settings.SENTRY_PUBLIC_DSN %}
+    <script type="text/javascript" src="{% static "npm/raven-js/dist/raven.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "js/raven.js" %}"></script>
+    {% endif %}
+    {% block footer_extra %}
+    {% endblock %}
+  </body>
+</html>

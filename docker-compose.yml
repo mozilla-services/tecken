@@ -1,0 +1,34 @@
+version: '2'
+
+services:
+  db:
+    image: postgres:9.5
+  redis-store:
+    image: redis:3.2
+  redis-cache:
+    image: redis:3.2
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - DJANGO_CONFIGURATION
+    env_file:
+      - .env
+    volumes:
+      - $PWD:/app
+    command: "true"
+
+  web:
+    extends:
+      service: app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - app
+    links:
+      - db
+      - redis-store
+      - redis-cache
+    command: web-dev

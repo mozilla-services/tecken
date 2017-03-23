@@ -1,0 +1,65 @@
+{% extends "atmo/base.html" %}
+{% load staticfiles %}
+{% load notebook %}
+
+{% block head_title %}SSH keys{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>
+    SSH keys
+    <small class="hidden-xs hidden-sm">For easier cluster setup</small>
+    <a href="{% url 'keys-new' %}" class="btn btn-sm btn-default" title="Add a new SSH key">
+      <span class="glyphicon glyphicon-lock" aria-hidden="true"></span> Add
+    </a>
+  </h2>
+</div>
+<div class="row">
+  <div class="col-sm-12">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Fingerprint</th>
+            <th>Prefix</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ssh_key in ssh_keys %}
+          <tr>
+            <td>
+              <a href="{{ ssh_key.get_absolute_url }}">{{ ssh_key }}</a>
+            </td>
+            <td>
+              <code>{{ ssh_key.fingerprint }}</code>
+            </td>
+            <td>{{ ssh_key.prefix }}</td>
+            <td>{{ ssh_key.created_at }}</td>
+            <td>
+              <form action="{% url 'keys-delete' id=ssh_key.id %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-xs btn-danger" title="Really delete?"
+                    data-toggle="confirmation"
+                    data-popout="true"
+                    data-btn-ok-label="Yes"
+                    data-btn-ok-class="btn-xs btn-primary"
+                    data-btn-cancel-label="No"
+                    data-btn-cancel-class="btn-xs btn-default"
+                    data-placement="left">
+                    <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+                    Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not ssh_keys %}<p class="text-left">No SSH keys to show.</p>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,22 @@
+{
+  "name": "tecken",
+  "description": "The Mozilla Symbol Server",
+  "participate": {
+    "irc": "irc://irc.mozilla.org/#breakpad",
+    "irc-contacts": [
+      "peterbe"
+    ]
+  },
+  "repository": {
+    "url": "https://github.com/mozilla/tecken",
+    "license": "MPL 2.0"
+  },
+  "bugs": {
+      "list": "https://github.com/mozilla/tecken/issues",
+      "report": "https://github.com/mozilla/tecken/issues/new"
+  },
+  "urls": {
+      "prod": "https://symbolserver.mozilla.org/",
+      "staging": "https://symbolserver.allizom.org/"
+  }
+}

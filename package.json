@@ -1,0 +1,13 @@
+{
+  "name": "tecken",
+  "description": "The Mozilla Symbol Server",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mozilla/tecken.git"
+  },
+  "license": "MPL-2.0",
+  "dependencies": {
+    "jquery": "^3.1.1"
+  }
+}

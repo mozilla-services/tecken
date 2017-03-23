@@ -1,0 +1,27 @@
+{% extends "atmo/base.html" %}
+{% load staticfiles %}
+
+{% block page_title %}Terminate Spark cluster {{ cluster }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>Terminate Spark cluster <small>{{ cluster }}</small></h2>
+</div>
+<div class="row">
+  <div class="col-sm-6">
+    <h4>Do you really want to terminate the cluster?</h4>
+    <p>
+      Any data that was created on the filesystem of the cluster will be deleted.
+    </p>
+    <form action="{% url 'clusters-terminate' id=cluster.id %}" method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-md btn-danger" title="Terminate selected Spark cluster">
+        <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+        <span class="submit-button">Terminate cluster</span>
+      </button>
+      <button type="reset" class="btn btn-default btn-md hidden">Reset</button>
+      <a class="btn btn-default btn-md" href="{{ cluster.get_absolute_url }}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock content %}

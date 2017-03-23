@@ -1,0 +1,30 @@
+{% extends "atmo/base.html" %}
+{% load staticfiles %}
+
+{% block page_title %}New SSH key{% endblock %}
+
+{% block footer_extra %}
+<script type="text/javascript" src="{% static "js/keys.js" %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h2>
+    New SSH key <small class="hidden-xs hidden-sm">For easier cluster setup</small>
+  </h2>
+</div>
+<div class="row">
+  <div class="col-sm-6">
+    <form action="{% url 'keys-new' %}" method="POST" enctype="multipart/form-data" autocomplete="off">
+      {% csrf_token %}
+      {% include "atmo/_form.html" %}
+      <button type="submit" class="btn btn-primary btn-md">
+        <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+        <span class="submit-button">Add key</span>
+      </button>
+      <button type="reset" class="btn btn-default btn-md hidden">Reset</button>
+      <a class="btn btn-default btn-md" href="{% url 'keys-list' %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

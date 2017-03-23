@@ -1,0 +1,151 @@
+{% extends "atmo/base.html" %}
+
+{% block head_title %}Spark cluster {{ cluster.identifier }}{% endblock %}
+
+{% block body_attrs %}data-modified-date="{{ modified_date.isoformat }}"{% endblock %}
+
+{% block modified_date_title %}Cluster status outdated{% endblock modified_date_title %}
+{% block modified_date_description %}The cluster was updated on the server.{% endblock modified_date_description %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Spark cluster <small>{{ cluster }}</small></h2>
+</div>
+<div class="row">
+  <div class="col-sm-9">
+  {% if cluster.is_active %}
+    <div class="alert alert-warning">
+      <h4>Automatic shutdown</h4>
+      This cluster will be automatically terminated at
+      {{ cluster.end_date }} UTC, <strong>in {{ cluster.end_date|timeuntil }}</strong>.
+    </div>
+    <h3>Access</h3>
+    {% if not cluster.is_ready %}
+    <p>
+      {% if cluster.is_terminating %}
+      Your cluster is currently terminating. Good bye, old friend.
+      {% else %}
+      Your cluster is still launching. Please wait and the connection
+      details will appear here when it is ready.
+      {% endif %}
+    </p>
+    {% else %}
+    <p>
+      The default username is <code>hadoop</code>, so you can tunnel your Jupyter
+      notebook using a command like:
+    </p>
+    <p>
+      <input class="form-control" type="text"
+        value="ssh -L 8888:localhost:8888 hadoop@{{ cluster.master_address }}" readonly>
+    </p>
+    <p>
+      In case the uploaded SSH key wasn't a default named one
+      (e.g. <code>~/.ssh/id_rsa.pub</code>) you must provide the key you used
+      with the <code>-i</code> parameter for SSH, e.g.:
+    </p>
+    <p>
+      <textarea class="form-control" rows="1" readonly>ssh -i ~/.ssh/id_rsa_moz -L 8888:localhost:8888 hadoop@{{ cluster.master_address }}</textarea>
+    </p>
+    <h3>Alias</h3>
+    <p>
+      If you often connect to a cluster you may save some typing by adding
+      this to your <code>~/.ssh/config</code> file:
+    </p>
+    <p>
+    <textarea class="form-control" rows="4" readonly>
+Host {{ cluster.identifier }}
+  User hadoop
+  HostName {{ cluster.master_address }}
+  LocalForward 8888 localhost:8888</textarea>
+    </p>
+    <p>
+      You can then start the tunnel by running:
+    </p>
+    <p>
+      <input class="form-control" type="text" value="ssh {{ cluster.identifier }}" readonly>
+    </p>
+    <p>
+      Or clicking on <a href="ssh://{{ cluster.identifier }}">
+          ssh://{{ cluster.identifier }}
+      </a> once you've set up the host alias in <code>~/.ssh/config</code>.
+      This works with <a href="http://www.9bis.net/kitty/">KiTTY</a> on Windows
+      and Terminal.app and iTerm on Mac OS. The various Linux terminals should
+      support it, too.
+    </p>
+    <p>
+      Uploading an existing notebook using SSH's secure copy:
+      <pre>scp *.ipynb {{ cluster.identifier }}:~/analyses</pre>
+      The notebook(s) will then show up in the Jupyter files list.
+    </p>
+    <p>
+      Now you can launch your Jupyter notebook on <a href="http://localhost:8888" target="_blank">localhost:8888</a>.
+    </p>
+    <p class="alert alert-warning">
+      Be aware that <strong>only one notebook can run on your cluster at a time</strong>.
+      To run a second notebook, you must first stop the running notebook via the
+      <a href="http://localhost:8888" target="_blank">Jupyter home page for your cluster</a>,
+      by choosing <kbd>File</kbd> &rarr; <kbd>Close and Halt</kbd> from the running notebook's menu,
+      or by executing <code>sc.stop()</code> in the running notebook.
+    </p>
+    {% endif %}
+    <h3>Further Reading</h3>
+    <p>
+      For a guide of how to use this shiny new cluster, check out
+      <a href="https://wiki.mozilla.org/Telemetry/Custom_analysis_with_spark">Custom Analysis with Spark</a> on wiki.mozilla.org.
+    </p>
+    <h3>
+      Good luck
+      <span class="glyphicon glyphicon-heart-empty" aria-hidden="true"></span>
+    </h3>
+    {% else %}
+    <p class="lead">This cluster is not active anymore.</p>
+    {% endif%}
+  </div>
+  <div class="col-sm-3">
+    <fieldset {% if not cluster.is_active or cluster.is_terminating %}disabled{% endif %}>
+      <p>
+        <form action="{% url 'clusters-terminate' id=cluster.id %}" method="POST" enctype="multipart/form-data">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-md btn-danger" title="Really terminate?"
+              data-toggle="confirmation"
+              data-popout="true"
+              data-btn-ok-label="Yes"
+              data-btn-ok-class="btn-sm btn-primary"
+              data-btn-cancel-label="No"
+              data-btn-cancel-class="btn-sm btn-default">
+              <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+              Terminate now
+          </button>
+        </form>
+      </p>
+    </fieldset>
+    <dl>
+      <dt>Identifier</dt>
+      <dd>{{ cluster.identifier }}</dd>
+      <dt>Jobflow ID</dt>
+      <dd>{{ cluster.jobflow_id }}</dd>
+      <dt>State</dt>
+      <dd>{{ cluster.most_recent_status }}</dd>
+      <dt>EMR release</dt>
+      <dd>{{ cluster.emr_release }}</dd>
+
+      <dt>Master address</dt>
+      <dd>
+        {% if cluster.master_address %}
+        {{ cluster.master_address }}
+        {% else %}
+        Please wait, instance details will appear when the master is ready.
+        {% endif %}
+      </dd>
+      <dt>Start date</dt>
+      <dd>{{ cluster.start_date }}</dd>
+      {% if cluster.is_active %}
+      <dt>End date</dt>
+      <dd>{{ cluster.end_date|default:"n/a" }}</dd>
+      {% endif %}
+      <dt>Is active</dt>
+      <dd><span class="glyphicon glyphicon-{% if cluster.is_active %}ok text-success{% else %}remove text-danger{% endif %}" aria-hidden="true"></span></dd>
+    </dl>
+  </div>
+</div>
+{% endblock content %}

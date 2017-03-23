@@ -1,0 +1,94 @@
+{% extends "atmo/base.html" %}
+{% load staticfiles %}
+
+{% if modified_date %}
+{% block body_attrs %}data-modified-date="{{ modified_date.isoformat }}"{% endblock %}
+{% endif %}
+
+{% block modified_date_title %}Dashboard outdated{% endblock modified_date_title %}
+{% block modified_date_description %}The dashboard was updated on the server.{% endblock modified_date_description %}
+
+{% block content %}
+<div class="row">
+  <div class="col-sm-12">
+    <div class="page-header">
+      <h2>
+        Spark clusters
+        <small class="hidden-xs hidden-sm">Custom data analysis, terminated after 24 hours.</small>
+        <div class="btn-group">
+          {% for clusters_filter in clusters_filters %}
+          <a href="{% url 'dashboard' %}?clusters={{ clusters_filter }}"
+          class="btn btn-sm btn-default{% if clusters_shown == clusters_filter %} active{% endif %}"
+          >{{ clusters_filter|capfirst }}</a>
+          {% endfor %}
+        </div>
+        <a href="{% url 'clusters-new' %}" class="btn btn-sm btn-default" title="Launch a Spark cluster">
+          <span class="glyphicon glyphicon-play" aria-hidden="true"></span> Launch
+        </a>
+      </h2>
+    </div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Cluster</th>
+          <th>Size</th>
+          <th>Start date</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cluster in clusters %}
+        <tr>
+          <td><a href="{{ cluster.get_absolute_url }}">{{ cluster.identifier }}</a></td>
+          <td>{{ cluster.size }}</td>
+          <td>{{ cluster.start_date }}</td>
+          <td>{{ cluster.most_recent_status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not clusters %}<p class="text-left">No clusters to show.</p>{% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-12">
+    <div class="page-header">
+      <h2>
+        Spark jobs
+        <small class="hidden-xs hidden-sm">Periodic Spark analyses.</small>
+        <a href="{% url 'jobs-new' %}" class="btn btn-sm btn-default" title="Schedule a Spark analysis">
+          <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span> Schedule
+        </a>
+      </h2>
+
+    </div>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Result visibility</th>
+          <th>Cluster size</th>
+          <th>Run interval</th>
+          <th>Job timeout</th>
+          <th>Start date</th>
+          <th>End date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for spark_job in spark_jobs %}
+        <tr>
+          <td><a href="{{ spark_job.get_absolute_url }}">{{ spark_job.identifier }}</a></td>
+          <td>{{ spark_job.result_visibility }}</td>
+          <td>{{ spark_job.size }}</td>
+          <td>{{ spark_job.get_interval_in_hours_display }}</td>
+          <td>{% if spark_job.job_timeout %}{{ spark_job.job_timeout }}h{% else %}n/a{% endif %}</td>
+          <td>{{ spark_job.start_date }}</td>
+          <td>{{ spark_job.end_date|default:"n/a" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if not spark_jobs %}<p class="text-left">No scheduled jobs to show.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}
