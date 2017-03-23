@@ -5,12 +5,14 @@
 from django.http import HttpResponseServerError
 from django.template import Context, TemplateDoesNotExist, loader
 from django.template.response import TemplateResponse
+from django.views.decorators.csrf import csrf_exempt
 # from django.views.decorators.csrf import requires_csrf_token
 # from guardian.shortcuts import get_objects_for_user
 
 from .symbolicate.views import symbolicate_json
 
 # @login_required
+@csrf_exempt
 def dashboard(request):
     # Ideally people should...
     # `HTTP -X POST -d JSON http://hostname/symbolicate/`

@@ -3,12 +3,6 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 """
 Django settings for tecken project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.9/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.9/ref/settings/
 """
 import os
 import subprocess
@@ -19,6 +13,7 @@ from django.contrib.messages import constants as messages
 from django.core.urlresolvers import reverse_lazy
 from dockerflow.version import get_version
 from raven.transport.requests import RequestsHTTPTransport
+import django_cache_url
 
 
 class Constance:
@@ -48,7 +43,7 @@ class AWS:
 
     AWS_CONFIG = {
         # AWS EC2 configuration
-        'AWS_REGION': 'us-west-2',
+        # 'AWS_REGION': 'us-west-2',
         # 'EC2_KEY_NAME': '20161025-dataops-dev',
     }
 
@@ -110,7 +105,7 @@ class Core(Constance, CSP, AWS, Configuration):
 
     INSTALLED_APPS = [
         # Project specific apps
-        'tecken.apps.teckenAppConfig',
+        'tecken.apps.TeckenAppConfig',
         'tecken.symbolicate',
         # 'tecken.clusters',
         # 'atmo.jobs',
@@ -122,9 +117,9 @@ class Core(Constance, CSP, AWS, Configuration):
         # 'allauth',
         # 'allauth.account',
         # 'allauth.socialaccount',
-        'guardian',
-        'constance',
-        'constance.backends.database',
+        # 'guardian',
+        # 'constance',
+        # 'constance.backends.database',
         'dockerflow.django',
 
         # Django apps
@@ -155,13 +150,11 @@ class Core(Constance, CSP, AWS, Configuration):
 
     WSGI_APPLICATION = 'tecken.wsgi.application'
 
-    RQ_SHOW_ADMIN_LINK = True
-
     # set the exponential backoff mechanism of rq-retry
-    def exponential_backoff(tries, base=2):
-        return ','.join(
-            [str(pow(base, exponent)) for exponent in range(tries)]
-        )
+    # def exponential_backoff(tries, base=2):
+    #     return ','.join(
+    #         [str(pow(base, exponent)) for exponent in range(tries)]
+    #     )
 
     # the total number of tries for each task, 1 regular try + 5 retries
     # RQ_RETRY_MAX_TRIES = 6
@@ -221,8 +214,8 @@ class Core(Constance, CSP, AWS, Configuration):
     USE_TZ = True
     DATETIME_FORMAT = 'Y-m-d H:i'  # simplified ISO format since we assume UTC
 
-    # STATIC_ROOT = values.Value(default='/opt/static/')
-    # STATIC_URL = '/static/'
+    STATIC_ROOT = values.Value(default='/opt/static/')
+    STATIC_URL = '/static/'
     # STATICFILES_STORAGE = (
     #     'whitenoise.storage.CompressedManifestStaticFilesStorage'
     # )
@@ -312,6 +305,7 @@ class Base(Core):
     SECRET_KEY = values.SecretValue()
 
     DEBUG = values.BooleanValue(default=False)
+    DEBUG_PROPAGATE_EXCEPTIONS = values.BooleanValue(default=False)
 
     ALLOWED_HOSTS = values.ListValue([])
 
@@ -322,19 +316,16 @@ class Base(Core):
     # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
     DATABASES = values.DatabaseURLValue('postgres://postgres@db/postgres')
 
-    # RQ_QUEUES = {
-    #     'default': {
-    #         'USE_REDIS_CACHE': 'default',
-    #     }
-    # }
-
-    # XXX need two different caches. One 'default' and one for 'redis'
-    CACHES = values.CacheURLValue(
-        'redis://redis-cache:6379/1',
-        environ_prefix=None,
-        environ_name='REDIS_URL',
-    )
-    print("CACHES", CACHES)
+    CACHES = {
+        'default': django_cache_url.config(
+            default='redis://redis-cache:6379/1',
+            env='REDIS_URL',
+        ),
+        'store': django_cache_url.config(
+            default='redis://redis-store:6379/1',
+            env='REDIS_STORE_URL',
+        )
+    }
 
     LOGGING_USE_JSON = values.BooleanValue(False)
 
@@ -355,11 +346,16 @@ class Base(Core):
                 'console': {
                     'level': 'DEBUG',
                     'class': 'logging.StreamHandler',
-                    'formatter': 'json' if self.LOGGING_USE_JSON else 'verbose',
+                    'formatter': (
+                        'json' if self.LOGGING_USE_JSON else 'verbose'
+                    ),
                 },
                 'sentry': {
                     'level': 'ERROR',
-                    'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
+                    'class': (
+                        'raven.contrib.django.raven_compat.handlers'
+                        '.SentryHandler'
+                    ),
                 },
             },
             'loggers': {
@@ -387,16 +383,6 @@ class Base(Core):
                     'handlers': ['console'],
                     'propagate': False,
                 },
-                'rq': {
-                    'handlers': ['console', 'sentry'],
-                    'level': 'INFO',
-                    'propagate': False,
-                },
-                'rq.worker': {
-                    'handlers': ['console', 'sentry'],
-                    'level': 'INFO',
-                    'propagate': False,
-                },
                 'request.summary': {
                     'handlers': ['console'],
                     'level': 'DEBUG',
@@ -405,9 +391,15 @@ class Base(Core):
             },
         }
 
+    SYMBOL_URLS = values.ListValue([
+        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.'
+        'symbols-public/v1/',
+    ])
+
 
 class Dev(Base):
-    """Configuration to be used during development and base class for testing"""
+    """Configuration to be used during development and base class
+    for testing"""
 
     @classmethod
     def post_setup(cls):
@@ -426,16 +418,18 @@ class Dev(Base):
 
     @property
     def VERSION(self):
-        output = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0'])
-        if output:
-            return {'version': output.decode().strip()}
-        else:
-            return {}
+        # XXX needs at least one tag I think
+        return {}
+        # output = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0'])
+        # if output:
+        #     return {'version': output.decode().strip()}
+        # else:
+        #     return {}
 
 
 class Test(Dev):
     """Configuration to be used during testing"""
-    DEBUG = False
+    DEBUG = False  # XXX  Why?!
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
@@ -476,7 +470,8 @@ class Stage(Base):
     SENTRY_PUBLIC_DSN = values.Value(environ_prefix=None)
 
     MIDDLEWARE_CLASSES = (
-        'raven.contrib.django.raven_compat.middleware.SentryResponseErrorIdMiddleware',
+        'raven.contrib.django.raven_compat.middleware'
+        '.SentryResponseErrorIdMiddleware',
     ) + Base.MIDDLEWARE_CLASSES
 
     INSTALLED_APPS = Base.INSTALLED_APPS + [

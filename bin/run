@@ -27,6 +27,9 @@ wait_for() {
 
 [ $# -lt 1 ] && usage
 
+# XXX Look into using "healthchecks" in docker-compose
+# http://stackoverflow.com/questions/31746182/docker-compose-wait-for-container-x-before-starting-y/41854997#41854997
+
 # Only wait for backend services in development
 # http://stackoverflow.com/a/13864829
 [ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis 6379
