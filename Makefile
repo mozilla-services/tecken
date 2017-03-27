@@ -1,4 +1,4 @@
-.PHONY: build clean migrate redis-cli revision shell stop test up
+.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test up
 
 help:
 	@echo "Welcome to the tecken\n"
@@ -7,7 +7,8 @@ help:
 	@echo "  ci         Run the test with the CI specific Docker setup"
 	@echo "  clean      Stops and removes all docker containers"
 	@echo "  migrate    Runs the Django database migrations"
-	@echo "  redis-cli  Opens a Redis CLI"
+	@echo "  redis-cache-cli  Opens a Redis CLI to the cache Redis server"
+	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
 	@echo "  shell      Opens a Bash shell"
 	@echo "  test       Runs the Python test suite"
 	@echo "  up         Runs the whole stack, served under http://localhost:8000/\n"
@@ -26,8 +27,11 @@ migrate:
 shell:
 	docker-compose run web bash
 
-redis-cli:
-	docker-compose run redis redis-cli -h redis
+redis-cache-cli:
+	docker-compose run redis-cache redis-cli -h redis-cache
+
+redis-store-cli:
+	docker-compose run redis-store redis-cli -h redis-store
 
 stop:
 	docker-compose stop

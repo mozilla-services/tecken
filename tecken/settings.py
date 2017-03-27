@@ -318,11 +318,11 @@ class Base(Core):
 
     CACHES = {
         'default': django_cache_url.config(
-            default='redis://redis-cache:6379/1',
+            default='redis://redis-cache:6379/0',
             env='REDIS_URL',
         ),
         'store': django_cache_url.config(
-            default='redis://redis-store:6379/1',
+            default='redis://redis-store:6379/0',
             env='REDIS_STORE_URL',
         )
     }
