@@ -29,11 +29,22 @@ class SymbolDownloadError(Exception):
 def symbolicate_json(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Must use HTTP POST'}, status=405)
-    json_body = json.loads(request.body.decode('utf-8'))
-    stacks = json_body['stacks']
-    memory_map = json_body['memoryMap']
-    if json_body.get('version') != 4:
-        return JsonResponse({'error': 'Expect version==4'}, status=400)
+    try:
+        json_body = json.loads(request.body.decode('utf-8'))
+        if not isinstance(json_body, dict):
+            return JsonResponse({'error': 'Not a dict'}, status=400)
+    except ValueError as exception:
+        return JsonResponse({'error': 'Invalid JSON passed in'}, status=400)
+
+    try:
+        stacks = json_body['stacks']
+        memory_map = json_body['memoryMap']
+        if json_body.get('version') != 4:
+            return JsonResponse({'error': 'Expect version==4'}, status=400)
+    except KeyError as exception:
+        return JsonResponse({'error': 'Missing key JSON "{}"'.format(
+            exception
+        )}, status=400)
 
     debug_output = json_body.get('debug')
 
@@ -205,7 +216,7 @@ def symbolicate_json(request):
 _marker = object()
 
 
-def get_symbol_map(filename, debug_id):
+def get_symbol_map(filename, debug_id, debug=False):
     cache_key = 'symbol:{}/{}'.format(filename, debug_id)
     information = {
         'cache_key': cache_key,
@@ -214,7 +225,8 @@ def get_symbol_map(filename, debug_id):
     t0 = time.time()
     symbol_map = store.get(cache_key, _marker)
     t1 = time.time()
-    information['cache_lookup_time'] = t1 - t0
+    if debug:
+        information['cache_lookup_time'] = t1 - t0
 
     # if symbol_map is None:
     #     store.delete(cache_key)
@@ -257,10 +269,8 @@ def get_symbol_map(filename, debug_id):
             information['symbol_map'] = {}
             information['found'] = False
         else:
-            try:
+            if debug:
                 information['cache_lookup_size'] = len(json.dumps(symbol_map))
-            except TypeError:
-                logger.warning("Coun't figure out cache_lookup_size")
             log_symbol_cache_hit(cache_key)
             # If it was in cache, that means it was originally found.
             information['symbol_map'] = symbol_map

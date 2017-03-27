@@ -1,7 +1,7 @@
-# import io
-# import uuid
-#
-# import pytest
+import json
+
+import pytest
+
 # from cryptography.hazmat.backends import \
 #     default_backend as crypto_default_backend
 # from cryptography.hazmat.primitives import \
@@ -21,6 +21,21 @@
 # def now():
 #     return timezone.now()
 #
+
+
+@pytest.fixture
+def json_poster(client):
+    """
+    Uses the client instance to make a client.post() call with the 'data'
+    as a valid JSON string with the right header.
+    """
+    def inner(url, data, **extra):
+        if not isinstance(data, str):
+            data = json.dumps(data)
+        extra['content_type'] = 'application/json'
+        return client.post(url, data, **extra)
+    return inner
+
 #
 # @pytest.fixture
 # def test_user(client, django_user_model):

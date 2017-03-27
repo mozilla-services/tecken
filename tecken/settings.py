@@ -429,7 +429,7 @@ class Dev(Base):
 
 class Test(Dev):
     """Configuration to be used during testing"""
-    DEBUG = False  # XXX  Why?!
+    DEBUG = False
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
@@ -437,7 +437,7 @@ class Test(Dev):
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )
 
-    MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
+    # MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
 
 
 class Stage(Base):
