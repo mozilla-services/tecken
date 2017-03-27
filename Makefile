@@ -1,18 +1,19 @@
-.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test up
+.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test up django-shell
 
 help:
 	@echo "Welcome to the tecken\n"
 	@echo "The list of commands for local development:\n"
-	@echo "  build      Builds the docker images for the docker-compose setup"
-	@echo "  ci         Run the test with the CI specific Docker setup"
-	@echo "  clean      Stops and removes all docker containers"
-	@echo "  migrate    Runs the Django database migrations"
+	@echo "  build        Builds the docker images for the docker-compose setup"
+	@echo "  ci           Run the test with the CI specific Docker setup"
+	@echo "  clean        Stops and removes all docker containers"
+	@echo "  migrate      Runs the Django database migrations"
 	@echo "  redis-cache-cli  Opens a Redis CLI to the cache Redis server"
 	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
-	@echo "  shell      Opens a Bash shell"
-	@echo "  test       Runs the Python test suite"
-	@echo "  up         Runs the whole stack, served under http://localhost:8000/\n"
-	@echo "  stop       Stops the docker containers"
+	@echo "  shell        Opens a Bash shell"
+	@echo "  test         Runs the Python test suite"
+	@echo "  up           Runs the whole stack, served under http://localhost:8000/"
+	@echo "  stop         Stops the docker containers"
+	@echo "  django-shell Django integrative shell\n"
 
 build:
 	docker-compose build
@@ -41,3 +42,6 @@ test:
 
 up:
 	docker-compose up
+
+django-shell:
+	docker-compose run web python manage.py shell

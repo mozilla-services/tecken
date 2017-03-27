@@ -5,8 +5,7 @@ services:
     # XXX How can I switch to PG 9.5?
     image: postgres:9.4
   redis-store:
-    # XXX Set maxmemory and eviction policy differently here
-    image: redis:3.2
+    build: ./docker/images/redis
   redis-cache:
     image: redis:3.2
 

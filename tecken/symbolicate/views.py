@@ -3,7 +3,6 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import time
-import os
 import logging
 from bisect import bisect
 import json  # XXX consider try:except import for ujson
@@ -70,7 +69,11 @@ def symbolicate_json(request):
     # per request global map of all symbol maps
     all_symbol_maps = {}
 
-    # XXX Food for thought...
+    # XXX Food for thought (1)...
+    # Perhaps, to save time, use pipelining to fetch ALL symbols that
+    # that we have in one big sweep. Or use mget to simply fetch multiple.
+
+    # XXX Food for thought (2)...
     # With the way the stack works, it's a list of lists. Each item
     # points to a symbol name in `memory_map`, which then gets looked up.
     # The current implementation uses a dict. Perhaps that's not necessary.
@@ -225,7 +228,7 @@ def get_symbol_map(filename, debug_id):
         # If it can't be downloaded, cache it as an empty result
         # so we don't need to do this every time we're asked to
         # look up this symbol.
-        if information['symbol_map'] is None:
+        if not information.get('symbol_map'):
             store.set(
                 cache_key,
                 {},
