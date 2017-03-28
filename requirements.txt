@@ -5,9 +5,9 @@ hashin==0.9.0 \
 argparse==1.4.0 \
     --hash=sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314 \
     --hash=sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4
-Django==1.9.12 \
-    --hash=sha256:a59f85a2b007145006915f6134ec3b9c09e68e4377e0a6fd3529d6c56d6aeb04 \
-    --hash=sha256:bd20830d403689efa46ea2a7cd3ef689af17de633c095aeabf9ce770b3f84a35
+Django==1.10.6 \
+    --hash=sha256:2cfb83859bfaa10e2bd586340bead27c69fdcaa21fa683a008cc712482c26726 \
+    --hash=sha256:7a6ebe254ab126510da143628d019ca8d6da2de49d7682bf046c03713a3c2c61
 dj-database-url==0.4.2 \
     --hash=sha256:a6832d8445ee9d788c5baa48aef8130bf61fdc442f7d9a548424d25cd85c9f08 \
     --hash=sha256:e16d94c382ea0564c48038fa7fe8d9c890ef1ab1a8ec4cb48e732c124b9482fd
@@ -327,8 +327,6 @@ msgpack-python==0.4.8 \
 defusedxml==0.5.0 \
     --hash=sha256:702a91ade2968a82beb0db1e0766a6a273f33d4616a6ce8cde475d8e09853b20 \
     --hash=sha256:24d7f2f94f7f3cb6061acb215685e5125fbcdc40a857eff9de22518820b0a4f4
-https://github.com/ui/rq-scheduler/archive/5dd071328ee3eeaad67ecf7cb2550ef8fa08a787.zip#egg=rq-scheduler \
-    --hash=sha256:837c74ca0c42632a796bcf954dcde5515c17168c4a27d169f49cbc6ed880df4e
 asn1crypto==0.22.0 \
     --hash=sha256:d232509fefcfcdb9a331f37e9c9dc20441019ad927c7d2176cf18ed5da0ba097 \
     --hash=sha256:cbbadd640d3165ab24b06ef25d1dca09a3441611ac15f6a6b452474fdf0aed1a
@@ -351,3 +349,6 @@ future==0.16.0 \
 pytest-flake8==0.8.1 \
     --hash=sha256:aa10a6db147485d71dad391d4149388904c3072194d51755f64784ff128845fd \
     --hash=sha256:8efaf4595a13079197ac740a12e6a87e3403f08133a42d3ac5984474f6f91681
+requests-mock==1.3.0 \
+    --hash=sha256:bd86970d6c52cc97071f5185aa594de6a997a5ca63b3bb36aceb9bb9db49294b \
+    --hash=sha256:23edd6f7926aa13b88bf79cb467632ba2dd5a253034e9f41563f60ed305620c7

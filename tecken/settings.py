@@ -437,7 +437,20 @@ class Test(Dev):
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )
 
-    # MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
+    SYMBOL_URLS = values.ListValue([
+        'https://s3.example.com/public/',
+    ])
+
+    CACHES = {
+        'default': django_cache_url.config(
+            default='redis://redis-cache:6379/9',
+            env='REDIS_URL',
+        ),
+        'store': django_cache_url.config(
+            default='redis://redis-store:6379/9',
+            env='REDIS_STORE_URL',
+        )
+    }
 
 
 class Stage(Base):

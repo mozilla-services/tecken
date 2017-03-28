@@ -1,4 +1,10 @@
+import pytest
+import requests
+import requests_mock
+
 from django.core.urlresolvers import reverse
+
+from tecken.symbolicate.views import SymbolDownloadError
 
 
 def test_symbolicate_json_bad_inputs(client, json_poster):
@@ -35,3 +41,326 @@ def test_symbolicate_json_bad_inputs(client, json_poster):
     })
     assert response.status_code == 400
     assert response.json()['error']
+
+
+SAMPLE_SYMBOL_CONTENT = {
+    'xul.sym': """
+MODULE windows x86 44E4EC8C2F41492B9369D6B9A059577C2 xul.pdb
+INFO CODE_ID 54AF957E1B34000 xul.dll
+
+FILE 1 c:/program files (x86)/windows kits/8.0/include/shared/sal.h
+FILE 2 c:/program files (x86)/windows kits/8.0/include/shared/concurrencysal.h
+FILE 3 c:/program files (x86)/microsoft visual studio 10.0/vc/include/vadefs.h
+FUNC 0 junkline
+FUNC 26791a 592 4 XREMain::XRE_mainRun()
+FUNC b2e3f7 2b4 4 XREMain::XRE_mainRun()
+    """,
+    'wntdll.sym': """
+MODULE windows x86 D74F79EB1F8D4A45ABCD2F476CCABACC2 wntdll.pdb
+
+PUBLIC 10070 10 KiUserCallbackExceptionHandler
+PUBLIC 100dc c KiUserCallbackDispatcher
+PUBLIC 10124 8 KiUserExceptionDispatcher
+PUBLIC 10174 0 KiRaiseUserExceptionDispatcher
+PUBLIC junk
+
+    """
+}
+
+
+def test_symbolicate_json_happy_path(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+        )
+        response = json_poster(url, {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True, True]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                'KiUserCallbackDispatcher (in wntdll.pdb)'
+            ]
+        ]
+
+
+def test_symbolicate_json_bad_module_indexes(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+        )
+        response = json_poster(url, {
+            'stacks': [[[-1, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        from pprint import pprint
+        pprint(result)
+        assert result['knownModules'] == [False, True]
+        assert result['symbolicatedStacks'] == [
+            [
+                hex(11723767),
+                'KiUserCallbackDispatcher (in wntdll.pdb)'
+            ]
+        ]
+
+
+def test_symbolicate_json_cache_hits_logged(client, json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+        )
+        response = json_poster(url, {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        # result = response.json()
+        url = reverse('symbolicate:hit_ratio')
+        response = client.get(url)
+        print(response)
+
+
+
+def test_symbolicate_json_happy_path_with_debug(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+        )
+        response = json_poster(url, {
+            'debug': True,
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True, True]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                'KiUserCallbackDispatcher (in wntdll.pdb)'
+            ]
+        ]
+        assert result['debug']['real_stacks'] == 2
+        assert result['debug']['total_stacks'] == 2
+        assert result['debug']['total_time'] > 0.0
+        # Two cache lookups were attempted
+        assert result['debug']['total']['cache_lookups']['count'] == 2
+        assert result['debug']['total']['cache_lookups']['size'] == 0.0
+        assert result['debug']['total']['cache_lookups']['time'] > 0.0
+        assert result['debug']['total']['downloads']['count'] == 2
+        assert result['debug']['total']['downloads']['size'] > 0.0
+        assert result['debug']['total']['downloads']['time'] > 0.0
+
+        # Look it up again, and this time the debug should indicate that
+        # we drew from the cache.
+        response = json_poster(url, {
+            'debug': True,
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True, True]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                'KiUserCallbackDispatcher (in wntdll.pdb)'
+            ]
+        ]
+        assert result['debug']['real_stacks'] == 2
+        assert result['debug']['total_stacks'] == 2
+        assert result['debug']['total_time'] > 0.0
+        assert result['debug']['total']['cache_lookups']['count'] == 2
+        assert result['debug']['total']['cache_lookups']['size'] > 0.0
+        assert result['debug']['total']['cache_lookups']['time'] > 0.0
+        assert result['debug']['total']['downloads']['count'] == 0
+        assert result['debug']['total']['downloads']['size'] == 0.0
+        assert result['debug']['total']['downloads']['time'] == 0.0
+
+
+def test_symbolicate_json_one_symbol_not_found(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text='Not found',
+            status_code=404
+        )
+        response = json_poster(url, {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True, False]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                '0x1010a (in wntdll.pdb)'
+            ]
+        ]
+
+
+def test_symbolicate_json_one_symbol_content_enc_err(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            exc=requests.exceptions.ContentDecodingError
+        )
+        response = json_poster(url, {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True, False]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                '0x1010a (in wntdll.pdb)'
+            ]
+        ]
+
+
+def test_symbolicate_json_one_symbol_empty(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text=''
+        )
+        response = json_poster(url, {
+            'debug': True,
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True, False]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                '0x1010a (in wntdll.pdb)'
+            ]
+        ]
+        assert result['debug']['total']['downloads']['count'] == 2
+
+        # Run it again, and despite that we failed to cache the second
+        # symbol failed, that failure should be "cached".
+        response = json_poster(url, {
+            'debug': True,
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['debug']['total']['downloads']['count'] == 0
+
+
+def test_symbolicate_json_one_symbol_500_error(json_poster, clear_redis):
+    url = reverse('symbolicate:symbolicate_json')
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text='Interval Server Error',
+            status_code=500
+        )
+        with pytest.raises(SymbolDownloadError):
+            json_poster(url, {
+                'stacks': [[[0, 11723767], [1, 65802]]],
+                'memoryMap': [
+                    ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                    ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+                ],
+                'version': 4,
+            })

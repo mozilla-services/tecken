@@ -26,7 +26,8 @@ migrate:
 	docker-compose run web python manage.py migrate --run-syncdb
 
 shell:
-	docker-compose run web bash
+	# Use `-u 0` to automatically become root in the shell
+	docker-compose run -u 0 web bash
 
 redis-cache-cli:
 	docker-compose run redis-cache redis-cli -h redis-cache

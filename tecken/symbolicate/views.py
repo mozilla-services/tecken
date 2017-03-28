@@ -130,11 +130,12 @@ def symbolicate_json(request):
             if symbol_key not in all_symbol_maps:
                 # We have apparently NOT looked up this symbol file + ID before
                 # symbol_map, found = get_symbol_map(*symbol_key)
-                information = get_symbol_map(*symbol_key)
+                information = get_symbol_map(*symbol_key, debug=debug_output)
                 symbol_map = information['symbol_map']
                 assert isinstance(symbol_map, dict), symbol_map
                 found = information['found']
-                cache_lookup_times.append(information['cache_lookup_time'])
+                if 'cache_lookup_time' in information:
+                    cache_lookup_times.append(information['cache_lookup_time'])
                 if 'cache_lookup_size' in information:
                     cache_lookup_sizes.append(information['cache_lookup_size'])
                 if 'download_time' in information:

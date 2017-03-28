@@ -10,17 +10,31 @@ import pytest
 # from django.core.files.uploadedfile import InMemoryUploadedFile
 # from django.utils import timezone
 #
+from django.core.cache import caches
 # from atmo.clusters.provisioners import ClusterProvisioner
 # from atmo.jobs.provisioners import SparkJobProvisioner
 # from atmo.keys.models import SSHKey
 #
-# pytest_plugins = ['blockade']
+pytest_plugins = ['blockade']
 #
 #
 # @pytest.fixture
 # def now():
 #     return timezone.now()
 #
+
+# @pytest.fixture
+# def clear_redis_cache():
+#     print(caches['default']._server)
+#     caches['default'].clear()
+
+
+@pytest.fixture
+def clear_redis():
+    assert caches['default']._server.endswith('/9')  # test database
+    assert caches['store']._server.endswith('/9')  # test database
+    caches['default'].clear()
+    caches['store'].clear()
 
 
 @pytest.fixture
