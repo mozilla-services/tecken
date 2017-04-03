@@ -1,0 +1,27 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #222;
+  height: 150px;
+  padding: 20px;
+  color: white;
+}
+
+.App-intro {
+  font-size: large;
+}
+
+.metricslines {
+  text-align: center;
+  margin: auto;
+  margin-bottom: 200px;
+}
+.metricslines div {
+  display: inline-block;
+  width: 600px;
+  border: 1px solid #dedede;
+  margin: 15px;
+  padding: 15px;
+}

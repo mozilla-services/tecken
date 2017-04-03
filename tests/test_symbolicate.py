@@ -98,6 +98,18 @@ def test_symbolicate_json_happy_path(json_poster, clear_redis):
             ]
         ]
 
+        # Because of a legacy we want this to be possible on the / endpoint
+        response = json_poster('/', {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+            'version': 4,
+        })
+        result_second = response.json()
+        assert result_second == result
+
 
 def test_symbolicate_json_bad_module_indexes(json_poster, clear_redis):
     url = reverse('symbolicate:symbolicate_json')
@@ -121,8 +133,6 @@ def test_symbolicate_json_bad_module_indexes(json_poster, clear_redis):
             'version': 4,
         })
         result = response.json()
-        from pprint import pprint
-        pprint(result)
         assert result['knownModules'] == [False, True]
         assert result['symbolicatedStacks'] == [
             [
@@ -153,11 +163,19 @@ def test_symbolicate_json_cache_hits_logged(client, json_poster, clear_redis):
             ],
             'version': 4,
         })
-        # result = response.json()
-        url = reverse('symbolicate:hit_ratio')
+        assert response.status_code == 200
+        url = reverse('symbolicate:metrics')
         response = client.get(url)
-        print(response)
-
+        metrics = response.json()
+        assert metrics['ratio_of_hits'] == 0.0
+        assert metrics['percent_of_hits'] == 0.0
+        assert metrics['hits'] == 0
+        assert metrics['evictions'] == 0
+        assert metrics['misses'] == 2
+        assert metrics['maxmemory']['bytes'] > 0
+        assert metrics['maxmemory']['human']
+        assert metrics['used_memory']['bytes'] > 0
+        assert metrics['used_memory']['human']
 
 
 def test_symbolicate_json_happy_path_with_debug(json_poster, clear_redis):
@@ -190,16 +208,21 @@ def test_symbolicate_json_happy_path_with_debug(json_poster, clear_redis):
                 'KiUserCallbackDispatcher (in wntdll.pdb)'
             ]
         ]
-        assert result['debug']['real_stacks'] == 2
-        assert result['debug']['total_stacks'] == 2
-        assert result['debug']['total_time'] > 0.0
+        assert result['debug']['stacks']['count'] == 2
+        assert result['debug']['stacks']['real'] == 2
+        assert result['debug']['time'] > 0.0
         # Two cache lookups were attempted
-        assert result['debug']['total']['cache_lookups']['count'] == 2
-        assert result['debug']['total']['cache_lookups']['size'] == 0.0
-        assert result['debug']['total']['cache_lookups']['time'] > 0.0
-        assert result['debug']['total']['downloads']['count'] == 2
-        assert result['debug']['total']['downloads']['size'] > 0.0
-        assert result['debug']['total']['downloads']['time'] > 0.0
+        assert result['debug']['cache_lookups']['count'] == 2
+        assert result['debug']['cache_lookups']['size'] == 0.0
+        assert result['debug']['cache_lookups']['time'] > 0.0
+        assert result['debug']['downloads']['count'] == 2
+        assert result['debug']['downloads']['size'] > 0.0
+        assert result['debug']['downloads']['time'] > 0.0
+        assert result['debug']['modules']['count'] == 2
+        assert result['debug']['modules']['stacks_per_module'] == {
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': 1,
+            'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': 1,
+        }
 
         # Look it up again, and this time the debug should indicate that
         # we drew from the cache.
@@ -220,15 +243,17 @@ def test_symbolicate_json_happy_path_with_debug(json_poster, clear_redis):
                 'KiUserCallbackDispatcher (in wntdll.pdb)'
             ]
         ]
-        assert result['debug']['real_stacks'] == 2
-        assert result['debug']['total_stacks'] == 2
-        assert result['debug']['total_time'] > 0.0
-        assert result['debug']['total']['cache_lookups']['count'] == 2
-        assert result['debug']['total']['cache_lookups']['size'] > 0.0
-        assert result['debug']['total']['cache_lookups']['time'] > 0.0
-        assert result['debug']['total']['downloads']['count'] == 0
-        assert result['debug']['total']['downloads']['size'] == 0.0
-        assert result['debug']['total']['downloads']['time'] == 0.0
+        from pprint import pprint
+        pprint(result['debug'])
+        assert result['debug']['stacks']['real'] == 2
+        assert result['debug']['stacks']['count'] == 2
+        assert result['debug']['time'] > 0.0
+        assert result['debug']['cache_lookups']['count'] == 2
+        assert result['debug']['cache_lookups']['size'] > 0.0
+        assert result['debug']['cache_lookups']['time'] > 0.0
+        assert result['debug']['downloads']['count'] == 0
+        assert result['debug']['downloads']['size'] == 0.0
+        assert result['debug']['downloads']['time'] == 0.0
 
 
 def test_symbolicate_json_one_symbol_not_found(json_poster, clear_redis):
@@ -324,7 +349,7 @@ def test_symbolicate_json_one_symbol_empty(json_poster, clear_redis):
                 '0x1010a (in wntdll.pdb)'
             ]
         ]
-        assert result['debug']['total']['downloads']['count'] == 2
+        assert result['debug']['downloads']['count'] == 2
 
         # Run it again, and despite that we failed to cache the second
         # symbol failed, that failure should be "cached".
@@ -338,7 +363,7 @@ def test_symbolicate_json_one_symbol_empty(json_poster, clear_redis):
             'version': 4,
         })
         result = response.json()
-        assert result['debug']['total']['downloads']['count'] == 0
+        assert result['debug']['downloads']['count'] == 0
 
 
 def test_symbolicate_json_one_symbol_500_error(json_poster, clear_redis):

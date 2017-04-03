@@ -7,15 +7,20 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
+    # url(
+    #     r'__hit_ratio__',
+    #     views.hit_ratio,
+    #     name='hit_ratio'
+    # ),
     url(
-        r'__hit_ratio__',
-        views.hit_ratio,
-        name='hit_ratio'
+        'metrics',
+        views.metrics,
+        name='metrics',
     ),
 
     # must be last
     url(
-        r'',
+        r'v4',
         views.symbolicate_json,
         name='symbolicate_json'
     ),
