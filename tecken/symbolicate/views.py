@@ -64,7 +64,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
         self.stacks = stacks
         self.memory_map = memory_map
         self.debug = debug
-        # XXX set User-Agent to something nice
         self.session = requests.Session()
 
     def run(self):
@@ -257,10 +256,15 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     # But in prod set it to indefinite.
                     timeout=settings.DEBUG and 60 * 100 or None
                 )
-                logger.info('Storing {!r} ({}) in LRU cache'.format(
-                    cache_key,
-                    filesizeformat(len(json.dumps(information['symbol_map']))),
-                ))
+                logger.info(
+                    'Storing {!r} ({}) in LRU cache (Took {:.2f}s)'.format(
+                        cache_key,
+                        filesizeformat(
+                            len(json.dumps(information['symbol_map']))
+                        ),
+                        information['download_time'],
+                    )
+                )
                 information['found'] = True
             except (SymbolNotFound, SymbolFileEmpty):
                 # If it can't be downloaded, cache it as an empty result

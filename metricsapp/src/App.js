@@ -65,7 +65,7 @@ function humanFileSize(size, decimals = 1) {
 
 class MetricsLines extends Component {
   state = {
-    dataPoints: [],
+    serverError: null,
     hitRatio: {
       labels: [],
       datasets: [
@@ -147,7 +147,7 @@ class MetricsLines extends Component {
   }
 
   runLoop() {
-    if (!this.props.paused) {
+    if (!this.props.paused && !this.state.serverError) {
       this.fetchDataPoints()
     }
     this.loop = setTimeout(() => {
@@ -156,35 +156,35 @@ class MetricsLines extends Component {
   }
 
   async fetchDataPoints() {
-    // const T = (array, max=1000) => {
-    //   if (array.length > max) {
-    //     return array.slice(array.length - max, max)
-    //   }
-    //   return array
-    // }
-    const T = (x) => x
 
     try {
       let response = await fetch('/symbolicate/metrics')
+      if (response.status !== 200) {
+        this.setState({
+          serverError: {
+            status: response.status,
+            statusText: response.statusText,
+          }
+        })
+        return
+      }
       let data = await response.json()
-      // console.log("DATA", this.state.dataPoints);
       this.setState(prevState => {
-        // console.log('prevState', prevState);
         let lastLabel = 0
         if (prevState.hits.labels.length) {
           lastLabel = prevState.hits.labels[prevState.hits.labels.length - 1]
         }
-        let labels = T([...prevState.hits.labels, lastLabel + this.props.intervalSeconds])
+        let labels = [...prevState.hits.labels, lastLabel + this.props.intervalSeconds]
 
         return {
           hits: {
             labels: labels,
             datasets: [
               {
-                data: T([...prevState.hits.datasets[0].data, data.hits]),
+                data: [...prevState.hits.datasets[0].data, data.hits],
               },
               {
-                data: T([...prevState.hits.datasets[1].data, data.misses]),
+                data: [...prevState.hits.datasets[1].data, data.misses],
               },
             ]
           },
@@ -192,10 +192,10 @@ class MetricsLines extends Component {
             labels: labels,
             datasets: [
               {
-                data: T([...prevState.maxmemory.datasets[0].data, data.maxmemory.bytes]),
+                data: [...prevState.maxmemory.datasets[0].data, data.maxmemory.bytes],
               },
               {
-                data: T([...prevState.maxmemory.datasets[1].data, data.used_memory.bytes]),
+                data: [...prevState.maxmemory.datasets[1].data, data.used_memory.bytes],
               },
             ]
           },
@@ -203,7 +203,7 @@ class MetricsLines extends Component {
             labels: labels,
             datasets: [
               {
-                data: T([...prevState.hitRatio.datasets[0].data, data.percent_of_hits]),
+                data: [...prevState.hitRatio.datasets[0].data, data.percent_of_hits],
               },
             ]
           },
@@ -211,7 +211,7 @@ class MetricsLines extends Component {
             labels: labels,
             datasets: [
               {
-                data: T([...prevState.evictions.datasets[0].data, data.evictions]),
+                data: [...prevState.evictions.datasets[0].data, data.evictions],
               },
             ]
           },
@@ -219,7 +219,7 @@ class MetricsLines extends Component {
             labels: labels,
             datasets: [
               {
-                data: T([...prevState.keys.datasets[0].data, data.keys]),
+                data: [...prevState.keys.datasets[0].data, data.keys],
               },
             ]
           },
@@ -287,31 +287,35 @@ class MetricsLines extends Component {
 
   render() {
     return <div className="metricslines">
-      <div>
+      {
+        this.state.serverError ?
+        <ShowServerError {...this.state.server}/> : null
+      }
+      <div className="metricsline">
         <h3>Hits and Misses</h3>
         <Line
           data={this.state.hits}
           options={this.hitsOptions}/>
       </div>
-      <div>
+      <div className="metricsline">
         <h3>Hit Ratio</h3>
         <Line
           data={this.state.hitRatio}
           options={this.hitRatioOptions}/>
       </div>
-      <div>
+      <div className="metricsline">
         <h3>Evictions</h3>
         <Line
           data={this.state.evictions}
           options={this.baseOptions}/>
       </div>
-      <div>
+      <div className="metricsline">
         <h3>Keys</h3>
         <Line
           data={this.state.keys}
           options={this.baseOptions}/>
       </div>
-      <div>
+      <div className="metricsline">
         <h3>Max Memory</h3>
         <Line
           data={this.state.maxmemory}
@@ -319,4 +323,19 @@ class MetricsLines extends Component {
       </div>
     </div>
   }
+}
+
+
+const ShowServerError = ({ status, statusText }) => {
+  return <div className="server-error">
+    <h2>Server Error</h2>
+    <p>Unable to talk to the server for metrics data</p>
+    <code>{status}</code>
+    <code>{statusText}</code>
+
+    <p>
+      Perhaps
+      <button type="button" onClick={e => document.location.reload(true)}>Reload</button>
+    </p>
+  </div>
 }

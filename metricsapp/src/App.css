@@ -18,10 +18,18 @@
   margin: auto;
   margin-bottom: 200px;
 }
-.metricslines div {
+.metricslines .metricsline {
   display: inline-block;
   width: 600px;
   border: 1px solid #dedede;
   margin: 15px;
   padding: 15px;
+}
+
+
+.server-error {
+  color: rgb(205, 0, 0);
+  background-color: rgb(255, 159, 159);
+  margin: auto;
+  padding: 30px;
 }

@@ -7,17 +7,11 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
-    # url(
-    #     r'__hit_ratio__',
-    #     views.hit_ratio,
-    #     name='hit_ratio'
-    # ),
     url(
         'metrics',
         views.metrics,
         name='metrics',
     ),
-
     # must be last
     url(
         r'v4',

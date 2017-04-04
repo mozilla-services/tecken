@@ -441,17 +441,6 @@ class Test(Dev):
         'https://s3.example.com/public/',
     ])
 
-    CACHES = {
-        'default': django_cache_url.config(
-            default='redis://redis-cache:6379/9',
-            env='REDIS_URL',
-        ),
-        'store': django_cache_url.config(
-            default='redis://redis-store:6379/9',
-            env='REDIS_STORE_URL',
-        )
-    }
-
 
 class Stage(Base):
     """Configuration to be used in stage environment"""
