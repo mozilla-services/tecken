@@ -37,6 +37,12 @@ class SymbolFileEmpty(Exception):
 
 
 class LogCacheHitsMixin:
+    """Mixing for storing information about cache hits and misses.
+
+    In production, this caching is set to NOT timeout.
+    That makes it possible to get an insight into cache hits/misses over
+    time.
+    """
 
     log_cache_timeout = settings.DEBUG and 60 * 60 * 24 or None
 
@@ -167,20 +173,11 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 )
                 signature = symbol_map.get(module_offset)
                 if signature is None and symbol_map:
-                    try:
-                        signature = symbol_map[
-                            symbol_offset_list[
-                                bisect(symbol_offset_list, module_offset) - 1
-                            ]
-                        ]
-                    except IndexError:
-                        # XXX How can this happen?!
-                        logger.warning(
-                            "INDEXERROR:",
-                            module_offset,
+                    signature = symbol_map[
+                        symbol_offset_list[
                             bisect(symbol_offset_list, module_offset) - 1
-                        )
-                        signature = None
+                        ]
+                    ]
 
                 result['symbolicatedStacks'][i][j] = (
                     '{} (in {})'.format(
