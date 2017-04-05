@@ -4,38 +4,14 @@
 """
 Django settings for tecken project.
 """
+import datetime
 import os
-import subprocess
-from datetime import timedelta
 
 from configurations import Configuration, values
 from django.contrib.messages import constants as messages
-from django.core.urlresolvers import reverse_lazy
 from dockerflow.version import get_version
 from raven.transport.requests import RequestsHTTPTransport
 import django_cache_url
-
-
-class Constance:
-    "Constance settings"
-    CONSTANCE_BACKEND = 'constance.backends.redisd.RedisBackend'
-
-    CONSTANCE_REDIS_CONNECTION_CLASS = 'django_redis.get_redis_connection'
-
-    CONSTANCE_CONFIG = {
-        'AWS_USE_SPOT_INSTANCES': (
-            True,
-            'Whether to use spot instances on AWS',
-        ),
-        'AWS_SPOT_BID_CORE': (
-            0.84,
-            'The spot instance bid price for the cluster workers',
-        ),
-        'AWS_EFS_DNS': (
-            'fs-616ca0c8.efs.us-west-2.amazonaws.com',  # the current dev instance of EFS
-            'The DNS name of the EFS mount for EMR clusters'
-        )
-    }
 
 
 class AWS:
@@ -91,7 +67,7 @@ class CSP:
     )
 
 
-class Core(Constance, CSP, AWS, Configuration):
+class Core(CSP, AWS, Configuration):
     """Settings that will never change per-environment."""
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -149,19 +125,6 @@ class Core(Constance, CSP, AWS, Configuration):
     ROOT_URLCONF = 'tecken.urls'
 
     WSGI_APPLICATION = 'tecken.wsgi.application'
-
-    # set the exponential backoff mechanism of rq-retry
-    # def exponential_backoff(tries, base=2):
-    #     return ','.join(
-    #         [str(pow(base, exponent)) for exponent in range(tries)]
-    #     )
-
-    # the total number of tries for each task, 1 regular try + 5 retries
-    # RQ_RETRY_MAX_TRIES = 6
-    # os.environ['RQ_RETRY_MAX_TRIES'] = str(RQ_RETRY_MAX_TRIES)
-
-    # this needs to be set as an environment variable since that's how rq-retry works
-    # os.environ['RQ_RETRY_DELAYS'] = RQ_RETRY_DELAYS = exponential_backoff(RQ_RETRY_MAX_TRIES - 1)
 
     # Add the django-allauth authentication backend.
     AUTHENTICATION_BACKENDS = (
@@ -420,7 +383,9 @@ class Dev(Base):
     def VERSION(self):
         # XXX needs at least one tag I think
         return {}
-        # output = subprocess.check_output(['git', 'describe', '--tags', '--abbrev=0'])
+        # output = subprocess.check_output(
+        #     ['git', 'describe', '--tags', '--abbrev=0']
+        # )
         # if output:
         #     return {'version': output.decode().strip()}
         # else:
@@ -449,7 +414,7 @@ class Stage(Base):
 
     ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = int(timedelta(days=365).total_seconds())
+    SECURE_HSTS_SECONDS = int(datetime.timedelta(days=365).total_seconds())
     # Mark session and CSRF cookies as being HTTPS-only.
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
@@ -506,24 +471,6 @@ class Stage(Base):
 
 class Prod(Stage):
     """Configuration to be used in prod environment"""
-
-    @property
-    def CONSTANCE_CONFIG(self):
-        config = super().CONSTANCE_CONFIG.copy()
-        override = {
-            'AWS_EFS_DNS': (
-                'fs-d0c30f79.efs.us-west-2.amazonaws.com',  # the current prod instance of EFS
-                'The DNS name of the EFS mount for EMR clusters'
-            )
-        }
-        config.update(override)
-        return config
-
-
-class Heroku(Prod):
-    """Configuration to be used in prod environment"""
-    STATIC_ROOT = os.path.join(Prod.BASE_DIR, 'staticfiles')
-    NPM_ROOT_PATH = Prod.BASE_DIR
 
 
 class Build(Prod):
