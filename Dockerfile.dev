@@ -40,6 +40,12 @@ COPY requirements.txt /tmp/
 WORKDIR /tmp
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install Python dependencies specifically for building docs
+COPY docs-requirements.txt /tmp/
+# Switch to /tmp to install dependencies outside home dir
+WORKDIR /tmp
+RUN pip install --no-cache-dir -r docs-requirements.txt
+
 # Install frontend dependencies using NPM
 COPY package.json /opt/npm/
 

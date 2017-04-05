@@ -33,6 +33,21 @@ To build the docs, run this:
 
     $ make docs
 
+This is the same as running:
+
+.. code-block:: shell
+
+    $ docker-compose run web ./bin/build_docs.sh
+
+To iterate on writing docs and testing that what you type compiles correctly,
+run the above mentioned command on every save and then open the file
+``docs/_build/html/index.html``. E.g.
+
+.. code-block:: shell
+
+    # the 'open' command is for OSX
+    $ open docs/_build/html/index.html
+
 
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/
 
