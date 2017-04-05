@@ -176,15 +176,23 @@ class MetricsLines extends Component {
         }
         let labels = [...prevState.hits.labels, lastLabel + this.props.intervalSeconds]
 
+        const pointsCount = prevState.hits.datasets[0].data.length
+        let pointRadius = 5
+        if (pointsCount > 30) pointRadius = 2
+        else if (pointsCount > 15) pointRadius = 3
+        else if (pointsCount > 5) pointRadius = 4
+
         return {
           hits: {
             labels: labels,
             datasets: [
               {
                 data: [...prevState.hits.datasets[0].data, data.hits],
+                pointRadius: pointRadius,
               },
               {
                 data: [...prevState.hits.datasets[1].data, data.misses],
+                pointRadius: pointRadius,
               },
             ]
           },
@@ -193,9 +201,11 @@ class MetricsLines extends Component {
             datasets: [
               {
                 data: [...prevState.maxmemory.datasets[0].data, data.maxmemory.bytes],
+                pointRadius: pointRadius,
               },
               {
                 data: [...prevState.maxmemory.datasets[1].data, data.used_memory.bytes],
+                pointRadius: pointRadius,
               },
             ]
           },
@@ -204,6 +214,7 @@ class MetricsLines extends Component {
             datasets: [
               {
                 data: [...prevState.hitRatio.datasets[0].data, data.percent_of_hits],
+                pointRadius: pointRadius,
               },
             ]
           },
@@ -212,6 +223,7 @@ class MetricsLines extends Component {
             datasets: [
               {
                 data: [...prevState.evictions.datasets[0].data, data.evictions],
+                pointRadius: pointRadius,
               },
             ]
           },
@@ -220,6 +232,7 @@ class MetricsLines extends Component {
             datasets: [
               {
                 data: [...prevState.keys.datasets[0].data, data.keys],
+                pointRadius: pointRadius,
               },
             ]
           },
