@@ -1,6 +1,8 @@
 tecken - All things Mozilla Symbol Server
 =========================================
 
+[![Updates](https://pyup.io/repos/github/mozilla/tecken/shield.svg)](https://pyup.io/repos/github/mozilla/tecken/)
+
 Development Setup
 -----------------
 
