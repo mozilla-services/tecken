@@ -1,5 +1,5 @@
 FROM python:3.5-slim
-MAINTAINER Jannis Leidel <jezdez@mozilla.com>
+MAINTAINER Peter Bengtsson <peterbe@mozilla.com>
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \

@@ -32,7 +32,7 @@ wait_for() {
 
 # Only wait for backend services in development
 # http://stackoverflow.com/a/13864829
-[ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis-cache 6379
+[ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis-cache 6379 && wait_for redis-store 6379
 
 case $1 in
   web)
@@ -54,7 +54,7 @@ case $1 in
     coverage erase
     coverage run -m py.test "${@:2}"
     coverage report -m
-    coverage html --skip-covered
+    # coverage html --skip-covered
     if [[ ! -z ${CI+check} ]]; then
       # submit coverage
       coverage xml
