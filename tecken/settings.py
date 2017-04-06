@@ -359,6 +359,12 @@ class Base(Core):
         'symbols-public/v1/',
     ])
 
+    # Number of seconds to wait for a symbol download. If this
+    # trips, no error will be raised and we'll just skip using it
+    # as a known symbol file.
+    # The value gets cached as an empty dict for one hour.
+    SYMBOLS_GET_TIMEOUT = values.Value(5)
+
 
 class Dev(Base):
     """Configuration to be used during development and base class

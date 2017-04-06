@@ -1,4 +1,3 @@
-import pytest
 import requests
 import requests_mock
 
@@ -6,7 +5,6 @@ from django.core.urlresolvers import reverse
 from django.core.cache import cache, caches
 
 from tecken.symbolicate.views import (
-    SymbolDownloadError,
     SymbolicateJSON,
     LogCacheHitsMixin,
 )
@@ -446,5 +444,74 @@ def test_symbolicate_json_one_symbol_500_error(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        with pytest.raises(SymbolDownloadError):
-            symbolicator.run()
+        result = symbolicator.run()
+        assert result['knownModules'] == [True, False]
+
+
+def test_symbolicate_json_one_symbol_sslerror(clear_redis):
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            exc=requests.exceptions.SSLError
+        )
+        symbolicator = SymbolicateJSON(
+            stacks=[[[0, 11723767], [1, 65802]]],
+            memory_map=[
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        )
+        result = symbolicator.run()
+        assert result['knownModules'] == [True, False]
+
+
+def test_symbolicate_json_one_symbol_readtimeout(clear_redis):
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            exc=requests.exceptions.ReadTimeout
+        )
+        symbolicator = SymbolicateJSON(
+            stacks=[[[0, 11723767], [1, 65802]]],
+            memory_map=[
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        )
+        result = symbolicator.run()
+        assert result['knownModules'] == [True, False]
+
+
+def test_symbolicate_json_one_symbol_connectionerror(clear_redis):
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            exc=requests.exceptions.ConnectionError
+        )
+        symbolicator = SymbolicateJSON(
+            stacks=[[[0, 11723767], [1, 65802]]],
+            memory_map=[
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        )
+        result = symbolicator.run()
+        assert result['knownModules'] == [True, False]

@@ -270,3 +270,26 @@ Example Symbolication
 Here's an example you can copy and paste::
 
     curl -d '{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]],"version":4}' http://localhost:8000
+
+
+Sporadic Network Errors
+=======================
+
+If you try to run a symbolication on a flaky network all sorts of network
+errors can happen between the symbolication service and the general
+symbol store (S3). If any of these errors occur, it does **not** break
+the request but in the symbolication output, the module is simply marked
+as not known.
+
+The list of errors that might occur are:
+
+* ``requests.exceptions.ConnectionError`` (e.g. DNS errors)
+
+* ``requests.exceptions.SSLError`` (happens if the network connection breaks
+  whilst TLS handshaking)
+
+* ``requests.exceptions.ReadTimeout`` (unlikely but can happen either
+  network is temporarily saturated)
+
+* ``requests.exceptions.ContentDecodingError`` (if a symbol is served in a
+  non-gzip way and can't be decompressed)
