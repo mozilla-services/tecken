@@ -3,7 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 from django.http import HttpResponseServerError
-from django.template import Context, TemplateDoesNotExist, loader
+from django.template import TemplateDoesNotExist, loader
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -37,6 +37,6 @@ def server_error(request, template_name='500.html'):
             '<h1>Server Error (500)</h1>',
             content_type='text/html'
         )
-    return HttpResponseServerError(template.render(Context({
+    return HttpResponseServerError(template.render({
         'request': request,
-    })))
+    }))

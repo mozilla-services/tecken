@@ -69,7 +69,9 @@ def pytest_addoption(parser):
 def pytest_sessionstart(session):
     config = session.config
     if config.option.blockade or config.getini('blockade'):
-        http_whitelist_str = config.option.blockade_http_whitelist or config.getini(
-            'blockade-http-whitelist')
+        http_whitelist_str = (
+            config.option.blockade_http_whitelist or
+            config.getini('blockade-http-whitelist')
+        )
         http_whitelist = http_whitelist_str.split(',')
         block_http(http_whitelist)
