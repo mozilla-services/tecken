@@ -15,4 +15,3 @@ export DJANGO_CONFIGURATION=Test
 
 # run docker compose with the given environment variables
 docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV web test $@
-# docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION web test $@
