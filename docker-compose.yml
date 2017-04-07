@@ -2,8 +2,7 @@ version: '2'
 
 services:
   db:
-    # XXX How can I switch to PG 9.5?
-    image: postgres:9.4
+    image: postgres:9.5
   redis-store:
     build: ./docker/images/redis
   redis-cache:
