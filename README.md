@@ -17,7 +17,7 @@ You need to be able to run Docker. In particular an executable `docker-compose`.
 Git clone and then run:
 
     make build
-    make up
+    make run
 
 Now a development server should be available at `http://localhost:8000`.
 

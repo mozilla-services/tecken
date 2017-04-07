@@ -58,8 +58,8 @@ RUN chown -R 10001:10001 /app
 
 USER 10001
 
-RUN DJANGO_CONFIGURATION=Build && \
-    python manage.py collectstatic --noinput
+#RUN DJANGO_CONFIGURATION=Build && \
+#    python manage.py collectstatic --noinput
 
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.

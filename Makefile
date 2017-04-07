@@ -1,4 +1,4 @@
-.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test up django-shell
+.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test run django-shell docs
 
 help:
 	@echo "Welcome to the tecken\n"
@@ -15,37 +15,44 @@ help:
 	@echo "  stop         Stops the docker containers"
 	@echo "  django-shell Django integrative shell\n"
 
+# Dev configuration steps
+.docker-build:
+	make build
+
 build:
-	docker-compose build
+	docker-compose build deploy-base
+	docker-compose build dev-base
+	touch .docker-build
 
 clean: stop
 	docker-compose rm -f
 	rm -rf coverage/ .coverage
+	rm -fr .docker-build
 
 migrate:
 	docker-compose run web python manage.py migrate --run-syncdb
 
-shell:
+shell: .docker-build
 	# Use `-u 0` to automatically become root in the shell
 	docker-compose run -u 0 web bash
 
-redis-cache-cli:
+redis-cache-cli: .docker-build
 	docker-compose run redis-cache redis-cli -h redis-cache
 
-redis-store-cli:
+redis-store-cli: .docker-build
 	docker-compose run redis-store redis-cli -h redis-store
 
 stop:
 	docker-compose stop
 
-test:
+test: .docker-build
 	@bin/test
 
-up:
-	docker-compose up
+run: .docker-build
+	docker-compose up web
 
-django-shell:
+django-shell: .docker-build
 	docker-compose run web python manage.py shell
 
-docs:
+docs: .docker-build
 	docker-compose run web ./bin/build_docs.sh

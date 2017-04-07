@@ -21,6 +21,19 @@ check files according to the flake8 rules as it runs tests.
 If you hit issues, instead of re-writing the rules consider
 appending a comment on the end of the line that says ``# noqa``.
 
+Local development
+=================
+
+You run everything in Docker with:
+
+.. code-block:: shell
+
+    $ make build  # only needed once
+    $ make run
+
+This will start a server that is exposed on port ``8000`` so now you can
+reach ``http://localhost:8000`` with your browser or curl.
+
 Documentation
 =============
 
