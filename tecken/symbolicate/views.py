@@ -6,13 +6,14 @@ import time
 import logging
 from bisect import bisect
 from collections import defaultdict
-import json  # XXX consider try:except import for ujson
+
+import ujson as json
 
 import requests
 from django_redis import get_redis_connection
 
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import HttpResponse
 from django.core.cache import cache, caches
 from django.views.decorators.csrf import csrf_exempt
 from django.template.defaultfilters import filesizeformat
@@ -63,6 +64,29 @@ class LogCacheHitsMixin:
             # If it wasn't in cache we can't increment this
             # hit, so we have to start from 1.
             cache.set(cache_key, 1, timeout=self.log_cache_timeout)
+
+
+class JsonResponse(HttpResponse):
+    """
+    An "overwrite" of django.http.JsonResponse that uses "our"
+    imported json instead which can be ujson.
+    The only difference is that it never tries to be smart about
+    sending in an encoder to take care of tricky types like
+    Decimals and datetime objects.
+    """
+
+    def __init__(self, data, safe=True,
+                 json_dumps_params=None, **kwargs):
+        if safe and not isinstance(data, dict):
+            raise TypeError(
+                'In order to allow non-dict objects to be serialized set the '
+                'safe parameter to False.'
+            )
+        if json_dumps_params is None:
+            json_dumps_params = {}
+        kwargs.setdefault('content_type', 'application/json')
+        data = json.dumps(data, **json_dumps_params)
+        super().__init__(content=data, **kwargs)
 
 
 class SymbolicateJSON(LogCacheHitsMixin):
