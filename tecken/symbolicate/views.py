@@ -263,7 +263,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     )
                 )
                 information['found'] = True
-            except (SymbolNotFound, SymbolFileEmpty):
+            except (SymbolNotFound, SymbolFileEmpty, SymbolDownloadError):
                 # If it can't be downloaded, cache it as an empty result
                 # so we don't need to do this every time we're asked to
                 # look up this symbol.
@@ -361,6 +361,13 @@ class SymbolicateJSON(LogCacheHitsMixin):
         else:
             symbol_filename = lib_filename + '.sym'
 
+        requests_operational_errors = (
+            requests.exceptions.ContentDecodingError,
+            requests.exceptions.ReadTimeout,
+            requests.exceptions.SSLError,
+            requests.exceptions.ConnectionError,
+        )
+
         for base_url in settings.SYMBOL_URLS:
             assert base_url.endswith('/')
             url = '{}{}/{}/{}'.format(
@@ -371,8 +378,11 @@ class SymbolicateJSON(LogCacheHitsMixin):
             )
             logger.info('Requesting {}'.format(url))
             try:
-                response = self.session.get(url)
-            except requests.exceptions.ContentDecodingError as exception:
+                response = self.session.get(
+                    url,
+                    timeout=settings.SYMBOLS_GET_TIMEOUT
+                )
+            except requests_operational_errors as exception:
                 logger.warning(
                     '{} when downloading {}'.format(
                         exception,
@@ -398,9 +408,11 @@ class SymbolicateJSON(LogCacheHitsMixin):
                         yield line, url
                 return url
             else:
-                # XXX Need more grace. A download that isn't 200 or 404 means
-                # either a *temporary* network operational error or something
-                # horribly wrong with the URL.
+                logger.warning('{} {} ({})'.format(
+                    url,
+                    response.status_code,
+                    response.content,
+                ))
                 raise SymbolDownloadError(response.status_code, url)
 
         # None of the URLs worked
