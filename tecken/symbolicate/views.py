@@ -95,52 +95,28 @@ class SymbolicateJSON(LogCacheHitsMixin):
         self.memory_map = memory_map
         self.debug = debug
         self.session = requests.Session()
-
-    def run(self):
-        result = {
+        # per request global map of all symbol maps
+        self.all_symbol_maps = {}
+        # the result we will populate
+        self.result = {
             'symbolicatedStacks': [],
-            'knownModules': [False] * len(self.memory_map),
+            'knownModules': [False] * len(memory_map),
         }
+        self._run()
 
+    def add_to_symbols_maps(self, key, map_):
+        # When inserting to the function global all_symbol_maps
+        # store it as a tuple with an additional value (for
+        # the sake of optimization) of the sorted list of ALL
+        # offsets as int16s ascending order.
+        self.all_symbol_maps[key] = (
+            map_,
+            sorted(map_)
+        )
+
+    def _run(self):
         # Record the total time it took to symbolicate
         t0 = time.time()
-
-        for stack in self.stacks:
-            response_stack = []
-            for module_index, module_offset in stack:
-                if module_index < 0:
-                    try:
-                        response_stack.append(hex(module_offset))
-                    except TypeError:
-                        logger.warning('TypeError on ({!r}, {!r})'.format(
-                            module_offset,
-                            module_index,
-                        ))
-                        # Happens if 'module_offset' is not an int16
-                        # and thus can't be represented in hex.
-                        response_stack.append(str(module_offset))
-                else:
-                    symbol_filename = self.memory_map[module_index][0]
-                    response_stack.append(
-                        "{} (in {})".format(
-                            hex(module_offset),
-                            symbol_filename
-                        )
-                    )
-            result['symbolicatedStacks'].append(response_stack)
-
-        # per request global map of all symbol maps
-        all_symbol_maps = {}
-
-        def add_to_symbols_maps(key, map_):
-            # When inserting to the function global all_symbol_maps
-            # store it as a tuple with an additional value (for
-            # the sake of optimization) of the sorted list of ALL
-            # offsets as int16s ascending order.
-            all_symbol_maps[key] = (
-                map_,
-                sorted(map_)
-            )
 
         cache_lookup_times = []
         cache_lookup_sizes = []
@@ -150,7 +126,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
         # First look up all symbols that we're going to need so that
         # when it's time to really loop over `self.stacks` the
-        # 'all_symbol_maps' should be fully populated as well as it
+        # 'self.all_symbol_maps' should be fully populated as well as it
         # can be.
         needs_to_be_downloaded = set()
         for stack in self.stacks:
@@ -181,8 +157,8 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
                     # If it was successfully fetched from cache,
                     # these metrics will be available.
-                    result['knownModules'][module_index] = found
-                    add_to_symbols_maps(symbol_key, symbol_map)
+                    self.result['knownModules'][module_index] = found
+                    self.add_to_symbols_maps(symbol_key, symbol_map)
                 else:
                     needs_to_be_downloaded.add((
                         symbol_key,
@@ -194,14 +170,14 @@ class SymbolicateJSON(LogCacheHitsMixin):
         downloaded = self.load_symbols(needs_to_be_downloaded)
         for symbol_key, information, module_index in downloaded:
             symbol_map = information['symbol_map']
-            add_to_symbols_maps(symbol_key, symbol_map)
+            self.add_to_symbols_maps(symbol_key, symbol_map)
             if self.debug:
                 if 'download_time' in information:
                     download_times.append(information['download_time'])
                 if 'download_size' in information:
                     download_sizes.append(information['download_size'])
             found = information['found']
-            result['knownModules'][module_index] = found
+            self.result['knownModules'][module_index] = found
 
         total_stacks = 0
         real_stacks = 0
@@ -211,21 +187,33 @@ class SymbolicateJSON(LogCacheHitsMixin):
         # Now that all needed symbols are looked up, we should be
         # ready to symbolicate for reals.
         for i, stack in enumerate(self.stacks):
+            response_stack = []
             for j, (module_index, module_offset) in enumerate(stack):
                 total_stacks += 1
                 if module_index < 0:
+                    try:
+                        response_stack.append(hex(module_offset))
+                    except TypeError:
+                        logger.warning('TypeError on ({!r}, {!r})'.format(
+                            module_offset,
+                            module_index,
+                        ))
+                        # Happens if 'module_offset' is not an int16
+                        # and thus can't be represented in hex.
+                        response_stack.append(str(module_offset))
                     continue
+
                 real_stacks += 1
 
-                filename, debug_id = self.memory_map[module_index]
+                symbol_filename, debug_id = self.memory_map[module_index]
 
-                symbol_key = (filename, debug_id)
+                symbol_key = (symbol_filename, debug_id)
 
                 # This 'stacks_per_module' will only be used in the debug
                 # output. So give it a string key instead of a tuple.
                 stacks_per_module['{}/{}'.format(*symbol_key)] += 1
 
-                symbol_map, symbol_offset_list = all_symbol_maps.get(
+                symbol_map, symbol_offset_list = self.all_symbol_maps.get(
                     symbol_key,
                     ({}, [])
                 )
@@ -237,13 +225,13 @@ class SymbolicateJSON(LogCacheHitsMixin):
                         ]
                     ]
 
-                result['symbolicatedStacks'][i][j] = (
+                response_stack.append(
                     '{} (in {})'.format(
                         signature or hex(module_offset),
-                        filename,
+                        symbol_filename
                     )
                 )
-                # result['knownModules'][module_index] = found
+            self.result['symbolicatedStacks'].append(response_stack)
 
         t1 = time.time()
 
@@ -257,7 +245,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
         )
 
         if self.debug:
-            result['debug'] = {
+            self.result['debug'] = {
                 'time': t1 - t0,
                 'stacks': {
                     'count': total_stacks,
@@ -279,17 +267,13 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 }
             }
 
-        return result
-
     @staticmethod
     def _make_cache_key(symbol_key):
         return 'symbol:{}/{}'.format(*symbol_key)
 
     def get_symbol_map(self, symbol_key):
         cache_key = self._make_cache_key(symbol_key)
-        information = {
-            # 'cache_key': cache_key,  # XXX is this necessary
-        }
+        information = {}
         t0 = time.time()
         symbol_map = store.get(cache_key)
         t1 = time.time()
@@ -514,8 +498,7 @@ def symbolicate_json(request):
         memory_map,
         debug=json_body.get('debug')
     )
-
-    return JsonResponse(symbolicator.run())
+    return JsonResponse(symbolicator.result)
 
 
 def metrics(request):
