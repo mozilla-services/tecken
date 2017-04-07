@@ -342,3 +342,5 @@ pytest-flake8==0.8.1 \
 requests-mock==1.3.0 \
     --hash=sha256:bd86970d6c52cc97071f5185aa594de6a997a5ca63b3bb36aceb9bb9db49294b \
     --hash=sha256:23edd6f7926aa13b88bf79cb467632ba2dd5a253034e9f41563f60ed305620c7
+ujson==1.35 \
+    --hash=sha256:f66073e5506e91d204ab0c614a148d5aa938bdbf104751be66f8ad7a222f5f86
