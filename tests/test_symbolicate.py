@@ -174,7 +174,7 @@ def test_symbolicate_json_bad_module_indexes(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ]
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [False, True]
         assert result['symbolicatedStacks'] == [
             [
@@ -203,7 +203,7 @@ def test_symbolicate_json_bad_module_offset(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ]
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [False, True]
         assert result['symbolicatedStacks'] == [
             [
@@ -232,7 +232,7 @@ def test_symbolicate_json_cache_hits_logged(client, clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        assert symbolicator.run()['symbolicatedStacks']
+        assert symbolicator.result['symbolicatedStacks']
 
         url = reverse('symbolicate:metrics')
         response = client.get(url)
@@ -268,7 +268,7 @@ def test_symbolicate_json_happy_path_with_debug(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, True]
         assert result['symbolicatedStacks'] == [
             [
@@ -302,7 +302,7 @@ def test_symbolicate_json_happy_path_with_debug(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, True]
         assert result['symbolicatedStacks'] == [
             [
@@ -341,7 +341,7 @@ def test_symbolicate_json_one_symbol_not_found(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
         assert result['symbolicatedStacks'] == [
             [
@@ -349,6 +349,33 @@ def test_symbolicate_json_one_symbol_not_found(clear_redis):
                 '0x1010a (in wntdll.pdb)'
             ]
         ]
+
+
+def test_symbolicate_json_one_symbol_not_found_with_debug(clear_redis):
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text='Not found',
+            status_code=404
+        )
+        symbolicator = SymbolicateJSON(
+            debug=True,
+            stacks=[[[0, 11723767], [1, 65802]]],
+            memory_map=[
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        )
+        result = symbolicator.result
+        # It should work but because only 1 file could be downloaded,
+        # there'll be no measurement of the one that 404 failed.
+        assert result['debug']['downloads']['count'] == 1
 
 
 def test_symbolicate_json_one_symbol_content_enc_err(clear_redis):
@@ -370,7 +397,7 @@ def test_symbolicate_json_one_symbol_content_enc_err(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
         assert result['symbolicatedStacks'] == [
             [
@@ -400,7 +427,7 @@ def test_symbolicate_json_one_symbol_empty(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
         assert result['symbolicatedStacks'] == [
             [
@@ -420,7 +447,7 @@ def test_symbolicate_json_one_symbol_empty(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['debug']['downloads']['count'] == 0
 
 
@@ -444,7 +471,7 @@ def test_symbolicate_json_one_symbol_500_error(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
 
 
@@ -467,7 +494,7 @@ def test_symbolicate_json_one_symbol_sslerror(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
 
 
@@ -490,7 +517,7 @@ def test_symbolicate_json_one_symbol_readtimeout(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
 
 
@@ -513,5 +540,5 @@ def test_symbolicate_json_one_symbol_connectionerror(clear_redis):
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         )
-        result = symbolicator.run()
+        result = symbolicator.result
         assert result['knownModules'] == [True, False]
