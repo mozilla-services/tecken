@@ -7,6 +7,9 @@ machine:
     - docker
 
 dependencies:
+  pre:
+    # should just set env vars in circleci
+    - touch .env
   cache_directories:
     - "~/cache/"
   override:
