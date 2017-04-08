@@ -14,13 +14,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: local/tecken_deploy_base
+    image: tecken:deploy_base
 
   dev-base:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    image: local/tecken_dev
+    image: tecken:dev
 
   # ------------------------------------------------------------------
   # After this point is dev-related services.
@@ -29,7 +29,7 @@ services:
   # Base container is used for development tasks like tests, linting, coverage
   # and building docs.
   base:
-    image: local/tecken_dev
+    image: tecken:dev
     # build:
     #   context: .
     #   dockerfile: Dockerfile.dev

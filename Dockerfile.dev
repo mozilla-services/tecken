@@ -1,4 +1,4 @@
-FROM local/tecken_deploy_base
+FROM tecken:deploy_base
 
 ENV DJANGO_CONFIGURATION=Dev
 
