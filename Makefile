@@ -55,4 +55,4 @@ django-shell: .docker-build
 	docker-compose run web python manage.py shell
 
 docs: .docker-build
-	docker-compose run web ./bin/build_docs.sh
+	docker-compose run -u 0 web ./bin/build_docs.sh

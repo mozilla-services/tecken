@@ -17,12 +17,8 @@ RUN apt-get install -y \
 WORKDIR /tmp
 
 # Install Python dependencies specifically for building docs
-COPY docs-requirements.txt /tmp/
-RUN pip install --no-cache-dir -r docs-requirements.txt
-
-# Install Python dependencies specifically for doing local dev
-COPY dev-requirements.txt /tmp/
-RUN pip install --no-cache-dir -r dev-requirements.txt
+#COPY docs-requirements.txt /tmp/
+#RUN pip install --no-cache-dir -r docs-requirements.txt
 
 # Switch back to home directory
 WORKDIR /app
