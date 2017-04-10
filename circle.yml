@@ -1,43 +1,62 @@
-# These environment variables must be set in CircleCI UI
-#
-# DOCKERHUB_REPO - docker hub repo, format: <username>/<repo>
-# DOCKER_EMAIL   - login info for docker hub
-# DOCKER_USER
-# DOCKER_PASS
-#
 machine:
   pre:
-    # Install CircleCI's fork for Docker 1.10.0
+    # install updated docker
     - curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
-    - chmod -R 777 $CIRCLE_TEST_REPORTS $CIRCLE_ARTIFACTS
+    - pip install docker-compose
   services:
     - docker
 
 dependencies:
   pre:
-    - docker info
-    - sudo apt-get update
-    - sudo apt-get install python-dev
-    # run tests using an upgraded version of docker-compose
-    - pip install --upgrade docker-compose
+    # should just set env vars in circleci
+    - touch .env
+  cache_directories:
+    - "~/cache/"
   override:
-    # build Docker image first to make sure it'll build correctly
-    - ./bin/build
+    # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+    - >
+        printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
+        "$CIRCLE_SHA1"
+        "$CIRCLE_TAG"
+        "$CIRCLE_PROJECT_USERNAME"
+        "$CIRCLE_PROJECT_REPONAME"
+        "$CIRCLE_BUILD_URL" > version.json
+    - cp version.json $CIRCLE_ARTIFACTS
+    - docker info
+    # use circleci's docker cache workaround
+    - mkdir -p ~/cache/
+    - if [ -e ~/cache/docker/image.tar ]; then echo "Loading image.tar"; docker load -i ~/cache/docker/image.tar || rm ~/cache/docker/image.tar; fi
+    # build image
+    - make build
+    # Clean up old image and save the new one
+    - >
+      mkdir -p ~/cache/docker;
+      rm -f ~/cache/docker/deploy_base.tar;
+      rm -f ~/cache/docker/dev.tar;
+      docker save tecken:deploy_base > ~/cache/docker/deploy_base.tar;
+      docker save tecken:dev > ~/cache/docker/dev.tar;
+      ls -l ~/cache/docker
 
 test:
+  pre:
+    - chmod -R 777 $CIRCLE_TEST_REPORTS
   override:
-    # run the tests using our test script
-    - ./bin/test
+    - make test
 
+# appropriately tag and push the container to dockerhub
 deployment:
   latest:
     branch: master
     commands:
-      # appropriately tag and push the container to dockerhub
-      - ./bin/deploy
+      # set DOCKER_DEPLOY=true in Circle UI to do deploys
+      - "${DOCKER_DEPLOY:-false}"
+      - bin/ci/deploy-dockerhub.sh latest
+      - bin/ci/deploy-dockerhub.sh "$CIRCLE_BUILD_NUM"
 
   tags:
     # push all tags
     tag: /.*/
     commands:
-      - ./bin/deploy
+      # set DOCKER_DEPLOY=true in Circle UI to do deploys
+      - "${DOCKER_DEPLOY:-false}"
+      - bin/ci/deploy-dockerhub.sh "$CIRCLE_TAG"

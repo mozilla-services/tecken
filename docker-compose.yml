@@ -8,25 +8,49 @@ services:
   redis-cache:
     image: redis:3.2
 
-  app:
+  # This builds an image of the deploy base. Then we extend that with
+  # dev-related things to do our dev-y stuff.
+  deploy-base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tecken:deploy_base
+
+  dev-base:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    image: tecken:dev
+
+  # ------------------------------------------------------------------
+  # After this point is dev-related services.
+  # ------------------------------------------------------------------
+
+  # Base container is used for development tasks like tests, linting, coverage
+  # and building docs.
+  base:
+    image: tecken:dev
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.dev
     environment:
       - DJANGO_CONFIGURATION
     env_file:
       - .env
     volumes:
       - $PWD:/app
-    command: "true"
+    # command: "true"
 
+  # Web container is a prod-like fully-functioning container.
   web:
     extends:
-      service: app
+      service: base
     ports:
       - "8000:8000"
-    depends_on:
-      - app
+    # XXX Should we use depends_on db, redis-store, redis-cache etc?
+    # XXX What is the difference between 'links' and 'depends_on'?
+    # depends_on:
+    #   - app
     links:
       - db
       - redis-store

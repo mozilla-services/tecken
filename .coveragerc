@@ -6,9 +6,12 @@ data_file = /tmp/.coverage
 [report]
 omit =
     tests/*
+    tecken/settings.py
+    tecken/wsgi.py
     *migrations*
     *management*
     *management/commands*
+
 
 [xml]
 output = /tmp/coverage.xml
