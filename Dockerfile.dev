@@ -13,16 +13,6 @@ RUN apt-get install -y \
     build-essential \
     jed
 
-# Go to /tmp for pip installs
-WORKDIR /tmp
-
-# Install Python dependencies specifically for building docs
-#COPY docs-requirements.txt /tmp/
-#RUN pip install --no-cache-dir -r docs-requirements.txt
-
-# Switch back to home directory
-WORKDIR /app
-
 # Switch back to 10001 user
 USER 10001
 
