@@ -7,9 +7,6 @@ machine:
     - docker
 
 dependencies:
-  pre:
-    # should just set env vars in circleci
-    - touch .env
   cache_directories:
     - "~/cache/"
   override:
@@ -58,5 +55,5 @@ deployment:
     tag: /.*/
     commands:
       # set DOCKER_DEPLOY=true in Circle UI to do deploys
-      - "${DOCKER_DEPLOY:-false}"
+      - DOCKER_DEPLOY="${DOCKER_DEPLOY:-false}"
       - bin/ci/deploy-dockerhub.sh "$CIRCLE_TAG"
