@@ -192,3 +192,15 @@ The ``-o`` flag means it only lists requirements that are *out of date*.
 
 .. _piprot: https://github.com/sesh/piprot
 .. _pipsi: https://github.com/mitsuhiko/pipsi
+
+Running ``gunicorn`` locally
+============================
+
+To run ``gunicorn`` locally, which has concurrency, run:
+
+.. code-block:: shell
+
+   $ make gunicorn
+
+You might want to temporarily edit ``.env`` and set ``DJANGO_DEBUG=False``
+to run it in a more production realistic way.
