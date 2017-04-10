@@ -64,6 +64,11 @@ run the above mentioned command on every save and then open the file
 
 .. _Sphinx: http://www.sphinx-doc.org/en/stable/
 
+Hyperactive Document Writing
+============================
+
+If you write a lot and want to see the changes much sooner after having
+written,
 
 Testing
 =======

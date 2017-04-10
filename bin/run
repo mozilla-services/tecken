@@ -62,6 +62,10 @@ case $1 in
       bash <(curl -s https://codecov.io/bash) -s /tmp
     fi
     ;;
+  bash)
+    pip install pytest-watch
+    exec "$@"
+    ;;
   *)
     exec "$@"
     ;;
