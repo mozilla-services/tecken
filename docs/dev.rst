@@ -68,7 +68,36 @@ Hyperactive Document Writing
 ============================
 
 If you write a lot and want to see the changes much sooner after having
-written,
+written them, you can temporarily enter a shell and run exactly the
+minimum needed. First start a shell and install the Python requirements:
+
+.. code-block:: shell
+
+   $ make test
+   > pip install -r docs-requirements.txt
+
+Now, you can run the command manually with just...:
+
+.. code-block:: shell
+
+   > make -C docs html
+
+And keep an browser open to the file ``docs/_build/html/index.html`` in
+the host environment.
+
+If you're really eager to have docs built as soon as you save the ``.rst``
+file in your editor, run this command:
+
+.. code-block:: shell
+
+   > watchmedo shell-command -W -c 'make -C docs html' -R .
+
+Note that if you make a change/save *during* the build, it will ignore that.
+So wait until it has finished before you save again. Note, that the ``.rst``
+file you're working on doesn't actually need to change. A save-file is enough.
+
+Also note that it won't build the docs until there has been at least one
+file save.
 
 Testing
 =======
@@ -89,21 +118,29 @@ want. For example:
 .. code-block:: shell
 
    $ make shell
-   # py.test
+   > py.test
 
    <pytest output>
 
-   # py.test tests/test_symbolicate.py
+   > py.test tests/test_symbolicate.py
 
-For development it might be convenient to iterate quickly so that tests
-are run immediately as soon as files are saved in your editor. To do,
-start the shell like this:
+
+We're using py.test_ for a test harness and test discovery.
+
+.. _py.test: http://pytest.org/
+
+
+Hyperactive Test Running
+========================
+
+If you want to make tests run as soon as you save a file you have to
+enter a shell and run ``ptw`` which is a Python package that is
+automatically installed when you enter the shell. For example:
 
 .. code-block:: shell
 
    $ make shell
-   # pip install pytest-watch
-   # ptw
+   > ptw
 
 That will re-run ``py.test`` as soon as any of the files change.
 If you want to pass any other regular options to ``py.test`` you can
@@ -111,14 +148,8 @@ after ``--`` like this:
 
 .. code-block:: shell
 
-   $ make shell
-   # pip install pytest-watch
-   # ptw -- -x --other-option
-
-
-We're using py.test_ for a test harness and test discovery.
-
-.. _py.test: http://pytest.org/
+  $ make shell
+  > ptw -- -x --other-option
 
 
 Python Requirements
@@ -133,8 +164,9 @@ For example:
 .. code-block:: shell
 
    $ make shell
-   # hashin Django==1.10.99
-   # hashin other-new-package
+   > pip install hashin
+   > hashin Django==1.10.99
+   > hashin other-new-package
 
 This will automatically update your ``requirements.txt`` but it won't
 install the new packages. To do that, you need to exit the shell and run:
@@ -149,9 +181,14 @@ To check which Python packages are outdated, use `piprot`_ in a shell:
 .. code-block:: shell
 
    $ make shell
-   # pip install piprot
-   # piprot -o
+   > pip install piprot
+   > piprot -o
 
 The ``-o`` flag means it only lists requirements that are *out of date*.
 
+.. note:: A good idea is to install ``hashin`` and ``piprot`` globally
+   on your computer instead. It doesn't require a virtual environment if
+   you use `pipsi`_.
+
 .. _piprot: https://github.com/sesh/piprot
+.. _pipsi: https://github.com/mitsuhiko/pipsi
