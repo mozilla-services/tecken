@@ -7,6 +7,8 @@ machine:
     - docker
 
 dependencies:
+  pre:
+    - cp .env-dist .env
   cache_directories:
     - "~/cache/"
   override:
