@@ -41,13 +41,13 @@ WORKDIR /tmp
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install frontend dependencies using NPM
-COPY package.json /opt/npm/
+#COPY package.json /opt/npm/
 
 # Switch to /opt/npm to install dependencies outside home dir
-WORKDIR /opt/npm
-RUN npm install && \
-    chown -R 10001:10001 /opt/npm && \
-    npm cache clean
+#WORKDIR /opt/npm
+#RUN npm install && \
+#    chown -R 10001:10001 /opt/npm && \
+#    npm cache clean
 
 # Switch back to home directory
 WORKDIR /app
