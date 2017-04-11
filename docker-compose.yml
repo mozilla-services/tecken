@@ -56,3 +56,19 @@ services:
       - redis-store
       - redis-cache
     command: web-dev
+
+  # Web container is a prod-like fully-functioning container.
+  gunicorn:
+    extends:
+      service: base
+    ports:
+      - "8000:8000"
+    # XXX Should we use depends_on db, redis-store, redis-cache etc?
+    # XXX What is the difference between 'links' and 'depends_on'?
+    # depends_on:
+    #   - app
+    links:
+      - db
+      - redis-store
+      - redis-cache
+    command: web

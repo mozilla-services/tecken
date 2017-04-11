@@ -51,6 +51,9 @@ test: .docker-build
 run: .docker-build
 	docker-compose up web
 
+gunicorn: .docker-build
+	docker-compose run web web
+
 django-shell: .docker-build
 	docker-compose run web python manage.py shell
 
