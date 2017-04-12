@@ -30,7 +30,11 @@ started. Now, any changes you make to files in this bash gets used by
 the Django runserver in the first terminal.
 
 All the changes you make (e.g. print statements inside some Python
+<<<<<<< HEAD
 dependency) is wiped any and forgotten when you stop the first container.
+=======
+dependency) is wiped any and forgotten when you rebuild the containers.
+>>>>>>> 2b8447dde08cdf15bd31d5c665be80b0ff06f8c8
 
 This is aliased in the ``Makefile`` as ``make currentshell``.
 

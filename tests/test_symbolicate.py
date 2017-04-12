@@ -143,7 +143,7 @@ def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
         ]
 
         # Because of a legacy we want this to be possible on the / endpoint
-        response = json_poster('/', {
+        response = json_poster(reverse('dashboard'), {
             'stacks': [[[0, 11723767], [1, 65802]]],
             'memoryMap': [
                 ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
