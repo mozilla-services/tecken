@@ -30,6 +30,7 @@ Project docs:
 
    dev
    redis
+   docker
 
 Indices and tables
 ==================
