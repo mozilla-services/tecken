@@ -34,7 +34,11 @@ migrate:
 
 shell: .docker-build
 	# Use `-u 0` to automatically become root in the shell
-	docker-compose run -u 0 web bash
+	docker-compose run --user 0 web bash
+
+currentshell: .docker-build
+	# Use `-u 0` to automatically become root in the shell
+	docker-compose exec --user 0 web bash
 
 redis-cache-cli: .docker-build
 	docker-compose run redis-cache redis-cli -h redis-cache

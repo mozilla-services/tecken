@@ -363,6 +363,13 @@ class Base(Core):
     # The value gets cached as an empty dict for one hour.
     SYMBOLS_GET_TIMEOUT = values.Value(5)
 
+    DOCKERFLOW_CHECKS = [
+        'dockerflow.django.checks.check_database_connected',
+        'dockerflow.django.checks.check_migrations_applied',
+        'dockerflow.django.checks.check_redis_connected',
+        'tecken.dockerflow_extra.check_redis_store_connected',
+    ]
+
 
 class Dev(Base):
     """Configuration to be used during development and base class
@@ -465,12 +472,6 @@ class Stage(Base):
 
     # Report CSP reports to this URL that is only available in stage and prod
     CSP_REPORT_URI = '/__cspreport__'
-
-    DOCKERFLOW_CHECKS = [
-        'dockerflow.django.checks.check_database_connected',
-        'dockerflow.django.checks.check_migrations_applied',
-        'dockerflow.django.checks.check_redis_connected',
-    ]
 
 
 class Prod(Stage):
