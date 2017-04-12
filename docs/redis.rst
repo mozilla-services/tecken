@@ -20,6 +20,19 @@ of. The LRU functionality is dependent on two things:
 The other Redis server is used for miscellaneous caching and as a broker
 for message queue workers (TO BE UPDATED).
 
+Predicted Production Use
+========================
+
+In 2014, `Ted calculated`_ that we need approximately 35GB storage to
+have a 99% cache hit ratio of all symbols that Socorro needs when
+symbolicating.
+In ``tecken`` we don't store downloaded symbol files, but instead we store
+a minor subset of the downloaded files so `by estimates`_ we only store 20%
+of that weight. In conclusion, to maintain a 99% cache hit ratio we need
+6GB and 2GB for a 95% cache hit ratio.
+
+.. _`Ted calculated`: https://bugzilla.mozilla.org/show_bug.cgi?id=981079#c1
+.. _`by estimates`: https://bugzilla.mozilla.org/show_bug.cgi?id=981079#c9
 
 Usage In Django
 ===============
