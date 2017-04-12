@@ -273,8 +273,6 @@ class Base(Core):
     # The URL under which this instance is running
     SITE_URL = values.URLValue('http://localhost:8000')
 
-    # Database
-    # https://docs.djangoproject.com/en/1.9/ref/settings/#databases
     DATABASES = values.DatabaseURLValue('postgres://postgres@db/postgres')
 
     CACHES = {
