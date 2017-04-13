@@ -31,13 +31,20 @@ this to ``Prod`` and the ``Dockerfile.dev`` overrides it to ``Dev``.
     # If stage
     DJANGO_CONFIGURATION=Stage
 
+You need to set a random ``DJANGO_SECRET_KEY``. It should be predictably
+random and a decent length:
+
+.. code-block:: shell
+
+    DJANGO_SECRET_KEY=sSJ19WAj06QtvwunmZKh8yEzDdTxC2IPUXfea5FkrVGNoM4iOp
+
 The ``ALLOWED_HOSTS`` needs to be a list of valid domains that will be
 used to from the outside to reach the service. If there is only one
 single domain, it doesn't need to list any others. For example:
 
 .. code-block:: shell
 
-    ALLOWED_HOSTS=symbols.mozilla.org
+    DJANGO_ALLOWED_HOSTS=symbols.mozilla.org
 
 For Sentry the key is ``SENTRY_DSN`` which is sensitive but for the
 front-end (which hasn't been built yet at the time of writing) we also
@@ -53,7 +60,7 @@ PostgreSQL
 ==========
 
 The environment variable that needs to be set is: ``DATABASE_URL``
-and it can look like this::
+and it can look like this:
 
 .. code-block:: shell
 
@@ -73,7 +80,7 @@ Redis cache
 ===========
 
 The environment variable that needs to be set is: ``REDIS_URL``
-and it can look like this::
+and it can look like this:
 
 .. code-block:: shell
 
@@ -111,6 +118,6 @@ The setting that needs to be set once from the Redis CLI with:
 
 .. Note::
 
-  See documentation_ says: *The ``maxmemory`` parameter cannot be modified.*
+  See documentation_ says: *The maxmemory parameter cannot be modified.*
 
 .. _documentation: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.NodeSpecific
