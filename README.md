@@ -12,7 +12,7 @@ Please use the documentation on: **https://tecken.readthedocs.io**
 To Get Coding
 -------------
 
-You need to be able to run Docker. In particular an executable `docker-compose`.
+You need to be able to run Docker.
 
 Git clone and then run:
 
