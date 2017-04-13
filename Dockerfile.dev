@@ -9,9 +9,8 @@ USER root
 
 # Install build essentials which includes make which we need for docs
 # and also vim for easier debugging/editing in the container
-RUN apt-get install -y \
-    build-essential \
-    jed
+RUN apt-get install -y --no-install-recommends \
+  jed
 
 # Switch back to 10001 user
 USER 10001
