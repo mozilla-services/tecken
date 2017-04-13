@@ -5,6 +5,7 @@
 Django settings for tecken project.
 """
 import datetime
+import subprocess
 import os
 
 from configurations import Configuration, values
@@ -390,15 +391,13 @@ class Dev(Base):
 
     @property
     def VERSION(self):
-        # XXX needs at least one tag I think
-        return {}
-        # output = subprocess.check_output(
-        #     ['git', 'describe', '--tags', '--abbrev=0']
-        # )
-        # if output:
-        #     return {'version': output.decode().strip()}
-        # else:
-        #     return {}
+        output = subprocess.check_output(
+            ['git', 'describe', '--tags', '--abbrev=0']
+        )
+        if output:
+            return {'version': output.decode().strip()}
+        else:
+            return {}
 
 
 class Test(Dev):
