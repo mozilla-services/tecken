@@ -155,6 +155,43 @@ def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
         assert result_second == result
 
 
+def test_symbolicate_json_one_cache_lookup_per_symbol(clear_redis):
+    with requests_mock.mock() as m:
+        m.get(
+            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
+            'A059577C2/xul.sym',
+            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        )
+        m.get(
+            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
+            'F476CCABACC2/wntdll.sym',
+            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+        )
+        symbolicator = SymbolicateJSON(
+            # This will draw from the 2nd memory_map item TWICE
+            stacks=[[[0, 11723767], [1, 65802], [1, 55802]]],
+            memory_map=[
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
+            ],
+            debug=True,
+        )
+        result = symbolicator.result
+        assert result['knownModules'] == [True, True]
+        assert result['symbolicatedStacks'] == [
+            [
+                'XREMain::XRE_mainRun() (in xul.pdb)',
+                'KiUserCallbackDispatcher (in wntdll.pdb)',
+                'KiRaiseUserExceptionDispatcher (in wntdll.pdb)',
+            ]
+        ]
+        assert result['debug']['downloads']['count'] == 2
+        # This should be 2 because even though 'memory_map[0]' is needed
+        # once and 'memory_map[1]' is needed twice, it should only be
+        # done a total of 2 times because the symbol is repeating once.
+        assert result['debug']['cache_lookups']['count'] == 2
+
+
 def test_symbolicate_json_bad_module_indexes(clear_redis):
     with requests_mock.mock() as m:
         m.get(

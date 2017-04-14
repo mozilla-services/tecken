@@ -48,6 +48,7 @@ class LogCacheHitsMixin:
     log_cache_timeout = settings.DEBUG and 60 * 60 * 24 or None
 
     def log_symbol_cache_miss(self, cache_key):
+        print('log_symbol_cache_miss', cache_key)
         # This uses memcache
         if cache.get(cache_key):
             # oh my! The symbol was previously a hit
@@ -135,7 +136,17 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     continue
                 filename, debug_id = self.memory_map[module_index]
                 symbol_key = (filename, debug_id)
+
+                # In this loop we're only interested in building up
+                # our self.all_symbol_maps dict. We're doing that by
+                # iterating through ALL stacks (which is more realistic)
+                # than assuming every item in self.memory_map will be used).
+                # Keeping this set filled up helps us avoid looking up the
+                # same symbol (in the cache) more than once.
+                if symbol_key in modules_lookups:
+                    continue
                 modules_lookups.add(symbol_key)
+
                 information = self.get_symbol_map(symbol_key)
                 # Hit or miss, there was a cache lookup
                 if self.debug:
