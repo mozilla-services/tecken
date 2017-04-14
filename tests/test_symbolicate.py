@@ -1,8 +1,10 @@
 import requests
 import requests_mock
+from markus.testing import MetricsMock
+from markus import INCR, GAUGE
 
 from django.core.urlresolvers import reverse
-from django.core.cache import cache, caches
+from django.core.cache import caches
 
 from tecken.symbolicate.views import (
     SymbolicateJSON,
@@ -13,42 +15,40 @@ from tecken.symbolicate.views import (
 def test_log_cache_hits_and_misses(clear_redis):
     instance = LogCacheHitsMixin()
 
-    # A hit!
-    instance.log_symbol_cache_hit('foo')
-    assert cache.get('foo') == 1
+    with MetricsMock() as metrics_mock:
+        # A hit!
+        instance.log_symbol_cache_hit()
+        # Another hit!
+        instance.log_symbol_cache_hit()
+        # A miss
+        instance.log_symbol_cache_miss()
 
-    # Another hit!
-    instance.log_symbol_cache_hit('foo')
-    assert cache.get('foo') == 2
-
-    # A miss
-    instance.log_symbol_cache_miss('bar')
-    assert cache.get('bar') == 0
-
-    # But suppose, what once used to work is now a miss
-    instance.log_symbol_cache_miss('foo')
-    assert cache.get('foo') == 0
-    assert cache.get('foo:evicted') == 1
+        records = metrics_mock.get_records()
+        assert records[0] == (INCR, 'tecken.cache_hit', 1, None)
+        assert records[1] == (INCR, 'tecken.cache_hit', 1, None)
+        assert records[2] == (INCR, 'tecken.cache_miss', 1, None)
 
 
-def test_log_cache_evictions_from_metrics_view(client, clear_redis):
+def test_log_cache_evictions_from_metrics_view(client, clear_redis, settings):
+    settings.MARKUS_BACKENDS = [{
+        'class': 'tecken.markus_extra.CacheMetrics',
+    }]
     instance = LogCacheHitsMixin()
-    instance.log_symbol_cache_hit('symbol:foo')
-    instance.log_symbol_cache_hit('symbol:foo')
-    instance.log_symbol_cache_hit('symbol:buz')
-    instance.log_symbol_cache_miss('symbol:bar')
-    instance.log_symbol_cache_miss('symbol:foo')
+    for i in range(10):
+        instance.log_symbol_cache_hit()
+    for i in range(2):
+        instance.log_symbol_cache_miss()
     caches['store'].set('symbol:foo', 'something')
     caches['store'].set('symbol:buz', 'else')
     caches['store'].set('symbol:bar', 'different')
+    caches['store'].set('symbol:bar', 'changed')
 
     url = reverse('symbolicate:metrics')
     response = client.get(url)
     metrics = response.json()
-    assert metrics['evictions'] == 1
-    assert metrics['hits'] == 1
-    assert metrics['keys'] == 3
+    assert metrics['hits'] == 10
     assert metrics['misses'] == 2
+    assert metrics['keys'] == 3
 
 
 def test_symbolicate_json_bad_inputs(client, json_poster):
@@ -114,7 +114,7 @@ PUBLIC junk
 
 def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
     url = reverse('symbolicate:symbolicate_json')
-    with requests_mock.mock() as m:
+    with requests_mock.mock() as m, MetricsMock() as metrics_mock:
         m.get(
             'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
             'A059577C2/xul.sym',
@@ -141,6 +141,15 @@ def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
                 'KiUserCallbackDispatcher (in wntdll.pdb)'
             ]
         ]
+
+        metrics_records = metrics_mock.get_records()
+        assert metrics_records[0] == (INCR, 'tecken.cache_miss', 1, None)
+        assert metrics_records[1] == (INCR, 'tecken.cache_miss', 1, None)
+
+        # The reason these numbers are hardcoded is because we know
+        # predictable that the size of the pickled symbol map strings.
+        metrics_mock.has_record(GAUGE, 'tecken.storing_symbol', 76)
+        metrics_mock.has_record(GAUGE, 'tecken.storing_symbol', 165)
 
         # Because of a legacy we want this to be possible on the / endpoint
         response = json_poster(reverse('dashboard'), {
@@ -248,41 +257,6 @@ def test_symbolicate_json_bad_module_offset(clear_redis):
                 'KiUserCallbackDispatcher (in wntdll.pdb)'
             ]
         ]
-
-
-def test_symbolicate_json_cache_hits_logged(client, clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
-            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        assert symbolicator.result['symbolicatedStacks']
-
-        url = reverse('symbolicate:metrics')
-        response = client.get(url)
-        metrics = response.json()
-        assert metrics['ratio_of_hits'] == 0.0
-        assert metrics['percent_of_hits'] == 0.0
-        assert metrics['hits'] == 0
-        assert metrics['evictions'] == 0
-        assert metrics['misses'] == 2
-        assert metrics['maxmemory']['bytes'] > 0
-        assert metrics['maxmemory']['human']
-        assert metrics['used_memory']['bytes'] > 0
-        assert metrics['used_memory']['human']
 
 
 def test_symbolicate_json_happy_path_with_debug(clear_redis):

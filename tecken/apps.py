@@ -3,6 +3,9 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 import logging
 
+import markus
+
+from django.conf import settings
 from django.apps import AppConfig
 
 
@@ -14,4 +17,5 @@ class TeckenAppConfig(AppConfig):
 
     def ready(self):
         # The app is now ready.
-        pass
+
+        markus.configure(settings.MARKUS_BACKENDS)

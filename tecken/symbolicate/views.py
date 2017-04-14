@@ -4,9 +4,11 @@
 
 import time
 import logging
+import pickle
 from bisect import bisect
 from collections import defaultdict
 
+import markus
 import ujson as json
 
 import requests
@@ -17,8 +19,10 @@ from django.http import HttpResponse
 from django.core.cache import cache, caches
 from django.views.decorators.csrf import csrf_exempt
 from django.template.defaultfilters import filesizeformat
+from django.core.exceptions import ImproperlyConfigured
 
-logger = logging.getLogger('django')
+logger = logging.getLogger('tecken')
+metrics = markus.get_metrics('tecken')
 store = caches['store']
 
 
@@ -39,32 +43,13 @@ class SymbolFileEmpty(Exception):
 
 class LogCacheHitsMixin:
     """Mixing for storing information about cache hits and misses.
-
-    In production, this caching is set to NOT timeout.
-    That makes it possible to get an insight into cache hits/misses over
-    time.
     """
 
-    log_cache_timeout = settings.DEBUG and 60 * 60 * 24 or None
+    def log_symbol_cache_miss(self):
+        metrics.incr('cache_miss', 1)
 
-    def log_symbol_cache_miss(self, cache_key):
-        print('log_symbol_cache_miss', cache_key)
-        # This uses memcache
-        if cache.get(cache_key):
-            # oh my! The symbol was previously a hit
-            self.log_symbol_cache_evicted(cache_key)
-        cache.set(cache_key, 0, timeout=self.log_cache_timeout)
-
-    def log_symbol_cache_evicted(self, cache_key):
-        self.log_symbol_cache_hit(cache_key + ':evicted')
-
-    def log_symbol_cache_hit(self, cache_key):
-        try:
-            cache.incr(cache_key)
-        except ValueError:
-            # If it wasn't in cache we can't increment this
-            # hit, so we have to start from 1.
-            cache.set(cache_key, 1, timeout=self.log_cache_timeout)
+    def log_symbol_cache_hit(self):
+        metrics.incr('cache_hit', 1)
 
 
 class JsonResponse(HttpResponse):
@@ -205,10 +190,12 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     try:
                         response_stack.append(hex(module_offset))
                     except TypeError:
-                        logger.warning('TypeError on ({!r}, {!r})'.format(
+                        # XXX considering using markus.metrics ONLY
+                        logger.debug('TypeError on ({!r}, {!r})'.format(
                             module_offset,
                             module_index,
                         ))
+                        metrics.incr('typerror', 1)
                         # Happens if 'module_offset' is not an int16
                         # and thus can't be represented in hex.
                         response_stack.append(str(module_offset))
@@ -293,7 +280,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
         if symbol_map is None:  # not existant in ccache
             # Need to download this from the Internet.
-            self.log_symbol_cache_miss(cache_key)
+            self.log_symbol_cache_miss()
             # If the symbols weren't in the cache, this will be dealt
             # with later by this method's caller.
         else:
@@ -307,10 +294,10 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 information['found'] = False
             else:
                 if self.debug:
-                    information['cache_lookup_size'] = len(
-                        json.dumps(symbol_map)
-                    )
-                self.log_symbol_cache_hit(cache_key)
+                    symbol_map_size = len(pickle.dumps(symbol_map))
+                    information['cache_lookup_size'] = symbol_map_size
+                    metrics.gauge('retrieving_symbol', symbol_map_size)
+                self.log_symbol_cache_hit()
                 # If it was in cache, that means it was originally found.
                 information['symbol_map'] = symbol_map
                 information['found'] = True
@@ -337,15 +324,25 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     # But in prod set it to indefinite.
                     timeout=settings.DEBUG and 60 * 100 or None
                 )
+                # The current configuration of how django_redis works is
+                # that it uses the default implementation, which is to
+                # marshal the objects with pickle as a binary string.
+                # More testing is needed to see if this is worth doing
+                # since the benefits of using JSON is that the Redis LRU
+                # can be opened outside of Python and inspected or mutated.
+                # Also, unpickling is inheritly insecure if you can't trust
+                # the source. We can, but there's a tiny extra vector if
+                # someone hacks our Redis database to inject dangerous
+                # binary strings into it.
+                symbol_map_size = len(pickle.dumps(information['symbol_map']))
                 logger.info(
                     'Storing {!r} ({}) in LRU cache (Took {:.2f}s)'.format(
                         cache_key,
-                        filesizeformat(
-                            len(json.dumps(information['symbol_map']))
-                        ),
+                        filesizeformat(symbol_map_size),
                         information['download_time'],
                     )
                 )
+                metrics.gauge('storing_symbol', symbol_map_size)
                 information['found'] = True
             except (SymbolNotFound, SymbolFileEmpty, SymbolDownloadError):
                 # If it can't be downloaded, cache it as an empty result
@@ -512,38 +509,31 @@ def symbolicate_json(request):
     return JsonResponse(symbolicator.result)
 
 
-def metrics(request):
-    cache_misses = []
-    cache_hits = {}
-    cache_evictions = {}
-    count_keys = 0
-    for key in store.iter_keys('symbol:*'):
-        count = cache.get(key)
-        if count is None:
-            # It was cached in the redis-store before we started logging
-            # hits in the redis-cache.
-            continue
-        count_keys += 1
-        if count > 0:
-            cache_hits[key] = count
-        else:
-            cache_misses.append(key)
-        evicted_count = cache.get(key + ':evicted')
-        if evicted_count:
-            cache_evictions[key] = evicted_count
+def metrics_insight(request):
+    markus_backend_classes = [x['class'] for x in settings.MARKUS_BACKENDS]
+    if 'tecken.markus_extra.CacheMetrics' not in markus_backend_classes:  # noqa
+        raise ImproperlyConfigured(
+            'It only makes sense to use this view when you have configured '
+            "to use the 'tecken.markus_extra.CacheMetrics' backend."
+        )
 
-    sum_hits = sum(cache_hits.values())
-    sum_misses = len(cache_misses)
-    sum_evictions = sum(cache_evictions.values())
+    count_keys = len(list(store.iter_keys('symbol:*')))
+    sum_hits = cache.get('tecken.cache_hit', 0)
+    sum_misses = cache.get('tecken.cache_miss', 0)
+
+    sum_stored = cache.get('tecken.storing_symbol')
+    sum_retrieved = cache.get('tecken.retrieving_symbol')
 
     context = {}
     context['keys'] = count_keys
     context['hits'] = sum_hits
     context['misses'] = sum_misses
-    context['evictions'] = sum_evictions
     if sum_hits or sum_misses:
         context['ratio_of_hits'] = sum_hits / (sum_hits + sum_misses)
         context['percent_of_hits'] = 100 * context['ratio_of_hits']
+
+    context['retrieved'] = sum_retrieved,
+    context['stored'] = sum_stored
 
     redis_store_connection = get_redis_connection('store')
     info = redis_store_connection.info()
