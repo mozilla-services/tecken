@@ -1,6 +1,6 @@
-===================================
-Putting Symbol Server in production
-===================================
+=============
+Configuration
+=============
 
 .. contents::
 
