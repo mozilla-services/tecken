@@ -22,7 +22,8 @@ User docs:
    :maxdepth: 2
 
    symbolication
-   deploy
+   configuration
+   deployment
 
 
 Project docs:
