@@ -66,6 +66,8 @@ function humanFileSize(size, decimals = 1) {
 class MetricsLines extends Component {
   state = {
     serverError: null,
+    stored: 0,
+    retrieved: 0,
     hitRatio: {
       labels: [],
       datasets: [
@@ -183,6 +185,8 @@ class MetricsLines extends Component {
         else if (pointsCount > 5) pointRadius = 4
 
         return {
+          stored: data.stored,
+          retrieved: data.retrieved,
           hits: {
             labels: labels,
             datasets: [
@@ -214,15 +218,6 @@ class MetricsLines extends Component {
             datasets: [
               {
                 data: [...prevState.hitRatio.datasets[0].data, data.percent_of_hits],
-                pointRadius: pointRadius,
-              },
-            ]
-          },
-          evictions: {
-            labels: labels,
-            datasets: [
-              {
-                data: [...prevState.evictions.datasets[0].data, data.evictions],
                 pointRadius: pointRadius,
               },
             ]
@@ -317,12 +312,6 @@ class MetricsLines extends Component {
           options={this.hitRatioOptions}/>
       </div>
       <div className="metricsline">
-        <h3>Evictions</h3>
-        <Line
-          data={this.state.evictions}
-          options={this.baseOptions}/>
-      </div>
-      <div className="metricsline">
         <h3>Keys</h3>
         <Line
           data={this.state.keys}
@@ -333,6 +322,16 @@ class MetricsLines extends Component {
         <Line
           data={this.state.maxmemory}
           options={this.maxmemoryOptions}/>
+      </div>
+      <div className="metricsline">
+        <h3>Storage</h3>
+        <Number
+          number={this.state.stored}/>
+        <small>Total amount of data written to the LRU cache</small>
+        <h3>Retrieved</h3>
+        <Number
+          number={this.state.retrieved}/>
+        <small>Total amount of data extracted out of the LRU cache</small>
       </div>
     </div>
   }
@@ -351,4 +350,9 @@ const ShowServerError = ({ status, statusText }) => {
       <button type="button" onClick={e => document.location.reload(true)}>Reload</button>
     </p>
   </div>
+}
+
+
+const Number = ({ number }) => {
+  return <h1 className="number" title={`${number} bytes`}>{humanFileSize(number)}</h1>
 }

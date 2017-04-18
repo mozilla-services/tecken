@@ -55,6 +55,7 @@ services:
       - db
       - redis-store
       - redis-cache
+      - statsd
     command: web-dev
 
   # Web container is a prod-like fully-functioning container.
@@ -72,3 +73,13 @@ services:
       - redis-store
       - redis-cache
     command: web
+
+  statsd:
+    # https://hub.docker.com/r/hopsoft/graphite-statsd/
+    image: hopsoft/graphite-statsd
+    ports:
+      - "9000:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "8125:8125/udp"
+      - "8126:8126"

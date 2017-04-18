@@ -9,7 +9,7 @@ from . import views
 urlpatterns = [
     url(
         'metrics',
-        views.metrics,
+        views.metrics_insight,
         name='metrics',
     ),
     # must be last

@@ -318,11 +318,11 @@ class Base(Core):
                     ),
                 },
             },
+            'root': {
+                'level': 'INFO',
+                'handlers': ['sentry', 'console'],
+            },
             'loggers': {
-                'root': {
-                    'level': 'INFO',
-                    'handlers': ['sentry', 'console'],
-                },
                 'django.db.backends': {
                     'level': 'ERROR',
                     'handlers': ['console'],
@@ -340,6 +340,11 @@ class Base(Core):
                 },
                 'tecken': {
                     'level': 'DEBUG',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
+                'markus': {
+                    'level': 'INFO',
                     'handlers': ['console'],
                     'propagate': False,
                 },
@@ -398,6 +403,25 @@ class Dev(Base):
             return {'version': output.decode().strip()}
         else:
             return {}
+
+    MARKUS_BACKENDS = [
+        # Commented out, but uncomment if you want to see all the
+        # metrics sent to markus.
+        # {
+        #     'class': 'markus.backends.logging.LoggingMetrics',
+        # },
+        {
+            'class': 'markus.backends.datadog.DatadogMetrics',
+            'options': {
+                'statsd_host': 'statsd',
+                'statsd_port': 8125,
+                'statsd_namespace': ''
+            }
+        },
+        {
+            'class': 'tecken.markus_extra.CacheMetrics',
+        },
+    ]
 
 
 class Test(Dev):
@@ -469,6 +493,21 @@ class Stage(Base):
 
     # Report CSP reports to this URL that is only available in stage and prod
     CSP_REPORT_URI = '/__cspreport__'
+
+    STATSD_HOST = values.Value('statsd')
+    STATSD_PORT = values.Value(8125)
+    STATSD_NAMESPACE = values.Value('')
+
+    MARKUS_BACKENDS = [
+        {
+            'class': 'markus.backends.datadog.DatadogMetrics',
+            'options': {
+                'statsd_host': 'statsd',
+                'statsd_port': 8125,
+                'statsd_namespace': ''
+            }
+        },
+    ]
 
 
 class Prod(Stage):

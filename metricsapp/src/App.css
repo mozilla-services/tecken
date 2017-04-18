@@ -33,3 +33,9 @@
   margin: auto;
   padding: 30px;
 }
+
+.metricslines h1.number {
+  font-size: 3em;
+  margin-bottom: 1px;
+
+}
