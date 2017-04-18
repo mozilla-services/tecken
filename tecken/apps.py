@@ -4,6 +4,7 @@
 import logging
 
 import markus
+from django_redis import get_redis_connection
 
 from django.conf import settings
 from django.apps import AppConfig
@@ -19,3 +20,15 @@ class TeckenAppConfig(AppConfig):
         # The app is now ready.
 
         markus.configure(settings.MARKUS_BACKENDS)
+
+        connection = get_redis_connection('store')
+        maxmemory_policy = connection.info()['maxmemory_policy']
+        if maxmemory_policy != 'allkeys-lru':
+            logger.warning(
+                "The 'store' Redis cache was not configured to be an "
+                "LRU cache because the maxmemory-policy was set to '{}'. "
+                "Now changed to 'allkeys-lru'.".format(
+                    maxmemory_policy,
+                )
+            )
+            connection.config_set('maxmemory-policy', 'allkeys-lru')
