@@ -89,7 +89,7 @@ and it can look like this:
 The amount of space needed is minimal. No backups are necessary.
 
 In future versions of ``tecken`` this Redis will most likely be used
-as a broker for message queues inside Celery.
+as a broker for message queues by Celery.
 
 
 Redis LRU
@@ -98,8 +98,8 @@ Redis LRU
 Aka. Redis Store. This is the cache used for downloaded symbol files.
 It will quickly grow large so it needs to not fail when it reaches max
 memory. This is done by once settings the ``maxmemory-policy`` Redis
-configuration key. First of all, the environment variable
-that needs to be set is ``REDIS_STORE_URL``, like this:
+configuration key. This is done automatically by the web app on
+start-up. The key that needs to be set is ``REDIS_STORE_URL``, like this:
 
 .. code-block:: shell
 
@@ -107,17 +107,6 @@ that needs to be set is ``REDIS_STORE_URL``, like this:
 
 When using Redis in AWS ElastiCache you don't need to specify a ``maxmemory``
 amount since it's automatically implied by the site of the instance it's
-deployed on.
-
-The setting that needs to be set once from the Redis CLI with:
-
-.. code-block:: shell
-
-    > config set maxmemory-policy allkeys-lru
-    OK
-
-.. Note::
-
-  See documentation_ says: *The maxmemory parameter cannot be modified.*
+deployed on. See documentation_.
 
 .. _documentation: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.NodeSpecific
