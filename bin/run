@@ -36,8 +36,8 @@ wait_for() {
 
 case $1 in
   web)
-    newrelic-admin run-python manage.py migrate --noinput
-    exec newrelic-admin run-program gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --workers 4 --access-logfile -
+    ${CMD_PREFIX_PYTHON} manage.py migrate --noinput
+    ${CMD_PREFIX} gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --workers 4 --access-logfile -
     ;;
   web-dev)
     python manage.py migrate --noinput
