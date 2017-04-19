@@ -91,22 +91,30 @@ The amount of space needed is minimal. No backups are necessary.
 In future versions of ``tecken`` this Redis will most likely be used
 as a broker for message queues by Celery.
 
+Expected version is **3.2** or higher.
 
 Redis LRU
 =========
 
 Aka. Redis Store. This is the cache used for downloaded symbol files.
-It will quickly grow large so it needs to not fail when it reaches max
-memory. This is done by once settings the ``maxmemory-policy`` Redis
-configuration key. This is done automatically by the web app on
-start-up. The key that needs to be set is ``REDIS_STORE_URL``, like this:
+The environment value key is called ``REDIS_STORE_URL`` and it can
+look like this:
 
 .. code-block:: shell
 
     REDIS_STORE_URL="redis://store.deef34.0001.usw1.cache.amazonaws.com:6379/0"
 
-When using Redis in AWS ElastiCache you don't need to specify a ``maxmemory``
-amount since it's automatically implied by the site of the instance it's
-deployed on. See documentation_.
 
-.. _documentation: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.NodeSpecific
+This Redis will steadily grow large so it needs to not fail when it reaches
+max memory capacity. For this to work, it needs to be configured to have a
+``maxmemory-policy`` config set to the value ``allkeys-lru``.
+
+In Docker (development) this is automatically set at start-up time but in
+AWS ElastiCache `config is not a valid command`_. So this needs to
+configured once in AWS by setting up an `ElastiCache Redis Parameter Group`_.
+In particular the expected config is: ``maxmemory-policy=allkeys-lru``.
+
+Expected version is **3.2** or higher.
+
+.. _`config is not a valid command`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ClientConfig.RestrictedCommands.html
+.. _`ElastiCache Redis Parameter Group`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.3-2-4

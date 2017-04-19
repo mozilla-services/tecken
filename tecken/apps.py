@@ -23,12 +23,20 @@ class TeckenAppConfig(AppConfig):
 
         connection = get_redis_connection('store')
         maxmemory_policy = connection.info()['maxmemory_policy']
-        if maxmemory_policy != 'allkeys-lru':
-            logger.warning(
-                "The 'store' Redis cache was not configured to be an "
-                "LRU cache because the maxmemory-policy was set to '{}'. "
-                "Now changed to 'allkeys-lru'.".format(
-                    maxmemory_policy,
+        if maxmemory_policy != 'allkeys-lru':  # noqa
+            if settings.DEBUG:
+                connection.config_set('maxmemory-policy', 'allkeys-lru')
+                logger.warning(
+                    "The 'store' Redis cache was not configured to be an "
+                    "LRU cache because the maxmemory-policy was set to '{}'. "
+                    "Now changed to 'allkeys-lru'.".format(
+                        maxmemory_policy,
+                    )
                 )
-            )
-            connection.config_set('maxmemory-policy', 'allkeys-lru')
+            else:
+                logger.error(
+                    "In production the Redis store HAS to be set to: "
+                    "maxmemory-policy=allkeys-lru "
+                    "In AWS ElastiCache this is done by setting up "
+                    "Parameter Group with maxmemory-policy=allkeys-lru"
+                )
