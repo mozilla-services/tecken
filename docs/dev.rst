@@ -11,6 +11,15 @@ All code files need to start with the MPLv2 header::
     # License, v. 2.0. If a copy of the MPL was not distributed with this
     # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+To check if any file is lacking a license preamble, run:
+
+.. code-block:: shell
+
+    $ ./bin/sanspreamble
+
+It will exit non-zero if there are files lacking the preamble. It only
+checks git checked in files.
+
 PEP8 is nice. All files are expected to be PEP8 and pyflakes compliant
 and the PEP8 rules (and exceptions) are defined in ``setup.cfg`` under
 the ``[flake8]`` heading.
