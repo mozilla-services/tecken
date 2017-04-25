@@ -211,9 +211,9 @@ future==0.16.0 \
     --hash=sha256:e39ced1ab767b5936646cedba8bcce582398233d6a627067d4c6a454c90cfedb
 ujson==1.35 \
     --hash=sha256:f66073e5506e91d204ab0c614a148d5aa938bdbf104751be66f8ad7a222f5f86
-markus==0.1 \
-    --hash=sha256:f7552c1fcfdb87f1713c1f9d3302b0c8dd52b266e28e63b69c96190dd8d2b631 \
-    --hash=sha256:12e06e8518bbcede7d646ab7c0fa5ca4449ff514dad05fce06968d65b0426ce1
+markus==0.2 \
+    --hash=sha256:94c72fc024d807411efd1065a818f46c77b2ace44b028a14efdab80fb3f3a44f \
+    --hash=sha256:ca2625716cf9e519280df0754a67780ee44a3d3d0e0e12fb93c8a9afce8fe868
 datadog==0.15.0 \
     --hash=sha256:076dddaa2f50c087c617c7f7e44819b5b5b82f242df51732247babe206b354c7
 decorator==4.0.11 \
