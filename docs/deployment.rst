@@ -13,7 +13,7 @@ Mozilla Symbol Server is deployed in 3 different environments:
 
 2. Stage (DOMAIN TO BE DECIDED)
 
-3. Dev (DOMAIN TO BE DECIDED)
+3. Dev (https://symbols.dev.mozaws.net/)
 
 The stage and production environments are only updated at manual and
 discrete points by the team. The dev environment is always up-to-date
