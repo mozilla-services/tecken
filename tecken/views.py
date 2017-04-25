@@ -20,8 +20,6 @@ def dashboard(request):
         return symbolicate_json(request)
 
     context = {}
-    from django.conf import settings
-    print(settings.DEBUG)
     return TemplateResponse(request, 'tecken/dashboard.html', context=context)
 
 
