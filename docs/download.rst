@@ -28,7 +28,7 @@ was accessible only with ``http://``.
 What It Is
 ==========
 
-A proxy for S3. All symbols are stored in S3. ``tecken` just makes those files
+A proxy for S3. All symbols are stored in S3. ``tecken`` just makes those files
 available. It acts as a proxy, so when you request, for example,
 :base_url:`/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym`
 from ``tecken`` it goes and tries to download that from the configured
