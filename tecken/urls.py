@@ -13,6 +13,7 @@ handler500 = 'tecken.views.server_error'
 
 urlpatterns = [
     url(r'^$', views.dashboard, name='dashboard'),
+    url(r'', include('tecken.download.urls', namespace='download')),
 
     url(
         r'symbolicate/',
