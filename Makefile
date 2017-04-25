@@ -11,7 +11,8 @@ help:
 	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
 	@echo "  shell        Opens a Bash shell"
 	@echo "  test         Runs the Python test suite"
-	@echo "  up           Runs the whole stack, served under http://localhost:8000/"
+	@echo "  run          Runs the whole stack, served on http://localhost:8000/"
+	@echo "  gunicorn     Runs the whole stack using gunicorn on http://localhost:8000/"
 	@echo "  stop         Stops the docker containers"
 	@echo "  django-shell Django integrative shell\n"
 
@@ -56,7 +57,7 @@ run: .docker-build
 	docker-compose up web
 
 gunicorn: .docker-build
-	docker-compose run web web
+	docker-compose run --service-ports web web
 
 django-shell: .docker-build
 	docker-compose run web python manage.py shell

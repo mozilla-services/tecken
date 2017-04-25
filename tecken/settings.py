@@ -506,6 +506,20 @@ class Prod(Stage):
     """Configuration to be used in prod environment"""
 
 
+class Prodlike(Prod):
+    """Configuration when you want to run, as if it's in production, but
+    in docker."""
+
+    DEBUG = False
+
+    @property
+    def DATABASES(self):
+        "Don't require encrypted connections to Postgres"
+        DATABASES = super().DATABASES.copy()
+        DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'disable'
+        return DATABASES
+
+
 class Build(Prod):
     """Configuration to be used in build (!) environment"""
     SECRET_KEY = values.Value('not-so-secret-after-all')

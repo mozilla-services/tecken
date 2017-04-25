@@ -282,3 +282,46 @@ The first thing to do is to create a "Data Source" for Graphite. The
 only parameter you need is the URL which should be ``http://localhost:9000``.
 
 .. _Grafana: https://hub.docker.com/r/grafana/grafana/
+
+
+Prod-like running locally
+=========================
+
+First you need to start ``tecken`` with a set of configurations that
+mimics what's required in prod, except we're doing this in docker.
+
+To do that, you need to set ``DJANGO_CONFIGURATION=Prodlike`` and
+run the gunicorn workers:
+
+.. code-block:: shell
+
+    $ DJANGO_CONFIGURATION=Prodlike docker-compose run --service-ports web web
+
+This will start 4 ``gunicorn`` workers exposed on ``0.0.0.0:8000`` and
+exposed outside of docker onto your host.
+
+That configuration **forces** you to run with ``DEBUG=False`` independent
+of what value you have set in ``.env`` for ``DEBUG``. Thus making it easy
+to switch from regular debug-mode development to prod-like serving.
+
+The second step for this to be testable is to reach the server with ``HTTPS``
+or else the app will forcibly redirect you to the ``https://`` equivalent of
+whatever URL you attempt to use (e.g. ``http://localhost:8000/`` redirects
+to ``https://localhost:8000/`)
+
+To test this, run a local Nginx server. But first, create a suitable
+hostname. For example, ``prod.tecken.dev``. Edit ``/etc/hosts`` and enter
+a line like this::
+
+    127.0.0.1       prod.tecken.dev
+
+To generate an nginx config file, run ``./test-with-nginx/generate.py``.
+That will be print out a Nginx configuration file you can put where
+you normally put Nginx configuration files. For example:
+
+
+.. code-block:: shell
+
+    $ ./test-with-nginx/generate.py --help
+    $ ./test-with-nginx/generate.py > /etc/nginx/sites-enabled/tecken.conf
+    $ # however you reload nginx
