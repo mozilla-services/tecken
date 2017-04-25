@@ -58,6 +58,14 @@ services:
       - statsd
     command: web-dev
 
+  systemtest:
+    extends:
+      service: base
+    environment:
+      - BASE_URL=http://web:8000
+    links:
+      - web
+
   # Web container is a prod-like fully-functioning container.
   gunicorn:
     extends:

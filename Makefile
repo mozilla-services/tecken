@@ -14,6 +14,7 @@ help:
 	@echo "  run          Runs the whole stack, served on http://localhost:8000/"
 	@echo "  gunicorn     Runs the whole stack using gunicorn on http://localhost:8000/"
 	@echo "  stop         Stops the docker containers"
+	@echo "  systemtest   Run system tests against a running tecken"
 	@echo "  django-shell Django integrative shell\n"
 
 # Dev configuration steps
@@ -64,3 +65,6 @@ django-shell: .docker-build
 
 docs: .docker-build
 	docker-compose run -u 0 web ./bin/build_docs.sh
+
+systemtest: .docker-build
+	docker-compose run systemtest tests/systemtest/run_tests.sh
