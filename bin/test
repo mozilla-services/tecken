@@ -2,7 +2,7 @@
 set -eo pipefail
 
 # copy the .env template to .env if not there already
-[ ! -f .env ] && cp .env-dist .env
+[ ! -f .env ] || cp .env-dist .env
 
 # default variables
 export DEVELOPMENT=1
