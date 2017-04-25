@@ -10,6 +10,9 @@ from dockerflow.django.checks import (
     ERROR_MISCONFIGURED_REDIS,
     ERROR_REDIS_PING_FAILED
 )
+# XXX Not sure if this is the right format or way to do it. At
+# least it's unique.
+ERROR_REDIS_STORE_NOT_LRU = 'dockerflow_extra:health:E001'
 
 
 def check_redis_store_connected(app_configs, **kwargs):
@@ -38,4 +41,12 @@ def check_redis_store_connected(app_configs, **kwargs):
         if not result:
             msg = 'Redis ping failed'
             errors.append(checks.Error(msg, id=ERROR_REDIS_PING_FAILED))
+        # But is it configured to work as an LRU?
+        maxmemory_policy = connection.info()['maxmemory_policy']
+        if maxmemory_policy != 'allkeys-lru':
+            msg = (
+                'Redis Store not configued as an LRU cache '
+                '(maxmemory_policy={!r})'.format(maxmemory_policy)
+            )
+            errors.append(checks.Error(msg, id=ERROR_REDIS_STORE_NOT_LRU))
     return errors
