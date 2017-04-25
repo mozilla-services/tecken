@@ -328,9 +328,25 @@ To generate an nginx config file, run ``./test-with-nginx/generate.py``.
 That will be print out a Nginx configuration file you can put where
 you normally put Nginx configuration files. For example:
 
-
 .. code-block:: shell
 
     $ ./test-with-nginx/generate.py --help
     $ ./test-with-nginx/generate.py > /etc/nginx/sites-enabled/tecken.conf
     $ # however you reload nginx
+
+System tests
+============
+
+System test aims to replace and be similar to doing manual testing with
+your browser or ``curl``. They depend on the server being up and running
+but will start a web server if it's not already running.
+
+To start the system tests run:
+
+.. code-block:: shell
+
+    $ make systemtest
+
+If you want to see the requests coming in in foreground logging, you can
+start the server in another terminal first, and then run ``make systemtest``
+in a second terminal.

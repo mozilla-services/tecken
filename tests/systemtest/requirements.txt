@@ -1,0 +1,2 @@
+# Currently empty because there is no difference between what
+# the base docker image offers and what the system tests need.
