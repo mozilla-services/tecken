@@ -66,6 +66,9 @@ class CSP:
         "'self'",
         # 'https://sentry.prod.mozaws.net',
     )
+    CSP_OBJECT_SRC = (
+        "'none'",
+    )
 
 
 class Core(CSP, AWS, Configuration):
@@ -84,24 +87,13 @@ class Core(CSP, AWS, Configuration):
         # Project specific apps
         'tecken.apps.TeckenAppConfig',
         'tecken.symbolicate',
-        # 'tecken.clusters',
-        # 'atmo.jobs',
-        # 'atmo.apps.KeysAppConfig',
-        # 'atmo.users',
+        'tecken.download',
 
         # Third party apps
-        # 'django_rq',
-        # 'allauth',
-        # 'allauth.account',
-        # 'allauth.socialaccount',
-        # 'guardian',
-        # 'constance',
-        # 'constance.backends.database',
         'dockerflow.django',
 
         # Django apps
         'django.contrib.sites',
-        # 'django.contrib.admin',
         'django.contrib.auth',
         'django.contrib.contenttypes',
         'django.contrib.sessions',

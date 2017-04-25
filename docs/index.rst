@@ -8,7 +8,7 @@ all things symbols for Mozilla platform. In particular three major features:
 
 1. Symbolication
 
-2. Symbol Download (under development)
+2. Symbol Download
 
 3. Symbol Upload (under development)
 
@@ -22,6 +22,7 @@ User docs:
    :maxdepth: 2
 
    symbolication
+   download
    configuration
    deployment
 
