@@ -52,8 +52,8 @@ need the public key called ``SENTRY_PUBLIC_DSN``. For example:
 
 .. code-block:: shell
 
-    SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
-    SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
+    DJANGO_SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
+    DJANGO_SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
 
 
 PostgreSQL
@@ -118,3 +118,15 @@ Expected version is **3.2** or higher.
 
 .. _`config is not a valid command`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ClientConfig.RestrictedCommands.html
 .. _`ElastiCache Redis Parameter Group`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.3-2-4
+
+StatsD
+======
+
+The three environment variables to control the statsd are as follows
+(with their defaults):
+
+1. ``DJANGO_STATSD_HOST`` (*localhost*)
+
+2. ``DJANGO_STATSD_PORT`` (*8125*)
+
+3. ``DJANGO_STATSD_NAMESPACE`` (*''* (empty string))
