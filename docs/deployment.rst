@@ -48,8 +48,6 @@ made on the same date, append a hyphen and a number. For example::
 Automation
 ==========
 
-(THIS IS INCOMPLETE, BUT A GOOD PLAN)
-
 To make a tag run:
 
 .. code-block:: shell

@@ -68,3 +68,6 @@ docs: .docker-build
 
 systemtest: .docker-build
 	docker-compose run systemtest tests/systemtest/run_tests.sh
+
+tag:
+	@bin/make-tag.py
