@@ -486,20 +486,24 @@ class Stage(Base):
     # Report CSP reports to this URL that is only available in stage and prod
     CSP_REPORT_URI = '/__cspreport__'
 
-    STATSD_HOST = values.Value('statsd')
+    # Defaulting to 'localhost' here because that's where the Datadog
+    # agent is expected to run in production.
+    STATSD_HOST = values.Value('localhost')
     STATSD_PORT = values.Value(8125)
     STATSD_NAMESPACE = values.Value('')
 
-    MARKUS_BACKENDS = [
-        {
-            'class': 'markus.backends.datadog.DatadogMetrics',
-            'options': {
-                'statsd_host': 'statsd',
-                'statsd_port': 8125,
-                'statsd_namespace': ''
-            }
-        },
-    ]
+    @property
+    def MARKUS_BACKENDS(self):
+        return [
+            {
+                'class': 'markus.backends.datadog.DatadogMetrics',
+                'options': {
+                    'statsd_host': self.STATSD_HOST,
+                    'statsd_port': self.STATSD_PORT,
+                    'statsd_namespace': self.STATSD_NAMESPACE,
+                }
+            },
+        ]
 
 
 class Prod(Stage):
