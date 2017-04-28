@@ -348,9 +348,17 @@ class Base(Core):
             },
         }
 
+    # The order here matters. Symbol download goes through these one
+    # at a time.
+    # Ideally you want the one most commonly hit first unless there's a
+    # cascading reason you want other buckets first.
+    # At the moment, if you enter a URL that points to a private bucket
+    # it just works. However, don't do that until we have a way to
+    # indicate that it's private and should not be used unless the
+    # user has access to it based on our own ACL infrastructure.
     SYMBOL_URLS = values.ListValue([
-        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.'
-        'symbols-public/v1/',
+        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/',  # noqa
+        # 'https://s3-us-west-2.amazonaws.com/peterbe-symbols-playground-deleteme-in-2018',  # noqa
     ])
 
     # Number of seconds to wait for a symbol download. If this
@@ -427,8 +435,20 @@ class Test(Dev):
     )
 
     SYMBOL_URLS = values.ListValue([
-        'https://s3.example.com/public/',
+        'https://s3.example.com/public/prefix/',
     ])
+
+    # This is same as Dev except it forces the DB number to be 9
+    CACHES = {
+        'default': django_cache_url.config(
+            default='redis://redis-cache:6379/9',
+            env='REDIS_URL',
+        ),
+        'store': django_cache_url.config(
+            default='redis://redis-store:6379/9',
+            env='REDIS_STORE_URL',
+        )
+    }
 
 
 class Stage(Base):

@@ -11,12 +11,12 @@ urlpatterns = [
     # Note how the product name is specific and ignored.
     url(
         r'^(firefox|seamonkey|sunbird|thunderbird|xulrunner|fennec|b2g)/'
-        r'(?P<symbol>[^/]+)/(?P<debugid>[0-9A-Fa-f]{33})/(?P<filename>.*)',
+        r'(?P<symbol>[^/]+)/(?P<debugid>[0-9A-Fa-f]+)/(?P<filename>.*)',
         views.download_symbol,
         name='download_symbol_legacy'
     ),
     url(
-        r'^(?P<symbol>[^/]+)/(?P<debugid>[0-9A-Fa-f]{33})/(?P<filename>.*)',
+        r'^(?P<symbol>[^/]+)/(?P<debugid>[0-9A-Fa-f]+)/(?P<filename>.*)',
         views.download_symbol,
         name='download_symbol'
     ),

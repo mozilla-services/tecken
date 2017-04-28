@@ -120,13 +120,13 @@ def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
     url = reverse('symbolicate:symbolicate_json')
     with requests_mock.mock() as m, MetricsMock() as metrics_mock:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
         )
         response = json_poster(url, {
@@ -171,13 +171,13 @@ def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
 def test_symbolicate_json_one_cache_lookup_per_symbol(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
         )
         symbolicator = SymbolicateJSON(
@@ -208,13 +208,13 @@ def test_symbolicate_json_one_cache_lookup_per_symbol(clear_redis):
 def test_symbolicate_json_bad_module_indexes(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
         )
         symbolicator = SymbolicateJSON(
@@ -237,13 +237,13 @@ def test_symbolicate_json_bad_module_indexes(clear_redis):
 def test_symbolicate_json_bad_module_offset(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
         )
         symbolicator = SymbolicateJSON(
@@ -266,13 +266,13 @@ def test_symbolicate_json_bad_module_offset(clear_redis):
 def test_symbolicate_json_happy_path_with_debug(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
         )
         symbolicator = SymbolicateJSON(
@@ -339,13 +339,13 @@ def test_symbolicate_json_happy_path_with_debug(clear_redis):
 def test_symbolicate_json_one_symbol_not_found(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text='Not found',
             status_code=404
         )
@@ -369,13 +369,13 @@ def test_symbolicate_json_one_symbol_not_found(clear_redis):
 def test_symbolicate_json_one_symbol_not_found_with_debug(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text='Not found',
             status_code=404
         )
@@ -396,13 +396,13 @@ def test_symbolicate_json_one_symbol_not_found_with_debug(clear_redis):
 def test_symbolicate_json_one_symbol_content_enc_err(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             exc=requests.exceptions.ContentDecodingError
         )
         symbolicator = SymbolicateJSON(
@@ -425,13 +425,13 @@ def test_symbolicate_json_one_symbol_content_enc_err(clear_redis):
 def test_symbolicate_json_one_symbol_empty(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text=''
         )
         symbolicator = SymbolicateJSON(
@@ -469,13 +469,13 @@ def test_symbolicate_json_one_symbol_empty(clear_redis):
 def test_symbolicate_json_one_symbol_500_error(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             text='Interval Server Error',
             status_code=500
         )
@@ -493,13 +493,13 @@ def test_symbolicate_json_one_symbol_500_error(clear_redis):
 def test_symbolicate_json_one_symbol_sslerror(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             exc=requests.exceptions.SSLError
         )
         symbolicator = SymbolicateJSON(
@@ -516,13 +516,13 @@ def test_symbolicate_json_one_symbol_sslerror(clear_redis):
 def test_symbolicate_json_one_symbol_readtimeout(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             exc=requests.exceptions.ReadTimeout
         )
         symbolicator = SymbolicateJSON(
@@ -539,13 +539,13 @@ def test_symbolicate_json_one_symbol_readtimeout(clear_redis):
 def test_symbolicate_json_one_symbol_connectionerror(clear_redis):
     with requests_mock.mock() as m:
         m.get(
-            'https://s3.example.com/public/xul.pdb/44E4EC8C2F41492B9369D6B9'
-            'A059577C2/xul.sym',
+            'https://s3.example.com/public/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
             text=SAMPLE_SYMBOL_CONTENT['xul.sym']
         )
         m.get(
-            'https://s3.example.com/public/wntdll.pdb/D74F79EB1F8D4A45ABCD2'
-            'F476CCABACC2/wntdll.sym',
+            'https://s3.example.com/public/prefix/wntdll.pdb/'
+            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
             exc=requests.exceptions.ConnectionError
         )
         symbolicator = SymbolicateJSON(

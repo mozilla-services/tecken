@@ -5,13 +5,14 @@
 import os
 import requests
 
+
 BASE_URL = os.environ.get('BASE_URL')
 assert BASE_URL
 
 
 def _request(payload, uri='/symbolicate/v4'):
     url = BASE_URL + uri
-    return requests.post(url, json=payload, timeout=20)
+    return requests.post(url, json=payload, timeout=30)
 
 
 def test_basic_symbolication():
