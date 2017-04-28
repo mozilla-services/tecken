@@ -55,6 +55,19 @@ need the public key called ``SENTRY_PUBLIC_DSN``. For example:
     DJANGO_SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
     DJANGO_SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
 
+AWS
+===
+
+Parts of ``tecken`` does use ``boto3`` to talk directly to S3. For that
+to work the following environment variables needs to be set:
+
+.. code-block:: shell
+
+    AWS_ACCESS_KEY_ID=AKI....H6A
+    AWS_SECRET_ACCESS_KEY=....
+
+This S3 access needs to be able to talk to the
+``org.mozilla.crash-stats.symbols-public`` bucket which is in ``us-west-2``.
 
 PostgreSQL
 ==========

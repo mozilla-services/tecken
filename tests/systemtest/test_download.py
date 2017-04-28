@@ -19,7 +19,7 @@ def _test(uri, firstline=None):
     # This short timeout might make this unpractical for people
     # running these tests on laptops in bad network environments.
     # Arguably, if that's the case, perhaps don't run these tests.
-    response = function(url, timeout=5)
+    response = function(url, timeout=10)
     assert response.status_code == 200
 
     if firstline:
@@ -81,4 +81,15 @@ def test_firefox_without_prefix():
     _test(
         '/firefox/946C0C63132015DD88CA2EFCBB9AC4C70/firefox.sym',
         'MODULE Linux x86_64 946C0C63132015DD88CA2EFCBB9AC4C70 firefox'
+    )
+
+
+def test_non_symbol_debug_files():
+    """
+    Some files are debug files that aren't plain symbols. These are
+    different from regular symbols in that they have a much shorter
+    debug ID.
+    """
+    _test(
+        '/firefox.exe/59021DD066000/firefox.ex_'
     )

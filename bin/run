@@ -54,7 +54,7 @@ case $1 in
     coverage erase
     coverage run -m py.test "${@:2}"
     coverage report -m
-    # coverage html --skip-covered
+    coverage html --skip-covered
     if [[ ! -z ${CI+check} ]]; then
       # submit coverage
       coverage xml

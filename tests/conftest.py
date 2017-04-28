@@ -5,6 +5,9 @@
 import json
 
 import pytest
+import boto3
+from moto import mock_s3
+from markus.testing import MetricsMock
 
 from django.core.cache import caches
 
@@ -16,6 +19,11 @@ pytest_plugins = ['blockade']
 def clear_redis():
     caches['default'].clear()
     caches['store'].clear()
+    # yield
+    # # Make sure the caches are cleared afterwards too otherwise it might
+    # # affect other activities you do after running unit tests.
+    # caches['default'].clear()
+    # caches['store'].clear()
 
 
 @pytest.fixture
@@ -30,3 +38,43 @@ def json_poster(client):
         extra['content_type'] = 'application/json'
         return client.post(url, data, **extra)
     return inner
+
+
+@pytest.fixture
+def metricsmock():
+    """Returns a MetricsMock context to record metrics records
+    Usage::
+        def test_something(metricsmock):
+            # do test stuff...
+
+            mm.print_records()  # debugging tests
+
+            assert mm.has_record(
+                stat='some.stat',
+                kwargs_contains={
+                    'something': 1
+                }
+            )
+    """
+    with MetricsMock() as mm:
+        yield mm
+
+
+@pytest.fixture
+def s3_client():
+    """Returns a boto3 S3 client instance as a context.
+    Usage::
+
+        def test_something(s3_client):
+            # create a fixture bucket
+            s3_client.create_bucket(Bucket='public')
+            # create a fixture object
+            s3_client.put_object(...)
+
+            call_code_that_uses_boto3_s3_client()
+
+    """
+    mock = mock_s3()
+    mock.start()
+    yield boto3.client('s3')
+    mock.stop()
