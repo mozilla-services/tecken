@@ -21,19 +21,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.template.defaultfilters import filesizeformat
 from django.core.exceptions import ImproperlyConfigured
 
+from tecken.base.symboldownloader import (
+    SymbolDownloader,
+    SymbolNotFound,
+    SymbolDownloadError,
+)
+
+
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 store = caches['store']
-
-
-class SymbolDownloadError(Exception):
-    def __init__(self, status_code, url):
-        self.status_code = status_code
-        self.url = url
-
-
-class SymbolNotFound(Exception):
-    """Happens when you try to download a symbols file that doesn't exist"""
 
 
 class SymbolFileEmpty(Exception):
@@ -308,7 +305,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
         """return an iterator that yields 3-tuples of
         (symbol_key, information, module_index)
         """
-        # XXX This could/should be done concurrently
+        # XXX This could be done concurrently
         for symbol_key, module_index in requirements:
             cache_key = self._make_cache_key(symbol_key)
             information = {}
@@ -370,7 +367,8 @@ class SymbolicateJSON(LogCacheHitsMixin):
         line_number = 0
         total_size = 0
         t0 = time.time()
-        for line, url in stream:
+        url = next(stream)
+        for line in stream:
             total_size += len(line)
             line_number += 1
             if line.startswith('PUBLIC '):
@@ -423,61 +421,73 @@ class SymbolicateJSON(LogCacheHitsMixin):
         else:
             symbol_filename = lib_filename + '.sym'
 
-        requests_operational_errors = (
-            requests.exceptions.ContentDecodingError,
-            requests.exceptions.ReadTimeout,
-            requests.exceptions.SSLError,
-            requests.exceptions.ConnectionError,
+        # print((lib_filename, symbol_filename, debug_id))
+        downloader = SymbolDownloader(settings.SYMBOL_URLS)
+        stream = downloader.get_symbol_stream(
+            lib_filename,
+            debug_id,
+            symbol_filename
         )
-
-        for base_url in settings.SYMBOL_URLS:
-            assert base_url.endswith('/')
-            url = '{}{}/{}/{}'.format(
-                base_url,
-                lib_filename,
-                debug_id,
-                symbol_filename
-            )
-            logger.info('Requesting {}'.format(url))
-            try:
-                response = self.session.get(
-                    url,
-                    timeout=settings.SYMBOLS_GET_TIMEOUT
-                )
-            except requests_operational_errors as exception:
-                logger.warning(
-                    '{} when downloading {}'.format(
-                        exception,
-                        url,
-                    )
-                )
-                continue
-            if response.status_code == 404:
-                logger.warning('{} 404 Not Found'.format(url))
-                raise SymbolNotFound(url)
-            if response.status_code == 200:  # Note! This includes redirects
-                # Files downloaded from S3 should be UTF-8 but it's unlikely
-                # that S3 exposes this in a header.
-                # If the Content-Type in 'text/plain' requests will assume
-                # the ISO-8859-1 encoding (this is according to RFC 2616).
-                # But if the content type is 'binary/octet-stream' it can't
-                # assume any encoding so it will be returned as a bytestring.
-                if not response.encoding:
-                    response.encoding = 'utf-8'
-                for line in response.iter_lines(decode_unicode=True):
-                    # filter out keep-alive newlines
-                    if line:
-                        yield line, url
-                return url
-            else:
-                logger.warning('{} {} ({})'.format(
-                    url,
-                    response.status_code,
-                    response.content,
-                ))
-                raise SymbolDownloadError(response.status_code, url)
-
-        # None of the URLs worked
+        return stream
+        # print(("STREAM", stream))
+        # for line in stream:
+        #     print(repr(line))
+        # raise Exception
+        # requests_operational_errors = (
+        #     requests.exceptions.ContentDecodingError,
+        #     requests.exceptions.ReadTimeout,
+        #     requests.exceptions.SSLError,
+        #     requests.exceptions.ConnectionError,
+        # )
+        #
+        # for base_url in settings.SYMBOL_URLS:
+        #     assert base_url.endswith('/')
+        #     url = '{}{}/{}/{}'.format(
+        #         base_url,
+        #         lib_filename,
+        #         debug_id,
+        #         symbol_filename
+        #     )
+        #     logger.info('Requesting {}'.format(url))
+        #     try:
+        #         response = self.session.get(
+        #             url,
+        #             timeout=settings.SYMBOLS_GET_TIMEOUT
+        #         )
+        #     except requests_operational_errors as exception:
+        #         logger.warning(
+        #             '{} when downloading {}'.format(
+        #                 exception,
+        #                 url,
+        #             )
+        #         )
+        #         continue
+        #     if response.status_code == 404:
+        #         logger.warning('{} 404 Not Found'.format(url))
+        #         raise SymbolNotFound(url)
+        #     if response.status_code == 200:  # Note! This includes redirects
+        #         # Files downloaded from S3 should be UTF-8 but it's unlikely
+        #         # that S3 exposes this in a header.
+        #         # If the Content-Type in 'text/plain' requests will assume
+        #         # the ISO-8859-1 encoding (this is according to RFC 2616).
+        #         # But if the content type is 'binary/octet-stream' it can't
+        #         # assume any encoding so it will be returned as a bytestring.
+        #         if not response.encoding:
+        #             response.encoding = 'utf-8'
+        #         for line in response.iter_lines(decode_unicode=True):
+        #             # filter out keep-alive newlines
+        #             if line:
+        #                 yield line, url
+        #         return url
+        #     else:
+        #         logger.warning('{} {} ({})'.format(
+        #             url,
+        #             response.status_code,
+        #             response.content,
+        #         ))
+        #         raise SymbolDownloadError(response.status_code, url)
+        #
+        # # None of the URLs worked
 
 
 @csrf_exempt

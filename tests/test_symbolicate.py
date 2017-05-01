@@ -3,7 +3,6 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import requests
-import requests_mock
 from markus.testing import MetricsMock
 from markus import INCR, GAUGE
 
@@ -116,444 +115,495 @@ PUBLIC junk
 }
 
 
-def test_symbolicate_json_happy_path_django_view(json_poster, clear_redis):
+def test_symbolicate_json_happy_path_django_view(
+    json_poster,
+    clear_redis,
+    settings,
+    requestsmock,
+    metricsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    )
+
     url = reverse('symbolicate:symbolicate_json')
-    with requests_mock.mock() as m, MetricsMock() as metrics_mock:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
-        )
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        })
-        result = response.json()
-        assert result['knownModules'] == [True, True]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                'KiUserCallbackDispatcher (in wntdll.pdb)'
-            ]
+    response = json_poster(url, {
+        'stacks': [[[0, 11723767], [1, 65802]]],
+        'memoryMap': [
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+        'version': 4,
+    })
+    result = response.json()
+    assert result['knownModules'] == [True, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            'KiUserCallbackDispatcher (in wntdll.pdb)'
         ]
+    ]
 
-        metrics_records = metrics_mock.get_records()
-        assert metrics_records[0] == (INCR, 'tecken.cache_miss', 1, None)
-        assert metrics_records[1] == (INCR, 'tecken.cache_miss', 1, None)
+    metrics_records = metricsmock.get_records()
+    assert metrics_records[0] == (INCR, 'tecken.cache_miss', 1, None)
+    assert metrics_records[1] == (INCR, 'tecken.cache_miss', 1, None)
 
-        # The reason these numbers are hardcoded is because we know
-        # predictable that the size of the pickled symbol map strings.
-        metrics_mock.has_record(GAUGE, 'tecken.storing_symbol', 76)
-        metrics_mock.has_record(GAUGE, 'tecken.storing_symbol', 165)
+    # The reason these numbers are hardcoded is because we know
+    # predictable that the size of the pickled symbol map strings.
+    metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 76)
+    metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 165)
 
-        # Because of a legacy we want this to be possible on the / endpoint
-        response = json_poster(reverse('dashboard'), {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        })
-        result_second = response.json()
-        assert result_second == result
+    # Because of a legacy we want this to be possible on the / endpoint
+    response = json_poster(reverse('dashboard'), {
+        'stacks': [[[0, 11723767], [1, 65802]]],
+        'memoryMap': [
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+        'version': 4,
+    })
+    result_second = response.json()
+    assert result_second == result
 
 
-def test_symbolicate_json_one_cache_lookup_per_symbol(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
-        )
-        symbolicator = SymbolicateJSON(
-            # This will draw from the 2nd memory_map item TWICE
-            stacks=[[[0, 11723767], [1, 65802], [1, 55802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
-            ],
-            debug=True,
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, True]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                'KiUserCallbackDispatcher (in wntdll.pdb)',
-                'KiRaiseUserExceptionDispatcher (in wntdll.pdb)',
-            ]
+def test_symbolicate_json_one_cache_lookup_per_symbol(
+    clear_redis,
+    settings,
+    requestsmock
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    )
+    symbolicator = SymbolicateJSON(
+        # This will draw from the 2nd memory_map item TWICE
+        stacks=[[[0, 11723767], [1, 65802], [1, 55802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
+        ],
+        debug=True,
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            'KiUserCallbackDispatcher (in wntdll.pdb)',
+            'KiRaiseUserExceptionDispatcher (in wntdll.pdb)',
         ]
-        assert result['debug']['downloads']['count'] == 2
-        # This should be 2 because even though 'memory_map[0]' is needed
-        # once and 'memory_map[1]' is needed twice, it should only be
-        # done a total of 2 times because the symbol is repeating once.
-        assert result['debug']['cache_lookups']['count'] == 2
+    ]
+    assert result['debug']['downloads']['count'] == 2
+    # This should be 2 because even though 'memory_map[0]' is needed
+    # once and 'memory_map[1]' is needed twice, it should only be
+    # done a total of 2 times because the symbol is repeating once.
+    assert result['debug']['cache_lookups']['count'] == 2
 
 
-def test_symbolicate_json_bad_module_indexes(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[-1, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ]
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [False, True]
-        assert result['symbolicatedStacks'] == [
-            [
-                hex(11723767),
-                'KiUserCallbackDispatcher (in wntdll.pdb)'
-            ]
+def test_symbolicate_json_bad_module_indexes(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[-1, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
         ]
-
-
-def test_symbolicate_json_bad_module_offset(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[-1, 1.00000000], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ]
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [False, True]
-        assert result['symbolicatedStacks'] == [
-            [
-                str(1.0000000),
-                'KiUserCallbackDispatcher (in wntdll.pdb)'
-            ]
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [False, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            hex(11723767),
+            'KiUserCallbackDispatcher (in wntdll.pdb)'
         ]
+    ]
 
 
-def test_symbolicate_json_happy_path_with_debug(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
-        )
-        symbolicator = SymbolicateJSON(
-            debug=True,
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, True]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                'KiUserCallbackDispatcher (in wntdll.pdb)'
-            ]
+def test_symbolicate_json_bad_module_offset(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[-1, 1.00000000], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
         ]
-        assert result['debug']['stacks']['count'] == 2
-        assert result['debug']['stacks']['real'] == 2
-        assert result['debug']['time'] > 0.0
-        # Two cache lookups were attempted
-        assert result['debug']['cache_lookups']['count'] == 2
-        assert result['debug']['cache_lookups']['size'] == 0.0
-        assert result['debug']['cache_lookups']['time'] > 0.0
-        assert result['debug']['downloads']['count'] == 2
-        assert result['debug']['downloads']['size'] > 0.0
-        assert result['debug']['downloads']['time'] > 0.0
-        assert result['debug']['modules']['count'] == 2
-        assert result['debug']['modules']['stacks_per_module'] == {
-            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': 1,
-            'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': 1,
-        }
-
-        # Look it up again, and this time the debug should indicate that
-        # we drew from the cache.
-        symbolicator = SymbolicateJSON(
-            debug=True,
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, True]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                'KiUserCallbackDispatcher (in wntdll.pdb)'
-            ]
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [False, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            str(1.0000000),
+            'KiUserCallbackDispatcher (in wntdll.pdb)'
         ]
-        assert result['debug']['stacks']['real'] == 2
-        assert result['debug']['stacks']['count'] == 2
-        assert result['debug']['time'] > 0.0
-        assert result['debug']['cache_lookups']['count'] == 2
-        assert result['debug']['cache_lookups']['size'] > 0.0
-        assert result['debug']['cache_lookups']['time'] > 0.0
-        assert result['debug']['downloads']['count'] == 0
-        assert result['debug']['downloads']['size'] == 0.0
-        assert result['debug']['downloads']['time'] == 0.0
+    ]
 
 
-def test_symbolicate_json_one_symbol_not_found(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text='Not found',
-            status_code=404
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                '0x1010a (in wntdll.pdb)'
-            ]
+def test_symbolicate_json_happy_path_with_debug(
+    clear_redis,
+    settings,
+    requestsmock
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    )
+    symbolicator = SymbolicateJSON(
+        debug=True,
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            'KiUserCallbackDispatcher (in wntdll.pdb)'
         ]
+    ]
+    assert result['debug']['stacks']['count'] == 2
+    assert result['debug']['stacks']['real'] == 2
+    assert result['debug']['time'] > 0.0
+    # Two cache lookups were attempted
+    assert result['debug']['cache_lookups']['count'] == 2
+    assert result['debug']['cache_lookups']['size'] == 0.0
+    assert result['debug']['cache_lookups']['time'] > 0.0
+    assert result['debug']['downloads']['count'] == 2
+    assert result['debug']['downloads']['size'] > 0.0
+    assert result['debug']['downloads']['time'] > 0.0
+    assert result['debug']['modules']['count'] == 2
+    assert result['debug']['modules']['stacks_per_module'] == {
+        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': 1,
+        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': 1,
+    }
 
-
-def test_symbolicate_json_one_symbol_not_found_with_debug(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text='Not found',
-            status_code=404
-        )
-        symbolicator = SymbolicateJSON(
-            debug=True,
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        # It should work but because only 1 file could be downloaded,
-        # there'll be no measurement of the one that 404 failed.
-        assert result['debug']['downloads']['count'] == 1
-
-
-def test_symbolicate_json_one_symbol_content_enc_err(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            exc=requests.exceptions.ContentDecodingError
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                '0x1010a (in wntdll.pdb)'
-            ]
+    # Look it up again, and this time the debug should indicate that
+    # we drew from the cache.
+    symbolicator = SymbolicateJSON(
+        debug=True,
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            'KiUserCallbackDispatcher (in wntdll.pdb)'
         ]
+    ]
+    assert result['debug']['stacks']['real'] == 2
+    assert result['debug']['stacks']['count'] == 2
+    assert result['debug']['time'] > 0.0
+    assert result['debug']['cache_lookups']['count'] == 2
+    assert result['debug']['cache_lookups']['size'] > 0.0
+    assert result['debug']['cache_lookups']['time'] > 0.0
+    assert result['debug']['downloads']['count'] == 0
+    assert result['debug']['downloads']['size'] == 0.0
+    assert result['debug']['downloads']['time'] == 0.0
 
 
-def test_symbolicate_json_one_symbol_empty(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text=''
-        )
-        symbolicator = SymbolicateJSON(
-            debug=True,
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
-        assert result['symbolicatedStacks'] == [
-            [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
-                '0x1010a (in wntdll.pdb)'
-            ]
+def test_symbolicate_json_one_symbol_not_found(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text='Not found',
+        status_code=404
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, False]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            '0x1010a (in wntdll.pdb)'
         ]
-        assert result['debug']['downloads']['count'] == 2
-
-        # Run it again, and despite that we failed to cache the second
-        # symbol failed, that failure should be "cached".
-        symbolicator = SymbolicateJSON(
-            debug=True,
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['debug']['downloads']['count'] == 0
+    ]
 
 
-def test_symbolicate_json_one_symbol_500_error(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            text='Interval Server Error',
-            status_code=500
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
+def test_symbolicate_json_one_symbol_not_found_with_debug(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text='Not found',
+        status_code=404
+    )
+    symbolicator = SymbolicateJSON(
+        debug=True,
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    # It should work but because only 1 file could be downloaded,
+    # there'll be no measurement of the one that 404 failed.
+    assert result['debug']['downloads']['count'] == 1
 
 
-def test_symbolicate_json_one_symbol_sslerror(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            exc=requests.exceptions.SSLError
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
+def test_symbolicate_json_one_symbol_empty(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=''
+    )
+    symbolicator = SymbolicateJSON(
+        debug=True,
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, False]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            '0x1010a (in wntdll.pdb)'
+        ]
+    ]
+    assert result['debug']['downloads']['count'] == 2
+
+    # Run it again, and despite that we failed to cache the second
+    # symbol failed, that failure should be "cached".
+    symbolicator = SymbolicateJSON(
+        debug=True,
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['debug']['downloads']['count'] == 0
 
 
-def test_symbolicate_json_one_symbol_readtimeout(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            exc=requests.exceptions.ReadTimeout
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
+def test_symbolicate_json_one_symbol_500_error(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text='Interval Server Error',
+        status_code=500
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, False]
 
 
-def test_symbolicate_json_one_symbol_connectionerror(clear_redis):
-    with requests_mock.mock() as m:
-        m.get(
-            'https://s3.example.com/public/prefix/xul.pdb/'
-            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-            text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-        )
-        m.get(
-            'https://s3.example.com/public/prefix/wntdll.pdb/'
-            'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-            exc=requests.exceptions.ConnectionError
-        )
-        symbolicator = SymbolicateJSON(
-            stacks=[[[0, 11723767], [1, 65802]]],
-            memory_map=[
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        )
-        result = symbolicator.result
-        assert result['knownModules'] == [True, False]
+def test_symbolicate_json_one_symbol_sslerror(
+    clear_redis,
+    settings,
+    requestsmock,
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        exc=requests.exceptions.SSLError
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, False]
+
+
+def test_symbolicate_json_one_symbol_readtimeout(
+    clear_redis,
+    settings,
+    requestsmock
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        exc=requests.exceptions.ReadTimeout
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, False]
+
+
+def test_symbolicate_json_one_symbol_connectionerror(
+    clear_redis,
+    settings,
+    requestsmock
+):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        exc=requests.exceptions.ConnectionError
+    )
+    symbolicator = SymbolicateJSON(
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        ],
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, False]
