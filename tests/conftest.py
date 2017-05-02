@@ -6,6 +6,7 @@ import json
 
 import pytest
 import boto3
+import requests_mock
 from moto import mock_s3
 from markus.testing import MetricsMock
 
@@ -78,3 +79,19 @@ def s3_client():
     mock.start()
     yield boto3.client('s3')
     mock.stop()
+
+
+@pytest.fixture
+def requestsmock():
+    """Return a context where requests are all mocked.
+    Usage::
+
+        def test_something(requestsmock):
+            requestsmock.get(
+                'https://example.com/path'
+                content=b'The content'
+            )
+            # Do stuff that involves requests.get('http://example.com/path')
+    """
+    with requests_mock.mock() as m:
+        yield m

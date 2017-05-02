@@ -352,13 +352,11 @@ class Base(Core):
     # at a time.
     # Ideally you want the one most commonly hit first unless there's a
     # cascading reason you want other buckets first.
-    # At the moment, if you enter a URL that points to a private bucket
-    # it just works. However, don't do that until we have a way to
-    # indicate that it's private and should not be used unless the
-    # user has access to it based on our own ACL infrastructure.
+    # By default, each URL is assumed to be private!
+    # If there's a bucket you want to include that should be accessed
+    # by HTTP only, add '?access=public' to the URL.
     SYMBOL_URLS = values.ListValue([
-        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/',  # noqa
-        # 'https://s3-us-west-2.amazonaws.com/peterbe-symbols-playground-deleteme-in-2018',  # noqa
+        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
     ])
 
     # Number of seconds to wait for a symbol download. If this
@@ -435,7 +433,8 @@ class Test(Dev):
     )
 
     SYMBOL_URLS = values.ListValue([
-        'https://s3.example.com/public/prefix/',
+        'https://s3.example.com/public/prefix/?access=public',
+        'https://s3.example.com/private/prefix/',
     ])
 
     # This is same as Dev except it forces the DB number to be 9
