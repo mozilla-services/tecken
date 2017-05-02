@@ -6,9 +6,10 @@ import os
 from io import BytesIO
 from gzip import GzipFile
 
+import pytest
 # from requests.exceptions import ContentDecodingError
 
-from tecken.base.symboldownloader import SymbolDownloader
+from tecken.base.symboldownloader import SymbolDownloader, SymbolNotFound
 
 
 def test_has_public(requestsmock):
@@ -218,7 +219,8 @@ def test_get_stream_public(requestsmock):
         '44E4EC8C2F41492B9369D6B9A059577C2',
         'xxx.sym'
     )
-    assert list(stream) == []
+    with pytest.raises(SymbolNotFound):
+        list(stream)
 
 
 def test_get_stream_private(s3_client):
@@ -254,7 +256,8 @@ def test_get_stream_private(s3_client):
         '44E4EC8C2F41492B9369D6B9A059577C2',
         'xxx.sym'
     )
-    assert list(stream) == []
+    with pytest.raises(SymbolNotFound):
+        list(stream)
 
 
 def test_get_stream_gzipped(s3_client):
