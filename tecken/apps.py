@@ -23,7 +23,7 @@ class TeckenAppConfig(AppConfig):
 
         connection = get_redis_connection('store')
         maxmemory_policy = connection.info()['maxmemory_policy']
-        if maxmemory_policy != 'allkeys-lru':  # noqa
+        if maxmemory_policy != 'allkeys-lru':  # pragma: no cover
             if settings.DEBUG:
                 connection.config_set('maxmemory-policy', 'allkeys-lru')
                 logger.warning(
