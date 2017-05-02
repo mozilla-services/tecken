@@ -30,9 +30,6 @@ services:
   # and building docs.
   base:
     image: tecken:dev
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile.dev
     environment:
       - DJANGO_CONFIGURATION
     env_file:
@@ -47,10 +44,6 @@ services:
       service: base
     ports:
       - "8000:8000"
-    # XXX Should we use depends_on db, redis-store, redis-cache etc?
-    # XXX What is the difference between 'links' and 'depends_on'?
-    # depends_on:
-    #   - app
     links:
       - db
       - redis-store
@@ -72,10 +65,6 @@ services:
       service: base
     ports:
       - "8000:8000"
-    # XXX Should we use depends_on db, redis-store, redis-cache etc?
-    # XXX What is the difference between 'links' and 'depends_on'?
-    # depends_on:
-    #   - app
     links:
       - db
       - redis-store

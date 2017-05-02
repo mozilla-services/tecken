@@ -8,7 +8,7 @@ set -eo pipefail
 
 usage() {
   # echo "usage: bin/run web|web-dev|worker|scheduler|test"
-  echo "usage: bin/run web|web-dev|test"
+  echo "usage: bin/run web|web-dev|test|bash"
   exit 1
 }
 
@@ -27,11 +27,9 @@ wait_for() {
 
 [ $# -lt 1 ] && usage
 
-# XXX Look into using "healthchecks" in docker-compose
-# http://stackoverflow.com/questions/31746182/docker-compose-wait-for-container-x-before-starting-y/41854997#41854997
-
 # Only wait for backend services in development
 # http://stackoverflow.com/a/13864829
+# For example, bin/test sets 'DEVELOPMENT' to something
 [ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis-cache 6379 && wait_for redis-store 6379
 
 case $1 in
