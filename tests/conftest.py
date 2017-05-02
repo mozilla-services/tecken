@@ -20,11 +20,6 @@ pytest_plugins = ['blockade']
 def clear_redis():
     caches['default'].clear()
     caches['store'].clear()
-    # yield
-    # # Make sure the caches are cleared afterwards too otherwise it might
-    # # affect other activities you do after running unit tests.
-    # caches['default'].clear()
-    # caches['store'].clear()
 
 
 @pytest.fixture

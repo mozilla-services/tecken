@@ -279,6 +279,7 @@ class SymbolDownloader:
                     try:
                         for line in iter_lines(stream):
                             yield line.decode('utf-8')
+                        return  # like a break, but for generators
                     except OSError as exception:
                         if 'Not a gzipped file' in str(exception):
                             logger.warning(
@@ -304,13 +305,9 @@ class SymbolDownloader:
                 # if not url.endswith('/'):
                 #     url += '/'
 
-                # We'll together the URL manually
-
-                file_url = '{}://{}/{}/{}{}/{}/{}'.format(
-                    source.scheme,
-                    source.netloc,
-                    source.bucket_name,
-                    source.prefix,
+                # We'll put together the URL manually
+                file_url = '{}{}/{}/{}'.format(
+                    source,
                     symbol,
                     debugid.upper(),
                     filename,
@@ -324,7 +321,7 @@ class SymbolDownloader:
                     response = requests.get(file_url, stream=True)
                 except self.requests_operational_errors as exception:
                     logger.warning(
-                        '{} when downloading {}'.format(
+                        '{!r} when downloading {}'.format(
                             exception,
                             source,
                         )
@@ -333,7 +330,6 @@ class SymbolDownloader:
                 if response.status_code == 404:
                     logger.warning('{} 404 Not Found'.format(file_url))
                     continue
-                    # raise SymbolNotFound(url)
                 elif response.status_code == 200:
                     # Files downloaded from S3 should be UTF-8 but it's
                     # unlikely that S3 exposes this in a header.
@@ -352,9 +348,11 @@ class SymbolDownloader:
                             if line:
                                 line = line.decode('utf-8')
                                 yield line
+                        # Stop the iterator
+                        return
                     except requests.exceptions.ContentDecodingError as exc:
                         logger.warning(
-                            '{} when downloading {}'.format(
+                            '{!r} when downloading {}'.format(
                                 exc,
                                 source,
                             )
@@ -370,6 +368,8 @@ class SymbolDownloader:
                         response.status_code,
                         str(source)
                     )
+
+        raise SymbolNotFound(symbol, debugid, filename)
 
     def has_symbol(self, symbol, debugid, filename):
         """return True if the symbol can be found, False if not
