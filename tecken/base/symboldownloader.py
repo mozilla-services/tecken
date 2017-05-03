@@ -18,7 +18,7 @@ logger = logging.getLogger('tecken')
 ITER_CHUNK_SIZE = 512
 
 
-class SymbolNotFound(Exception):  # XXX is this ever used?!
+class SymbolNotFound(Exception):
     """Happens when you try to download a symbols file that doesn't exist"""
 
 
@@ -173,13 +173,21 @@ class SymbolDownloader:
             yield _SymbolSource(url)
 
     def _get(self, symbol, debugid, filename):
-        # This will automatically pick up credentials from the environment
-        # variables to authenticate.
-
-        # for private_bucket, bucket_name, prefix in self._get_sources():
+        """Return a dict if the symbol can be found. The dict will
+        either be `{'url': ...}` or `{'buckey_name': ..., 'key': ...}`
+        depending on if the symbol was found a public bucket or a
+        private bucket.
+        Consumers of this method can use the fact that anything truish
+        was returned as an indication that the symbol actually exists."""
         for source in self._get_sources():
 
             if source.private:
+                # If it's a private bucket we use boto3.
+
+                # Be lazy about instantiating the boto3 client since this
+                # is an iterator and we might not ever need to make this
+                # client. Creating the client does a check for relevant
+                # OS environment variables.
                 if not self.s3_client:
                     self.s3_client = boto3.client('s3')
 
@@ -221,10 +229,6 @@ class SymbolDownloader:
                 return {'bucket_name': source.bucket_name, 'key': key}
 
             else:
-                # Return the URL if it exists
-                # if not url.endswith('/'):
-                #     url += '/'
-
                 # We'll put together the URL manually
                 file_url = '{}{}/{}/{}'.format(
                     source,
@@ -241,12 +245,9 @@ class SymbolDownloader:
                     return {'url': file_url}
 
     def _get_stream(self, symbol, debugid, filename):
-        # This will automatically pick up credentials from the environment
-        # variables to authenticate.
-
         for source in self._get_sources():
-            # if private_bucket:
             if source.private:
+                # If it's a private bucket we use boto3.
 
                 # We're going to need the client
                 if not self.s3_client:
@@ -275,7 +276,7 @@ class SymbolDownloader:
                     )
                     stream = response['Body']
                     # But if the content encoding is gzip we have
-                    # re-wrap this.
+                    # re-wrap the stream.
                     if response.get('ContentEncoding') == 'gzip':
                         bytestream = BytesIO(response['Body'].read())
                         stream = GzipFile(None, 'rb', fileobj=bytestream)
@@ -283,7 +284,7 @@ class SymbolDownloader:
                     try:
                         for line in iter_lines(stream):
                             yield line.decode('utf-8')
-                        return  # like a break, but for generators
+                        return
                     except OSError as exception:
                         if 'Not a gzipped file' in str(exception):
                             logger.warning(
@@ -305,9 +306,8 @@ class SymbolDownloader:
                     raise
 
             else:
-                # Return the URL if it exists
-                # if not url.endswith('/'):
-                #     url += '/'
+                # If it's not a private bucket, we can use requests
+                # to download via HTTP.
 
                 # We'll put together the URL manually
                 file_url = '{}{}/{}/{}'.format(
@@ -373,6 +373,7 @@ class SymbolDownloader:
                         str(source)
                     )
 
+        # All URLs exhausted
         raise SymbolNotFound(symbol, debugid, filename)
 
     def has_symbol(self, symbol, debugid, filename):
