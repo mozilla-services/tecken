@@ -296,7 +296,9 @@ class SymbolDownloader:
                                 )
                             )
                             continue
-                        raise
+                        # Who knows what other OSErrors might happen when
+                        # it's not a problem of being a gzip content?!
+                        raise  # pragma: no cover
 
                 except ClientError as exception:
                     if exception.response['Error']['Code'] == 'NoSuchKey':
