@@ -50,7 +50,7 @@ case $1 in
   test)
     # python manage.py collectstatic --noinput
     coverage erase
-    coverage run -m py.test "${@:2}"
+    coverage run -m py.test --flake8 "${@:2}"
     coverage report -m
     if [[ -z ${CI+check} ]]; then
       # generate code coverage to disk
