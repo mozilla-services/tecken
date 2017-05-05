@@ -395,7 +395,7 @@ class Dev(Base):
     @property
     def VERSION(self):
         output = subprocess.check_output(
-            ['git', 'describe', '--tags', '--abbrev=0']
+            ['git', 'describe', '--tags', '--always', '--abbrev=0']
         )
         if output:
             return {'version': output.decode().strip()}
