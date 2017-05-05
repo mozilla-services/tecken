@@ -66,7 +66,7 @@ def test_client_404(client, s3_client, settings):
     ))
     response = client.get(url)
     assert response.status_code == 404
-    assert 'Page not found' in response.content.decode('utf-8')
+    assert 'Symbol Not Found' in response.content.decode('utf-8')
 
     response = client.head(url)
     assert response.status_code == 404

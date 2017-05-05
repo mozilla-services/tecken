@@ -27,4 +27,4 @@ def download_symbol(request, symbol, debugid, filename):
         url = downloader.get_symbol_url(symbol, debugid, filename)
         if url:
             return http.HttpResponseRedirect(url)
-    return http.HttpResponseNotFound()
+    return http.HttpResponseNotFound('Symbol Not Found')
