@@ -334,7 +334,7 @@ class SymbolDownloader:
                     )
                     continue
                 if response.status_code == 404:
-                    logger.warning('{} 404 Not Found'.format(file_url))
+                    # logger.warning('{} 404 Not Found'.format(file_url))
                     continue
                 elif response.status_code == 200:
                     # Files downloaded from S3 should be UTF-8 but it's
