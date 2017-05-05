@@ -6,6 +6,11 @@ machine:
   services:
     - docker
 
+checkout:
+  post:
+    # We depend on the repo's tags
+    - git fetch --tags && git tag
+
 dependencies:
   pre:
     - cp .env-dist .env
