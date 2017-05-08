@@ -21,7 +21,7 @@ Its rewrite rules contained two legacy solutions:
 The old symbol download server was using ``symbols.mozilla.org`` and
 was accessible only with ``http://``.
 
-.. _`symbols.m.o`: https://github.com/mozilla/symbols.m.o
+.. _`symbols.m.o`: https://github.com/mozilla-services/symbols.m.o
 .. _`Uppercase the debug ID`: https://bugzilla.mozilla.org/show_bug.cgi?id=660932
 
 

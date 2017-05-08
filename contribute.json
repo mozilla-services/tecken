@@ -8,15 +8,14 @@
     ]
   },
   "repository": {
-    "url": "https://github.com/mozilla/tecken",
+    "url": "https://github.com/mozilla-services/tecken",
     "license": "MPL 2.0"
   },
   "bugs": {
-      "list": "https://github.com/mozilla/tecken/issues",
-      "report": "https://github.com/mozilla/tecken/issues/new"
+      "list": "https://github.com/mozilla-services/tecken/issues",
+      "report": "https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
   },
   "urls": {
-      "prod": "https://symbolserver.mozilla.org/",
-      "staging": "https://symbolserver.allizom.org/"
+      "dev": "https://symbols.dev.mozaws.net"
   }
 }

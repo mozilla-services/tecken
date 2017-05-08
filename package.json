@@ -4,7 +4,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git://github.com/mozilla/tecken.git"
+    "url": "git://github.com/mozilla-services/tecken.git"
   },
   "license": "MPL-2.0",
   "dependencies": {}
