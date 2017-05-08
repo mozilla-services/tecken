@@ -9,10 +9,10 @@ BASE_URL = os.environ.get('BASE_URL')
 assert BASE_URL
 
 
-def _test(uri, firstline=None):
+def _test(uri, firstline=None, expect_status_code=200):
     assert uri.startswith('/')
     url = BASE_URL + uri
-    if firstline:
+    if firstline or expect_status_code != 200:
         function = requests.get
     else:
         function = requests.head
@@ -20,7 +20,7 @@ def _test(uri, firstline=None):
     # running these tests on laptops in bad network environments.
     # Arguably, if that's the case, perhaps don't run these tests.
     response = function(url, timeout=10)
-    assert response.status_code == 200
+    assert response.status_code == expect_status_code
 
     if firstline:
         assert firstline == response.text.splitlines()[0]
@@ -93,3 +93,25 @@ def test_non_symbol_debug_files():
     _test(
         '/firefox.exe/59021DD066000/firefox.ex_'
     )
+
+
+def test_delberately_404ing_and_csv_reporting():
+    _test(
+        '/foo.pdb/00000000111111112222222333333/foo.sym'
+        '?code_file=foo.dll&code_id=deadbeef',
+        expect_status_code=404
+    )
+
+    # download the CSV report of missing symbols
+    url = BASE_URL + '/missingsymbols.csv'
+    # If we don't add ?today=true to the CSV reporting it will,
+    # by default, look at yesterdays missing symbols
+    response = requests.get(url, {'today': True})
+    assert response.status_code == 200
+    assert response.headers['content-type'] == 'text/csv'
+
+    lines = response.text.splitlines()
+    first_line = lines[0]
+    assert first_line == 'debug_file,debug_id,code_file,code_id'
+    # At least one line should contain this:
+    assert 'foo.pdb,00000000111111112222222333333,foo.dll,deadbeef' in lines

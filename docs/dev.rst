@@ -316,7 +316,7 @@ to switch from regular debug-mode development to prod-like serving.
 The second step for this to be testable is to reach the server with ``HTTPS``
 or else the app will forcibly redirect you to the ``https://`` equivalent of
 whatever URL you attempt to use (e.g. ``http://localhost:8000/`` redirects
-to ``https://localhost:8000/`)
+to ``https://localhost:8000/``)
 
 To test this, run a local Nginx server. But first, create a suitable
 hostname. For example, ``prod.tecken.dev``. Edit ``/etc/hosts`` and enter
@@ -350,3 +350,12 @@ To start the system tests run:
 If you want to see the requests coming in in foreground logging, you can
 start the server in another terminal first, and then run ``make systemtest``
 in a second terminal.
+
+If you need to do some debugging into a specific test with system tests,
+it's tedious to have to run all the tests every time. One trick is to
+take the command that ``make systemtest`` represents in ``Makefile``
+and then run it with extra ``pytest`` parameters. For example:
+
+.. code-block:: shell
+
+    $ docker-compose run systemtest tests/systemtest/run_tests.sh -k test_delberately_404ing_and_csv_reporting

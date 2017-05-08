@@ -54,4 +54,4 @@ pip install --no-cache-dir -r tests/systemtest/requirements.txt
 echo "Running tests."
 # Run tests--this  uses configuration in the environment--and send everything to
 # stdout
-py.test -vv tests/systemtest/ 2>&1
+py.test -vv tests/systemtest/ "${@:1}" 2>&1

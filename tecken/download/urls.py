@@ -7,6 +7,11 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
+    url(
+        r'missingsymbols.csv$',
+        views.missing_symbols_csv,
+        name='missing_symbols_csv'
+    ),
     # Legacy URLs where the product name was prefixed by the symbol name.
     # Note how the product name is specific and ignored.
     url(
