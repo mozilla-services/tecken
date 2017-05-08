@@ -6,7 +6,7 @@ Download
 History
 =======
 
-The original solution that ``tecken`` replaces is `symbols.m.o`_ which was a
+The original solution that Tecken replaces is `symbols.m.o`_ which was a
 Heroku app that ran an Apache server that used proxy rewrites to
 draw symbols from ``https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/``.
 
@@ -28,24 +28,38 @@ was accessible only with ``http://``.
 What It Is
 ==========
 
-A proxy for S3. All symbols are stored in S3. ``tecken`` just makes those files
-available. It acts as a proxy, so when you request, for example,
+Tecken Download's **primary use-case** is to redirect requests for symbols to
+their ultimate source which is S3. For example, with a ``GET``, requesting
 :base_url:`/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym`
-from ``tecken`` it goes and tries to download that from the configured
-list of S3 buckets that it knows about. If not found in S3, that
-``404 Not Found`` is propagated through.
+will return a ``302 Found`` redirect to (at the time of writing)
+``https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym``.
 
-Ultimately, if you know where the symbols are hosted directly on S3,
-it's technically faster to download directly from that. But since
-``tecken`` is hosted in AWS, the slow-down of proxying is miniscule.
+This way, all configuration of S3 buckets is central to Tecken even if we
+decide to change to a different bucket or add/remove buckets.
 
-Plus ``tecken`` has the potential to do much more advanced S3 lookups.
-For example, it can, based on input parameters or authorization parameters
-look up from specific buckets that are not default.
+The primary benefit of using Tecken Download instead of hitting S3 public
+URLs directly is that it's just one URL to remember and Tecken Download
+can iterate over a **list of S3 buckets**. This makes it possible to
+upload symbols in multiple places but have them all accessible from one URL.
 
-``HEAD`` or ``GET`` only
-========================
+The other use-case of this is if you're simply curious to see if a symbol
+file exists. Simply make a ``HEAD`` request instead of a ``GET``.
 
-The only protocols supported are ``HEAD`` and ``GET``.
+404s Logged
+===========
 
-At the time of writing, ``ETag`` and ``If-Modified-Since`` are not supported.
+All ``GET`` requests are logged and counted within Tecken. There is
+a basic reporting option to extract ALL symbols that was requested
+*yesterday* but couldn't be found. But note that the format is quite
+particular since it doesn't report the third part of the URI. And
+additionally it reports two extra possible query string parameters
+called ``code_file`` and ``code_id``. So if you make a query like:
+:base_url:`/foo.pdb/448794C699914DB8A8F9B9F88B98D7412/foo.sym?code_file=FOO.dll&code_id=BAR`
+...yesterday, then request the CSV report at:
+:base_url:`/missingsymbols.csv` it will contain a CSV line like this::
+
+    foo.pdb,448794C699914DB8A8F9B9F88B98D7412,FOO.dll,BAR
+
+The CSV report is actually ultimately to help the Socorro Processor
+which used to manage reporting symbols that can't be found during
+processing. See https://bugzilla.mozilla.org/show_bug.cgi?id=1361809
