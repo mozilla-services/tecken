@@ -7,7 +7,7 @@ Configuration
 High-level things
 =================
 
-``tecken`` requires the following services in production:
+Tecken requires the following services in production:
 
 1. PostgreSQL 9.5
 
@@ -58,7 +58,7 @@ need the public key called ``SENTRY_PUBLIC_DSN``. For example:
 AWS
 ===
 
-Parts of ``tecken`` does use ``boto3`` to talk directly to S3. For that
+Parts of Tecken does use ``boto3`` to talk directly to S3. For that
 to work the following environment variables needs to be set:
 
 .. code-block:: shell
@@ -101,7 +101,7 @@ and it can look like this:
 
 The amount of space needed is minimal. No backups are necessary.
 
-In future versions of ``tecken`` this Redis will most likely be used
+In future versions of Tecken this Redis will most likely be used
 as a broker for message queues by Celery.
 
 Expected version is **3.2** or higher.

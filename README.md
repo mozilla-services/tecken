@@ -1,4 +1,4 @@
-tecken - All things Mozilla Symbol Server
+Tecken - All things Mozilla Symbol Server
 =========================================
 
 [![CircleCI](https://circleci.com/gh/mozilla/tecken.svg?style=svg)](https://circleci.com/gh/mozilla/tecken)

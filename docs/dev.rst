@@ -296,7 +296,7 @@ only parameter you need is the URL which should be ``http://localhost:9000``.
 Prod-like running locally
 =========================
 
-First you need to start ``tecken`` with a set of configurations that
+First you need to start Tecken with a set of configurations that
 mimics what's required in prod, except we're doing this in docker.
 
 To do that, you need to set ``DJANGO_CONFIGURATION=Prodlike`` and
