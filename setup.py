@@ -8,7 +8,7 @@ setup(
     description='The Mozilla Symbol Server',
     author='Mozilla',
     author_email='peterbe@mozilla.com',
-    url='https://github.com/mozilla/tecken',
+    url='https://github.com/mozilla-services/tecken',
     license='MPL 2.0',
     classifiers=[
         'Development Status :: 5 - Production/Stable',

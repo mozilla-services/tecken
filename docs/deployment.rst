@@ -9,7 +9,7 @@ Environments
 
 Mozilla Symbol Server is deployed in 3 different environments:
 
-1. Production (https://symbols.mozilla.org)
+1. Production (https://symbols.mozilla.org SOON!)
 
 2. Stage (DOMAIN TO BE DECIDED)
 
@@ -42,7 +42,7 @@ made on the same date, append a hyphen and a number. For example::
 
     git tag -s -a 2017.04.17-2 -m "Fix for sudden problem"
 
-.. _CircleCI: https://circleci.com/gh/mozilla/tecken
+.. _CircleCI: https://circleci.com/gh/mozilla-services/tecken
 .. _`Docker Hub`: https://hub.docker.com/r/mozilla/tecken/
 
 Automation

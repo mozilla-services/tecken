@@ -1,9 +1,9 @@
 Tecken - All things Mozilla Symbol Server
 =========================================
 
-[![CircleCI](https://circleci.com/gh/mozilla/tecken.svg?style=svg)](https://circleci.com/gh/mozilla/tecken)
-[![codecov](https://codecov.io/gh/mozilla/tecken/branch/master/graph/badge.svg)](https://codecov.io/gh/mozilla/tecken)
-[![Updates](https://pyup.io/repos/github/mozilla/tecken/shield.svg)](https://pyup.io/repos/github/mozilla/tecken/)
+[![CircleCI](https://circleci.com/gh/mozilla-services/tecken.svg?style=svg)](https://circleci.com/gh/mozilla-services/tecken)
+[![codecov](https://codecov.io/gh/mozilla-services/tecken/branch/master/graph/badge.svg)](https://codecov.io/gh/mozilla-services/tecken)
+[![Updates](https://pyup.io/repos/github/mozilla-services/tecken/shield.svg)](https://pyup.io/repos/github/mozilla-services/tecken/)
 
 
 Please use the documentation on: **https://tecken.readthedocs.io**
