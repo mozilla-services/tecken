@@ -7,7 +7,6 @@ set -eo pipefail
 : "${TRIES:=60}"
 
 usage() {
-  # echo "usage: bin/run web|web-dev|worker|scheduler|test"
   echo "usage: bin/run web|web-dev|test|bash"
   exit 1
 }
@@ -68,7 +67,7 @@ case $1 in
     # big enough that it's worth always installing it before going
     # into the shell. This is up for debate as time and main developers
     # make.
-    pip install pytest-watch
+    # pip install pytest-watch COMMENTED OUT FOR NOW
     exec "$@"
     ;;
   *)
