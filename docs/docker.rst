@@ -2,7 +2,7 @@
 Docker Tips and Tricks
 ======================
 
-Docker is used to do development and continuous integration on ``tecken``.
+Docker is used to do development and continuous integration on Tecken.
 Below is a list of miscellaneous techniques to make development easier.
 
 Bashing whilst running

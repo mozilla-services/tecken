@@ -26,7 +26,7 @@ Predicted Production Use
 In 2014, `Ted calculated`_ that we need approximately 35GB storage to
 have a 99% cache hit ratio of all symbols that Socorro needs when
 symbolicating.
-In ``tecken`` we don't store downloaded symbol files, but instead we store
+In Tecken we don't store downloaded symbol files, but instead we store
 a minor subset of the downloaded files so `by estimates`_ we only store 20%
 of that weight. In conclusion, to maintain a 99% cache hit ratio we need
 6GB and 2GB for a 95% cache hit ratio.
