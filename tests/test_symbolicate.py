@@ -163,6 +163,14 @@ def test_symbolicate_json_happy_path_django_view(
     metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 76)
     metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 165)
 
+    # Since the amount of memory configured and used in the Redis
+    # store, we can't use metricsmock.has_record()
+    memory_gauges = [
+        record for record in metrics_records
+        if record[0] == GAUGE and 'store_memory' in record[1]
+    ]
+    assert len(memory_gauges) == 2
+
     # Because of a legacy we want this to be possible on the / endpoint
     response = json_poster(reverse('dashboard'), {
         'stacks': [[[0, 11723767], [1, 65802]]],
