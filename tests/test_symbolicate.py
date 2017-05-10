@@ -3,7 +3,6 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import requests
-from markus.testing import MetricsMock
 from markus import INCR, GAUGE
 
 from django.core.urlresolvers import reverse
@@ -15,21 +14,20 @@ from tecken.symbolicate.views import (
 )
 
 
-def test_log_cache_hits_and_misses(clear_redis):
+def test_log_cache_hits_and_misses(clear_redis, metricsmock):
     instance = LogCacheHitsMixin()
 
-    with MetricsMock() as metrics_mock:
-        # A hit!
-        instance.log_symbol_cache_hit()
-        # Another hit!
-        instance.log_symbol_cache_hit()
-        # A miss
-        instance.log_symbol_cache_miss()
+    # A hit!
+    instance.log_symbol_cache_hit()
+    # Another hit!
+    instance.log_symbol_cache_hit()
+    # A miss
+    instance.log_symbol_cache_miss()
 
-        records = metrics_mock.get_records()
-        assert records[0] == (INCR, 'tecken.cache_hit', 1, None)
-        assert records[1] == (INCR, 'tecken.cache_hit', 1, None)
-        assert records[2] == (INCR, 'tecken.cache_miss', 1, None)
+    records = metricsmock.get_records()
+    assert records[0] == (INCR, 'tecken.cache_hit', 1, None)
+    assert records[1] == (INCR, 'tecken.cache_hit', 1, None)
+    assert records[2] == (INCR, 'tecken.cache_miss', 1, None)
 
 
 def test_log_cache_evictions_from_metrics_view(client, clear_redis, settings):
