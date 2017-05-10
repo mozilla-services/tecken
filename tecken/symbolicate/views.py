@@ -341,6 +341,15 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 )
                 metrics.gauge('storing_symbol', symbol_map_size)
                 information['found'] = True
+
+                # We don't need to know the store cache's memory usage
+                # but it's a useful number in understanding how the LRU
+                # is behaving. Take this opportunity to send a gauge of
+                # the amount of memory the store is using
+                redis_store_connection = get_redis_connection('store')
+                info = redis_store_connection.info()
+                metrics.gauge('store_memory', info['used_memory'])
+
             except (SymbolNotFound, SymbolFileEmpty, SymbolDownloadError):
                 # If it can't be downloaded, cache it as an empty result
                 # so we don't need to do this every time we're asked to
