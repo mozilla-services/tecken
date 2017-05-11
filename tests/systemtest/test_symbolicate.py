@@ -63,7 +63,7 @@ def test_basic_symbolication_with_debug():
     response = _request(crash_ping)
     debug = response.json()['debug']
     assert debug
-    assert debug['cache_lookups']['count'] == 2
+    assert debug['cache_lookups']['count'] == 1
     assert debug['modules']['count'] == 2
     assert debug['stacks']['count'] == 2
 

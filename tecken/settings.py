@@ -417,6 +417,14 @@ class Dev(Base):
             }
         },
         {
+            'class': 'markus.backends.logging.LoggingRollupMetrics',
+            'options': {
+                'logger_name': 'markus',
+                'leader': 'ROLLUP',
+                'flush_interval': 60
+            }
+        },
+        {
             'class': 'tecken.markus_extra.CacheMetrics',
         },
     ]
@@ -541,6 +549,8 @@ class Prodlike(Prod):
         DATABASES = super().DATABASES.copy()
         DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'disable'
         return DATABASES
+
+    MARKUS_BACKENDS = []
 
 
 class Build(Prod):
