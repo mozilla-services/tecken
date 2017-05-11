@@ -11,7 +11,6 @@ from collections import defaultdict
 import markus
 import ujson as json
 
-import requests
 from django_redis import get_redis_connection
 
 from django.conf import settings
@@ -85,7 +84,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
         self.stacks = stacks
         self.memory_map = memory_map
         self.debug = debug
-        self.session = requests.Session()
         # per request global map of all symbol maps
         self.all_symbol_maps = {}
         # the result we will populate
