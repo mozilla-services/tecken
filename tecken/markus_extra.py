@@ -31,8 +31,7 @@ class CacheMetrics(BackendBase):
 
     gauge = incr
 
-    def timing(self, stat, value, tags=None):
-        pass
+    timing = incr
 
     def histogram(self, stat, value, tags=None):
         pass

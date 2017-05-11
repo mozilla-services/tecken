@@ -18,7 +18,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.core.cache import cache, caches
 from django.views.decorators.csrf import csrf_exempt
-from django.template.defaultfilters import filesizeformat
+from django.template.defaultfilters import filesizeformat as dj_filesizeformat
 from django.core.exceptions import ImproperlyConfigured
 
 from tecken.base.symboldownloader import (
@@ -31,6 +31,14 @@ from tecken.base.symboldownloader import (
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 store = caches['store']
+
+
+def filesizeformat(bytes):
+    """the function django.template.defaultfilters.filesizeformat is
+    nifty but it's meant for displaying in templates so it uses a
+    whitespace-looking character instead of a space so it doesn't
+    break in display. We don't need that here in this context."""
+    return dj_filesizeformat(bytes).replace('\xa0', ' ')
 
 
 class SymbolFileEmpty(Exception):
@@ -105,7 +113,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
         cache_lookup_sizes = []
         download_times = []
         download_sizes = []
-        modules_lookups = set()
+        modules_lookups = {}
 
         # First look up all symbols that we're going to need so that
         # when it's time to really loop over `self.stacks` the
@@ -118,63 +126,83 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     continue
                 filename, debug_id = self.memory_map[module_index]
                 symbol_key = (filename, debug_id)
+                # Keep a dict of the symbol keys and each's module index
+                modules_lookups[symbol_key] = module_index
 
-                # In this loop we're only interested in building up
-                # our self.all_symbol_maps dict. We're doing that by
-                # iterating through ALL stacks (which is more realistic)
-                # than assuming every item in self.memory_map will be used).
-                # Keeping this set filled up helps us avoid looking up the
-                # same symbol (in the cache) more than once.
-                if symbol_key in modules_lookups:
-                    continue
-                modules_lookups.add(symbol_key)
+        # get_symbol_maps() takes a list of symbol keys, does a Redis
+        # GETMANY over all of them, then returns a dict containing
+        # metrics about that lookup and a dict called 'symbols'
+        # which has the individual information for each symbol.
+        informations = self.get_symbol_maps(modules_lookups)
 
-                information = self.get_symbol_map(symbol_key)
-                # Hit or miss, there was a cache lookup
-                if self.debug:
-                    cache_lookup_times.append(
-                        information['cache_lookup_time']
-                    )
-                    # If it was a misse, there'd be no size
-                    if 'cache_lookup_size' in information:
-                        cache_lookup_sizes.append(
-                            information['cache_lookup_size']
-                        )
-                if 'symbol_map' in information:
-                    # We were able to look it up from cache.
-                    symbol_map = information['symbol_map']
-                    # But even though it was in cache it might have just
-                    # been cached temporarily because it has previously
-                    # failed.
-                    found = information['found']
+        # Hit or miss, there was a cache lookup
+        if self.debug:
+            cache_lookup_times.append(
+                informations['cache_lookup_time']
+            )
+            # If it was a misse, there'd be no size
+            if 'cache_lookup_size' in informations:
+                cache_lookup_sizes.append(
+                    informations['cache_lookup_size']
+                )
 
-                    # If it was successfully fetched from cache,
-                    # these metrics will be available.
-                    self.result['knownModules'][module_index] = found
-                    self.add_to_symbols_maps(symbol_key, symbol_map)
-                else:
-                    needs_to_be_downloaded.add((
-                        symbol_key,
-                        module_index
-                    ))
+        # Now loop over every symbol looked up from get_symbol_maps()
+        # Expect that, for every symbol, there is something. Even
+        # though it might be empty. If it's empty (i.e. no 'symbol_map' key)
+        # it means we looked in the cache but it not in the cache.
+        for symbol_key, information in informations['symbols'].items():
+            module_index = modules_lookups[symbol_key]
+            if 'symbol_map' in information:
+                # We were able to look it up from cache.
+                symbol_map = information['symbol_map']
+                # But even though it was in cache it might have just
+                # been cached temporarily because it has previously
+                # failed.
+                found = information['found']
+
+                # If it was successfully fetched from cache,
+                # these metrics will be available.
+                self.result['knownModules'][module_index] = found
+                self.add_to_symbols_maps(symbol_key, symbol_map)
+            else:
+                # These are the symbols that we're going to have to
+                # download from the Internet.
+                needs_to_be_downloaded.add((
+                    symbol_key,
+                    module_index
+                ))
 
         # Now let's go ahead and download the symbols that need to be
         # fetched over the network.
-        downloaded = self.load_symbols(needs_to_be_downloaded)
-        for symbol_key, information, module_index in downloaded:
-            symbol_map = information['symbol_map']
-            self.add_to_symbols_maps(symbol_key, symbol_map)
-            if self.debug:
-                if 'download_time' in information:
-                    download_times.append(information['download_time'])
-                if 'download_size' in information:
-                    download_sizes.append(information['download_size'])
-            found = information['found']
-            self.result['knownModules'][module_index] = found
+        if needs_to_be_downloaded:
+            # The self.load_symbols() method can cope
+            # with 'needs_to_be_downloaded' being an empty list, as
+            # there is simply nothing to do.
+            # But we avoid the call since it has a timer on it. Otherwise
+            # we get many timer timings that are unrealistically small
+            # which makes it hard to see how long it takes.
+            downloaded = self.load_symbols(needs_to_be_downloaded)
+            for symbol_key, information, module_index in downloaded:
+                symbol_map = information['symbol_map']
+                self.add_to_symbols_maps(symbol_key, symbol_map)
+                if self.debug:
+                    if 'download_time' in information:
+                        download_times.append(information['download_time'])
+                    if 'download_size' in information:
+                        download_sizes.append(information['download_size'])
+                found = information['found']
+                self.result['knownModules'][module_index] = found
 
+        # Initialize counters of how many stacks we do symbolication on.
+        # Some stacks are malformed so we can't symbolicate them
+        # so we keep a seperation between "total" and "real". Always
+        # expect real_stacks <= total_stacks.
         total_stacks = 0
         real_stacks = 0
 
+        # This counter is for the sake of the debug output. So you can
+        # get an appreciation how much was needed from each module (aka
+        # symbol).
         stacks_per_module = defaultdict(int)
 
         # Now that all needed symbols are looked up, we should be
@@ -187,11 +215,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     try:
                         response_stack.append(hex(module_offset))
                     except TypeError:
-                        # XXX considering using markus.metrics ONLY
-                        logger.debug('TypeError on ({!r}, {!r})'.format(
-                            module_offset,
-                            module_index,
-                        ))
                         metrics.incr('typerror', 1)
                         # Happens if 'module_offset' is not an int16
                         # and thus can't be represented in hex.
@@ -213,6 +236,8 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     ({}, [])
                 )
                 signature = symbol_map.get(module_offset)
+                # If it wasn't an immediate match in the map, look up
+                # the nearest signature rounded down.
                 if signature is None and symbol_map:
                     signature = symbol_map[
                         symbol_offset_list[
@@ -266,40 +291,48 @@ class SymbolicateJSON(LogCacheHitsMixin):
     def _make_cache_key(symbol_key):
         return 'symbol:{}/{}'.format(*symbol_key)
 
-    def get_symbol_map(self, symbol_key):
-        cache_key = self._make_cache_key(symbol_key)
-        information = {}
+    @metrics.timer_decorator('cache_lookup_symbols')
+    def get_symbol_maps(self, symbol_keys):
+        cache_keys = {self._make_cache_key(x): x for x in symbol_keys}
+        # output of 'store.get_many' is a OrderedDict
         t0 = time.time()
-        symbol_map = store.get(cache_key)
+        many = store.get_many(cache_keys.keys())
         t1 = time.time()
-        if self.debug:
-            information['cache_lookup_time'] = t1 - t0
+        informations = {
+            'symbols': {},
+        }
+        for cache_key in cache_keys:
+            symbol_key = cache_keys[cache_key]
+            information = {}
 
-        if symbol_map is None:  # not existant in ccache
-            # Need to download this from the Internet.
-            self.log_symbol_cache_miss()
-            # If the symbols weren't in the cache, this will be dealt
-            # with later by this method's caller.
-        else:
-            assert isinstance(symbol_map, dict)
-            if not symbol_map:
-                # It was cached but empty. That means it was logged that
-                # it was previously attempted but failed.
-                # The reason it's cached is to avoid it being looked up
-                # again and again when it's just going to continue to fail.
-                information['symbol_map'] = {}
-                information['found'] = False
+            symbol_map = many.get(cache_key)
+            if symbol_map is None:  # not existant in cache
+                # Need to download this from the Internet.
+                self.log_symbol_cache_miss()
+                # If the symbols weren't in the cache, this will be dealt
+                # with later by this method's caller.
             else:
-                if self.debug:
-                    symbol_map_size = len(pickle.dumps(symbol_map))
-                    information['cache_lookup_size'] = symbol_map_size
-                    metrics.gauge('retrieving_symbol', symbol_map_size)
-                self.log_symbol_cache_hit()
-                # If it was in cache, that means it was originally found.
-                information['symbol_map'] = symbol_map
-                information['found'] = True
+                assert isinstance(symbol_map, dict)
+                if not symbol_map:
+                    # It was cached but empty. That means it was logged that
+                    # it was previously attempted but failed.
+                    # The reason it's cached is to avoid it being looked up
+                    # again and again when it's just going to continue to fail.
+                    information['symbol_map'] = {}
+                    information['found'] = False
+                else:
+                    self.log_symbol_cache_hit()
+                    # If it was in cache, that means it was originally found.
+                    information['symbol_map'] = symbol_map
+                    information['found'] = True
+            informations['symbols'][symbol_key] = information
 
-        return information
+        if self.debug:
+            symbol_maps_size = len(pickle.dumps(many))
+            informations['cache_lookup_size'] = symbol_maps_size
+            metrics.gauge('retrieving_symbol', symbol_maps_size)
+            informations['cache_lookup_time'] = t1 - t0
+        return informations
 
     def load_symbols(self, requirements):
         """return a list that contains items of 3-tuples of
@@ -366,6 +399,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 information['found'] = False
             yield (symbol_key, information, module_index)
 
+    @metrics.timer_decorator('load_symbol')
     def load_symbol(self, filename, debug_id):
         t0 = time.time()
         stream = self.get_download_symbol_stream(filename, debug_id)
@@ -441,6 +475,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
 
 @csrf_exempt
+@metrics.timer_decorator('symbolicate_json')
 def symbolicate_json(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Must use HTTP POST'}, status=405)

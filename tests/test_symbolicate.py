@@ -182,7 +182,7 @@ def test_symbolicate_json_happy_path_django_view(
     assert result_second == result
 
 
-def test_symbolicate_json_one_cache_lookup_per_symbol(
+def test_symbolicate_json_one_cache_lookup(
     clear_redis,
     settings,
     requestsmock
@@ -219,10 +219,9 @@ def test_symbolicate_json_one_cache_lookup_per_symbol(
         ]
     ]
     assert result['debug']['downloads']['count'] == 2
-    # This should be 2 because even though 'memory_map[0]' is needed
-    # once and 'memory_map[1]' is needed twice, it should only be
-    # done a total of 2 times because the symbol is repeating once.
-    assert result['debug']['cache_lookups']['count'] == 2
+    # 'xul.pdb' is needed once, 'wntdll.pdb' is needed twice
+    # but it should only require 1 cache lookup.
+    assert result['debug']['cache_lookups']['count'] == 1
 
 
 def test_symbolicate_json_bad_module_indexes(
@@ -333,9 +332,9 @@ def test_symbolicate_json_happy_path_with_debug(
     assert result['debug']['stacks']['count'] == 2
     assert result['debug']['stacks']['real'] == 2
     assert result['debug']['time'] > 0.0
-    # Two cache lookups were attempted
-    assert result['debug']['cache_lookups']['count'] == 2
-    assert result['debug']['cache_lookups']['size'] == 0.0
+    # One cache lookup was attempted
+    assert result['debug']['cache_lookups']['count'] == 1
+    assert result['debug']['cache_lookups']['size'] > 0.0
     assert result['debug']['cache_lookups']['time'] > 0.0
     assert result['debug']['downloads']['count'] == 2
     assert result['debug']['downloads']['size'] > 0.0
@@ -367,7 +366,7 @@ def test_symbolicate_json_happy_path_with_debug(
     assert result['debug']['stacks']['real'] == 2
     assert result['debug']['stacks']['count'] == 2
     assert result['debug']['time'] > 0.0
-    assert result['debug']['cache_lookups']['count'] == 2
+    assert result['debug']['cache_lookups']['count'] == 1
     assert result['debug']['cache_lookups']['size'] > 0.0
     assert result['debug']['cache_lookups']['time'] > 0.0
     assert result['debug']['downloads']['count'] == 0

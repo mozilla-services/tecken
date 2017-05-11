@@ -16,6 +16,9 @@ class App extends Component {
     intervalSeconds: DEFAULTINTERVAL,
     paused: false,
   }
+  resume = () => {
+    this.setState({paused: false})
+  }
   render() {
     return (
       <div className="App">
@@ -52,7 +55,10 @@ class App extends Component {
           </form>
         </div>
         {/* Send all of this's state as props. Lazy. */}
-        <MetricsLines {...this.state}/>
+        <MetricsLines
+          {...this.state}
+          resume={this.resume}
+        />
       </div>
     )
   }
@@ -297,11 +303,20 @@ class MetricsLines extends Component {
     }
   })
 
+  tryAgain = event => {
+    event.preventDefault()
+    this.setState({serverError: null})
+    this.props.resume()
+  }
+
   render() {
     return <div className="metricslines">
       {
         this.state.serverError ?
-        <ShowServerError {...this.state.server}/> : null
+        <ShowServerError
+          {...this.state.serverError}
+          tryAgain={this.tryAgain}/>
+        : null
       }
       <div className="metricsline">
         <h3>Hits and Misses</h3>
@@ -342,7 +357,7 @@ class MetricsLines extends Component {
 }
 
 
-const ShowServerError = ({ status, statusText }) => {
+const ShowServerError = ({ status, statusText, tryAgain }) => {
   return <div className="server-error">
     <h2>Server Error</h2>
     <p>Unable to talk to the server for metrics data</p>
@@ -352,6 +367,7 @@ const ShowServerError = ({ status, statusText }) => {
     <p>
       Perhaps
       <button type="button" onClick={e => document.location.reload(true)}>Reload</button>
+      <button type="button" onClick={tryAgain}>Try Again</button>
     </p>
   </div>
 }
