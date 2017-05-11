@@ -455,6 +455,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
     @property
     def downloader(self):
+        """Lazily return an instance of SymbolDownloader"""
         try:
             return self._downloader
         except AttributeError:
