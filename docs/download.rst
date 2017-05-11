@@ -63,3 +63,17 @@ called ``code_file`` and ``code_id``. So if you make a query like:
 The CSV report is actually ultimately to help the Socorro Processor
 which used to manage reporting symbols that can't be found during
 processing. See https://bugzilla.mozilla.org/show_bug.cgi?id=1361809
+
+
+Ignore Patterns
+===============
+
+Certain files are repeatedly queried for by we know with confidence that
+not only is it never in our symbol stores, it's also not worth logging
+that it couldn't be found.
+
+Right now, this is maintained as a configurable blacklist but is hard
+coded inside the ``_ignore_symbol`` code in ``tecken.download.views``.
+
+This approach might change over time as we're able to confidently
+identify more and more patterns that we know we can ignore.

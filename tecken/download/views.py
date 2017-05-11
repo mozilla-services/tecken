@@ -20,9 +20,26 @@ logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 
 
+def _ignore_symbol(symbold, debugid, filename):
+    # The MS debugger will always try to look up these files. We
+    # never have them in our symbol stores. So it can be safely ignored.
+    if filename == 'file.ptr':
+        return True
+
+    # The default is to NOT ignore it
+
+
 @metrics.timer_decorator('download_symbol')
 @require_http_methods(['GET', 'HEAD'])
 def download_symbol(request, symbol, debugid, filename):
+    # First there's an opportunity to do some basic pattern matching on
+    # the symbold, debugid, and filename parameters to determine
+    # if we can, with confidence, simply ignore it.
+    # Not only can we avoid doing a SymbolDownloader call, we also
+    # don't have to bother logging that it could not be found.
+    if _ignore_symbol(symbol, debugid, filename):
+        return http.HttpResponseNotFound('Symbol Not Found (and ignored)')
+
     downloader = SymbolDownloader(settings.SYMBOL_URLS)
     if request.method == 'HEAD':
         if downloader.has_symbol(symbol, debugid, filename):
