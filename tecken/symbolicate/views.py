@@ -453,6 +453,14 @@ class SymbolicateJSON(LogCacheHitsMixin):
         information['download_size'] = total_size
         return information
 
+    @property
+    def downloader(self):
+        try:
+            return self._downloader
+        except AttributeError:
+            self._downloader = SymbolDownloader(settings.SYMBOL_URLS)
+        return self._downloader
+
     def get_download_symbol_stream(self, lib_filename, debug_id):
         """
         Return a requests.response stream or raise SymbolNotFound
@@ -463,8 +471,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
         else:
             symbol_filename = lib_filename + '.sym'
 
-        downloader = SymbolDownloader(settings.SYMBOL_URLS)
-        stream = downloader.get_symbol_stream(
+        stream = self.downloader.get_symbol_stream(
             lib_filename,
             debug_id,
             symbol_filename
