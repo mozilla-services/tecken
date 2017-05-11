@@ -207,9 +207,9 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
         # Now that all needed symbols are looked up, we should be
         # ready to symbolicate for reals.
-        for i, stack in enumerate(self.stacks):
+        for stack in self.stacks:
             response_stack = []
-            for j, (module_index, module_offset) in enumerate(stack):
+            for module_index, module_offset in stack:
                 total_stacks += 1
                 if module_index < 0:
                     try:
