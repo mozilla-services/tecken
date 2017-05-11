@@ -92,8 +92,19 @@ def test_client_404_logged(client, s3_client, settings, clear_redis):
     ))
     assert client.get(url).status_code == 404
     assert client.get(url).status_code == 404
-    # This one won't be logged
+    # This one won't be logged because it's a HEAD
     assert client.head(url).status_code == 404
+
+    # This one won't be logged because the filename is on a blacklist
+    # of symbol filenames to ignore
+    ignore_url = reverse('download:download_symbol', args=(
+        'cxinjime.pdb',
+        '342D9B0A3AE64812A2388C055C9F6C321',
+        'file.ptr',
+    ))
+    response = client.get(ignore_url)
+    assert response.status_code == 404
+    assert response.content == b'Symbol Not Found (and ignored)'
 
     # This should have logged the missing symbols twice.
     key, = list(cache.iter_keys('missingsymbols:*'))
