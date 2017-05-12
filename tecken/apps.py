@@ -27,9 +27,13 @@ class TeckenAppConfig(AppConfig):
         # "Error 9 while writing to socket. Bad file descriptor."
         # This is only occuring in running unit tests.
         connection = get_redis_connection('default')
-        connection.info()
+        # EXTREMELY TEMPORARY
+        connection.flushall()
+        # connection.info()
 
         connection = get_redis_connection('store')
+        # EXTREMELT TEMPORARY
+        connection.flushall()
         maxmemory_policy = connection.info()['maxmemory_policy']
         if maxmemory_policy != 'allkeys-lru':  # pragma: no cover
             if settings.DEBUG:
