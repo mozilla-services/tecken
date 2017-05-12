@@ -240,9 +240,6 @@ class Core(CSP, AWS, Configuration):
                     'django.template.context_processors.tz',
                     'django.template.context_processors.request',
                     'django.contrib.messages.context_processors.messages',
-                    # 'atmo.context_processors.settings',
-                    # 'atmo.context_processors.version',
-                    # 'atmo.context_processors.alerts',
                 ],
                 'loaders': [
                     'django.template.loaders.filesystem.Loader',
@@ -268,16 +265,29 @@ class Base(Core):
 
     DATABASES = values.DatabaseURLValue('postgres://postgres@db/postgres')
 
-    CACHES = {
-        'default': django_cache_url.config(
-            default='redis://redis-cache:6379/0',
-            env='REDIS_URL',
-        ),
-        'store': django_cache_url.config(
-            default='redis://redis-store:6379/0',
-            env='REDIS_STORE_URL',
-        )
-    }
+    REDIS_URL = values.Value('redis://redis-cache:6379/0')
+    REDIS_STORE_URL = values.Value('redis://redis-store:6379/0')
+
+    @property
+    def CACHES(self):
+        return {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': self.REDIS_URL,
+                'OPTIONS': {
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',
+                },
+            },
+            'store': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': self.REDIS_STORE_URL,
+                'OPTIONS': {
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',
+                },
+            },
+        }
 
     LOGGING_USE_JSON = values.BooleanValue(False)
 
@@ -446,16 +456,16 @@ class Test(Dev):
     ])
 
     # This is same as Dev except it forces the DB number to be 9
-    CACHES = {
-        'default': django_cache_url.config(
-            default='redis://redis-cache:6379/9',
-            env='REDIS_URL',
-        ),
-        'store': django_cache_url.config(
-            default='redis://redis-store:6379/9',
-            env='REDIS_STORE_URL',
-        )
-    }
+    # CACHES = {
+    #     'default': django_cache_url.config(
+    #         default='redis://redis-cache:6379/9',
+    #         env='REDIS_URL',
+    #     ),
+    #     'store': django_cache_url.config(
+    #         default='redis://redis-store:6379/9',
+    #         env='REDIS_STORE_URL',
+    #     )
+    # }
 
 
 class Stage(Base):
