@@ -49,6 +49,7 @@ services:
       - redis-store
       - redis-cache
       - statsd
+      - localstack-s3
     command: web-dev
 
   # Container specifically for running system tests against a remote.
@@ -96,3 +97,14 @@ services:
       - db
       - redis-cache
     command: worker
+
+  # https://hub.docker.com/r/atlassianlabs/localstack/
+  # localstack running a fake S3
+  localstack-s3:
+    image: atlassianlabs/localstack:0.5.0
+    environment:
+      - SERVICES=s3:4572
+      - DEFAULT_REGION=us-east-1
+      - HOSTNAME=localstack-s3
+    ports:
+      - "4572:4572"

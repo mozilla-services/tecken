@@ -218,9 +218,10 @@ def test_get_url_private(botomock):
             'xul.sym'
         )
         # The bucket gets put in the top-domain.
-        assert url.startswith('https://private.s3.amazonaws.com/')
+        assert url.startswith('https://s3.example.com/')
         assert (
-            '/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym?'
+            '/private/prefix/xul.pdb/'
+            '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym?'
         ) in url
         assert 'Expires=' in url
         assert 'AWSAccessKeyId=' in url

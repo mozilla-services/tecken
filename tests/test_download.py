@@ -41,10 +41,10 @@ def test_client_happy_path(client, botomock, metricsmock, settings):
         response = client.get(url)
         assert response.status_code == 302
         parsed = urlparse(response['location'])
-        # the pre-signed URL will have the bucket in the domain
-        assert parsed.netloc == 'private.s3.amazonaws.com'
+        assert parsed.netloc == 's3.example.com'
+        # the pre-signed URL will have the bucket in the path
         assert parsed.path == (
-            '/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            '/private/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         assert 'Signature=' in parsed.query
         assert 'Expires=' in parsed.query

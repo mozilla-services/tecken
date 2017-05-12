@@ -10,7 +10,7 @@ all things symbols for Mozilla platform. In particular three major features:
 
 2. Symbol Download
 
-3. Symbol Upload (under development)
+3. Symbol Upload
 
 
 Contents
@@ -23,6 +23,7 @@ User docs:
 
    symbolication
    download
+   upload
    configuration
    deployment
    celery

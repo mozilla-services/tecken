@@ -102,16 +102,6 @@ class Core(CSP, AWS, Configuration, Celery):
     SITE_ID = 1
 
     INSTALLED_APPS = [
-        # Project specific apps
-        'tecken.apps.TeckenAppConfig',
-        'tecken.symbolicate',
-        'tecken.download',
-        'tecken.tokens',
-
-        # Third party apps
-        'dockerflow.django',
-        'django_celery_results',
-
         # Django apps
         'django.contrib.sites',
         'django.contrib.auth',
@@ -119,6 +109,18 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.sessions',
         'django.contrib.messages',
         'django.contrib.staticfiles',
+
+        # Project specific apps
+        # 'tecken.upload.apps.UploadAppConfig',
+        'tecken.apps.TeckenAppConfig',
+        'tecken.symbolicate',
+        'tecken.download',
+        'tecken.tokens',
+        'tecken.upload',
+
+        # Third party apps
+        'dockerflow.django',
+        'django_celery_results',
 
         # Third party apps, that need to be listed last
         'mozilla_django_oidc',
@@ -351,14 +353,56 @@ class Base(Core):
     # If there's a bucket you want to include that should be accessed
     # by HTTP only, add '?access=public' to the URL.
     SYMBOL_URLS = values.ListValue([
+        # To create this bucket locally, use
+        # aws --endpoint-url=http://localhost:4572 --region=us-east-1 s3 mb s3://testbucket  # noqa
+        'http://localstack-s3.dev:4572/testbucket',
         'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
     ])
+
+    # URL of the default place to upload symbols
+    UPLOAD_DEFAULT_URL = values.Value(
+        'http://localstack-s3:4572/testbucket'
+    )
+
+    # The config is a list of tuples like this:
+    # 'email:url' where the email part can be a glob like regex
+    # For example '*@example.com:https://s3-us-west-2.amazonaws.com/mybucket'
+    # will upload all symbols to a bucket called 'mybucket' for anybody
+    # with a @example.com email.
+
+    # This is a config that, typed as a Python dictionary, specifies
+    # specific email addresses or patterns to custom URLs.
+    # For example '{"peter@example.com": "https://s3.amazonaws.com/mybucket"}'
+    # or '{"*@example.com": "https://s3.amazonaws.com/otherbucket"}' for
+    # anybody uploading with an @example.com email address.
+    UPLOAD_URL_EXCEPTIONS = values.DictValue({})
+
+    # The default prefix for all keys uploaded
+    UPLOAD_FILE_PREFIX = values.Value('v1')
+
+    # During upload, for each file in the archive, if the extension
+    # matches this list, the file gets gzip compressed before uploading.
+    COMPRESS_EXTENSIONS = values.ListValue(['sym'])
+
+    # For specific file uploads, override the mimetype.
+    # For .sym files, for example, if S3 knows them as 'text/plain'
+    # they become really handy to open in a browser and view directly.
+    MIME_OVERRIDES = values.DictValue({
+        'sym': 'text/plain',
+    })
 
     # Number of seconds to wait for a symbol download. If this
     # trips, no error will be raised and we'll just skip using it
     # as a known symbol file.
     # The value gets cached as an empty dict for one hour.
     SYMBOLS_GET_TIMEOUT = values.Value(5)
+
+    # Individual strings that can't be allowed in any of the lines in the
+    # content of a symbols archive file.
+    DISALLOWED_SYMBOLS_SNIPPETS = values.ListValue([
+        # https://bugzilla.mozilla.org/show_bug.cgi?id=1012672
+        'qcom/proprietary',
+    ])
 
     DOCKERFLOW_CHECKS = [
         'dockerflow.django.checks.check_database_connected',
@@ -452,6 +496,12 @@ class Test(Dev):
     AUTHENTICATION_BACKENDS = (
         'django.contrib.auth.backends.ModelBackend',
     )
+
+    UPLOAD_FILE_PREFIX = 'v0'
+    UPLOAD_DEFAULT_URL = 'http://s3.example.com/mybucket'
+    UPLOAD_URL_EXCEPTIONS = {
+        '*@peterbe.com': 'http://s3.example.com/peterbe-com',
+    }
 
 
 class Stage(Base):

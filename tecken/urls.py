@@ -10,6 +10,7 @@ from django.views import generic, static
 
 from . import views
 
+
 handler500 = 'tecken.views.server_error'
 
 
@@ -26,6 +27,11 @@ urlpatterns = [
     ),
 
     url(r'^oidc/', include('mozilla_django_oidc.urls')),
+
+    url(
+        r'upload/',
+        include('tecken.upload.urls', namespace='upload')
+    ),
 
     url(
         r'^(?P<path>contribute\.json)$',
