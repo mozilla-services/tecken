@@ -11,7 +11,6 @@ from collections import defaultdict
 import markus
 import ujson as json
 
-import requests
 from django_redis import get_redis_connection
 
 from django.conf import settings
@@ -85,7 +84,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
         self.stacks = stacks
         self.memory_map = memory_map
         self.debug = debug
-        self.session = requests.Session()
         # per request global map of all symbol maps
         self.all_symbol_maps = {}
         # the result we will populate
@@ -455,6 +453,15 @@ class SymbolicateJSON(LogCacheHitsMixin):
         information['download_size'] = total_size
         return information
 
+    @property
+    def downloader(self):
+        """Lazily return an instance of SymbolDownloader"""
+        try:
+            return self._downloader
+        except AttributeError:
+            self._downloader = SymbolDownloader(settings.SYMBOL_URLS)
+        return self._downloader
+
     def get_download_symbol_stream(self, lib_filename, debug_id):
         """
         Return a requests.response stream or raise SymbolNotFound
@@ -465,8 +472,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
         else:
             symbol_filename = lib_filename + '.sym'
 
-        downloader = SymbolDownloader(settings.SYMBOL_URLS)
-        stream = downloader.get_symbol_stream(
+        stream = self.downloader.get_symbol_stream(
             lib_filename,
             debug_id,
             symbol_filename
