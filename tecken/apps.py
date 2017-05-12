@@ -21,6 +21,9 @@ class TeckenAppConfig(AppConfig):
 
         markus.configure(settings.MARKUS_BACKENDS)
 
+        # XXX Temporary to figure out why the CACHES isn't working as expected
+        logger.info('CACHES: {!r}'.format(settings.CACHES))
+
         # For some unknown reason, if you don't do at least one read
         # from the Redis connection before you do your first write,
         # you can get a `redis.exceptions.ConnectionError` with
