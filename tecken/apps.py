@@ -21,18 +21,19 @@ class TeckenAppConfig(AppConfig):
 
         markus.configure(settings.MARKUS_BACKENDS)
 
-        # XXX Temporary to figure out why the CACHES isn't working as expected
-        logger.info('CACHES: {!r}'.format(settings.CACHES))
-
         # For some unknown reason, if you don't do at least one read
         # from the Redis connection before you do your first write,
         # you can get a `redis.exceptions.ConnectionError` with
         # "Error 9 while writing to socket. Bad file descriptor."
         # This is only occuring in running unit tests.
         connection = get_redis_connection('default')
-        connection.info()
+        # XXX TEMPORARY FIX
+        connection.flushall()
+        # connection.info()
 
         connection = get_redis_connection('store')
+        # XXX TEMPORARY FIX
+        connection.flushall()
         maxmemory_policy = connection.info()['maxmemory_policy']
         if maxmemory_policy != 'allkeys-lru':  # pragma: no cover
             if settings.DEBUG:
