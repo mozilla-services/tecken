@@ -12,7 +12,6 @@ from configurations import Configuration, values
 from django.contrib.messages import constants as messages
 from dockerflow.version import get_version
 from raven.transport.requests import RequestsHTTPTransport
-import django_cache_url
 
 
 class AWS:
@@ -275,16 +274,16 @@ class Base(Core):
                 'BACKEND': 'django_redis.cache.RedisCache',
                 'LOCATION': self.REDIS_URL,
                 'OPTIONS': {
-                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # noqa
+                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',  # noqa
                 },
             },
             'store': {
                 'BACKEND': 'django_redis.cache.RedisCache',
                 'LOCATION': self.REDIS_STORE_URL,
                 'OPTIONS': {
-                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
-                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',
+                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # noqa
+                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',  # noqa
                 },
             },
         }
@@ -454,18 +453,6 @@ class Test(Dev):
         'https://s3.example.com/public/prefix/?access=public',
         'https://s3.example.com/private/prefix/',
     ])
-
-    # This is same as Dev except it forces the DB number to be 9
-    # CACHES = {
-    #     'default': django_cache_url.config(
-    #         default='redis://redis-cache:6379/9',
-    #         env='REDIS_URL',
-    #     ),
-    #     'store': django_cache_url.config(
-    #         default='redis://redis-store:6379/9',
-    #         env='REDIS_STORE_URL',
-    #     )
-    # }
 
 
 class Stage(Base):
