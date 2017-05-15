@@ -15,6 +15,7 @@ handler500 = 'tecken.views.server_error'
 
 urlpatterns = [
     url(r'^$', views.dashboard, name='dashboard'),
+    url(r'^__task_tester__$', views.task_tester, name='task_tester'),
     url(r'', include('tecken.download.urls', namespace='download')),
 
     url(

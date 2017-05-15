@@ -2,12 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.http import HttpResponseServerError
+import time
+
+from django.http import HttpResponseServerError, HttpResponse
 from django.template import TemplateDoesNotExist, loader
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
 
 from .symbolicate.views import symbolicate_json
+from tecken.tasks import sample_task
 
 
 @csrf_exempt
@@ -40,3 +44,23 @@ def server_error(request, template_name='500.html'):
     return HttpResponseServerError(template.render({
         'request': request,
     }))
+
+
+@csrf_exempt
+def task_tester(request):
+    if request.method == 'POST':
+        cache.set('marco', 'ping', 100)
+        sample_task.delay('marco', 'polo', 10)
+        return HttpResponse('Now make a GET request to this URL\n')
+    else:
+        if not cache.get('marco'):
+            return HttpResponse('Make a POST request to this URL first\n')
+        for i in range(3):
+            value = cache.get('marco')
+            if value == 'polo':
+                return HttpResponse('It works!\n')
+            time.sleep(1)
+
+        return HttpResponseServerError(
+            'Tried 4 times (4 seconds) and no luck :(\n'
+        )
