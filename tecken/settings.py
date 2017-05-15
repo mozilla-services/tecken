@@ -425,14 +425,14 @@ class Dev(Base):
                 'statsd_namespace': ''
             }
         },
-        {
-            'class': 'markus.backends.logging.LoggingRollupMetrics',
-            'options': {
-                'logger_name': 'markus',
-                'leader': 'ROLLUP',
-                'flush_interval': 60
-            }
-        },
+        # {
+        #     'class': 'markus.backends.logging.LoggingRollupMetrics',
+        #     'options': {
+        #         'logger_name': 'markus',
+        #         'leader': 'ROLLUP',
+        #         'flush_interval': 60
+        #     }
+        # },
         {
             'class': 'tecken.markus_extra.CacheMetrics',
         },

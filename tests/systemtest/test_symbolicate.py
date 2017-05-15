@@ -19,12 +19,12 @@ def test_basic_symbolication():
     crash_ping = {
         'version': 4,
         'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['firefox.pdb', 'C617B8AF472444AD952D19A0CFD7C8F72'],
             ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
         ],
         'stacks': [
             [
-                [0, 11723767],
+                [0, 154348],
                 [1, 65802]
             ]
         ]
@@ -33,7 +33,7 @@ def test_basic_symbolication():
     assert response.json() == {
         'symbolicatedStacks': [
             [
-                'XREMain::XRE_mainRun() (in xul.pdb)',
+                'sandbox::TargetProcess::~TargetProcess() (in firefox.pdb)',
                 'KiUserCallbackDispatcher (in wntdll.pdb)',
             ]
         ],
@@ -49,12 +49,12 @@ def test_basic_symbolication_with_debug():
     crash_ping = {
         'version': 4,
         'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['firefox.pdb', 'C617B8AF472444AD952D19A0CFD7C8F72'],
             ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
         ],
         'stacks': [
             [
-                [0, 11723767],
+                [0, 154348],
                 [1, 65802]
             ]
         ],
@@ -72,12 +72,12 @@ def test_basic_symbolication_cached():
     crash_ping = {
         'version': 4,
         'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['firefox.pdb', 'C617B8AF472444AD952D19A0CFD7C8F72'],
             ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
         ],
         'stacks': [
             [
-                [0, 11723767],
+                [0, 154348],
                 [1, 65802]
             ]
         ],
