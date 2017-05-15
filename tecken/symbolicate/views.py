@@ -380,6 +380,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 redis_store_connection = get_redis_connection('store')
                 info = redis_store_connection.info()
                 metrics.gauge('store_memory', info['used_memory'])
+                metrics.gauge('store_keys', redis_store_connection.dbsize())
 
             except (SymbolNotFound, SymbolFileEmpty, SymbolDownloadError):
                 # If it can't be downloaded, cache it as an empty result

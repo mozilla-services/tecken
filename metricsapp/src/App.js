@@ -190,7 +190,8 @@ class MetricsLines extends Component {
 
         const pointsCount = prevState.hits.datasets[0].data.length
         let pointRadius = 5
-        if (pointsCount > 30) pointRadius = 2
+        if (pointsCount > 100) pointRadius = 1
+        else if (pointsCount > 30) pointRadius = 2
         else if (pointsCount > 15) pointRadius = 3
         else if (pointsCount > 5) pointRadius = 4
 

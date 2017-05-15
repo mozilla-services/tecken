@@ -169,6 +169,11 @@ def test_symbolicate_json_happy_path_django_view(
     ]
     assert len(memory_gauges) == 2
 
+    # Called the first time it had to do a symbol store
+    metricsmock.has_record(GAUGE, 'tecken.store_keys', 1, None)
+    # Called twice because this test depends on downloading two symbols
+    metricsmock.has_record(GAUGE, 'tecken.store_keys', 2, None)
+
     # Because of a legacy we want this to be possible on the / endpoint
     response = json_poster(reverse('dashboard'), {
         'stacks': [[[0, 11723767], [1, 65802]]],
