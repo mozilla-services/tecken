@@ -5,7 +5,6 @@
 import os
 import requests
 
-
 BASE_URL = os.environ.get('BASE_URL')
 assert BASE_URL
 

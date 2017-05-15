@@ -144,40 +144,9 @@ class Core(CSP, AWS, Configuration, Celery):
         # 'guardian.backends.ObjectPermissionBackend',
     )
 
-    # LOGIN_URL = reverse_lazy('account_login')
-    # LOGOUT_URL = reverse_lazy('account_logout')
-    # LOGIN_REDIRECT_URL = reverse_lazy('dashboard')
-
-    # django-allauth configuration
-    # ACCOUNT_LOGOUT_REDIRECT_URL = LOGIN_REDIRECT_URL
-    # ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 7
-    # ACCOUNT_EMAIL_SUBJECT_PREFIX = '[Telemetry Analysis Service] '
-    # ACCOUNT_EMAIL_REQUIRED = True
-    # ACCOUNT_EMAIL_VERIFICATION = 'optional'
-    # ACCOUNT_LOGOUT_ON_GET = True
-    # ACCOUNT_ADAPTER = 'atmo.users.adapters.AtmoAccountAdapter'
-    # ACCOUNT_USERNAME_REQUIRED = False
-    # ACCOUNT_USER_DISPLAY = 'atmo.users.utils.email_user_display'
-
-    # SOCIALACCOUNT_ADAPTER = 'atmo.users.adapters.AtmoSocialAccountAdapter'
-    # SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'  # no extra verification needed
-    # SOCIALACCOUNT_QUERY_EMAIL = True  # needed by the Google provider
-
-    # SOCIALACCOUNT_PROVIDERS = {
-    #     'google': {
-    #         'HOSTED_DOMAIN': 'mozilla.com',
-    #         'AUTH_PARAMS': {
-    #             'prompt': 'select_account',
-    #         }
-    #     }
-    # }
-
     MESSAGE_TAGS = {
         messages.ERROR: 'danger'
     }
-
-    # render the 403.html file
-    # GUARDIAN_RENDER_403 = True
 
     # Internationalization
     # https://docs.djangoproject.com/en/1.9/topics/i18n/
@@ -190,49 +159,6 @@ class Core(CSP, AWS, Configuration, Celery):
 
     STATIC_ROOT = values.Value(default='/opt/static/')
     STATIC_URL = '/static/'
-    # STATICFILES_STORAGE = (
-    #     'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    # )
-    # STATICFILES_FINDERS = [
-    #     'django.contrib.staticfiles.finders.FileSystemFinder',
-    #     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    #     'npm.finders.NpmFinder',
-    # ]
-    #
-    # NPM_ROOT_PATH = values.Value(default='/opt/npm/')
-    # NPM_STATIC_FILES_PREFIX = 'npm'
-    # NPM_FILE_PATTERNS = {
-    #     'ansi_up': ['ansi_up.js'],
-    #     'bootstrap': [
-    #         'dist/fonts/*',
-    #         'dist/css/*',
-    #         'dist/js/bootstrap*.js',
-    #     ],
-    #     'bootstrap-confirmation2': ['bootstrap-confirmation.min.js'],
-    #     'bootstrap-datetime-picker': [
-    #         'css/*.css',
-    #         'js/*.js',
-    #     ],
-    #     'clipboard': ['dist/clipboard.min.js'],
-    #     'jquery': ['dist/*.js'],
-    #     'marked': ['marked.min.js'],
-    #     'moment': ['min/moment.min.js'],
-    #     'notebookjs': ['notebook.min.js'],
-    #     'parsleyjs': ['dist/parsley.min.js'],
-    #     'prismjs': [
-    #         'prism.js',
-    #         'components/*.js',
-    #         'plugins/autoloader/*.js',
-    #         'themes/prism.css',
-    #     ],
-    #     'raven-js': [
-    #         'dist/raven.*',
-    #     ]
-    # }
-
-    # the directory to have Whitenoise serve automatically on the
-    # root of the URL
-    # WHITENOISE_ROOT = os.path.join(THIS_DIR, 'static', 'public')
 
     SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     SESSION_CACHE_ALIAS = 'default'

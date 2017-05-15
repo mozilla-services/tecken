@@ -1,11 +1,15 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, you can obtain one at http://mozilla.org/MPL/2.0/.
+
 import time
 
 from django.core.cache import cache
 
-from .celery import celery
+from celery import shared_task
 
 
-@celery.task
+@shared_task
 def sample_task(key, value, expires=10):
     """Really basic task that simply puts a key and value in the
     regular cache. This way, it can be used to test if celery is working.

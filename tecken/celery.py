@@ -15,14 +15,21 @@ import configurations  # noqa
 configurations.setup()
 
 
-celery = Celery('tecken')
+app = Celery('tecken')
 
 
 # Using a string here means the worker don't have to serialize
 # the configuration object to child processes.
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
-celery.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# Load task modules from all registered Django celery configs.
-celery.autodiscover_tasks()
+# Specifically list the apps that have tasks.py
+# Note! If not doing this you get a strange RuntimeError
+# ('path' must be None or a list, not <class '_frozen_importlib_external._NamespacePath'>)  # noqa
+app.autodiscover_tasks(['tecken'])
+
+
+@app.task(bind=True)
+def debug_task(self):
+    print('Request: {0!r}'.format(self.request))
