@@ -18,6 +18,8 @@
 
 set -ex
 
+cd /app
+
 VENV_DIR=/tmp/tecken-systemtests-venv/
 if [ -z "${BASE_URL}" ]; then
     # This is the posturl when running against a local dev environment
@@ -33,7 +35,6 @@ echo "Setting up system tests."
 
 # Verify python3 and virtualenv exist
 cmd_required python3
-cmd_required virtualenv
 echo "Required commands available."
 
 # If venv exists, exit
@@ -43,7 +44,7 @@ if [ -d "${VENV_DIR}" ]; then
 fi
 
 # Create virtualenv
-virtualenv -p python3 "${VENV_DIR}"
+python3 -m venv "${VENV_DIR}"
 
 # Activate virtualenv
 source "${VENV_DIR}/bin/activate"

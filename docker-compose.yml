@@ -51,9 +51,14 @@ services:
       - statsd
     command: web-dev
 
+  # Container specifically for running system tests against a remote.
+  # Python based but distinct from the 'web' container.
   systemtest:
-    extends:
-      service: base
+    build:
+      context: .
+      dockerfile: tests/systemtest/Dockerfile
+    volumes:
+      - $PWD:/app
     environment:
       - BASE_URL=http://web:8000
     links:

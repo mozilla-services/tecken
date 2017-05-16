@@ -1,2 +1,3 @@
-# Currently empty because there is no difference between what
-# the base docker image offers and what the system tests need.
+pytest==3.0.7
+requests==2.14.2
+pytest-flake8==0.8.1
