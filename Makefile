@@ -67,7 +67,7 @@ docs: .docker-build
 	docker-compose run -u 0 web ./bin/build_docs.sh
 
 systemtest: .docker-build
-	docker-compose run systemtest tests/systemtest/run_tests.sh
+	docker-compose run systemtest /app/tests/systemtest/run_tests.sh
 
 tag:
 	@bin/make-tag.py

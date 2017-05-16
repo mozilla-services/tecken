@@ -52,8 +52,11 @@ services:
     command: web-dev
 
   systemtest:
-    extends:
-      service: base
+    build:
+      context: .
+      dockerfile: tests/systemtest/Dockerfile
+    volumes:
+      - $PWD:/app
     environment:
       - BASE_URL=http://web:8000
     links:
