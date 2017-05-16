@@ -51,6 +51,8 @@ services:
       - statsd
     command: web-dev
 
+  # Container specifically for running system tests against a remote.
+  # Python based but distinct from the 'web' container.
   systemtest:
     build:
       context: .

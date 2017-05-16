@@ -34,8 +34,7 @@ cmd_required() {
 echo "Setting up system tests."
 
 # Verify python3 and virtualenv exist
-#cmd_required python3
-#cmd_required virtualenv
+cmd_required python3
 echo "Required commands available."
 
 # If venv exists, exit
@@ -45,7 +44,6 @@ if [ -d "${VENV_DIR}" ]; then
 fi
 
 # Create virtualenv
-#virtualenv -p python3 "${VENV_DIR}"
 python3 -m venv "${VENV_DIR}"
 
 # Activate virtualenv
