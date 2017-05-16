@@ -4,7 +4,7 @@
 
 import time
 
-from django.http import HttpResponseServerError, HttpResponse
+from django import http
 from django.template import TemplateDoesNotExist, loader
 from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -37,11 +37,11 @@ def server_error(request, template_name='500.html'):
     try:
         template = loader.get_template(template_name)
     except TemplateDoesNotExist:
-        return HttpResponseServerError(
+        return http.HttpResponseServerError(
             '<h1>Server Error (500)</h1>',
             content_type='text/html'
         )
-    return HttpResponseServerError(template.render({
+    return http.HttpResponseServerError(template.render({
         'request': request,
     }))
 
@@ -51,16 +51,21 @@ def task_tester(request):
     if request.method == 'POST':
         cache.set('marco', 'ping', 100)
         sample_task.delay('marco', 'polo', 10)
-        return HttpResponse('Now make a GET request to this URL\n')
+        return http.HttpResponse(
+            'Now make a GET request to this URL\n',
+            status=201,
+        )
     else:
         if not cache.get('marco'):
-            return HttpResponse('Make a POST request to this URL first\n')
+            return http.HttpResponseBadRequest(
+                'Make a POST request to this URL first\n'
+            )
         for i in range(3):
             value = cache.get('marco')
             if value == 'polo':
-                return HttpResponse('It works!\n')
+                return http.HttpResponse('It works!\n')
             time.sleep(1)
 
-        return HttpResponseServerError(
+        return http.HttpResponseServerError(
             'Tried 4 times (4 seconds) and no luck :(\n'
         )

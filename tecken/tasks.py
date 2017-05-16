@@ -2,8 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import time
-
 from django.core.cache import cache
 
 from celery import shared_task
@@ -17,5 +15,4 @@ def sample_task(key, value, expires=10):
     This is never expected to be used for anything run-time in production.
     Just for basic systemtests.
     """
-    time.sleep(0.1)  # artificial just so that there's a tiny delay
     cache.set(key, value, expires)

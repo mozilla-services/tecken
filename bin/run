@@ -41,7 +41,6 @@ case $1 in
     exec python manage.py runserver 0.0.0.0:${PORT}
     ;;
   worker)
-    echo "STARTING THE WORKER!"
     exec newrelic-admin run-program celery -A tecken.celery:app worker -l info
     ;;
   test)

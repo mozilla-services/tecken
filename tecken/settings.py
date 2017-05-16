@@ -217,7 +217,6 @@ class Base(Core):
     @property
     def CELERY_BROKER_URL(self):
         return self.REDIS_URL
-        #  = os.environ.get('REDIS_URL', REDIS_URL_DEFAULT)
 
     @property
     def CACHES(self):
