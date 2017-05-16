@@ -25,6 +25,7 @@ User docs:
    download
    configuration
    deployment
+   celery
 
 
 Project docs:
