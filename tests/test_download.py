@@ -106,6 +106,16 @@ def test_client_404_logged(client, s3_client, settings, clear_redis):
     assert response.status_code == 404
     assert response.content == b'Symbol Not Found (and ignored)'
 
+    # This one won't be logged either
+    ignore_url = reverse('download:download_symbol', args=(
+        'cxinjime.pdb',
+        '000000000000000000000000000000000',
+        'cxinjime.sym',
+    ))
+    response = client.get(ignore_url)
+    assert response.status_code == 404
+    assert response.content == b'Symbol Not Found (and ignored)'
+
     # This should have logged the missing symbols twice.
     key, = list(cache.iter_keys('missingsymbols:*'))
     # The key should contain today's date
