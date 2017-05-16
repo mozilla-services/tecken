@@ -90,3 +90,12 @@ def requestsmock():
     """
     with requests_mock.mock() as m:
         yield m
+
+
+@pytest.fixture
+def celery_config():
+    return {
+        'broker_url': 'redis://redis-cache:6379/0',
+        'result_backend': 'redis://redis-cache:6379/0',
+        'task_always_eager': True,
+    }

@@ -63,6 +63,7 @@ services:
       - BASE_URL=http://web:8000
     links:
       - web
+      # - worker
 
   # Web container is a prod-like fully-functioning container.
   gunicorn:
@@ -85,3 +86,13 @@ services:
       - "2023-2024:2023-2024"
       - "8125:8125/udp"
       - "8126:8126"
+
+  worker:
+    extends:
+      service: base
+    depends_on:
+      - base
+    links:
+      - db
+      - redis-cache
+    command: worker

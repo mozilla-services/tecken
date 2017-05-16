@@ -7,7 +7,7 @@ set -eo pipefail
 : "${TRIES:=60}"
 
 usage() {
-  echo "usage: bin/run web|web-dev|test|bash"
+  echo "usage: bin/run web|web-dev|worker|test|bash"
   exit 1
 }
 
@@ -40,12 +40,9 @@ case $1 in
     python manage.py migrate --noinput
     exec python manage.py runserver 0.0.0.0:${PORT}
     ;;
-  # worker)
-  #   exec newrelic-admin run-python manage.py rqworker --worker-class=rq_retry.RetryWorker default
-  #   ;;
-  # scheduler)
-  #   exec newrelic-admin run-python manage.py rqscheduler
-  #   ;;
+  worker)
+    exec newrelic-admin run-program celery -A tecken.celery:app worker -l info
+    ;;
   test)
     # python manage.py collectstatic --noinput
     coverage erase

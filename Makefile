@@ -55,7 +55,7 @@ test: .docker-build
 	@bin/test
 
 run: .docker-build
-	docker-compose up web
+	docker-compose up web worker
 
 gunicorn: .docker-build
 	docker-compose run --service-ports web web
