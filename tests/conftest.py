@@ -5,9 +5,9 @@
 import json
 
 import pytest
-import boto3
+import mock
 import requests_mock
-from moto import mock_s3
+import botocore
 from markus.testing import MetricsMock
 
 from django.core.cache import caches
@@ -57,26 +57,6 @@ def metricsmock():
 
 
 @pytest.fixture
-def s3_client():
-    """Returns a boto3 S3 client instance as a context.
-    Usage::
-
-        def test_something(s3_client):
-            # create a fixture bucket
-            s3_client.create_bucket(Bucket='public')
-            # create a fixture object
-            s3_client.put_object(...)
-
-            call_code_that_uses_boto3_s3_client()
-
-    """
-    mock = mock_s3()
-    mock.start()
-    yield boto3.client('s3')
-    mock.stop()
-
-
-@pytest.fixture
 def requestsmock():
     """Return a context where requests are all mocked.
     Usage::
@@ -99,3 +79,80 @@ def celery_config():
         'result_backend': 'redis://redis-cache:6379/0',
         'task_always_eager': True,
     }
+
+
+# This needs to be imported at least once. Otherwise the mocking
+# done in botomock() doesn't work.
+# (peterbe) Would like to know why but for now let's just comply.
+import boto3  # noqa
+
+_orig_make_api_call = botocore.client.BaseClient._make_api_call
+
+
+@pytest.fixture
+def botomock():
+    """Return a class that can be used as a context manager when called.
+    Usage::
+
+        def test_something(botomock):
+
+            def my_make_api_call(self, operation_name, api_params):
+                if random.random() > 0.5:
+                    from botocore.exceptions import ClientError
+                    parsed_response = {
+                        'Error': {'Code': '403', 'Message': 'Not found'}
+                    }
+                    raise ClientError(parsed_response, operation_name)
+                else:
+                    return {
+                        'CustomS3': 'Headers',
+                    }
+
+            with botomock(my_make_api_call):
+                ...things that depend on boto3...
+
+                # You can also, whilst debugging on tests,
+                # see what calls where made.
+                # This is handy to see and assert that your replacement
+                # method really was called.
+                print(botomock.calls)
+
+    Whilst working on a test, you might want wonder "What would happen"
+    if I let this actually use the Internet to make the call un-mocked.
+    To do that use ``botomock.orig()``. For example::
+
+        def test_something(botomock):
+
+            def my_make_api_call(self, operation_name, api_params):
+                if api_params == something:
+                    ...you know what to do...
+                else:
+                    # Only in test debug mode
+                    result = botomock.orig(self, operation_name, api_params)
+                    print(result)
+                    raise NotImplementedError
+
+    """
+
+    class BotoMock:
+
+        def __init__(self):
+            self.calls = []
+
+        def __call__(self, mock_function):
+
+            def wrapper(f):
+                def inner(*args, **kwargs):
+                    self.calls.append(args[1:])
+                    return f(*args, **kwargs)
+                return inner
+
+            return mock.patch(
+                'botocore.client.BaseClient._make_api_call',
+                new=wrapper(mock_function)
+            )
+
+        def orig(self, *args, **kwargs):
+            return _orig_make_api_call(*args, **kwargs)
+
+    return BotoMock()
