@@ -423,6 +423,9 @@ class Test(Dev):
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
+    OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
+    OIDC_RP_CLIENT_SECRET = values.Value('not-so-secret-after-all')
+
     PASSWORD_HASHERS = (
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )
