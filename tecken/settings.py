@@ -411,9 +411,11 @@ class Dev(Base):
         #         'flush_interval': 60
         #     }
         # },
-        {
-            'class': 'tecken.markus_extra.CacheMetrics',
-        },
+
+        # Only uncomment this when using that old metricsapp
+        # {
+        #     'class': 'tecken.markus_extra.CacheMetrics',
+        # },
     ]
 
 
