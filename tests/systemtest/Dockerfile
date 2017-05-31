@@ -1,4 +1,4 @@
-FROM python:3.5-slim
+FROM python:3.6-slim
 MAINTAINER Peter Bengtsson <peterbe@mozilla.com>
 
 ENV PYTHONUNBUFFERED=1 \
