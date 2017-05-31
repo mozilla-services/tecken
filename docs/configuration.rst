@@ -143,3 +143,38 @@ The three environment variables to control the statsd are as follows
 2. ``DJANGO_STATSD_PORT`` (*8125*)
 
 3. ``DJANGO_STATSD_NAMESPACE`` (*''* (empty string))
+
+
+Auth0
+=====
+
+For authentication to work, you need to have an Auth0 account and its
+credentials. You also need a domain so you can figure out certain
+URLs. You need the client ID and the client secret. Put these into
+the environment variables like this:
+
+.. code-block:: shell
+
+    DJANGO_OIDC_RP_CLIENT_ID=clientidhereclientidhere
+    DJANGO_OIDC_RP_CLIENT_SECRET=clientsecrethereclientsecrethere
+
+The default domain is ``auth.mozilla.auth0.com``. That has consequently
+been used to set up the following defaults:
+
+.. code-block:: shell
+
+    DJANGO_OIDC_OP_AUTHORIZATION_ENDPOINT=https://auth.mozilla.auth0.com/authorize
+    DJANGO_OIDC_OP_TOKEN_ENDPOINT=https://auth.mozilla.auth0.com/oauth/token
+    DJANGO_OIDC_OP_USER_ENDPOINT=https://auth.mozilla.auth0.com/userinfo
+
+If your domain is different, override these above three environment
+variables with your domain.
+
+Note! Tecken uses `Auth0`_ which follows the OpenID Connect protocol.
+The configuration actually requires the above mentioned URLs and when
+you use Auth0, the URLs are quite constant. But if you use another OpenID
+Connect provider, use the domain (e.g. ``myoidc.example.com``) and go to
+``https://myoidc.example.com/.well-known/openid-configuration`` and from
+there it should publish the authorization, token and user endpoints.
+
+.. _`Auth0`: https://auth0.com/

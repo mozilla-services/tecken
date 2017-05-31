@@ -6,9 +6,9 @@ import time
 
 from django import http
 from django.template import TemplateDoesNotExist, loader
-from django.template.response import TemplateResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 
 from .symbolicate.views import symbolicate_json
 from tecken.tasks import sample_task
@@ -23,8 +23,23 @@ def dashboard(request):
     if request.method == 'POST' and request.body:
         return symbolicate_json(request)
 
-    context = {}
-    return TemplateResponse(request, 'tecken/dashboard.html', context=context)
+    user = {}
+    if request.user.is_authenticated:
+        user['email'] = request.user.email
+        user['active'] = request.user.is_active
+        user['sign_out_url'] = request.build_absolute_uri(
+            reverse('oidc_logout')
+        )
+    else:
+        user['sign_in_url'] = request.build_absolute_uri(
+            reverse('oidc_authentication_init')
+        )
+
+    context = {
+        'user': user,
+        'documentation': 'https://tecken.readthedocs.io',
+    }
+    return http.JsonResponse(context)
 
 
 def server_error(request, template_name='500.html'):

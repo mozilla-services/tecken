@@ -118,6 +118,9 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.sessions',
         'django.contrib.messages',
         'django.contrib.staticfiles',
+
+        # Third party apps, that need to be listed last
+        'mozilla_django_oidc',
     ]
 
     MIDDLEWARE_CLASSES = (
@@ -131,6 +134,7 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
         'csp.middleware.CSPMiddleware',
+        'mozilla_django_oidc.contrib.auth0.middleware.RefreshIDToken',
     )
 
     ROOT_URLCONF = 'tecken.urls'
@@ -140,8 +144,7 @@ class Core(CSP, AWS, Configuration, Celery):
     # Add the django-allauth authentication backend.
     AUTHENTICATION_BACKENDS = (
         'django.contrib.auth.backends.ModelBackend',
-        # 'allauth.account.auth_backends.AuthenticationBackend',
-        # 'guardian.backends.ObjectPermissionBackend',
+        'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
     )
 
     MESSAGE_TAGS = {
@@ -193,6 +196,25 @@ class Core(CSP, AWS, Configuration, Celery):
             }
         },
     ]
+
+    OIDC_RP_CLIENT_ID = values.SecretValue()
+    OIDC_RP_CLIENT_SECRET = values.SecretValue()
+
+    OIDC_OP_AUTHORIZATION_ENDPOINT = values.URLValue(
+        'https://auth.mozilla.auth0.com/authorize'
+    )
+    OIDC_OP_TOKEN_ENDPOINT = values.URLValue(
+        'https://auth.mozilla.auth0.com/oauth/token'
+    )
+    OIDC_OP_USER_ENDPOINT = values.URLValue(
+        'https://auth.mozilla.auth0.com/userinfo'
+    )
+
+    # Let cookies last quite a long time.
+    SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 100)
+
+    # Where users get redirected after successfully signing in
+    LOGIN_REDIRECT_URL = '/?signedin=true'
 
 
 class Base(Core):
@@ -401,6 +423,9 @@ class Test(Dev):
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
+    OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
+    OIDC_RP_CLIENT_SECRET = values.Value('not-so-secret-after-all')
+
     PASSWORD_HASHERS = (
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )
@@ -409,6 +434,10 @@ class Test(Dev):
         'https://s3.example.com/public/prefix/?access=public',
         'https://s3.example.com/private/prefix/',
     ])
+
+    AUTHENTICATION_BACKENDS = (
+        'django.contrib.auth.backends.ModelBackend',
+    )
 
 
 class Stage(Base):
