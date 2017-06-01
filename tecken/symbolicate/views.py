@@ -108,7 +108,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
         t0 = time.time()
 
         cache_lookup_times = []
-        cache_lookup_sizes = []
         download_times = []
         download_sizes = []
         modules_lookups = {}
@@ -138,11 +137,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
             cache_lookup_times.append(
                 informations['cache_lookup_time']
             )
-            # If it was a misse, there'd be no size
-            if 'cache_lookup_size' in informations:
-                cache_lookup_sizes.append(
-                    informations['cache_lookup_size']
-                )
 
         # Now loop over every symbol looked up from get_symbol_maps()
         # Expect that, for every symbol, there is something. Even
@@ -276,7 +270,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 'cache_lookups': {
                     'count': len(cache_lookup_times),
                     'time': float(sum(cache_lookup_times)),
-                    'size': float(sum(cache_lookup_sizes)),
                 },
                 'downloads': {
                     'count': len(download_times),
@@ -292,13 +285,14 @@ class SymbolicateJSON(LogCacheHitsMixin):
     @metrics.timer_decorator('cache_lookup_symbols')
     def get_symbol_maps(self, symbol_keys):
         cache_keys = {self._make_cache_key(x): x for x in symbol_keys}
-        # output of 'store.get_many' is a OrderedDict
+        # output of 'store.get_many' is an OrderedDict
         t0 = time.time()
         many = store.get_many(cache_keys.keys())
         t1 = time.time()
         informations = {
             'symbols': {},
         }
+
         for cache_key in cache_keys:
             symbol_key = cache_keys[cache_key]
             information = {}
@@ -326,9 +320,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
             informations['symbols'][symbol_key] = information
 
         if self.debug:
-            symbol_maps_size = len(pickle.dumps(many))
-            informations['cache_lookup_size'] = symbol_maps_size
-            metrics.gauge('retrieving_symbol', symbol_maps_size)
             informations['cache_lookup_time'] = t1 - t0
         return informations
 
