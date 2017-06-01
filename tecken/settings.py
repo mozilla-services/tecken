@@ -106,6 +106,7 @@ class Core(CSP, AWS, Configuration, Celery):
         'tecken.apps.TeckenAppConfig',
         'tecken.symbolicate',
         'tecken.download',
+        'tecken.tokens',
 
         # Third party apps
         'dockerflow.django',
@@ -126,7 +127,7 @@ class Core(CSP, AWS, Configuration, Celery):
     MIDDLEWARE_CLASSES = (
         'django.middleware.security.SecurityMiddleware',
         'dockerflow.django.middleware.DockerflowMiddleware',
-        'whitenoise.middleware.WhiteNoiseMiddleware',
+        # 'whitenoise.middleware.WhiteNoiseMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -134,6 +135,7 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.messages.middleware.MessageMiddleware',
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
         'csp.middleware.CSPMiddleware',
+        'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
         'mozilla_django_oidc.contrib.auth0.middleware.RefreshIDToken',
     )
 
@@ -215,6 +217,12 @@ class Core(CSP, AWS, Configuration, Celery):
 
     # Where users get redirected after successfully signing in
     LOGIN_REDIRECT_URL = '/?signedin=true'
+
+    # API Token authentication is off by default until Tecken has
+    # gone through a security checklist.
+    ENABLE_TOKENS_AUTHENTICATION = values.BooleanValue(False)
+
+    TOKENS_DEFAULT_EXPIRATION_DAYS = values.IntegerValue(365)  # 1 year
 
 
 class Base(Core):
@@ -422,6 +430,10 @@ class Dev(Base):
 class Test(Dev):
     """Configuration to be used during testing"""
     DEBUG = False
+
+    # We might not enable it in certain environments but we definitely
+    # want to test the code we have.
+    ENABLE_TOKENS_AUTHENTICATION = True
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
