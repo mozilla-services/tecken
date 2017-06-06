@@ -1,5 +1,4 @@
 import logging
-# from functools import partial
 
 from django import http
 from django.contrib import auth
@@ -10,18 +9,6 @@ from .models import Token
 
 
 logger = logging.getLogger('tecken')
-
-
-# def has_perm(all, codename, obj=None):
-#     # if
-#     content_type, codename = codename.split('.', 1)
-#     print("CODENAME:", repr(codename))
-#     print("CONTENT_TYPE:", repr(content_type))
-#     print("ALL", list(all.all()))
-#     return all.filter(
-#         codename=codename,
-#         #content_type
-#     ).exists()
 
 
 class APITokenAuthenticationMiddleware(MiddlewareMixin):
@@ -57,7 +44,6 @@ class APITokenAuthenticationMiddleware(MiddlewareMixin):
         # It actually doesn't matter so much which backend
         # we use as long as it's something.
         user.backend = 'django.contrib.auth.backends.ModelBackend'
-        # user.has_perm = partial(has_perm, token.permissions.all())
         # User is valid. Set request.user and persist user in the session
         # by logging the user in.
         request.user = user

@@ -111,7 +111,6 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.staticfiles',
 
         # Project specific apps
-        # 'tecken.upload.apps.UploadAppConfig',
         'tecken.apps.TeckenAppConfig',
         'tecken.symbolicate',
         'tecken.download',
