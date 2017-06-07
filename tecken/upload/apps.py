@@ -5,24 +5,28 @@
 import logging
 
 from django.apps import AppConfig
-
+from django.db.models.signals import post_migrate
 
 logger = logging.getLogger('django')
+
+
+def create_default_groups(sender, **kwargs):
+    # Make sure there's a group for uploaders.
+    # And if the group didn't exist, make sure it has the "Can add upload"
+    # permission.
+    from django.contrib.auth.models import Group, Permission
+    try:
+        Group.objects.get(name='Uploaders')
+    except Group.DoesNotExist:
+        group = Group.objects.create(name='Uploaders')
+        group.permissions.add(
+            Permission.objects.get(codename='add_upload')
+        )
+        logger.info('Group "Uploaders" created')
 
 
 class UploadAppConfig(AppConfig):
     name = 'tecken.upload'
 
     def ready(self):
-        # Make sure there's a group for uploaders.
-        # And if the group didn't exist, make sure it has the "Can add upload"
-        # permission.
-        from django.contrib.auth.models import Group, Permission
-        try:
-            Group.objects.get(name='Uploaders')
-        except Group.DoesNotExist:
-            group = Group.objects.create(name='Uploaders')
-            group.permissions.add(
-                Permission.objects.get(codename='add_upload')
-            )
-            logger.info('Group "Uploaders" created')
+        post_migrate.connect(create_default_groups, sender=self)
