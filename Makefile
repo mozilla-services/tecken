@@ -1,4 +1,4 @@
-.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test run django-shell docs
+.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test run django-shell docs psql
 
 help:
 	@echo "Welcome to the tecken\n"
@@ -15,7 +15,8 @@ help:
 	@echo "  gunicorn     Runs the whole stack using gunicorn on http://localhost:8000/"
 	@echo "  stop         Stops the docker containers"
 	@echo "  systemtest   Run system tests against a running tecken"
-	@echo "  django-shell Django integrative shell\n"
+	@echo "  django-shell Django integrative shell"
+	@echo "  psql         Open the psql cli\n"
 
 # Dev configuration steps
 .docker-build:
@@ -47,6 +48,9 @@ redis-cache-cli: .docker-build
 
 redis-store-cli: .docker-build
 	docker-compose run redis-store redis-cli -h redis-store
+
+psql: .docker-build
+	docker-compose run db psql -h db -U postgres
 
 stop:
 	docker-compose stop

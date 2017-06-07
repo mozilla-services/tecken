@@ -69,6 +69,60 @@ to work the following environment variables needs to be set:
 This S3 access needs to be able to talk to the
 ``org.mozilla.crash-stats.symbols-public`` bucket which is in ``us-west-2``.
 
+.. note:: This default is likely to change in mid-2017.
+
+AWS S3
+======
+
+S3 buckets needs to be specified in two distinct places. One for where
+Tecken can **read** symbols from and one for where Tecken can **write**.
+
+Downloading
+-----------
+
+The *reading configuration* (used for downloading) is
+called ``DJANGO_SYMBOL_URLS``. It's a
+comma separated string. Each value, comma separated, is expected to be
+a URL. The URL is deconstructed to extract out things like AWS region,
+bucket name, prefix and whether the bucket should be reached by HTTP
+(i.e. public) or by ``boto3`` (i.e. private).
+
+What determines if a symbol URL is private or public is if it has
+``access=public`` inside the query string.
+
+The bucket name is always expected to the be first part of the URL path.
+For example, in ``http://example.com/bucket-name-here/rest/is/prefix``
+the bucket name is ``bucket-name-here`` and the prefix ``rest/is/prefix``.
+
+Uploading
+---------
+
+The *write configuration* (used for uploading) is called potentially
+by two different environment variables:
+
+1. ``DJANGO_UPLOAD_BUCKET_DEFAULT_NAME`` - a string to indicate the
+bucket where, by default, all uploads goes into unless it matches
+an exception based on the uploaders' email address.
+
+2. ``UPLOAD_BUCKET_EXCEPTIONS`` - a comma separated string where each
+block is expected to have two parts separated by a ``:``.
+
+As an example, imagine::
+
+    DJANGO_UPLOAD_BUCKET_NAME="public-symbols"
+    UPLOAD_BUCKET_EXCEPTIONS="*example.com:private-symbols, foo@bar.com:special-symbols"
+
+In this case, if someone, who does the upload, has email ``me@example.com``
+all files within the uploaded ``.zip`` gets uploaded to a bucket called
+``private-symbols``.
+
+.. note::
+
+    Buckets are **not** created in production. Only if ``settings.DEBUG``
+    is true will the bucket be created if it doesn't exist.
+
+
+
 PostgreSQL
 ==========
 

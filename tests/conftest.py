@@ -11,6 +11,7 @@ import botocore
 from markus.testing import MetricsMock
 
 from django.core.cache import caches
+from django.contrib.auth.models import User
 
 
 pytest_plugins = ['blockade']
@@ -156,3 +157,11 @@ def botomock():
             return _orig_make_api_call(*args, **kwargs)
 
     return BotoMock()
+
+
+@pytest.fixture
+def fakeuser():
+    return User.objects.create(
+        username='peterbe',
+        email='peterbe@example.com',
+    )

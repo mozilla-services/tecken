@@ -99,6 +99,13 @@ class _SymbolSource:
             self.prefix,
         )
 
+    @property
+    def endpoint_url(self):
+        return '{}://{}'.format(
+            self.scheme,
+            self.netloc,
+        )
+
 
 class SymbolDownloader:
     """
@@ -189,7 +196,21 @@ class SymbolDownloader:
                 # client. Creating the client does a check for relevant
                 # OS environment variables.
                 if not self.s3_client:
-                    self.s3_client = boto3.client('s3')
+
+                    # By default, if you don't specify an endpoint_url
+                    # boto3 will automatically assume AWS's S3.
+                    # For local development we are running a local S3
+                    # fake service with localstack. Then we need to
+                    # specify the endpoint_url.
+                    endpoint_url = None
+                    if 'amazonaws.com' not in source.netloc:
+                        # Then it's not a default endpoint
+                        endpoint_url = source.endpoint_url
+
+                    self.s3_client = boto3.client(
+                        's3',
+                        endpoint_url=endpoint_url,
+                    )
 
                 key = '{}{}/{}/{}'.format(
                     source.prefix,
@@ -397,6 +418,7 @@ class SymbolDownloader:
             key = found['key']
             # generate_presigned_url() actually works for both private
             # and public buckets.
+            print("ABOUT TO CALL WITH", bucket_name, key)
             return self.s3_client.generate_presigned_url(
                 'get_object',
                 Params={
