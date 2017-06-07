@@ -125,6 +125,17 @@ class Core(CSP, AWS, Configuration, Celery):
         'mozilla_django_oidc',
     ]
 
+    # June 2017: Notice that we're NOT adding
+    # 'mozilla_django_oidc.middleware.RefreshIDToken'. That's because
+    # most views in this project are expected to be called as AJAX
+    # or from curl. So it doesn't make sense to require every request
+    # to refresh the ID token.
+    # Once there is a way to do OIDC ID token refreshing without needing
+    # the client to redirect, we can enable that.
+    # Note also, the ostensible reason for using 'RefreshIDToken' is
+    # to check that a once-authenticated user is still a valid user.
+    # So if that's "disabled", that's why we have rather short session
+    # cookie age.
     MIDDLEWARE_CLASSES = (
         'django.middleware.security.SecurityMiddleware',
         'dockerflow.django.middleware.DockerflowMiddleware',
@@ -137,7 +148,6 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
         'csp.middleware.CSPMiddleware',
         'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
-        'mozilla_django_oidc.contrib.auth0.middleware.RefreshIDToken',
     )
 
     ROOT_URLCONF = 'tecken.urls'
@@ -213,8 +223,9 @@ class Core(CSP, AWS, Configuration, Celery):
         'https://auth.mozilla.auth0.com/userinfo'
     )
 
-    # Let cookies last quite a long time.
-    SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 100)
+    # Keep it quite short because we don't have a practical way to do
+    # OIDC ID token renewal for this AJAX and curl heavy app.
+    SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 7)
 
     # Where users get redirected after successfully signing in
     LOGIN_REDIRECT_URL = '/?signedin=true'
@@ -322,6 +333,11 @@ class Base(Core):
                     'propagate': False,
                 },
                 'tecken': {
+                    'level': 'DEBUG',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
+                'mozilla_django_oidc': {
                     'level': 'DEBUG',
                     'handlers': ['console'],
                     'propagate': False,
