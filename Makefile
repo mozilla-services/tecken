@@ -22,55 +22,58 @@ help:
 .docker-build:
 	make build
 
-build:
+.env:
+	./bin/cp-env-file.sh
+
+build: .env
 	docker-compose build deploy-base
 	docker-compose build dev-base
 	touch .docker-build
 
-clean: stop
+clean: .env stop
 	docker-compose rm -f
 	rm -rf coverage/ .coverage
 	rm -fr .docker-build
 
-migrate:
+migrate: .env
 	docker-compose run web python manage.py migrate --run-syncdb
 
-shell: .docker-build
+shell: .env .docker-build
 	# Use `-u 0` to automatically become root in the shell
 	docker-compose run --user 0 web bash
 
-currentshell: .docker-build
+currentshell: .env .docker-build
 	# Use `-u 0` to automatically become root in the shell
 	docker-compose exec --user 0 web bash
 
-redis-cache-cli: .docker-build
+redis-cache-cli: .env .docker-build
 	docker-compose run redis-cache redis-cli -h redis-cache
 
-redis-store-cli: .docker-build
+redis-store-cli: .env .docker-build
 	docker-compose run redis-store redis-cli -h redis-store
 
-psql: .docker-build
+psql: .env .docker-build
 	docker-compose run db psql -h db -U postgres
 
-stop:
+stop: .env
 	docker-compose stop
 
-test: .docker-build
+test: .env .docker-build
 	@bin/test
 
-run: .docker-build
+run: .env .docker-build
 	docker-compose up web worker
 
-gunicorn: .docker-build
+gunicorn: .env .docker-build
 	docker-compose run --service-ports web web
 
-django-shell: .docker-build
+django-shell: .env .docker-build
 	docker-compose run web python manage.py shell
 
-docs: .docker-build
+docs: .env .docker-build
 	docker-compose run -u 0 web ./bin/build_docs.sh
 
-systemtest: .docker-build
+systemtest: .env .docker-build
 	docker-compose run systemtest tests/systemtest/run_tests.sh
 
 tag:
