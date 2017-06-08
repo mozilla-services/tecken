@@ -7,7 +7,6 @@ import os
 import logging
 from io import BytesIO
 
-import boto3
 from botocore.exceptions import ClientError
 from celery import shared_task
 
@@ -16,6 +15,8 @@ from django.utils import timezone
 
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.utils import get_archive_members
+from tecken.s3 import get_s3_client
+
 
 logger = logging.getLogger('tecken')
 
@@ -30,13 +31,10 @@ def upload_inbox_upload(upload_id):
     """
     upload = Upload.objects.get(id=upload_id)
 
-    options = {}
-    if upload.bucket_endpoint_url:
-        options['endpoint_url'] = upload.bucket_endpoint_url
-    if upload.bucket_region:
-        options['region_name'] = upload.bucket_region
-    session = boto3.session.Session()
-    s3_client = session.client('s3', **options)
+    s3_client = get_s3_client(
+        endpoint_url=upload.bucket_endpoint_url,
+        region_name=upload.bucket_region,
+    )
 
     # First download the file
     buf = BytesIO()

@@ -6,11 +6,11 @@ from io import BytesIO
 from gzip import GzipFile
 
 import logging
-from urllib.parse import urlparse
 
 import requests
-import boto3
 from botocore.exceptions import ClientError
+
+from tecken.s3 import S3Bucket
 
 
 logger = logging.getLogger('tecken')
@@ -55,56 +55,6 @@ def iter_lines(stream, chunk_size=ITER_CHUNK_SIZE):
 
     if pending is not None:
         yield pending
-
-
-class _SymbolSource:
-    """Deconstruct a URL that points to a symbol source.
-    The URL is expected to be like a URL but there are things we can
-    immediately infer from it. For example, if the source is public
-    we expect 'access=public' in the query string part.
-
-    Usage::
-
-        >>> s = _SymbolSource(
-        ...    'https://s3-us-west-2.amazonaws.com/bucket/prefix?access=public'
-        )
-        >>> s.netloc
-        's3-us-west-2.amazonaws.com'
-        >>> s.bucket_name
-        'bucket'
-        >>> s.private  # note, private is usually default
-        False
-        >>> s.prefix
-        'prefix'
-
-    """
-    def __init__(self, url):
-        parsed = urlparse(url)
-        self.scheme = parsed.scheme
-        self.netloc = parsed.netloc
-        self.private = 'access=public' not in parsed.query
-        try:
-            bucket_name, prefix = parsed.path[1:].split('/', 1)
-        except ValueError:
-            prefix = ''
-            bucket_name = parsed.path[1:]
-        self.bucket_name = bucket_name
-        self.prefix = prefix
-
-    def __str__(self):
-        return '{}://{}/{}/{}'.format(
-            self.scheme,
-            self.netloc,
-            self.bucket_name,
-            self.prefix,
-        )
-
-    @property
-    def endpoint_url(self):
-        return '{}://{}'.format(
-            self.scheme,
-            self.netloc,
-        )
 
 
 class SymbolDownloader:
@@ -165,7 +115,6 @@ class SymbolDownloader:
 
     def __init__(self, urls):
         self.urls = urls
-        self.s3_client = None
 
     def _get_sources(self):
         """Return a generator that yields a _SymbolSource instance for
@@ -177,7 +126,7 @@ class SymbolDownloader:
             # The URL is expected to have the bucket name as the first
             # part of the pathname.
             # In the future we might expand to a more elaborate scheme.
-            yield _SymbolSource(url)
+            yield S3Bucket(url)
 
     def _get(self, symbol, debugid, filename):
         """Return a dict if the symbol can be found. The dict will
@@ -191,27 +140,6 @@ class SymbolDownloader:
             if source.private:
                 # If it's a private bucket we use boto3.
 
-                # Be lazy about instantiating the boto3 client since this
-                # is an iterator and we might not ever need to make this
-                # client. Creating the client does a check for relevant
-                # OS environment variables.
-                if not self.s3_client:
-
-                    # By default, if you don't specify an endpoint_url
-                    # boto3 will automatically assume AWS's S3.
-                    # For local development we are running a local S3
-                    # fake service with localstack. Then we need to
-                    # specify the endpoint_url.
-                    endpoint_url = None
-                    if 'amazonaws.com' not in source.netloc:
-                        # Then it's not a default endpoint
-                        endpoint_url = source.endpoint_url
-
-                    self.s3_client = boto3.client(
-                        's3',
-                        endpoint_url=endpoint_url,
-                    )
-
                 key = '{}{}/{}/{}'.format(
                     source.prefix,
                     symbol,
@@ -221,11 +149,14 @@ class SymbolDownloader:
                     debugid.upper(),
                     filename,
                 )
+                # logger.debug(
+                #     'Looking for symbol file {!r} in bucket {!r}'.format(
+                #         key,
+                #         source.name
+                #     )
+                # )
                 logger.debug(
-                    'Looking for symbol file {!r} in bucket {!r}'.format(
-                        key,
-                        source.bucket_name
-                    )
+                    f'Looking for symbol file {key!r} in bucket {source.name}'
                 )
 
                 # By doing a head_object() lookup we will immediately know
@@ -234,8 +165,8 @@ class SymbolDownloader:
                 # doing a HEAD or a GET. We need to first know if the key
                 # exists in this bucket.
                 try:
-                    self.s3_client.head_object(
-                        Bucket=source.bucket_name,
+                    source.s3_client.head_object(
+                        Bucket=source.name,
                         Key=key,
                     )
                 except ClientError as exception:
@@ -247,7 +178,11 @@ class SymbolDownloader:
                     raise
 
                 # It exists! Yay!
-                return {'bucket_name': source.bucket_name, 'key': key}
+                return {
+                    'bucket_name': source.name,
+                    'key': key,
+                    'source': source,
+                }
 
             else:
                 # We'll put together the URL manually
@@ -258,21 +193,15 @@ class SymbolDownloader:
                     filename,
                 )
                 logger.debug(
-                    'Looking for symbol file by URL {!r}'.format(
-                        file_url
-                    )
+                    f'Looking for symbol file by URL {file_url!r}'
                 )
                 if requests.head(file_url).status_code == 200:
-                    return {'url': file_url}
+                    return {'url': file_url, 'source': source}
 
     def _get_stream(self, symbol, debugid, filename):
         for source in self._get_sources():
             if source.private:
                 # If it's a private bucket we use boto3.
-
-                # We're going to need the client
-                if not self.s3_client:
-                    self.s3_client = boto3.client('s3')
 
                 key = '{}{}/{}/{}'.format(
                     source.prefix,
@@ -284,15 +213,12 @@ class SymbolDownloader:
                     filename,
                 )
                 logger.debug(
-                    'Looking for symbol file {!r} in bucket {!r}'.format(
-                        key,
-                        source.bucket_name
-                    )
+                    f'Looking for symbol file {key!r} in bucket {source.name}'
                 )
 
                 try:
-                    response = self.s3_client.get_object(
-                        Bucket=source.bucket_name,
+                    response = source.s3_client.get_object(
+                        Bucket=source.name,
                         Key=key,
                     )
                     stream = response['Body']
@@ -301,7 +227,7 @@ class SymbolDownloader:
                     if response.get('ContentEncoding') == 'gzip':
                         bytestream = BytesIO(response['Body'].read())
                         stream = GzipFile(None, 'rb', fileobj=bytestream)
-                    yield (source.bucket_name, key)
+                    yield (source.name, key)
                     try:
                         for line in iter_lines(stream):
                             yield line.decode('utf-8')
@@ -312,7 +238,7 @@ class SymbolDownloader:
                                 'OSError ({!r}) when downloading {}/{}'
                                 ''.format(
                                     str(exception),
-                                    source.bucket_name,
+                                    source.name,
                                     key,
                                 )
                             )
@@ -325,6 +251,9 @@ class SymbolDownloader:
                     if exception.response['Error']['Code'] == 'NoSuchKey':
                         # basically, a convuluted way of saying 404
                         continue
+                    print(exception.response)
+                    print('SOURCE', repr(source))
+                    print("BUCKET", source.name)
                     # Any other errors we're not yet aware of, proceeed
                     raise
 
@@ -340,18 +269,13 @@ class SymbolDownloader:
                     filename,
                 )
                 logger.debug(
-                    'Looking for symbol file by URL {!r}'.format(
-                        file_url
-                    )
+                    f'Looking for symbol file by URL {file_url!r}'
                 )
                 try:
                     response = requests.get(file_url, stream=True)
                 except self.requests_operational_errors as exception:
                     logger.warning(
-                        '{!r} when downloading {}'.format(
-                            exception,
-                            source,
-                        )
+                        f'{exception!r} when downloading {source}'
                     )
                     continue
                 if response.status_code == 404:
@@ -379,10 +303,7 @@ class SymbolDownloader:
                         return
                     except requests.exceptions.ContentDecodingError as exc:
                         logger.warning(
-                            '{!r} when downloading {}'.format(
-                                exc,
-                                source,
-                            )
+                            f'{exc!r} when downloading {source}'
                         )
                         continue
                 else:
@@ -418,8 +339,7 @@ class SymbolDownloader:
             key = found['key']
             # generate_presigned_url() actually works for both private
             # and public buckets.
-            print("ABOUT TO CALL WITH", bucket_name, key)
-            return self.s3_client.generate_presigned_url(
+            return found['source'].s3_client.generate_presigned_url(
                 'get_object',
                 Params={
                     'Bucket': bucket_name,

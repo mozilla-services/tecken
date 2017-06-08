@@ -29,6 +29,7 @@ def test_basic_symbolication():
         ]
     }
     response = _request(crash_ping)
+    assert response.status_code == 200
     assert response.json() == {
         'symbolicatedStacks': [
             [
@@ -41,6 +42,7 @@ def test_basic_symbolication():
 
     # And it should be possible to do it via the root URI too
     second_response = _request(crash_ping, uri='/')
+    assert response.status_code == 200
     assert response.json() == second_response.json()
 
 
@@ -60,6 +62,7 @@ def test_basic_symbolication_with_debug():
         'debug': True
     }
     response = _request(crash_ping)
+    assert response.status_code == 200
     debug = response.json()['debug']
     assert debug
     assert debug['cache_lookups']['count'] == 1
@@ -83,8 +86,10 @@ def test_basic_symbolication_cached():
         'debug': True,
     }
     response = _request(crash_ping)
+    assert response.status_code == 200
     assert response.json()['knownModules'] == [True, True]
     response = _request(crash_ping)
+    assert response.status_code == 200
     assert response.json()['knownModules'] == [True, True]
     # The second time, the debug information should definitely
     # indicate that no downloads were necessary.

@@ -370,7 +370,7 @@ class Base(Core):
     SYMBOL_URLS = values.ListValue([
         # To create this bucket locally, use
         # aws --endpoint-url=http://localhost:4572 --region=us-east-1 s3 mb s3://testbucket  # noqa
-        'http://localstack-s3.dev:4572/testbucket',
+        'http://localstack-s3:4572/testbucket',
         'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
     ])
 

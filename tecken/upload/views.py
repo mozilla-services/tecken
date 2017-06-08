@@ -5,10 +5,7 @@
 import logging
 import fnmatch
 import hashlib
-import re
-from urllib.parse import urlparse
 
-import boto3
 from botocore.exceptions import ClientError
 import markus
 
@@ -24,6 +21,7 @@ from tecken.base.decorators import api_login_required, api_permission_required
 from tecken.upload.utils import preview_archive_content
 from tecken.upload.models import Upload
 from tecken.upload.tasks import upload_inbox_upload
+from tecken.s3 import S3Bucket
 
 
 logger = logging.getLogger('tecken')
@@ -65,35 +63,7 @@ def get_bucket_info(user):
     if exception:
         url = exception
 
-    class _BucketInfo(object):
-
-        def __init__(self, url):
-            parsed = urlparse(url)
-            self.name = parsed.path.split('/')[1]
-            self.endpoint_url = None
-            self.region = None
-            if not parsed.netloc.endswith('.amazonaws.com'):
-                # the endpoint_url will be all but the path
-                self.endpoint_url = '{}://{}'.format(
-                    parsed.scheme,
-                    parsed.netloc,
-                )
-            # XXX this feels naive.
-            region = re.findall(r's3-(.*)\.amazonaws\.com', parsed.netloc)
-            if region:
-                self.region = region[0]
-
-        def __repr__(self):  # pragma: no cover
-            return (
-                '<{} name={!r} endpoint_url={!r} region={!r}>'.format(
-                    self.__class__.__name__,
-                    self.name,
-                    self.endpoint_url,
-                    self.region
-                )
-            )
-
-    return _BucketInfo(url)
+    return S3Bucket(url)
 
 
 @metrics.timer_decorator('upload_archive')
@@ -126,35 +96,22 @@ def upload_archive(request):
     # This is a folder in the root of the bucket where the upload
     # belongs.
     bucket_info = get_bucket_info(request.user)
-
-    options = {}
-    if bucket_info.endpoint_url:
-        options['endpoint_url'] = bucket_info.endpoint_url
-    if bucket_info.region:
-        options['region_name'] = bucket_info.region
-    session = boto3.session.Session()
-    s3_client = session.client('s3', **options)
     try:
-        s3_client.head_bucket(Bucket=bucket_info.name)
+        bucket_info.s3_client.head_bucket(Bucket=bucket_info.name)
     except ClientError as exception:
         if exception.response['Error']['Code'] == '404':
-            if settings.DEBUG:  # pragma: no cover
-                # When in debug mode, create the bucket automagically
-                logger.info("Created bucket '{}'".format(bucket_info.name))
-                s3_client.create_bucket(Bucket=bucket_info.name)
-            else:
-                # This warning message hopefully makes it easier to see what
-                # you need to do to your configuration.
-                # XXX Is this the best exception for runtime'y type of
-                # bad configurations.
-                raise ImproperlyConfigured(
-                    "S3 bucket '{}' can not be found. "
-                    'Connected with region={!r} endpoint_url={!r}'.format(
-                        bucket_info.name,
-                        bucket_info.region,
-                        bucket_info.endpoint_url,
-                    )
+            # This warning message hopefully makes it easier to see what
+            # you need to do to your configuration.
+            # XXX Is this the best exception for runtime'y type of
+            # bad configurations.
+            raise ImproperlyConfigured(
+                "S3 bucket '{}' can not be found. "
+                'Connected with region={!r} endpoint_url={!r}'.format(
+                    bucket_info.name,
+                    bucket_info.region,
+                    bucket_info.endpoint_url,
                 )
+            )
         else:  # pragma: no cover
             raise
     content_hash = hashlib.md5(content.encode('utf-8')).hexdigest()[:12]
@@ -175,7 +132,7 @@ def upload_archive(request):
     )
     with metrics.timer('upload_to_inbox'):
         upload.seek(0)
-        s3_client.put_object(
+        bucket_info.s3_client.put_object(
             Bucket=bucket_info.name,
             Key=key,
             Body=upload,
