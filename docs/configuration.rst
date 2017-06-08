@@ -74,6 +74,13 @@ This S3 access needs to be able to talk to the
 AWS S3
 ======
 
+First of all, Tecken will never *create* S3 buckets for you. They are
+expected to already exist. This is one exception to this; if you do
+local development with Docker and ``localstack``, those configured buckets
+are automatically created when the server starts. This is to ease local
+development since ``localstack`` uses RAM to remember things like bucket
+creation.
+
 S3 buckets needs to be specified in two distinct places. One for where
 Tecken can **read** symbols from and one for where Tecken can **write**.
 
@@ -100,27 +107,21 @@ Uploading
 The *write configuration* (used for uploading) is called potentially
 by two different environment variables:
 
-1. ``DJANGO_UPLOAD_BUCKET_DEFAULT_NAME`` - a string to indicate the
+1. ``DJANGO_UPLOAD_DEFAULT_URL`` - a URL to indicate the
 bucket where, by default, all uploads goes into unless it matches
-an exception based on the uploaders' email address.
+an exception based on the uploader's email address.
 
-2. ``UPLOAD_BUCKET_EXCEPTIONS`` - a comma separated string where each
-block is expected to have two parts separated by a ``:``.
+2. ``DJANGO_UPLOAD_URL_EXCEPTIONS`` - a Python dictionary that maps an email
+address or a email address glob pattern to a different URL.
 
 As an example, imagine::
 
-    DJANGO_UPLOAD_BUCKET_NAME="public-symbols"
-    UPLOAD_BUCKET_EXCEPTIONS="*example.com:private-symbols, foo@bar.com:special-symbols"
+    DJANGO_UPLOAD_DEFAULT_URL=https://s3-us-west-2.amazonaws.com/mozilla-symbols-public/myprefix
+    UPLOAD_BUCKET_EXCEPTIONS={'*example.com': 'https://s3-us-west-2.amazonaws.com/mozilla-symbols-private/', 'foo@bar.com': 'https://s3-us-west-2.amazonaws.com/mozilla-symbols-special'}
 
 In this case, if someone, who does the upload, has email ``me@example.com``
 all files within the uploaded ``.zip`` gets uploaded to a bucket called
-``private-symbols``.
-
-.. note::
-
-    Buckets are **not** created in production. Only if ``settings.DEBUG``
-    is true will the bucket be created if it doesn't exist.
-
+``mozilla-symbols-private``.
 
 
 PostgreSQL

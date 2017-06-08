@@ -3,12 +3,16 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
+from urllib.parse import urlparse
 
+from botocore.exceptions import ClientError
 import markus
 from django_redis import get_redis_connection
 
 from django.conf import settings
 from django.apps import AppConfig
+
+from tecken.s3 import S3Bucket
 
 
 logger = logging.getLogger('django')
@@ -49,3 +53,27 @@ class TeckenAppConfig(AppConfig):
                     "In AWS ElastiCache this is done by setting up "
                     "Parameter Group with maxmemory-policy=allkeys-lru"
                 )
+
+        # If you use localstack to functionally test S3, since it's
+        # ephemeral the buckets you create disappear after a restart.
+        # Make sure they exist. That's what we expect to happen with the
+        # real production S3 buckets.
+        _all_possible_urls = set(
+            list(settings.SYMBOL_URLS) +
+            [settings.UPLOAD_DEFAULT_URL] +
+            list(settings.UPLOAD_URL_EXCEPTIONS.values())
+        )
+        for url in _all_possible_urls:
+            if 'localstack' not in urlparse(url).netloc:
+                continue
+            bucket = S3Bucket(url)
+            try:
+                bucket.s3_client.head_bucket(Bucket=bucket.name)
+            except ClientError as exception:
+                if exception.response['Error']['Code'] == '404':
+                    bucket.s3_client.create_bucket(
+                        Bucket=bucket.name
+                    )
+                    logger.info(f'Created localstack bucket {bucket.name!r}')
+                else:
+                    raise
