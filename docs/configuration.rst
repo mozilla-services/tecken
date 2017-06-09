@@ -125,7 +125,7 @@ address or a email address glob pattern to a different URL.
 As an example, imagine::
 
     DJANGO_UPLOAD_DEFAULT_URL=https://s3-us-west-2.amazonaws.com/mozilla-symbols-public/myprefix
-    UPLOAD_BUCKET_EXCEPTIONS={'*example.com': 'https://s3-us-west-2.amazonaws.com/mozilla-symbols-private/', 'foo@bar.com': 'https://s3-us-west-2.amazonaws.com/mozilla-symbols-special'}
+    DJANGO_UPLOAD_BUCKET_EXCEPTIONS={'*example.com': 'https://s3-us-west-2.amazonaws.com/mozilla-symbols-private/', 'foo@bar.com': 'https://s3-us-west-2.amazonaws.com/mozilla-symbols-special'}
 
 In this case, if someone, who does the upload, has email ``me@example.com``
 all files within the uploaded ``.zip`` gets uploaded to a bucket called
