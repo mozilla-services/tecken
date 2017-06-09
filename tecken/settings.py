@@ -431,6 +431,11 @@ class Localdev(Base):
     """Configuration to be used during local development and base class
     for testing"""
 
+    # Override some useful developer settings to be True by default.
+    ENABLE_TOKENS_AUTHENTICATION = values.BooleanValue(True)
+    DEBUG = values.BooleanValue(default=True)
+    DEBUG_PROPAGATE_EXCEPTIONS = values.BooleanValue(default=True)
+
     @classmethod
     def post_setup(cls):
         super().post_setup()
@@ -443,8 +448,6 @@ class Localdev(Base):
                     environ_name=param,
                     environ_prefix='AWS',
                 )
-
-    DOTENV = os.path.join(Core.BASE_DIR, '.env')
 
     @property
     def VERSION(self):
