@@ -58,6 +58,11 @@ need the public key called ``SENTRY_PUBLIC_DSN``. For example:
     DJANGO_SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
     DJANGO_SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
 
+**Note!** There are two configurations, related to S3, that needs to be
+configured (presumably different) on every deployment environment.
+They are: ``DJANGO_SYMBOL_URLS`` and ``DJANGO_UPLOAD_DEFAULT_URL``.
+See the section below about **AWS S3**.
+
 AWS
 ===
 

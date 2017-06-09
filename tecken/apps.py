@@ -65,7 +65,7 @@ class TeckenAppConfig(AppConfig):
             list(settings.UPLOAD_URL_EXCEPTIONS.values())
         )
         for url in _all_possible_urls:
-            if 'localstack' not in urlparse(url).netloc:
+            if not url or 'localstack' not in urlparse(url).netloc:
                 continue
             bucket = S3Bucket(url)
             try:
