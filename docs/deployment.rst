@@ -11,7 +11,7 @@ Mozilla Symbol Server is deployed in 3 different environments:
 
 1. Production (https://symbols.mozilla.org SOON!)
 
-2. Stage (DOMAIN TO BE DECIDED)
+2. Stage (https://symbols.stage.mozaws.net)
 
 3. Dev (https://symbols.dev.mozaws.net)
 

@@ -31,6 +31,9 @@ this to ``Prod`` and the ``Dockerfile.dev`` overrides it to ``Dev``.
     # If stage
     DJANGO_CONFIGURATION=Stage
 
+    # If development server
+    DJANGO_CONFIGURATION=Dev
+
 You need to set a random ``DJANGO_SECRET_KEY``. It should be predictably
 random and a decent length:
 
