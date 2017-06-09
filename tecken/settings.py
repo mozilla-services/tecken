@@ -367,17 +367,15 @@ class Base(Core):
     # By default, each URL is assumed to be private!
     # If there's a bucket you want to include that should be accessed
     # by HTTP only, add '?access=public' to the URL.
-    SYMBOL_URLS = values.ListValue([
-        # To create this bucket locally, use
-        # aws --endpoint-url=http://localhost:4572 --region=us-east-1 s3 mb s3://testbucket  # noqa
-        'http://localstack-s3:4572/testbucket',
-        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
-    ])
+    # Note that it's empty by default which is actually not OK.
+    # For production-like environments this must be something or else
+    # Django won't start. (See tecken.apps.TeckenAppConfig)
+    #
+    SYMBOL_URLS = values.ListValue([])
 
-    # URL of the default place to upload symbols
-    UPLOAD_DEFAULT_URL = values.Value(
-        'http://localstack-s3:4572/testbucket'
-    )
+    # Same as with SYMBOL_URLS, this has to be set to something
+    # or else Django won't start.
+    UPLOAD_DEFAULT_URL = values.Value()
 
     # The config is a list of tuples like this:
     # 'email:url' where the email part can be a glob like regex
@@ -435,6 +433,19 @@ class Localdev(Base):
     ENABLE_TOKENS_AUTHENTICATION = values.BooleanValue(True)
     DEBUG = values.BooleanValue(default=True)
     DEBUG_PROPAGATE_EXCEPTIONS = values.BooleanValue(default=True)
+
+    # When doing localdev, these defaults will suffice. The localstack
+    # one forces you to use/test boto3 and the old public symbols URL
+    # forces you to use/test the symbol downloader based on requests.get().
+    SYMBOL_URLS = values.ListValue([
+        'http://localstack-s3:4572/testbucket',
+        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
+    ])
+
+    # By default, upload all symbols to this when in local dev.
+    UPLOAD_DEFAULT_URL = values.Value(
+        'http://localstack-s3:4572/testbucket'
+    )
 
     @classmethod
     def post_setup(cls):
