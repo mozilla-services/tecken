@@ -427,8 +427,8 @@ class Base(Core):
     ]
 
 
-class Dev(Base):
-    """Configuration to be used during development and base class
+class Localdev(Base):
+    """Configuration to be used during local development and base class
     for testing"""
 
     @classmethod
@@ -486,7 +486,7 @@ class Dev(Base):
     ]
 
 
-class Test(Dev):
+class Test(Localdev):
     """Configuration to be used during testing"""
     DEBUG = False
 
@@ -519,8 +519,8 @@ class Test(Dev):
     }
 
 
-class Stage(Base):
-    """Configuration to be used in stage environment"""
+class Dev(Base):
+    """Configuration to be used in dev server environment"""
 
     LOGGING_USE_JSON = True
 
@@ -594,6 +594,10 @@ class Stage(Base):
                 }
             },
         ]
+
+
+class Stage(Dev):
+    """Configuration to be used in stage environment"""
 
 
 class Prod(Stage):

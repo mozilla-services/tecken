@@ -8,7 +8,7 @@ from celery import Celery
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tecken.settings')
-os.environ.setdefault('DJANGO_CONFIGURATION', 'Dev')
+os.environ.setdefault('DJANGO_CONFIGURATION', 'Localdev')
 
 
 import configurations  # noqa
