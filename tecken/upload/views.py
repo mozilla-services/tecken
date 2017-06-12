@@ -16,12 +16,15 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+from django.core.urlresolvers import reverse
 
 from tecken.base.decorators import api_login_required, api_permission_required
 from tecken.upload.utils import preview_archive_content
-from tecken.upload.models import Upload
+from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.s3 import S3Bucket
+from .forms import SearchForm
 
 
 logger = logging.getLogger('tecken')
@@ -140,4 +143,81 @@ def upload_archive(request):
 
     upload_inbox_upload.delay(upload_obj.pk)
 
-    return http.HttpResponse('Created', status=201)
+    return http.JsonResponse(
+        {'upload': _serialize_upload(upload_obj)},
+        status=201,
+    )
+
+
+def _serialize_upload(upload, flat=False):
+    serialized = {
+        'id': upload.id,
+        'size': upload.size,
+        'filename': upload.filename,
+        'bucket': upload.bucket_name,
+        'region': upload.bucket_region,
+        'completed_at': upload.completed_at,
+        'created_at': upload.created_at,
+        'user': upload.user.email,
+    }
+    if not flat:
+        serialized['files'] = []
+        for file_upload in FileUpload.objects.filter(upload=upload):
+            serialized['files'].append({
+                'bucket': file_upload.bucket_name,
+                'key': file_upload.key,
+                'update': file_upload.update,
+                'compressed': file_upload.compressed,
+                'size': file_upload.size,
+                'completed_at': file_upload.completed_at,
+                'created_at': file_upload.created_at,
+            })
+    return serialized
+
+
+@api_login_required
+@api_permission_required('upload.add_upload')
+def search(request):
+    """Return a JSON search result. If no parameters are sent, cap
+    to the top XXX number of uploads.
+    The results are always sorted by creation date descending.
+    """
+    context = {
+        'uploads': [],
+    }
+    # XXX add pagination
+    qs = Upload.objects.all().order_by('-created_at')
+    form = SearchForm(request.GET)
+    if not form.is_valid():
+        # XXX Make this a JSON BadRequest
+        return http.HttpResponseBadRequest(str(form.errors))
+
+    if form.cleaned_data['start_date']:
+        qs = qs.filter(created_at__gte=form.cleaned_data['start_date'])
+    if form.cleaned_data['end_date']:
+        qs = qs.filter(created_at__lt=form.cleaned_data['end_date'])
+    if form.cleaned_data['user']:
+        if form.cleaned_data['user'].isdigit():
+            qs = qs.filter(user_id=int(form.cleaned_data['user']))
+        else:
+            qs = qs.filter(user__email__icontains=form.cleaned_data['user'])
+
+    for upload in qs.select_related('user'):
+        serialized = _serialize_upload(upload, flat=True)
+        serialized['url'] = request.build_absolute_uri(
+            reverse('upload:upload', args=(upload.id,))
+        )
+        context['uploads'].append(serialized)
+    return http.JsonResponse(context)
+
+
+@api_login_required
+@api_permission_required('upload.add_upload')
+def upload(request, id):
+    """Return all the information about one upload or 404.
+    """
+    upload = get_object_or_404(Upload, id=id)
+    context = {
+        'upload': _serialize_upload(upload),
+    }
+    return http.JsonResponse(context)
