@@ -91,6 +91,7 @@ def run():
     subprocess.check_call([
         'git',
         'tag',
+        '-s',
         '-a', tag_name,
         '-m', message
     ])
