@@ -632,6 +632,9 @@ class Prodlike(Prod):
 
     DEBUG = False
 
+    SYMBOL_URLS = Localdev.SYMBOL_URLS
+    UPLOAD_DEFAULT_URL = Localdev.UPLOAD_DEFAULT_URL
+
     @property
     def DATABASES(self):
         "Don't require encrypted connections to Postgres"
