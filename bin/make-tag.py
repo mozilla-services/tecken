@@ -80,7 +80,7 @@ def run():
         count_starts = len(
             [x for x in existing_tags if x.startswith(tag_name)]
         )
-        tag_name += '-{}'.format(len(count_starts) + 1)
+        tag_name += '-{}'.format(count_starts + 1)
 
     # Now we need to figure out what's been
     message = input("Tag message? (Optional, else all commit messages) ")
