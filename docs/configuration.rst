@@ -55,8 +55,8 @@ need the public key called ``SENTRY_PUBLIC_DSN``. For example:
 
 .. code-block:: shell
 
-    DJANGO_SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
-    DJANGO_SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
+    SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
+    SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
 
 **Note!** There are two configurations, related to S3, that needs to be
 configured (presumably different) on every deployment environment.
