@@ -549,6 +549,7 @@ class Dev(Base):
     ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = int(datetime.timedelta(days=365).total_seconds())
+    SECURE_HSTS_PRELOAD = True
     # Mark session and CSRF cookies as being HTTPS-only.
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
@@ -632,6 +633,9 @@ class Prodlike(Prod):
 
     DEBUG = False
 
+    SYMBOL_URLS = Localdev.SYMBOL_URLS
+    UPLOAD_DEFAULT_URL = Localdev.UPLOAD_DEFAULT_URL
+
     @property
     def DATABASES(self):
         "Don't require encrypted connections to Postgres"
@@ -644,7 +648,6 @@ class Prodlike(Prod):
     # If you try to run with prod like settings locally, you most likely
     # have to use a self-signed SSL cert.
     SECURE_HSTS_SECONDS = 60
-    SECURE_HSTS_PRELOAD = True
 
 
 class Build(Prod):
