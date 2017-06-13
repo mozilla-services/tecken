@@ -6,11 +6,12 @@ import datetime
 import gzip
 import os
 import re
+import pickle
 from io import BytesIO
 
 import pytest
 import mock
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, EndpointConnectionError
 
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission
@@ -19,13 +20,39 @@ from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload.tasks import upload_inbox_upload
+from tecken.upload.tasks import (
+    upload_inbox_upload,
+    OwnEndpointConnectionError,
+    reraise_endpointconnectionerrors,
+)
 from tecken.upload.views import get_bucket_info
 
 
 _here = os.path.dirname(__file__)
 ZIP_FILE = os.path.join(_here, 'sample.zip')
 ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, 'notazipdespiteitsname.zip')
+
+
+def test_pickle_OwnEndpointConnectionError():
+    """test that it's possible to pickle, and unpickle an instance
+    of a OwnEndpointConnectionError exception class."""
+    exception = OwnEndpointConnectionError(endpoint_url='http://example.com')
+    pickled = pickle.dumps(exception)
+    exception = pickle.loads(pickled)
+    # They can't be compared, but...
+    assert exception.msg == exception.msg
+    assert exception.kwargs == exception.kwargs
+    assert exception.fmt == exception.fmt
+
+
+def test_reraise_endpointconnectionerrors_decorator():
+
+    @reraise_endpointconnectionerrors
+    def foo(name, age=100):
+        raise EndpointConnectionError(endpoint_url='http://example.com')
+
+    with pytest.raises(OwnEndpointConnectionError):
+        foo('peter')
 
 
 @pytest.mark.django_db
@@ -160,6 +187,150 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings):
         size__lt=1156,
         completed_at__isnull=False,
     )
+
+
+@pytest.mark.django_db
+def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
+
+    # Fake an Upload object
+    upload = Upload.objects.create(
+        user=fakeuser,
+        filename='sample.zip',
+        bucket_name='mybucket',
+        inbox_key='inbox/sample.zip',
+        bucket_endpoint_url='http://s4.example.com',
+        bucket_region='eu-south-1',
+        size=123456,
+    )
+
+    # Create a file object that is not a file. That way it can be
+    # re-used and not closed leaving an empty file pointer.
+    zip_body = BytesIO()
+    with open(ZIP_FILE, 'rb') as f:
+        zip_body.write(f.read())
+    zip_body.seek(0)
+
+    calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert api_params['Bucket'] == 'mybucket'  # always the same
+        call_key = (operation_name, tuple(api_params.items()))
+        first_time = call_key not in calls
+        calls.append(call_key)
+
+        endpoint_error = EndpointConnectionError(
+            endpoint_url='http://example.com'
+        )
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'inbox/sample.zip'
+        ):
+            return {
+                'ContentLength': 123456,
+            }
+
+        if (
+            operation_name == 'GetObject' and
+            api_params['Key'] == 'inbox/sample.zip'
+        ):
+            return {
+                'Body': zip_body,
+                'ContentLength': 123456,
+            }
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+        ):
+            return {
+                'ContentLength': 1000,
+            }
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'v0/xpcshell.sym'
+        ):
+            # Give it grief on the HeadObject op the first time
+            if first_time:
+                raise endpoint_error
+
+            # Pretend we've never seen this before
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+        ):
+            # Give it grief on the HeadObject op the first time
+            # if first_time:
+            #     raise endpoint_error
+
+            assert 'ContentEncoding' not in api_params
+            assert 'ContentType' not in api_params
+            content = api_params['Body'].read()
+            assert isinstance(content, bytes)
+            # based on `unzip -l tests/sample.zip` knowledge
+            assert len(content) == 69183
+
+            # ...pretend to actually upload it.
+            return {
+                # Should there be anything here?
+            }
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == 'v0/xpcshell.sym'
+        ):
+            # Because .sym is in settings.COMPRESS_EXTENSIONS
+            assert api_params['ContentEncoding'] == 'gzip'
+            # Because .sym is in settings.MIME_OVERRIDES
+            assert api_params['ContentType'] == 'text/plain'
+            body = api_params['Body'].read()
+            assert isinstance(body, bytes)
+            # If you look at the fixture 'sample.zip', which is used in
+            # these tests you'll see that the file 'xpcshell.sym' is
+            # 1156 originally. But we asser that it's now *less* because
+            # it should have been gzipped.
+            assert len(body) < 1156
+            original_content = gzip.decompress(body)
+            assert len(original_content) == 1156
+
+            # ...pretend to actually upload it.
+            return {}
+
+        if operation_name == 'DeleteObject':
+            assert api_params['Key'] == 'inbox/sample.zip'
+            # pretend we delete the file
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call):
+        try:
+            upload_inbox_upload(upload.pk)
+            assert False, "Should have failed"
+        except OwnEndpointConnectionError:
+            # That should have made some FileUpload objects for this
+            # Upload object.
+            qs = FileUpload.objects.filter(upload=upload)
+            assert qs.count() == 1
+
+            # necessary because how the mocked function is run twice
+            zip_body.seek(0)
+
+            # Simulate what Celery does, which is to simply run this
+            # again after a little pause.
+            upload_inbox_upload(upload.pk)
+
+            assert qs.count() == 2
+            # also, all of them should be completed
+            assert qs.filter(completed_at__isnull=False).count() == 2
+
+    # Reload the Upload object
+    upload.refresh_from_db()
+    assert upload.completed_at
 
 
 @pytest.mark.django_db
