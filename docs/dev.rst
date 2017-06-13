@@ -309,6 +309,10 @@ run the gunicorn workers:
 This will start 4 ``gunicorn`` workers exposed on ``0.0.0.0:8000`` and
 exposed outside of docker onto your host.
 
+.. note:: If this fails to start, some exceptions might be hidden. If so,
+          start a shell ``docker-compose run --user 0 web bash`` and run:
+          ``DJANGO_UPLOAD_DEFAULT_URL=http://localstack-s3:4572/testbucket DJANGO_SYMBOL_URLS=http://localstack-s3:4572/testbucket DJANGO_CONFIGURATION=Prodlike gunicorn tecken.wsgi:application -b 0.0.0.0:8000 --workers 4 --access-logfile -``
+
 That configuration **forces** you to run with ``DEBUG=False`` independent
 of what value you have set in ``.env`` for ``DEBUG``. Thus making it easy
 to switch from regular debug-mode development to prod-like serving.

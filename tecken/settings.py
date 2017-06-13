@@ -311,6 +311,9 @@ class Base(Core):
                         '.SentryHandler'
                     ),
                 },
+                'null': {
+                    'class': 'logging.NullHandler',
+                },
             },
             'root': {
                 'level': 'INFO',
@@ -355,6 +358,10 @@ class Base(Core):
                 'request.summary': {
                     'handlers': ['console'],
                     'level': 'DEBUG',
+                    'propagate': False,
+                },
+                'django.security.DisallowedHost': {
+                    'handlers': ['null'],
                     'propagate': False,
                 },
             },
@@ -631,7 +638,7 @@ class Prodlike(Prod):
         DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'disable'
         return DATABASES
 
-    MARKUS_BACKENDS = []
+    # MARKUS_BACKENDS = []
 
 
 class Build(Prod):
