@@ -429,6 +429,7 @@ class Base(Core):
         'dockerflow.django.checks.check_migrations_applied',
         'dockerflow.django.checks.check_redis_connected',
         'tecken.dockerflow_extra.check_redis_store_connected',
+        'tecken.dockerflow_extra.check_s3_urls',
     ]
 
 
@@ -639,6 +640,11 @@ class Prodlike(Prod):
         return DATABASES
 
     # MARKUS_BACKENDS = []
+
+    # If you try to run with prod like settings locally, you most likely
+    # have to use a self-signed SSL cert.
+    SECURE_HSTS_SECONDS = 60
+    SECURE_HSTS_PRELOAD = True
 
 
 class Build(Prod):
