@@ -35,6 +35,14 @@ consume the metrics Tecken sends via `statsd`:
 https://app.datadoghq.com/dash/286319/tecken
 
 
+Whatsdeployed
+-------------
+
+Check out https://whatsdeployed.io/s-gUQ
+
+At the moment, this only covers Dev and Stage.
+
+
 The Logo
 --------
 
