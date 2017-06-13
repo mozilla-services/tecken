@@ -388,7 +388,7 @@ def test_upload_inbox_upload_task_nothing(botomock, fakeuser, settings):
         ):
             # based on `unzip -l tests/sample.zip` knowledge
             return {
-                'ContentLength': 1156,
+                'ContentLength': 488,
             }
 
         if operation_name == 'DeleteObject':

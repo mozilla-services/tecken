@@ -154,7 +154,35 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
         # If this upload is a retry, the upload object might already have
         # some previous *file* uploads in it. If that's the case, we
         # don't need to even consider this file again.
+        logger.debug(f'{key_name!r} already uploaded. Skipping')
         return
+
+    # E.g. 'foo.sym' becomes 'sym' and 'noextension' becomes ''
+    key_extension = os.path.splitext(key_name)[1].lower()[1:]
+    compress = key_extension in settings.COMPRESS_EXTENSIONS
+
+    # Assume we're not setting a custom encoding
+    content_encoding = None
+    # Read the member into memory
+    file_buffer = BytesIO()
+    # If the file needs to be compressed, we need to do that now
+    # already. Otherwise we won't be able to compare this file's size
+    # with what was previously uploaded.
+    if compress:
+        content_encoding = 'gzip'
+        file_buffer = BytesIO()
+        # We need to read in the whole file, and compress it to a new
+        # bytes object.
+        with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
+            f.write(member.extractor().read())
+    else:
+        file_buffer.write(member.extractor().read())
+
+    # Extract the size from the file object independent of how it
+    # was created; be that by GzipFile or just member.extractor().read().
+    file_buffer.seek(0, os.SEEK_END)
+    size = file_buffer.tell()
+    file_buffer.seek(0)
 
     # Did we already have this exact file uploaded?
     try:
@@ -164,8 +192,12 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
         )
         # Only upload if the size is different.
         # So set this to None if it's already there and same size.
-        if existing_object['ContentLength'] == member.size:
+        if existing_object['ContentLength'] == size:
             # Moving on.
+            logger.debug(
+                f'{key_name!r} ({upload.bucket_name}) has not changed '
+                'size. Skipping.'
+            )
             return
     except ClientError as exception:
         if exception.response['Error']['Code'] == '404':
@@ -173,27 +205,6 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
             existing_object = None
         else:
             raise
-
-    # E.g. 'foo.sym' becomes 'sym' and 'noextension' becomes ''
-    key_extension = os.path.splitext(key_name)[1].lower()[1:]
-    compress = key_extension in settings.COMPRESS_EXTENSIONS
-
-    file_buffer = BytesIO()
-    if compress:
-        content_encoding = 'gzip'
-        # We need to read in the whole file, and compress it to a new
-        # bytes object.
-        with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
-            f.write(member.extractor().read())
-    else:
-        content_encoding = None
-        file_buffer.write(member.extractor().read())
-
-    # Extract the size from the file object independent of how it
-    # was created; be that by GzipFile or just member.extractor().read().
-    file_buffer.seek(0, os.SEEK_END)
-    size = file_buffer.tell()
-    file_buffer.seek(0)
 
     file_upload = FileUpload(
         upload=upload,
