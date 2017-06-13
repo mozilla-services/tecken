@@ -62,7 +62,7 @@ def run():
     print('-' * 80)
 
     commits_since = subprocess.check_output(
-        'git log 2017.04.13..HEAD --oneline'.split()
+        'git log {last_tag}..HEAD --oneline'.format(last_tag=last_tag).split()
     )
     print('Commits since last tag:')
     for commit in commits_since.splitlines():
