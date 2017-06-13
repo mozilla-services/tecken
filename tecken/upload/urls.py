@@ -21,7 +21,7 @@ urlpatterns = [
         name='upload'
     ),
     url(
-        r'',
+        r'^$',
         views.upload_archive,
         name='upload_archive'
     ),
