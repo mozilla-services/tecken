@@ -9,7 +9,6 @@ from botocore.exceptions import ClientError
 import markus
 from django_redis import get_redis_connection
 
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from django.apps import AppConfig
 
@@ -83,7 +82,7 @@ class TeckenAppConfig(AppConfig):
         mandatory = 'SYMBOL_URLS', 'UPLOAD_DEFAULT_URL'
         for key in mandatory:
             if not getattr(settings, key):
-                raise ImproperlyConfigured(
+                raise ValueError(
                     f'You have to set settings.{key} '
                     f'(environment variable DJANGO_{key})'
                 )
