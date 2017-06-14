@@ -18,21 +18,18 @@ urlpatterns = [
     url(r'^$', views.dashboard, name='dashboard'),
     url(r'^__task_tester__$', views.task_tester, name='task_tester'),
     url(
-        r'',
-        include('tecken.download.urls', namespace='download')
-    ),
-    url(
         r'symbolicate/',
         include('tecken.symbolicate.urls', namespace='symbolicate')
     ),
-
     url(r'^oidc/', include('mozilla_django_oidc.urls')),
-
     url(
         r'upload/',
         include('tecken.upload.urls', namespace='upload')
     ),
-
+    url(
+        r'',
+        include('tecken.download.urls', namespace='download')
+    ),
     url(
         r'^(?P<path>contribute\.json)$',
         static.serve,

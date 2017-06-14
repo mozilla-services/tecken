@@ -16,7 +16,7 @@ urlpatterns = [
         name='search'
     ),
     url(
-        r'upload/(?P<id>\d+)/$',
+        r'(?P<id>\d+)/$',
         views.upload,
         name='upload'
     ),
