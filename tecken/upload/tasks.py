@@ -8,8 +8,13 @@ import logging
 from io import BytesIO
 from functools import wraps
 
-from botocore.exceptions import ClientError, EndpointConnectionError
+from botocore.exceptions import (
+    ClientError,
+    EndpointConnectionError,
+    ConnectionError,
+)
 from celery import shared_task
+# from celery.exceptions import SoftTimeLimitExceeded
 
 from django.conf import settings
 from django.utils import timezone
@@ -60,16 +65,10 @@ def reraise_endpointconnectionerrors(f):
     return wrapper
 
 
-# We currently have only this one exception in the autoretry_for parameter.
-# Perhaps other types of exceptions can occur. Such as botocore.exceptions.
-# ClientError or botocore.exceptions.ConnectionError (which is an alias
-# for botocore.vendored.requests.exceptions.ConnectionError by the way).
-# It's not clear at all when those kinds of errors happen and whether they
-# can be pickled or not.
-# If they do happen, add to this 'autoretry_for' parameter tuple. If,
-# when they happen, cause that dreaded 'billiard.pool.MaybeEncodingError'
-# error, then apply the same work that was done to OwnEndpointConnectionError.
-@shared_task(autoretry_for=(OwnEndpointConnectionError,))
+@shared_task(autoretry_for=(
+    OwnEndpointConnectionError,
+    ConnectionError,
+))
 @reraise_endpointconnectionerrors
 def upload_inbox_upload(upload_id):
     """A zip file has been uploaded to the "inbox" folder.
@@ -77,7 +76,12 @@ def upload_inbox_upload(upload_id):
     and record this.
     The upload object should contain all necessary information for
     making a S3 connection the same way.
+
+    See https://github.com/boto/boto3/issues/1128
+    When running this, we see one "Starting new HTTPS connection"
+    for each file in the zip.
     """
+
     upload = Upload.objects.get(id=upload_id)
 
     s3_client = get_s3_client(
