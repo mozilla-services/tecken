@@ -247,9 +247,6 @@ class Base(Core):
 
     ALLOWED_HOSTS = values.ListValue([])
 
-    # The URL under which this instance is running
-    SITE_URL = values.URLValue('http://localhost:8000')
-
     DATABASES = values.DatabaseURLValue('postgres://postgres@db/postgres')
 
     REDIS_URL = values.Value('redis://redis-cache:6379/0')
