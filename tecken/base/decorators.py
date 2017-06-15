@@ -28,3 +28,28 @@ def api_permission_required(perm):
     that forces the `raise_exception` to be set to True.
     """
     return permission_required(perm, raise_exception=True)
+
+
+def set_request_debug(view_func):
+    """When you use this decorator, the request object gets changed.
+    The request gets a new boolean attribute set to either True or False
+    called `_debug_request` if and only if the request has a header
+    'HTTP_DEBUG' that is 'True', 'Yes' or '1' (case insensitive).
+
+    Usage:
+
+        @set_request_debug
+        def myview(request):
+            debug = request._request_debug
+            assert debug in (True, False)
+            return http.HttpResponse(debug)
+    """
+
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        trueish = ('1', 'true', 'yes')
+        debug = request.META.get('HTTP_DEBUG', '').lower() in trueish
+        request._request_debug = debug
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
