@@ -24,11 +24,6 @@ def test_client_happy_path(client, botomock, metricsmock, settings):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'HeadObject'
-        # if api_params['Key'].endswith('xxx.sym'):
-        #     parsed_response = {
-        #         'Error': {'Code': '404', 'Message': 'Not found'},
-        #     }
-        #     raise ClientError(parsed_response, operation_name)
         # as long as it's not a ClientError, it's found
         return {}
 
@@ -65,6 +60,52 @@ def test_client_happy_path(client, botomock, metricsmock, settings):
         assert timing_metrics[1][1] == 'tecken.download_symbol'
         assert isinstance(timing_metrics[0][2], float)
         assert isinstance(timing_metrics[1][2], float)
+
+
+def test_client_with_debug(client, botomock, metricsmock, settings):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/private/prefix/',
+    )
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'HeadObject'
+        # as long as it's not a ClientError, it's found
+        return {}
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url, HTTP_DEBUG='true')
+        assert response.status_code == 302
+        parsed = urlparse(response['location'])
+        assert float(response['debug-time']) > 0
+        assert parsed.netloc == 's3.example.com'
+        # the pre-signed URL will have the bucket in the path
+        assert parsed.path == (
+            '/private/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+        )
+        assert 'Signature=' in parsed.query
+        assert 'Expires=' in parsed.query
+        assert 'AWSAccessKeyId=' in parsed.query
+
+        response = client.head(url, HTTP_DEBUG='true')
+        assert response.status_code == 200
+        assert response.content == b''
+        assert float(response['debug-time']) > 0
+
+        # This one won't be logged because the filename is on a blacklist
+        # of symbol filenames to ignore
+        ignore_url = reverse('download:download_symbol', args=(
+            'cxinjime.pdb',
+            '342D9B0A3AE64812A2388C055C9F6C321',
+            'file.ptr',
+        ))
+        response = client.get(ignore_url, HTTP_DEBUG='true')
+        assert response.status_code == 404
+        assert float(response['debug-time']) == 0.0
 
 
 def test_client_404(client, botomock, settings, clear_redis):

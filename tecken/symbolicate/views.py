@@ -25,6 +25,7 @@ from tecken.base.symboldownloader import (
     SymbolNotFound,
     SymbolDownloadError,
 )
+from tecken.base.decorators import set_request_debug
 
 
 logger = logging.getLogger('tecken')
@@ -473,6 +474,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
 
 
 @csrf_exempt
+@set_request_debug
 @metrics.timer_decorator('symbolicate_json')
 def symbolicate_json(request):
     if request.method != 'POST':
@@ -497,7 +499,7 @@ def symbolicate_json(request):
     symbolicator = SymbolicateJSON(
         stacks,
         memory_map,
-        debug=json_body.get('debug')
+        debug=request._request_debug,
     )
     return JsonResponse(symbolicator.result)
 

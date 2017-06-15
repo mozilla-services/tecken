@@ -77,3 +77,36 @@ coded inside the ``_ignore_symbol`` code in ``tecken.download.views``.
 
 This approach might change over time as we're able to confidently
 identify more and more patterns that we know we can ignore.
+
+
+Download With Debug
+===================
+
+To know how long it took to make a "download", you can simply measure
+the time it takes to send the request to Tecken for a specific symbol.
+For example:
+
+.. code-block:: shell
+
+    $ time curl https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
+
+Note, that will tell you the total time it took your computer to make the
+request to Tecken **plus** Tecken's time to talk to S3.
+
+If you want to know how long it took Tecken *internally* to
+talk to S3, you can add a header to your outgoing request. For example:
+
+.. code-block:: shell
+
+    $ curl -v -H 'Debug: true' https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
+
+Then you'll get a response header called ``Debug-Time``. In the ``curl``
+output it will look something like this::
+
+    < Debug-Time: 0.627500057220459
+
+If that value is not present it's because Django was not even able to
+route your request to the code that talks to S3. It can also come back
+as exactly ``Debug-Time: 0.0`` which means the symbol is in a blacklist of
+symbols that are immediately ``404 Not Found`` based on filename pattern
+matching.

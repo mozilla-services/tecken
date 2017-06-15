@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.core.cache import cache
 
 from tecken.base.symboldownloader import SymbolDownloader
+from tecken.base.decorators import set_request_debug
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
@@ -32,6 +33,7 @@ def _ignore_symbol(symbol, debugid, filename):
 
 
 @metrics.timer_decorator('download_symbol')
+@set_request_debug
 @require_http_methods(['GET', 'HEAD'])
 def download_symbol(request, symbol, debugid, filename):
     # First there's an opportunity to do some basic pattern matching on
@@ -45,16 +47,27 @@ def download_symbol(request, symbol, debugid, filename):
             debugid,
             filename,
         ))
-        return http.HttpResponseNotFound('Symbol Not Found (and ignored)')
+        response = http.HttpResponseNotFound('Symbol Not Found (and ignored)')
+        if request._request_debug:
+            response['Debug-Time'] = 0
+        return response
 
-    downloader = SymbolDownloader(settings.SYMBOL_URLS)
+    downloader = SymbolDownloader(
+        settings.SYMBOL_URLS,
+    )
     if request.method == 'HEAD':
         if downloader.has_symbol(symbol, debugid, filename):
-            return http.HttpResponse()
+            response = http.HttpResponse()
+            if request._request_debug:
+                response['Debug-Time'] = downloader.time_took
+            return response
     else:
         url = downloader.get_symbol_url(symbol, debugid, filename)
         if url:
-            return http.HttpResponseRedirect(url)
+            response = http.HttpResponseRedirect(url)
+            if request._request_debug:
+                response['Debug-Time'] = downloader.time_took
+            return response
 
     if request.method == 'GET':
         # Only bother logging it if the client used GET.
@@ -67,7 +80,11 @@ def download_symbol(request, symbol, debugid, filename):
             code_file=request.GET.get('code_file'),
             code_id=request.GET.get('code_id'),
         )
-    return http.HttpResponseNotFound('Symbol Not Found')
+
+    response = http.HttpResponseNotFound('Symbol Not Found')
+    if request._request_debug:
+        response['Debug-Time'] = downloader.time_took
+    return response
 
 
 def log_symbol_get_404(

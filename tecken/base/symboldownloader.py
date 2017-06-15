@@ -2,8 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import time
 from io import BytesIO
 from gzip import GzipFile
+from functools import wraps
 
 import logging
 
@@ -55,6 +57,19 @@ def iter_lines(stream, chunk_size=ITER_CHUNK_SIZE):
 
     if pending is not None:
         yield pending
+
+
+def set_time_took(method):
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        t0 = time.time()
+        result = method(self, *args, **kwargs)
+        t1 = time.time()
+        self.time_took = t1 - t0
+        return result
+
+    return wrapper
 
 
 class SymbolDownloader:
@@ -320,11 +335,13 @@ class SymbolDownloader:
         # All URLs exhausted
         raise SymbolNotFound(symbol, debugid, filename)
 
+    @set_time_took
     def has_symbol(self, symbol, debugid, filename):
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
         return bool(self._get(symbol, debugid, filename))
 
+    @set_time_took
     def get_symbol_url(self, symbol, debugid, filename):
         """return the redirect URL or None. If we return None
         it means we can't find the object in any of the URLs provided."""

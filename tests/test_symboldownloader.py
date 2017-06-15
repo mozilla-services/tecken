@@ -125,11 +125,13 @@ def test_has_private(botomock):
             '44E4EC8C2F41492B9369D6B9A059577C2',
             'xul.sym'
         )
+        assert downloader.time_took > 0.0
         assert not downloader.has_symbol(
             'xxx.pdb',
             '44E4EC8C2F41492B9369D6B9A059577C2',
             'xxx.sym'
         )
+        assert downloader.time_took > 0.0
 
 
 def test_has_private_without_prefix(botomock):
