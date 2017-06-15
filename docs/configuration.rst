@@ -79,6 +79,18 @@ This S3 access needs to be able to talk to the
 
 .. note:: This default is likely to change in mid-2017.
 
+Gunicorn
+========
+
+At the moment, the only configuration for ``Gunicorn`` is that you can
+set the number of workers. The default is 4 and it can be overwritten by
+setting the environment variable ``GUNICORN_WORKERS``.
+
+The number should ideally be a function of the web head's number of cores
+according to this formula: ``(2 x $num_cores) + 1`` as `documented here`_.
+
+.. _`documented here`: http://docs.gunicorn.org/en/stable/design.html#how-many-workers
+
 AWS S3
 ======
 
