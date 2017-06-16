@@ -9,9 +9,9 @@ BASE_URL = os.environ.get('BASE_URL')
 assert BASE_URL
 
 
-def _request(payload, uri='/symbolicate/v4'):
+def _request(payload, uri='/symbolicate/v4', **options):
     url = BASE_URL + uri
-    return requests.post(url, json=payload, timeout=30)
+    return requests.post(url, json=payload, timeout=30, **options)
 
 
 def test_basic_symbolication():
@@ -59,9 +59,10 @@ def test_basic_symbolication_with_debug():
                 [1, 65802]
             ]
         ],
-        'debug': True
     }
-    response = _request(crash_ping)
+    response = _request(crash_ping, headers={
+        'Debug': 'true'
+    })
     assert response.status_code == 200
     debug = response.json()['debug']
     assert debug
@@ -83,12 +84,13 @@ def test_basic_symbolication_cached():
                 [1, 65802]
             ]
         ],
-        'debug': True,
     }
     response = _request(crash_ping)
     assert response.status_code == 200
     assert response.json()['knownModules'] == [True, True]
-    response = _request(crash_ping)
+    response = _request(crash_ping, headers={
+        'Debug': 'true'
+    })
     assert response.status_code == 200
     assert response.json()['knownModules'] == [True, True]
     # The second time, the debug information should definitely
