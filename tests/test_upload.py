@@ -96,24 +96,24 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings):
             }
 
         if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
         ):
-            # Pretend that we have seen this before and its previous
+            # Pretend that we have this in S3 and its previous
             # size was 1000.
-            return {
-                'ContentLength': 1000,
-            }
+            return {'Contents': [
+                {
+                    'Key': 'v0/south-africa-flag.jpeg',
+                    'Size': 1000,
+                }
+            ]}
 
         if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'v0/xpcshell.sym'
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/xpcshell.sym'
         ):
-            # Pretend we've never seen this before
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
+            # Pretend we don't have this in S3 at all
+            return {}
 
         if (
             operation_name == 'PutObject' and
@@ -239,35 +239,31 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
             }
 
         if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
         ):
-            return {
-                'ContentLength': 1000,
-            }
+            return {'Contents': [
+                {
+                    'Key': 'v0/south-africa-flag.jpeg',
+                    'Size': 1000,
+                }
+            ]}
 
         if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'v0/xpcshell.sym'
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/xpcshell.sym'
         ):
             # Give it grief on the HeadObject op the first time
             if first_time:
                 raise endpoint_error
 
-            # Pretend we've never seen this before
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
+            # Pretend we don't have this in S3
+            return {}
 
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == 'v0/south-africa-flag.jpeg'
         ):
-            # Give it grief on the HeadObject op the first time
-            # if first_time:
-            #     raise endpoint_error
-
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
             content = api_params['Body'].read()
@@ -374,22 +370,28 @@ def test_upload_inbox_upload_task_nothing(botomock, fakeuser, settings):
             }
 
         if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
         ):
-            # based on `unzip -l tests/sample.zip` knowledge
-            return {
-                'ContentLength': 69183,
-            }
+            return {'Contents': [
+                {
+                    'Key': 'v0/south-africa-flag.jpeg',
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 69183,
+                }
+            ]}
 
         if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'v0/xpcshell.sym'
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/xpcshell.sym'
         ):
-            # based on `unzip -l tests/sample.zip` knowledge
-            return {
-                'ContentLength': 488,
-            }
+            return {'Contents': [
+                {
+                    'Key': 'v0/xpcshell.sym',
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 488,
+                }
+            ]}
 
         if operation_name == 'DeleteObject':
             assert api_params['Key'] == 'inbox/sample.zip'

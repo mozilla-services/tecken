@@ -106,14 +106,15 @@ def test_has_private_bubble_other_clienterrors(botomock):
 def test_has_private(botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        if api_params['Key'].endswith('xxx.sym'):
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xxx.sym'):
+            return {}
         # as long as it's not a ClientError, it's found
-        return {}
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
 
     urls = (
         'https://s3.example.com/private/prefix/',
@@ -137,15 +138,18 @@ def test_has_private(botomock):
 def test_has_private_without_prefix(botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        if api_params['Key'].endswith('xul.sym'):
-            # as long as it's not a ClientError, it's found
-            return {}
-        elif api_params['Key'].endswith('xxx.sym'):
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xul.sym'):
+            # found
+            return {
+                'Contents': [{
+                    'Key': api_params['Prefix'],
+                }],
             }
-            raise ClientError(parsed_response, operation_name)
+        elif api_params['Prefix'].endswith('xxx.sym'):
+            # not found
+            return {}
+
         raise NotImplementedError(api_params)
 
     urls = (
@@ -201,13 +205,15 @@ def test_get_url_public(requestsmock):
 def test_get_url_private(botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        if api_params['Key'].endswith('xxx.sym'):
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xxx.sym'):
+            # not found
+            return {}
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
 
     urls = (
         'https://s3.example.com/private/prefix/',
@@ -242,13 +248,15 @@ def test_get_url_private(botomock):
 def test_get_url_private_dotted_name(botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        if api_params['Key'].endswith('xxx.sym'):
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xxx.sym'):
+            # not found
+            return {}
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
 
     urls = (
         'https://s3.example.com/com.example.private/prefix/',
@@ -462,13 +470,16 @@ def test_get_stream_private_other_clienterrors(botomock):
 def test_multiple_urls_public_then_private(requestsmock, botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        if api_params['Key'].endswith('xxx.sym'):
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xxx.sym'):
+            # not found
+            return {}
+        # found
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
 
     requestsmock.head(
         'https://s3.example.com/public/prefix/xul.pdb/'
@@ -503,13 +514,16 @@ def test_multiple_urls_public_then_private(requestsmock, botomock):
 def test_multiple_urls_private_then_public(requestsmock, botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        if api_params['Key'].endswith('xxx.sym'):
-            parsed_response = {
-                'Error': {'Code': '404', 'Message': 'Not found'},
-            }
-            raise ClientError(parsed_response, operation_name)
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xxx.sym'):
+            # not found
+            return {}
+        # found
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
 
     requestsmock.head(
         'https://s3.example.com/public/prefix/xul.pdb/'
@@ -561,9 +575,14 @@ def test_has_public_case_insensitive_debugid(requestsmock):
 def test_has_private_case_insensitive_debugid(botomock):
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        assert '44E4EC8C2F41492B9369D6B9A059577C2' in api_params['Key']
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        assert '44E4EC8C2F41492B9369D6B9A059577C2' in api_params['Prefix']
+        # found
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
 
     urls = (
         'https://s3.example.com/private/prefix/',

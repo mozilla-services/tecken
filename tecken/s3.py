@@ -27,7 +27,7 @@ class S3Bucket:
         False
         >>> s.prefix
         'prfx'
-        >>> s.s3_client.head_object(Bucket=s.name, Key='some/key.ext')
+        >>> s.s3_client.list_objects_v2(Bucket=s.name, Prefix='some/key.ext')
 
     """
 

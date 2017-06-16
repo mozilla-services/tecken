@@ -174,25 +174,18 @@ class SymbolDownloader:
                     f'Looking for symbol file {key!r} in bucket {source.name}'
                 )
 
-                # By doing a head_object() lookup we will immediately know
-                # if the object exists under this URL.
-                # It doesn't matter yet if the client of this call is
-                # doing a HEAD or a GET. We need to first know if the key
-                # exists in this bucket.
-                try:
-                    source.s3_client.head_object(
-                        Bucket=source.name,
-                        Key=key,
-                    )
-                except ClientError as exception:
-                    error_code = int(exception.response['Error']['Code'])
-                    if error_code == 404:
-                        continue
-                    # If anything else goes wrong, it's most likely a
-                    # configuration problem we should be made aware of.
-                    raise
+                response = source.s3_client.list_objects_v2(
+                    Bucket=source.name,
+                    Prefix=key,
+                )
+                for obj in response.get('Contents', []):
+                    if obj['Key'] == key:
+                        # It exists!
+                        break
+                else:
+                    continue
 
-                # It exists! Yay!
+                # It exists if we're still here
                 return {
                     'bucket_name': source.name,
                     'key': key,
