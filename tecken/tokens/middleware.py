@@ -3,6 +3,7 @@ import logging
 from django import http
 from django.contrib import auth
 from django.conf import settings
+from django.core.exceptions import MiddlewareNotUsed
 from django.utils.deprecation import MiddlewareMixin
 
 from .models import Token
@@ -13,10 +14,13 @@ logger = logging.getLogger('tecken')
 
 class APITokenAuthenticationMiddleware(MiddlewareMixin):
 
-    def process_request(self, request):
+    def __init__(self):
         if not settings.ENABLE_TOKENS_AUTHENTICATION:  # pragma: no cover
             logger.warn('API Token authentication disabled')
-            return
+            raise MiddlewareNotUsed
+
+    def process_request(self, request):
+
         key = request.META.get('HTTP_AUTH_TOKEN')
         if not key:
             return
