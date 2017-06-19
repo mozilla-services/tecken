@@ -8,7 +8,6 @@ from urllib.parse import urlparse
 from io import StringIO
 
 from markus import TIMING
-from botocore.exceptions import ClientError
 
 from django.utils import timezone
 from django.core.urlresolvers import reverse
@@ -23,9 +22,12 @@ def test_client_happy_path(client, botomock, metricsmock, settings):
     )
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        # as long as it's not a ClientError, it's found
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }]
+        }
 
     url = reverse('download:download_symbol', args=(
         'xul.pdb',
@@ -68,9 +70,12 @@ def test_client_with_debug(client, botomock, metricsmock, settings):
     )
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        # as long as it's not a ClientError, it's found
-        return {}
+        assert operation_name == 'ListObjectsV2'
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }]
+        }
 
     url = reverse('download:download_symbol', args=(
         'xul.pdb',
@@ -114,11 +119,8 @@ def test_client_404(client, botomock, settings, clear_redis):
     )
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        parsed_response = {
-            'Error': {'Code': '404', 'Message': 'Not found'},
-        }
-        raise ClientError(parsed_response, operation_name)
+        assert operation_name == 'ListObjectsV2'
+        return {}
 
     url = reverse('download:download_symbol', args=(
         'xul.pdb',
@@ -140,11 +142,8 @@ def test_client_404_logged(client, botomock, settings, clear_redis):
     )
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'HeadObject'
-        parsed_response = {
-            'Error': {'Code': '404', 'Message': 'Not found'},
-        }
-        raise ClientError(parsed_response, operation_name)
+        assert operation_name == 'ListObjectsV2'
+        return {}
 
     url = reverse('download:download_symbol', args=(
         'xul.pdb',

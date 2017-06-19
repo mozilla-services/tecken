@@ -9,7 +9,6 @@ from io import BytesIO
 from functools import wraps
 
 from botocore.exceptions import (
-    ClientError,
     EndpointConnectionError,
     ConnectionError,
 )
@@ -108,6 +107,7 @@ def upload_inbox_upload(upload_id):
 
     try:
         for member in get_archive_members(buf, upload.filename):
+            # XXX consider a metrics timer function here
             file_upload = create_file_upload(
                 s3_client,
                 upload,
@@ -145,6 +145,22 @@ def upload_inbox_upload(upload_id):
     upload.refresh_from_db()
     upload.completed_at = timezone.now()
     upload.save()
+
+
+def _key_existing_size(client, bucket, key):
+    """return the key's size if it exist, else None.
+
+    See
+    https://www.peterbe.com/plog/fastest-way-to-find-out-if-a-file-exists-in-s3
+    for why this is the better approach.
+    """
+    response = client.list_objects_v2(
+        Bucket=bucket,
+        Prefix=key,
+    )
+    for obj in response.get('Contents', []):
+        if obj['Key'] == key:
+            return obj['Size']
 
 
 def create_file_upload(s3_client, upload, member, previous_uploads_keys):
@@ -189,32 +205,23 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
     file_buffer.seek(0)
 
     # Did we already have this exact file uploaded?
-    try:
-        existing_object = s3_client.head_object(
-            Bucket=upload.bucket_name,
-            Key=key_name,
-        )
+    size_in_s3 = _key_existing_size(s3_client, upload.bucket_name, key_name)
+    if size_in_s3 is not None:
         # Only upload if the size is different.
         # So set this to None if it's already there and same size.
-        if existing_object['ContentLength'] == size:
+        if size_in_s3 == size:
             # Moving on.
             logger.debug(
                 f'{key_name!r} ({upload.bucket_name}) has not changed '
                 'size. Skipping.'
             )
             return
-    except ClientError as exception:
-        if exception.response['Error']['Code'] == '404':
-            # It's a brand new one!
-            existing_object = None
-        else:
-            raise
 
     file_upload = FileUpload(
         upload=upload,
         bucket_name=upload.bucket_name,
         key=key_name,
-        update=bool(existing_object),
+        update=size_in_s3 is not None,
         compressed=compress,
         size=size,
     )

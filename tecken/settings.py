@@ -640,11 +640,19 @@ class Prodlike(Prod):
         DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'disable'
         return DATABASES
 
-    # MARKUS_BACKENDS = []
+    MARKUS_BACKENDS = []
 
     # If you try to run with prod like settings locally, you most likely
     # have to use a self-signed SSL cert.
     SECURE_HSTS_SECONDS = 60
+
+    # XXX This is scrappy!
+    # When running with DJANGO_CONFIGURATION=Prodlike, if you don't want
+    # to have to use HTTPS, uncomment these lines:
+    # ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
+    # SECURE_SSL_REDIRECT = False
+    # SECURE_HSTS_SECONDS = 0
+    # SECURE_HSTS_PRELOAD = False
 
 
 class Build(Prod):
