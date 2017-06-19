@@ -245,6 +245,143 @@ def test_get_url_private(botomock):
         assert len(botomock.calls) == 2
 
 
+def test_public_default_file_prefix(requestsmock, settings):
+    """The idea with settings.SYMBOL_FILE_PREFIX is to make it easier
+    to specify the settings.SYMBOL_URLS. That settings.SYMBOL_FILE_PREFIX
+    is *always* used when uploading symbols. So it's *always* useful to
+    query for symbols with a prefix. However, it's an easy mistake to make
+    that you just focus on the bucket name to say where symbols come from.
+    In those cases, the code should "protect" you can make sure we actually
+    use the prefix.
+
+    However, we don't want to lose the flexibility to actually override
+    it on a *per URL* basis.
+    """
+    settings.SYMBOL_FILE_PREFIX = 'myprfx'
+
+    requestsmock.head(
+        'https://s3.example.com/public/start/xxx.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
+        text='Page Not Found',
+        status_code=404,
+    )
+    requestsmock.head(
+        'https://s3.example.com/also-public/prrffxx/xxx.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
+        text='Page Not Found',
+        status_code=404,
+    )
+    requestsmock.head(
+        'https://s3.example.com/special/myprfx/xxx.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
+        text='Page Not Found',
+        status_code=404,
+    )
+
+    urls = (
+        'https://s3.example.com/public/start/?access=public',
+        # No trailing / in the path part
+        'https://s3.example.com/also-public/prrffxx?access=public',
+        # No prefix!
+        'https://s3.example.com/special?access=public',
+    )
+    downloader = SymbolDownloader(urls)
+    assert not downloader.has_symbol(
+        'xxx.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xxx.sym'
+    )
+
+    requestsmock.get(
+        'https://s3.example.com/public/start/xxx.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
+        text='Page Not Found',
+        status_code=404,
+    )
+    requestsmock.get(
+        'https://s3.example.com/also-public/prrffxx/xxx.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
+        text='Page Not Found',
+        status_code=404,
+    )
+    requestsmock.get(
+        'https://s3.example.com/special/myprfx/xxx.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
+        text='Page Not Found',
+        status_code=404,
+    )
+
+    stream = downloader.get_symbol_stream(
+        'xxx.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xxx.sym'
+    )
+    # Now try to stream it
+    with pytest.raises(SymbolNotFound):
+        list(stream)
+
+
+def test_private_default_file_prefix(botomock, settings):
+    """See doc string in test_public_default_file_prefix
+    """
+    settings.SYMBOL_FILE_PREFIX = 'myprfx'
+
+    all_mock_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        if operation_name == 'ListObjectsV2':
+            # the has_symbol() was called
+            all_mock_calls.append(api_params['Prefix'])
+            # pretend it doesn't exist
+            return {}
+        elif operation_name == 'GetObject':
+            # someone wants a stream
+            all_mock_calls.append(api_params['Key'])
+            parsed_response = {
+                'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
+        else:
+            raise NotImplementedError(operation_name)
+
+    urls = (
+        # Private URL with prefix and trailing /
+        'https://s3.example.com/priv-bucket/borje/',
+        # No trailing /
+        'https://s3.example.com/also-priv-bucket/prrffxx',
+        # No prefix
+        'https://s3.example.com/some-bucket',
+    )
+    downloader = SymbolDownloader(urls)
+    with botomock(mock_api_call):
+        assert not downloader.has_symbol(
+            'xxx.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xxx.sym'
+        )
+
+        assert len(all_mock_calls) == 3
+        assert all_mock_calls[0].startswith('borje/xxx.pdb')
+        assert all_mock_calls[1].startswith('prrffxx/xxx.pdb')
+        assert all_mock_calls[2].startswith('myprfx/xxx.pdb')
+
+        # reset the mutable recorder
+        all_mock_calls = []
+
+        stream = downloader.get_symbol_stream(
+            'xxx.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xxx.sym'
+        )
+        with pytest.raises(SymbolNotFound):
+            next(stream)
+
+        assert len(all_mock_calls) == 3
+        assert all_mock_calls[0].startswith('borje/xxx.pdb')
+        assert all_mock_calls[1].startswith('prrffxx/xxx.pdb')
+        assert all_mock_calls[2].startswith('myprfx/xxx.pdb')
+
+
 def test_get_url_private_dotted_name(botomock):
 
     def mock_api_call(self, operation_name, api_params):

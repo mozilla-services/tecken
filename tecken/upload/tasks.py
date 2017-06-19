@@ -168,7 +168,7 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
     Returns an unsaved FileUpload instance iff the S3 put_object worked.
     """
     key_name = os.path.join(
-        settings.UPLOAD_FILE_PREFIX, member.name
+        settings.SYMBOL_FILE_PREFIX, member.name
     )
     if key_name in previous_uploads_keys:
         # If this upload is a retry, the upload object might already have

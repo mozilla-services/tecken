@@ -37,6 +37,8 @@ class S3Bucket:
         self.netloc = parsed.netloc
         try:
             name, prefix = parsed.path[1:].split('/', 1)
+            if prefix.endswith('/'):
+                prefix = prefix[:-1]
         except ValueError:
             prefix = ''
             name = parsed.path[1:]
@@ -59,12 +61,13 @@ class S3Bucket:
         # This is only created if/when needed
         self._s3_client = None
 
-    def __str__(self):
-        return '{}://{}/{}/{}'.format(
+    @property
+    def base_url(self):
+        """Return the URL by its domain and bucket name"""
+        return '{}://{}/{}'.format(
             self.scheme,
             self.netloc,
             self.name,
-            self.prefix,
         )
 
     def __repr__(self):

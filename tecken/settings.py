@@ -394,8 +394,8 @@ class Base(Core):
     # anybody uploading with an @example.com email address.
     UPLOAD_URL_EXCEPTIONS = values.DictValue({})
 
-    # The default prefix for all keys uploaded
-    UPLOAD_FILE_PREFIX = values.Value('v1')
+    # The default prefix for locating all symbols
+    SYMBOL_FILE_PREFIX = values.Value('v1')
 
     # During upload, for each file in the archive, if the extension
     # matches this list, the file gets gzip compressed before uploading.
@@ -531,7 +531,7 @@ class Test(Localdev):
         'django.contrib.auth.backends.ModelBackend',
     )
 
-    UPLOAD_FILE_PREFIX = 'v0'
+    SYMBOL_FILE_PREFIX = 'v0'
     UPLOAD_DEFAULT_URL = 'http://s3.example.com/mybucket'
     UPLOAD_URL_EXCEPTIONS = {
         '*@peterbe.com': 'http://s3.example.com/peterbe-com',

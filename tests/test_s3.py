@@ -13,7 +13,7 @@ def test_use_s3bucket():
     assert bucket.endpoint_url is None
     assert bucket.region is None
     assert bucket.private  # because it's the default
-    assert str(bucket) == 'https://s3.amazonaws.com/some-bucket/'
+    assert bucket.base_url == 'https://s3.amazonaws.com/some-bucket'
 
     bucket = S3Bucket(
         'https://s3.amazonaws.com/some-bucket?access=public'
@@ -22,20 +22,20 @@ def test_use_s3bucket():
     assert bucket.endpoint_url is None
     assert bucket.region is None
     assert not bucket.private
-    assert str(bucket) == 'https://s3.amazonaws.com/some-bucket/'
+    assert bucket.base_url == 'https://s3.amazonaws.com/some-bucket'
 
     bucket = S3Bucket('https://s3-us-north-2.amazonaws.com/some-bucket')
     assert bucket.name == 'some-bucket'
     assert bucket.endpoint_url is None
     assert bucket.region == 'us-north-2'
-    assert str(bucket) == 'https://s3-us-north-2.amazonaws.com/some-bucket/'
+    assert bucket.base_url == 'https://s3-us-north-2.amazonaws.com/some-bucket'
 
     bucket = S3Bucket('http://s3.example.com/buck/prfx')
     assert bucket.name == 'buck'
     assert bucket.endpoint_url == 'http://s3.example.com'
     assert bucket.region is None
     assert bucket.prefix == 'prfx'
-    assert str(bucket) == 'http://s3.example.com/buck/prfx'
+    assert bucket.base_url == 'http://s3.example.com/buck'
 
     # Just check that __repr__ it works at all
     assert repr(bucket)

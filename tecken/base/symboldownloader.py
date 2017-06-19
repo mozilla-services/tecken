@@ -12,6 +12,8 @@ import logging
 import requests
 from botocore.exceptions import ClientError
 
+from django.conf import settings
+
 from tecken.s3 import S3Bucket
 
 
@@ -152,11 +154,14 @@ class SymbolDownloader:
         was returned as an indication that the symbol actually exists."""
         for source in self._get_sources():
 
+            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            assert prefix
+
             if source.private:
                 # If it's a private bucket we use boto3.
 
-                key = '{}{}/{}/{}'.format(
-                    source.prefix,
+                key = '{}/{}/{}/{}'.format(
+                    prefix,
                     symbol,
                     # The are some legacy use case where the debug ID might
                     # not already be uppercased. If so, we override it.
@@ -194,25 +199,30 @@ class SymbolDownloader:
 
             else:
                 # We'll put together the URL manually
-                file_url = '{}{}/{}/{}'.format(
-                    source,
+                file_url = '{}/{}/{}/{}/{}'.format(
+                    source.base_url,
+                    prefix,
                     symbol,
                     debugid.upper(),
                     filename,
                 )
-                logger.debug(
-                    f'Looking for symbol file by URL {file_url!r}'
-                )
+                # logger.debug(
+                #     f'Looking for symbol file by URL {file_url!r}'
+                # )
                 if requests.head(file_url).status_code == 200:
                     return {'url': file_url, 'source': source}
 
     def _get_stream(self, symbol, debugid, filename):
         for source in self._get_sources():
+
+            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            assert prefix
+
             if source.private:
                 # If it's a private bucket we use boto3.
 
-                key = '{}{}/{}/{}'.format(
-                    source.prefix,
+                key = '{}/{}/{}/{}'.format(
+                    prefix,
                     symbol,
                     # The are some legacy use case where the debug ID might
                     # not already be uppercased. If so, we override it.
@@ -259,9 +269,6 @@ class SymbolDownloader:
                     if exception.response['Error']['Code'] == 'NoSuchKey':
                         # basically, a convuluted way of saying 404
                         continue
-                    print(exception.response)
-                    print('SOURCE', repr(source))
-                    print("BUCKET", source.name)
                     # Any other errors we're not yet aware of, proceeed
                     raise
 
@@ -270,8 +277,9 @@ class SymbolDownloader:
                 # to download via HTTP.
 
                 # We'll put together the URL manually
-                file_url = '{}{}/{}/{}'.format(
-                    source,
+                file_url = '{}/{}/{}/{}/{}'.format(
+                    source.base_url,
+                    prefix,
                     symbol,
                     debugid.upper(),
                     filename,
