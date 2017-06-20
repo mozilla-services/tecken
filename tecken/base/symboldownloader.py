@@ -169,12 +169,6 @@ class SymbolDownloader:
                     debugid.upper(),
                     filename,
                 )
-                # logger.debug(
-                #     'Looking for symbol file {!r} in bucket {!r}'.format(
-                #         key,
-                #         source.name
-                #     )
-                # )
                 logger.debug(
                     f'Looking for symbol file {key!r} in bucket {source.name}'
                 )
@@ -206,9 +200,9 @@ class SymbolDownloader:
                     debugid.upper(),
                     filename,
                 )
-                # logger.debug(
-                #     f'Looking for symbol file by URL {file_url!r}'
-                # )
+                logger.debug(
+                    f'Looking for symbol file by URL {file_url!r}'
+                )
                 if requests.head(file_url).status_code == 200:
                     return {'url': file_url, 'source': source}
 

@@ -295,7 +295,7 @@ class Base(Core):
             },
             'handlers': {
                 'console': {
-                    'level': 'DEBUG',
+                    'level': 'INFO',
                     'class': 'logging.StreamHandler',
                     'formatter': (
                         'json' if self.LOGGING_USE_JSON else 'verbose'
@@ -318,6 +318,11 @@ class Base(Core):
             },
             'loggers': {
                 'django.db.backends': {
+                    'level': 'ERROR',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
+                'django.request': {
                     'level': 'ERROR',
                     'handlers': ['console'],
                     'propagate': False,
