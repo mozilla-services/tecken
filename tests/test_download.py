@@ -113,6 +113,43 @@ def test_client_with_debug(client, botomock, metricsmock, settings):
         assert float(response['debug-time']) == 0.0
 
 
+def test_client_with_debug_with_cache(client, botomock, metricsmock, settings):
+    settings.SYMBOL_URLS = (
+        'https://s3.example.com/private/prefix/',
+    )
+
+    mock_api_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_api_calls.append(api_params)
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }]
+        }
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url, HTTP_DEBUG='true')
+        assert response.status_code == 302
+        assert float(response['debug-time']) > 0
+
+        response = client.get(url, HTTP_DEBUG='true')
+        assert response.status_code == 302
+        assert float(response['debug-time']) > 0
+
+        response = client.head(url, HTTP_DEBUG='true')
+        assert response.status_code == 200
+        assert float(response['debug-time']) > 0
+
+        assert len(mock_api_calls) == 1
+
+
 def test_client_404(client, botomock, settings, clear_redis):
     settings.SYMBOL_URLS = (
         'https://s3.example.com/private/prefix/',
