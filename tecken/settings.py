@@ -666,13 +666,13 @@ class Prodlike(Prod):
     # have to use a self-signed SSL cert.
     SECURE_HSTS_SECONDS = 60
 
-    # XXX This is scrappy!
-    # When running with DJANGO_CONFIGURATION=Prodlike, if you don't want
-    # to have to use HTTPS, uncomment these lines:
-    # ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
-    # SECURE_SSL_REDIRECT = False
-    # SECURE_HSTS_SECONDS = 0
-    # SECURE_HSTS_PRELOAD = False
+    if os.environ.get('DJANGO_RUN_INSECURELY', False):  # hackish, but works
+        # When running with DJANGO_CONFIGURATION=Prodlike, if you don't want
+        # to have to use HTTPS, uncomment these lines:
+        ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
+        SECURE_SSL_REDIRECT = False
+        SECURE_HSTS_SECONDS = 0
+        SECURE_HSTS_PRELOAD = False
 
 
 class Build(Prod):

@@ -164,18 +164,20 @@ class SymbolDownloader:
 
     def __init__(self, urls):
         self.urls = urls
+        self._sources = None
 
     def _get_sources(self):
-        """Return a generator that yields a _SymbolSource instance for
-        every URL mentioned in settings.SYMBOL_URLS.
-        This way, if there's a hit on the first item of settings.SYMBOL_URLS
-        it will never need to parsed and dig into the second item.
-        """
         for url in self.urls:
             # The URL is expected to have the bucket name as the first
             # part of the pathname.
             # In the future we might expand to a more elaborate scheme.
             yield S3Bucket(url)
+
+    @property
+    def sources(self):
+        if self._sources is None:
+            self._sources = list(self._get_sources())
+        return self._sources
 
     def _get(self, symbol, debugid, filename):
         """Return a dict if the symbol can be found. The dict will
@@ -184,7 +186,7 @@ class SymbolDownloader:
         private bucket.
         Consumers of this method can use the fact that anything truish
         was returned as an indication that the symbol actually exists."""
-        for source in self._get_sources():
+        for source in self.sources:
 
             prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
             assert prefix
@@ -231,7 +233,7 @@ class SymbolDownloader:
                     return {'url': file_url, 'source': source}
 
     def _get_stream(self, symbol, debugid, filename):
-        for source in self._get_sources():
+        for source in self.sources:
 
             prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
             assert prefix

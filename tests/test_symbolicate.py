@@ -9,14 +9,23 @@ from markus import INCR, GAUGE
 from django.core.urlresolvers import reverse
 from django.core.cache import caches
 
-from tecken.symbolicate.views import (
-    SymbolicateJSON,
-    LogCacheHitsMixin,
-)
+from tecken.base.symboldownloader import SymbolDownloader
+from tecken.symbolicate import views
+
+
+def reload_downloader(urls):
+    """Because the tecken.download.views module has a global instance
+    of SymbolDownloader created at start-up, it's impossible to easily
+    change the URL if you want to test clients with a different URL.
+    This function hotfixes that instance to use a different URL(s).
+    """
+    if isinstance(urls, str):
+        urls = tuple([urls])
+    views.downloader = SymbolDownloader(urls)
 
 
 def test_log_cache_hits_and_misses(clear_redis, metricsmock):
-    instance = LogCacheHitsMixin()
+    instance = views.LogCacheHitsMixin()
 
     # A hit!
     instance.log_symbol_cache_hit()
@@ -38,7 +47,7 @@ def test_log_cache_evictions_from_metrics_view(client, clear_redis, settings):
     settings.MARKUS_BACKENDS = [{
         'class': 'tecken.markus_extra.CacheMetrics',
     }]
-    instance = LogCacheHitsMixin()
+    instance = views.LogCacheHitsMixin()
     for i in range(10):
         instance.log_symbol_cache_hit()
     for i in range(2):
@@ -120,11 +129,10 @@ PUBLIC junk
 def test_symbolicate_json_happy_path_django_view(
     json_poster,
     clear_redis,
-    settings,
     requestsmock,
     metricsmock,
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -191,12 +199,8 @@ def test_symbolicate_json_happy_path_django_view(
     assert result_second == result
 
 
-def test_symbolicate_json_one_cache_lookup(
-    clear_redis,
-    settings,
-    requestsmock
-):
-    settings.SYMBOL_URLS = (
+def test_symbolicate_json_one_cache_lookup(clear_redis, requestsmock):
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -209,7 +213,7 @@ def test_symbolicate_json_one_cache_lookup(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         # This will draw from the 2nd memory_map item TWICE
         stacks=[[[0, 11723767], [1, 65802], [1, 55802]]],
         memory_map=[
@@ -233,12 +237,8 @@ def test_symbolicate_json_one_cache_lookup(
     assert result['debug']['cache_lookups']['count'] == 1
 
 
-def test_symbolicate_json_bad_module_indexes(
-    clear_redis,
-    settings,
-    requestsmock,
-):
-    settings.SYMBOL_URLS = (
+def test_symbolicate_json_bad_module_indexes(clear_redis, requestsmock):
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -251,7 +251,7 @@ def test_symbolicate_json_bad_module_indexes(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[-1, 11723767], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
@@ -268,12 +268,8 @@ def test_symbolicate_json_bad_module_indexes(
     ]
 
 
-def test_symbolicate_json_bad_module_offset(
-    clear_redis,
-    settings,
-    requestsmock,
-):
-    settings.SYMBOL_URLS = (
+def test_symbolicate_json_bad_module_offset(clear_redis, requestsmock):
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -286,7 +282,7 @@ def test_symbolicate_json_bad_module_offset(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[-1, 1.00000000], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
@@ -303,12 +299,8 @@ def test_symbolicate_json_bad_module_offset(
     ]
 
 
-def test_symbolicate_json_happy_path_with_debug(
-    clear_redis,
-    settings,
-    requestsmock
-):
-    settings.SYMBOL_URLS = (
+def test_symbolicate_json_happy_path_with_debug(clear_redis, requestsmock):
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
 
@@ -322,7 +314,7 @@ def test_symbolicate_json_happy_path_with_debug(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         debug=True,
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
@@ -355,7 +347,7 @@ def test_symbolicate_json_happy_path_with_debug(
 
     # Look it up again, and this time the debug should indicate that
     # we drew from the cache.
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         debug=True,
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
@@ -381,12 +373,8 @@ def test_symbolicate_json_happy_path_with_debug(
     assert result['debug']['downloads']['time'] == 0.0
 
 
-def test_symbolicate_json_one_symbol_not_found(
-    clear_redis,
-    settings,
-    requestsmock,
-):
-    settings.SYMBOL_URLS = (
+def test_symbolicate_json_one_symbol_not_found(clear_redis, requestsmock):
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
 
@@ -401,7 +389,7 @@ def test_symbolicate_json_one_symbol_not_found(
         text='Not found',
         status_code=404
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
@@ -420,10 +408,9 @@ def test_symbolicate_json_one_symbol_not_found(
 
 def test_symbolicate_json_one_symbol_not_found_with_debug(
     clear_redis,
-    settings,
     requestsmock,
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
 
@@ -438,7 +425,7 @@ def test_symbolicate_json_one_symbol_not_found_with_debug(
         text='Not found',
         status_code=404
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         debug=True,
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
@@ -454,10 +441,9 @@ def test_symbolicate_json_one_symbol_not_found_with_debug(
 
 def test_symbolicate_json_one_symbol_empty(
     clear_redis,
-    settings,
     requestsmock,
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
 
@@ -471,7 +457,7 @@ def test_symbolicate_json_one_symbol_empty(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=''
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         debug=True,
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
@@ -491,7 +477,7 @@ def test_symbolicate_json_one_symbol_empty(
 
     # Run it again, and despite that we failed to cache the second
     # symbol failed, that failure should be "cached".
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         debug=True,
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
@@ -505,10 +491,9 @@ def test_symbolicate_json_one_symbol_empty(
 
 def test_symbolicate_json_one_symbol_500_error(
     clear_redis,
-    settings,
     requestsmock,
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
 
@@ -523,7 +508,7 @@ def test_symbolicate_json_one_symbol_500_error(
         text='Interval Server Error',
         status_code=500
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
@@ -536,10 +521,9 @@ def test_symbolicate_json_one_symbol_500_error(
 
 def test_symbolicate_json_one_symbol_sslerror(
     clear_redis,
-    settings,
     requestsmock,
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -552,7 +536,7 @@ def test_symbolicate_json_one_symbol_sslerror(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         exc=requests.exceptions.SSLError
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
@@ -565,10 +549,9 @@ def test_symbolicate_json_one_symbol_sslerror(
 
 def test_symbolicate_json_one_symbol_readtimeout(
     clear_redis,
-    settings,
     requestsmock
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -581,7 +564,7 @@ def test_symbolicate_json_one_symbol_readtimeout(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         exc=requests.exceptions.ReadTimeout
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
@@ -594,10 +577,9 @@ def test_symbolicate_json_one_symbol_readtimeout(
 
 def test_symbolicate_json_one_symbol_connectionerror(
     clear_redis,
-    settings,
     requestsmock
 ):
-    settings.SYMBOL_URLS = (
+    reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
@@ -610,7 +592,7 @@ def test_symbolicate_json_one_symbol_connectionerror(
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         exc=requests.exceptions.ConnectionError
     )
-    symbolicator = SymbolicateJSON(
+    symbolicator = views.SymbolicateJSON(
         stacks=[[[0, 11723767], [1, 65802]]],
         memory_map=[
             ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],

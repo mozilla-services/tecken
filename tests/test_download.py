@@ -13,13 +13,23 @@ from django.utils import timezone
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
 
-from tecken.download.views import log_symbol_get_404
+from tecken.base.symboldownloader import SymbolDownloader
+from tecken.download import views
 
 
-def test_client_happy_path(client, botomock, metricsmock, settings):
-    settings.SYMBOL_URLS = (
-        'https://s3.example.com/private/prefix/',
-    )
+def reload_downloader(urls):
+    """Because the tecken.download.views module has a global instance
+    of SymbolDownloader created at start-up, it's impossible to easily
+    change the URL if you want to test clients with a different URL.
+    This function hotfixes that instance to use a different URL(s).
+    """
+    if isinstance(urls, str):
+        urls = tuple([urls])
+    views.downloader = SymbolDownloader(urls)
+
+
+def test_client_happy_path(client, botomock, metricsmock):
+    reload_downloader('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -64,10 +74,8 @@ def test_client_happy_path(client, botomock, metricsmock, settings):
         assert isinstance(timing_metrics[1][2], float)
 
 
-def test_client_with_debug(client, botomock, metricsmock, settings):
-    settings.SYMBOL_URLS = (
-        'https://s3.example.com/private/prefix/',
-    )
+def test_client_with_debug(client, botomock, metricsmock):
+    reload_downloader('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -113,10 +121,8 @@ def test_client_with_debug(client, botomock, metricsmock, settings):
         assert float(response['debug-time']) == 0.0
 
 
-def test_client_with_debug_with_cache(client, botomock, metricsmock, settings):
-    settings.SYMBOL_URLS = (
-        'https://s3.example.com/private/prefix/',
-    )
+def test_client_with_debug_with_cache(client, botomock, metricsmock):
+    reload_downloader('https://s3.example.com/private/prefix/')
 
     mock_api_calls = []
 
@@ -150,10 +156,8 @@ def test_client_with_debug_with_cache(client, botomock, metricsmock, settings):
         assert len(mock_api_calls) == 1
 
 
-def test_client_404(client, botomock, settings, clear_redis):
-    settings.SYMBOL_URLS = (
-        'https://s3.example.com/private/prefix/',
-    )
+def test_client_404(client, botomock, clear_redis):
+    reload_downloader('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -173,10 +177,8 @@ def test_client_404(client, botomock, settings, clear_redis):
         assert response.status_code == 404
 
 
-def test_client_404_logged(client, botomock, settings, clear_redis):
-    settings.SYMBOL_URLS = (
-        'https://s3.example.com/private/prefix/',
-    )
+def test_client_404_logged(client, botomock, clear_redis):
+    reload_downloader('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -256,7 +258,7 @@ def test_client_404_logged(client, botomock, settings, clear_redis):
 
 def test_missing_symbols_csv(client, clear_redis):
     # Log at least one line
-    log_symbol_get_404(
+    views.log_symbol_get_404(
         'xul.pdb',
         '44E4EC8C2F41492B9369D6B9A059577C2',
         'xul.sym',
