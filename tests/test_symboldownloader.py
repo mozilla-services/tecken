@@ -10,11 +10,46 @@ from botocore.exceptions import ClientError
 from requests.exceptions import ContentDecodingError
 from requests.packages.urllib3.response import HTTPResponse
 
+from tecken.s3 import S3Bucket
 from tecken.base.symboldownloader import (
     SymbolDownloader,
     SymbolNotFound,
     iter_lines,
+    exists_in_source,
 )
+
+
+def test_exists_in_source(botomock, settings):
+
+    mock_api_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        mock_api_calls.append(api_params)
+        assert operation_name == 'ListObjectsV2'
+        if api_params['Prefix'].endswith('xxx.sym'):
+            return {}
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
+
+    bucket = S3Bucket('https://s3.example.com/private')
+    with botomock(mock_api_call):
+        assert not exists_in_source(bucket, 'xxx.sym')
+        assert exists_in_source(bucket, 'xul.sym')
+        assert len(mock_api_calls) == 2
+
+        # again
+        assert not exists_in_source(bucket, 'xxx.sym')
+        assert exists_in_source(bucket, 'xul.sym')
+        assert len(mock_api_calls) == 2
+
+        # hackishly force the ttl to expire things
+        settings.SYMBOLDOWNLOAD_MAX_TTL_SECONDS = 0
+        assert not exists_in_source(bucket, 'xxx.sym')
+        assert exists_in_source(bucket, 'xul.sym')
+        assert len(mock_api_calls) == 4
 
 
 def test_iter_lines():
@@ -109,7 +144,6 @@ def test_has_private(botomock):
         assert operation_name == 'ListObjectsV2'
         if api_params['Prefix'].endswith('xxx.sym'):
             return {}
-        # as long as it's not a ClientError, it's found
         return {
             'Contents': [{
                 'Key': api_params['Prefix'],
