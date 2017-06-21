@@ -91,7 +91,6 @@ def exists_in_source(source, key):
             Bucket=source.name,
             Prefix=key,
         )
-        # print("DO THE ACTUAL LOOKUP", key)
         for obj in response.get('Contents', []):
             if obj['Key'] == key:
                 # It exists!
@@ -104,11 +103,6 @@ def exists_in_source(source, key):
         exists_cache.pop((source.name, key))
         # re-evaluate!
         exists, _ = lookup(source.name, key)
-    # print(exists, 'COMPARE TTL', )
-    # with open('exists.log', 'a') as f:
-    #     age = time.time() - ttl
-    #     f.write(f'{exists}\t{age}\n')
-    #
     return exists
 
 
