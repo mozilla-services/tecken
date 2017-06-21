@@ -6,9 +6,10 @@ import time
 from io import BytesIO
 from gzip import GzipFile
 from functools import wraps
+from threading import RLock
 
 import logging
-
+import cachetools
 import requests
 from botocore.exceptions import ClientError
 
@@ -72,6 +73,43 @@ def set_time_took(method):
         return result
 
     return wrapper
+
+
+exists_cache = cachetools.LRUCache(
+    maxsize=settings.SYMBOLDOWNLOAD_EXISTS_TIMEOUT_MAXSIZE
+)
+_exists_lock = RLock()
+
+
+def exists_in_source(source, key):
+    """return true if this file exists in the S3 bucket as specified
+    by the source (S3Bucket instance) object."""
+
+    @cachetools.cached(exists_cache, lock=_exists_lock)
+    def lookup(bucket_name, key):
+        response = source.s3_client.list_objects_v2(
+            Bucket=source.name,
+            Prefix=key,
+        )
+        # print("DO THE ACTUAL LOOKUP", key)
+        for obj in response.get('Contents', []):
+            if obj['Key'] == key:
+                # It exists!
+                return (True, time.time())
+        return (False, time.time())
+
+    exists, timestamp = lookup(source.name, key)
+    age = time.time() - timestamp
+    if age > settings.SYMBOLDOWNLOAD_MAX_TTL_SECONDS:
+        exists_cache.pop((source.name, key))
+        # re-evaluate!
+        exists, _ = lookup(source.name, key)
+    # print(exists, 'COMPARE TTL', )
+    # with open('exists.log', 'a') as f:
+    #     age = time.time() - ttl
+    #     f.write(f'{exists}\t{age}\n')
+    #
+    return exists
 
 
 class SymbolDownloader:
@@ -173,15 +211,7 @@ class SymbolDownloader:
                     f'Looking for symbol file {key!r} in bucket {source.name}'
                 )
 
-                response = source.s3_client.list_objects_v2(
-                    Bucket=source.name,
-                    Prefix=key,
-                )
-                for obj in response.get('Contents', []):
-                    if obj['Key'] == key:
-                        # It exists!
-                        break
-                else:
+                if not exists_in_source(source, key):
                     continue
 
                 # It exists if we're still here

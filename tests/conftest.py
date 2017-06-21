@@ -13,6 +13,7 @@ from markus.testing import MetricsMock
 from django.core.cache import caches
 from django.contrib.auth.models import User
 
+from tecken.base.symboldownloader import exists_cache
 
 pytest_plugins = ['blockade']
 
@@ -21,6 +22,14 @@ pytest_plugins = ['blockade']
 def clear_redis():
     caches['default'].clear()
     caches['store'].clear()
+
+
+@pytest.fixture(autouse=True)
+def clear_exists_cache():
+    """autouse=True fixtures (fixtures that get used in every test in
+    the module) are generally best avoided. However, this one is so
+    light and useful because it clears the global cache object."""
+    exists_cache.clear()
 
 
 @pytest.fixture

@@ -434,6 +434,17 @@ class Base(Core):
         'tecken.dockerflow_extra.check_s3_urls',
     ]
 
+    # This determines how many different symbol keys we store in the
+    # global LRU cache object.
+    SYMBOLDOWNLOAD_EXISTS_TIMEOUT_MAXSIZE = values.IntegerValue(10000)
+
+    # We use an LRU in-memory cache which means that really popular
+    # symbols will almost never be evicted from the cache. But, if
+    # we have actually "changed the outside world" (i.e. populating the
+    # symbol in S3) we need to force evict it from the LRU cache.
+    # This way it's an LRU + TTL cache sort of.
+    SYMBOLDOWNLOAD_MAX_TTL_SECONDS = values.IntegerValue(60 * 60)
+
 
 class Localdev(Base):
     """Configuration to be used during local development and base class
@@ -637,6 +648,10 @@ class Prodlike(Prod):
 
     SYMBOL_URLS = Localdev.SYMBOL_URLS
     UPLOAD_DEFAULT_URL = Localdev.UPLOAD_DEFAULT_URL
+
+    # Make it possible to disable this in local prod-like environments
+    # but still make it True by default
+    LOGGING_USE_JSON = values.BooleanValue(True)
 
     @property
     def DATABASES(self):
