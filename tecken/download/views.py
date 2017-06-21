@@ -20,6 +20,8 @@ from tecken.base.decorators import set_request_debug
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 
+downloader = SymbolDownloader(settings.SYMBOL_URLS)
+
 
 def _ignore_symbol(symbol, debugid, filename):
     # The MS debugger will always try to look up these files. We
@@ -52,9 +54,6 @@ def download_symbol(request, symbol, debugid, filename):
             response['Debug-Time'] = 0
         return response
 
-    downloader = SymbolDownloader(
-        settings.SYMBOL_URLS,
-    )
     if request.method == 'HEAD':
         if downloader.has_symbol(symbol, debugid, filename):
             response = http.HttpResponse()

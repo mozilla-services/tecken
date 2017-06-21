@@ -32,6 +32,8 @@ logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 store = caches['store']
 
+downloader = SymbolDownloader(settings.SYMBOL_URLS)
+
 
 def filesizeformat(bytes):
     """the function django.template.defaultfilters.filesizeformat is
@@ -446,15 +448,6 @@ class SymbolicateJSON(LogCacheHitsMixin):
         information['download_size'] = total_size
         return information
 
-    @property
-    def downloader(self):
-        """Lazily return an instance of SymbolDownloader"""
-        try:
-            return self._downloader
-        except AttributeError:
-            self._downloader = SymbolDownloader(settings.SYMBOL_URLS)
-        return self._downloader
-
     def get_download_symbol_stream(self, lib_filename, debug_id):
         """
         Return a requests.response stream or raise SymbolNotFound
@@ -465,7 +458,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
         else:
             symbol_filename = lib_filename + '.sym'
 
-        stream = self.downloader.get_symbol_stream(
+        stream = downloader.get_symbol_stream(
             lib_filename,
             debug_id,
             symbol_filename
