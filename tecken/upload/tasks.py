@@ -54,8 +54,7 @@ class OwnClientError(ClientError):  # XXX Replace "Own" with "Picklable" ?
     pickled, if this exception happens during task work, celery
     won't be able to pickle it. So we write our own.
 
-    See https://github.com/boto/botocore/pull/1191 for a similar problem
-    with the ClientError exception.
+    See https://github.com/boto/botocore/pull/1191
     """
 
     def __reduce__(self):
@@ -103,7 +102,7 @@ def reraise_clienterrors(f):
 
 
 @shared_task(autoretry_for=(
-    OwnEndpointConnectionError,
+    EndpointConnectionError,
     ConnectionError,
     ClientError,
 ))
@@ -157,11 +156,11 @@ def upload_inbox_upload(upload_id):
             # which means it decided there is no need to make an upload
             # of this specific file.
             if file_upload:
-                logger.debug(f'Uploaded key {key_name}')
+                logger.info(f'Uploaded key {key_name}')
                 file_uploads_created.append(file_upload)
                 metrics.incr('file_upload_upload', 1)
             elif key_name not in previous_uploads_keys:
-                logger.debug(f'Skipped key {key_name}')
+                logger.info(f'Skipped key {key_name}')
                 skipped_keys.append(key_name)
                 metrics.incr('file_upload_skip', 1)
     except Exception:
