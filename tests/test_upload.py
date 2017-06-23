@@ -12,6 +12,7 @@ from io import BytesIO
 import pytest
 import mock
 from botocore.exceptions import ClientError, EndpointConnectionError
+from markus import TIMING, INCR
 
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission
@@ -23,6 +24,7 @@ from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import (
     upload_inbox_upload,
     OwnEndpointConnectionError,
+    OwnClientError,
     reraise_endpointconnectionerrors,
 )
 from tecken.upload.views import get_bucket_info
@@ -56,7 +58,7 @@ def test_reraise_endpointconnectionerrors_decorator():
 
 
 @pytest.mark.django_db
-def test_upload_inbox_upload_task(botomock, fakeuser, settings):
+def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
 
     # Fake an Upload object
     upload = Upload.objects.create(
@@ -164,6 +166,7 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings):
     # Reload the Upload object
     upload.refresh_from_db()
     assert upload.completed_at
+    assert upload.skipped_keys is None
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
@@ -187,6 +190,14 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings):
         size__lt=1156,
         completed_at__isnull=False,
     )
+
+    # Check that markus caught timings of the individual file processing
+    records = metricsmock.get_records()
+    assert len(records) == 4
+    assert records[0][0] == TIMING
+    assert records[1][0] == INCR
+    assert records[2][0] == TIMING
+    assert records[3][0] == INCR
 
 
 @pytest.mark.django_db
@@ -216,6 +227,7 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
         assert api_params['Bucket'] == 'mybucket'  # always the same
         call_key = (operation_name, tuple(api_params.items()))
         first_time = call_key not in calls
+        second_time = calls.count(call_key) == 1
         calls.append(call_key)
 
         endpoint_error = EndpointConnectionError(
@@ -256,6 +268,11 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
             # Give it grief on the HeadObject op the first time
             if first_time:
                 raise endpoint_error
+            elif second_time:
+                parsed_response = {
+                    'Error': {'Code': '500', 'Message': 'Server Error'},
+                }
+                raise ClientError(parsed_response, operation_name)
 
             # Pretend we don't have this in S3
             return {}
@@ -318,19 +335,41 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
 
             # Simulate what Celery does, which is to simply run this
             # again after a little pause.
-            upload_inbox_upload(upload.pk)
+            try:
+                upload_inbox_upload(upload.pk)
+                assert False, "Should have failed the second time too"
 
-            assert qs.count() == 2
-            # also, all of them should be completed
-            assert qs.filter(completed_at__isnull=False).count() == 2
+            except OwnClientError as exception:
+                print(exception)
+                # That should have made some FileUpload objects for this
+                # Upload object.
+                qs = FileUpload.objects.filter(upload=upload)
+                assert qs.count() == 1
+
+                # necessary because how the mocked function is run twice
+                zip_body.seek(0)
+
+                # Simulate what Celery does, which is to simply run this
+                # again after a little pause.
+                upload_inbox_upload(upload.pk)
+
+                assert qs.count() == 2
+                # also, all of them should be completed
+                assert qs.filter(completed_at__isnull=False).count() == 2
 
     # Reload the Upload object
     upload.refresh_from_db()
     assert upload.completed_at
+    assert upload.skipped_keys is None
 
 
 @pytest.mark.django_db
-def test_upload_inbox_upload_task_nothing(botomock, fakeuser, settings):
+def test_upload_inbox_upload_task_nothing(
+    botomock,
+    fakeuser,
+    settings,
+    metricsmock
+):
     """What happens if you try to upload a .zip and every file within
     is exactly already uploaded."""
 
@@ -406,8 +445,98 @@ def test_upload_inbox_upload_task_nothing(botomock, fakeuser, settings):
     # Reload the Upload object
     upload.refresh_from_db()
     assert upload.completed_at
-
+    assert len(upload.skipped_keys) == 2
+    assert metricsmock.has_record(INCR, 'tecken.file_upload_skip', 1, None)
     assert not FileUpload.objects.all().exists()
+
+
+@pytest.mark.django_db
+def test_upload_inbox_upload_task_one_uploaded_one_skipped(
+    botomock,
+    fakeuser,
+    settings,
+    metricsmock
+):
+    """Two incoming files. One was already there and the same size."""
+
+    # Fake an Upload object
+    upload = Upload.objects.create(
+        user=fakeuser,
+        filename='sample.zip',
+        bucket_name='mybucket',
+        inbox_key='inbox/sample.zip',
+        size=123456,
+    )
+
+    # Create a file object that is not a file. That way it can be
+    # re-used and not closed leaving an empty file pointer.
+    zip_body = BytesIO()
+    with open(ZIP_FILE, 'rb') as f:
+        zip_body.write(f.read())
+    zip_body.seek(0)
+
+    def mock_api_call(self, operation_name, api_params):
+        assert api_params['Bucket'] == 'mybucket'  # always the same
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'inbox/sample.zip'
+        ):
+            return {
+                'ContentLength': 123456,
+            }
+
+        if (
+            operation_name == 'GetObject' and
+            api_params['Key'] == 'inbox/sample.zip'
+        ):
+            return {
+                'Body': zip_body,
+                'ContentLength': 123456,
+            }
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
+        ):
+            return {'Contents': [
+                {
+                    'Key': 'v0/south-africa-flag.jpeg',
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 69183,
+                }
+            ]}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'v0/xpcshell.sym'
+        ):
+            # Not found at all
+            return {}
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == 'v0/xpcshell.sym'
+        ):
+            # ...pretend to actually upload it.
+            return {}
+
+        if operation_name == 'DeleteObject':
+            assert api_params['Key'] == 'inbox/sample.zip'
+            # pretend we delete the file
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call):
+        upload_inbox_upload(upload.pk)
+
+    # Reload the Upload object
+    upload.refresh_from_db()
+    assert upload.completed_at
+    assert len(upload.skipped_keys) == 1
+    assert metricsmock.has_record(INCR, 'tecken.file_upload_skip', 1, None)
+    assert metricsmock.has_record(INCR, 'tecken.file_upload_upload', 1, None)
+    assert FileUpload.objects.all().count() == 1
 
 
 @pytest.mark.django_db

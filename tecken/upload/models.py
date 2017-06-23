@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 
 
 class Upload(models.Model):
@@ -25,6 +26,8 @@ class Upload(models.Model):
     bucket_endpoint_url = models.CharField(max_length=100, null=True)
     # S3 key name to the temporary upload
     inbox_key = models.CharField(max_length=300)
+    # When the archive contains keys we decide NOT to upload
+    skipped_keys = ArrayField(models.CharField(max_length=300), null=True)
     # When the upload has been extracted and all individual files
     # have been successfully uploaded, this is complete.
     completed_at = models.DateTimeField(null=True)
