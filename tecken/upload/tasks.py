@@ -8,9 +8,11 @@ import logging
 from io import BytesIO
 from functools import wraps
 
+import markus
 from botocore.exceptions import (
     EndpointConnectionError,
     ConnectionError,
+    ClientError,
 )
 from celery import shared_task
 # from celery.exceptions import SoftTimeLimitExceeded
@@ -24,6 +26,7 @@ from tecken.s3 import get_s3_client
 
 
 logger = logging.getLogger('tecken')
+metrics = markus.get_metrics('tecken')
 
 
 class OwnEndpointConnectionError(EndpointConnectionError):
@@ -46,6 +49,23 @@ class OwnEndpointConnectionError(EndpointConnectionError):
         return (self.__class__, (self.msg,), {'kwargs': self.kwargs})
 
 
+class OwnClientError(ClientError):  # XXX Replace "Own" with "Picklable" ?
+    """Because the botocore.exceptions.EndpointConnectionError can't be
+    pickled, if this exception happens during task work, celery
+    won't be able to pickle it. So we write our own.
+
+    See https://github.com/boto/botocore/pull/1191 for a similar problem
+    with the ClientError exception.
+    """
+
+    def __reduce__(self):
+        return (
+            self.__class__,
+            (self.response, self.operation_name),
+            {},
+        )
+
+
 def reraise_endpointconnectionerrors(f):
     """Decorator whose whole job is to re-raise any EndpointConnectionError
     exceptions raised to be OwnEndpointConnectionError because those
@@ -64,10 +84,30 @@ def reraise_endpointconnectionerrors(f):
     return wrapper
 
 
+def reraise_clienterrors(f):
+    """Decorator whose whole job is to re-raise any ClientError
+    exceptions raised to be OwnClientError because those
+    exceptions are "better". In other words, if, instead an
+    OwnClientError exception is raised by the task
+    celery can then pickle the error. And if it can pickle the error
+    it can apply its 'autoretry_for' magic.
+    """
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except ClientError as exception:
+            raise OwnClientError(exception.response, exception.operation_name)
+    return wrapper
+
+
 @shared_task(autoretry_for=(
     OwnEndpointConnectionError,
     ConnectionError,
+    ClientError,
 ))
+@reraise_clienterrors
 @reraise_endpointconnectionerrors
 def upload_inbox_upload(upload_id):
     """A zip file has been uploaded to the "inbox" folder.
@@ -96,19 +136,18 @@ def upload_inbox_upload(upload_id):
         buf,
     )
 
-    # buf.seek(0)  # XXX is this necessary?
-
     file_uploads_created = []
     previous_uploads = FileUpload.objects.filter(
         upload=upload,
         completed_at__isnull=False,
     )
     previous_uploads_keys = [x.key for x in previous_uploads.only('key')]
-
+    skipped_keys = []
+    save_upload_now = False
     try:
         for member in get_archive_members(buf, upload.filename):
             # XXX consider a metrics timer function here
-            file_upload = create_file_upload(
+            file_upload, key_name = create_file_upload(
                 s3_client,
                 upload,
                 member,
@@ -118,8 +157,16 @@ def upload_inbox_upload(upload_id):
             # which means it decided there is no need to make an upload
             # of this specific file.
             if file_upload:
+                logger.debug(f'Uploaded key {key_name}')
                 file_uploads_created.append(file_upload)
-
+                metrics.incr('file_upload_upload', 1)
+            elif key_name not in previous_uploads_keys:
+                logger.debug(f'Skipped key {key_name}')
+                skipped_keys.append(key_name)
+                metrics.incr('file_upload_skip', 1)
+    except Exception:
+        save_upload_now = True
+        raise
     finally:
         # Since we're using a bulk insert approach (since it's more
         # efficient to bulk insert a bunch), if something ever goes wrong
@@ -130,11 +177,21 @@ def upload_inbox_upload(upload_id):
         if file_uploads_created:
             FileUpload.objects.bulk_create(file_uploads_created)
         else:
-            logger.warning(
+            logger.info(
                 'No file uploads created for {!r}'.format(
                     upload,
                 )
             )
+
+        # We also want to log any skipped keys
+        skipped_keys_set = set(skipped_keys)
+        skipped_keys_set.update(set(upload.skipped_keys or []))
+        if save_upload_now:
+            # If an exception has happened, before we let the exception
+            # raise, we want to record which ones we skipped
+            upload.refresh_from_db()
+            upload.skipped_keys = skipped_keys or None
+            upload.save()
 
     # Now we can delete the inbox file.
     s3_client.delete_object(
@@ -144,6 +201,7 @@ def upload_inbox_upload(upload_id):
 
     upload.refresh_from_db()
     upload.completed_at = timezone.now()
+    upload.skipped_keys = skipped_keys or None
     upload.save()
 
 
@@ -163,9 +221,11 @@ def _key_existing_size(client, bucket, key):
             return obj['Size']
 
 
+@metrics.timer_decorator('create_file_upload')
 def create_file_upload(s3_client, upload, member, previous_uploads_keys):
     """Actually do the S3 PUT of an individual file (member of an archive).
-    Returns an unsaved FileUpload instance iff the S3 put_object worked.
+    Returns a tuple of (FileUpload instance, key name). If we decide to
+    NOT upload the file, we return (None, key name).
     """
     key_name = os.path.join(
         settings.SYMBOL_FILE_PREFIX, member.name
@@ -175,7 +235,7 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
         # some previous *file* uploads in it. If that's the case, we
         # don't need to even consider this file again.
         logger.debug(f'{key_name!r} already uploaded. Skipping')
-        return
+        return None, key_name
 
     # E.g. 'foo.sym' becomes 'sym' and 'noextension' becomes ''
     key_extension = os.path.splitext(key_name)[1].lower()[1:]
@@ -215,7 +275,7 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
                 f'{key_name!r} ({upload.bucket_name}) has not changed '
                 'size. Skipping.'
             )
-            return
+            return None, key_name
 
     file_upload = FileUpload(
         upload=upload,
@@ -254,4 +314,4 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
         **extras,
     )
     file_upload.completed_at = timezone.now()
-    return file_upload
+    return file_upload, key_name

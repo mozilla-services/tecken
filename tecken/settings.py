@@ -280,6 +280,8 @@ class Base(Core):
 
     LOGGING_USE_JSON = values.BooleanValue(False)
 
+    LOGGING_DEFAULT_LEVEL = values.Value('INFO')
+
     def LOGGING(self):
         return {
             'version': 1,
@@ -295,7 +297,7 @@ class Base(Core):
             },
             'handlers': {
                 'console': {
-                    'level': 'INFO',
+                    'level': self.LOGGING_DEFAULT_LEVEL,
                     'class': 'logging.StreamHandler',
                     'formatter': (
                         'json' if self.LOGGING_USE_JSON else 'verbose'

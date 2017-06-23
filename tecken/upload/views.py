@@ -159,6 +159,7 @@ def _serialize_upload(upload, flat=False):
         'completed_at': upload.completed_at,
         'created_at': upload.created_at,
         'user': upload.user.email,
+        'skipped_keys': upload.skipped_keys or [],
     }
     if not flat:
         serialized['files'] = []
