@@ -304,7 +304,7 @@ run the gunicorn workers:
 
 .. code-block:: shell
 
-    $ DJANGO_CONFIGURATION=Prodlike docker-compose run --service-ports web web
+    $ docker-compose run --service-ports --user 0  web bash
 
 This will start 4 ``gunicorn`` workers exposed on ``0.0.0.0:8000`` and
 exposed outside of docker onto your host.
@@ -363,3 +363,20 @@ and then run it with extra ``pytest`` parameters. For example:
 .. code-block:: shell
 
     $ docker-compose run systemtest tests/systemtest/run_tests.sh -k test_delberately_404ing_and_csv_reporting
+
+Shells and ``hack.py``
+======================
+
+There are a couple of good ways to get into the Python environment and
+be able to "hack around" and try stuff. For example, you might want to just
+poke around in the ORM, or test various performance tricks and as it
+gets more complicated it gets messy in a shell. Especially if you want to
+re-run something on multiple lines repeatedly.
+
+Instead, copy the file ``hack.py-dist`` to ``hack.py`` and start editing it.
+Then, to run it, start a shell and execute it:
+
+.. code-block:: shell
+
+    $ make shell
+    # python hack.py

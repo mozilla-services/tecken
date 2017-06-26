@@ -21,3 +21,4 @@ yarn-debug.log*
 yarn-error.log*
 .docker-build
 .python_history
+hack.py
