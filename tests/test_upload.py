@@ -28,11 +28,40 @@ from tecken.upload.tasks import (
     reraise_endpointconnectionerrors,
 )
 from tecken.upload.views import get_bucket_info
+from tecken.upload.utils import get_archive_members
 
 
 _here = os.path.dirname(__file__)
 ZIP_FILE = os.path.join(_here, 'sample.zip')
+TGZ_FILE = os.path.join(_here, 'sample.tgz')
+TARGZ_FILE = os.path.join(_here, 'sample.tar.gz')
+INVALID_ZIP_FILE = os.path.join(_here, 'invalid.zip')
 ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, 'notazipdespiteitsname.zip')
+
+
+def test_get_archive_members():
+    with open(TGZ_FILE, 'rb') as f:
+        file_listing, = get_archive_members(f, f.name)
+        assert file_listing.name == (
+            'south-africa-flag/deadbeef/south-africa-flag.jpeg'
+        )
+        assert file_listing.size == 69183
+
+    with open(TARGZ_FILE, 'rb') as f:
+        file_listing, = get_archive_members(f, f.name)
+        assert file_listing.name == (
+            'south-africa-flag/deadbeef/south-africa-flag.jpeg'
+        )
+        assert file_listing.size == 69183
+
+    with open(ZIP_FILE, 'rb') as f:
+        file_listings = list(get_archive_members(f, f.name))
+        # That .zip file has multiple files in it so it's hard to rely
+        # on the order.
+        assert len(file_listings) == 3
+        for file_listing in file_listings:
+            assert file_listing.name
+            assert file_listing.size
 
 
 def test_pickle_OwnEndpointConnectionError():
@@ -45,6 +74,17 @@ def test_pickle_OwnEndpointConnectionError():
     assert exception.msg == exception.msg
     assert exception.kwargs == exception.kwargs
     assert exception.fmt == exception.fmt
+
+
+def test_pickle_OwnClientError():
+    """test that it's possible to pickle, and unpickle an instance
+    of a OwnClientError exception class."""
+    exception = OwnClientError({'Error': {'Code': '123'}}, 'PutObject')
+    pickled = pickle.dumps(exception)
+    exception = pickle.loads(pickled)
+    # They can't be compared, but...
+    assert exception.response == exception.response
+    assert exception.operation_name == exception.operation_name
 
 
 def test_reraise_endpointconnectionerrors_decorator():
@@ -99,27 +139,35 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
         ):
             # Pretend that we have this in S3 and its previous
             # size was 1000.
             return {'Contents': [
                 {
-                    'Key': 'v0/south-africa-flag.jpeg',
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
                     'Size': 1000,
                 }
             ]}
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/xpcshell.sym'
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             # Pretend we don't have this in S3 at all
             return {}
 
         if (
             operation_name == 'PutObject' and
-            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+            api_params['Key'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
         ):
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
@@ -134,7 +182,9 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
             }
         if (
             operation_name == 'PutObject' and
-            api_params['Key'] == 'v0/xpcshell.sym'
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             # Because .sym is in settings.COMPRESS_EXTENSIONS
             assert api_params['ContentEncoding'] == 'gzip'
@@ -167,12 +217,13 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
     upload.refresh_from_db()
     assert upload.completed_at
     assert upload.skipped_keys is None
+    assert upload.ignored_keys == ['build-symbols.txt']
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name='mybucket',
-        key='v0/south-africa-flag.jpeg',
+        key='v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
         compressed=False,
         update=True,
         size=69183,  # based on `unzip -l tests/sample.zip` knowledge
@@ -182,7 +233,7 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name='mybucket',
-        key='v0/xpcshell.sym',
+        key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -252,18 +303,24 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
         ):
             return {'Contents': [
                 {
-                    'Key': 'v0/south-africa-flag.jpeg',
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
                     'Size': 1000,
                 }
             ]}
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/xpcshell.sym'
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             # Give it grief on the HeadObject op the first time
             if first_time:
@@ -279,7 +336,9 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
 
         if (
             operation_name == 'PutObject' and
-            api_params['Key'] == 'v0/south-africa-flag.jpeg'
+            api_params['Key'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
         ):
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
@@ -294,7 +353,9 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
             }
         if (
             operation_name == 'PutObject' and
-            api_params['Key'] == 'v0/xpcshell.sym'
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             # Because .sym is in settings.COMPRESS_EXTENSIONS
             assert api_params['ContentEncoding'] == 'gzip'
@@ -340,7 +401,6 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
                 assert False, "Should have failed the second time too"
 
             except OwnClientError as exception:
-                print(exception)
                 # That should have made some FileUpload objects for this
                 # Upload object.
                 qs = FileUpload.objects.filter(upload=upload)
@@ -410,11 +470,15 @@ def test_upload_inbox_upload_task_nothing(
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
         ):
             return {'Contents': [
                 {
-                    'Key': 'v0/south-africa-flag.jpeg',
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
                     # based on `unzip -l tests/sample.zip` knowledge
                     'Size': 69183,
                 }
@@ -422,11 +486,15 @@ def test_upload_inbox_upload_task_nothing(
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/xpcshell.sym'
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             return {'Contents': [
                 {
-                    'Key': 'v0/xpcshell.sym',
+                    'Key': (
+                        'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                    ),
                     # based on `unzip -l tests/sample.zip` knowledge
                     'Size': 488,
                 }
@@ -496,11 +564,15 @@ def test_upload_inbox_upload_task_one_uploaded_one_skipped(
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/south-africa-flag.jpeg'
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
         ):
             return {'Contents': [
                 {
-                    'Key': 'v0/south-africa-flag.jpeg',
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
                     # based on `unzip -l tests/sample.zip` knowledge
                     'Size': 69183,
                 }
@@ -508,14 +580,18 @@ def test_upload_inbox_upload_task_one_uploaded_one_skipped(
 
         if (
             operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'v0/xpcshell.sym'
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             # Not found at all
             return {}
 
         if (
             operation_name == 'PutObject' and
-            api_params['Key'] == 'v0/xpcshell.sym'
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
         ):
             # ...pretend to actually upload it.
             return {}
@@ -594,6 +670,34 @@ def test_upload_client_bad_request(fakeuser, client, settings):
             )
             assert error_msg in response.content
 
+        # Undo that setting override
+        settings.DISALLOWED_SYMBOLS_SNIPPETS = ('nothing',)
+
+        # Now upload a file that doesn't have the right filename patterns
+        with open(INVALID_ZIP_FILE, 'rb') as f:
+            response = client.post(
+                url,
+                {'file.zip': f},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 400
+            error_msg = (
+                b'Unrecognized file pattern. Should only be '
+                b'<module>/<hex>/<file> or <name>-symbols.txt and nothing else'
+            )
+            assert error_msg in response.content
+
+        # Now upload a file that isn't a zip file
+        with open(ACTUALLY_NOT_ZIP_FILE, 'rb') as f:
+            response = client.post(
+                url,
+                {'file.zip': f},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 400
+            error_msg = b'File is not a zip file'
+            assert error_msg in response.content
+
 
 @pytest.mark.django_db
 def test_upload_client_happy_path(botomock, fakeuser, client):
@@ -623,7 +727,7 @@ def test_upload_client_happy_path(botomock, fakeuser, client):
             content = api_params['Body'].read()
             assert isinstance(content, bytes)
             # based on `ls -l tests/sample.zip` knowledge
-            assert len(content) == 69519
+            assert len(content) == 69812
 
             # ...pretend to actually upload it.
             return {
@@ -654,7 +758,7 @@ def test_upload_client_happy_path(botomock, fakeuser, client):
             assert upload.filename == 'file.zip'
             assert not upload.completed_at
             # based on `ls -l tests/sample.zip` knowledge
-            assert upload.size == 69519
+            assert upload.size == 69812
 
 
 @pytest.mark.django_db

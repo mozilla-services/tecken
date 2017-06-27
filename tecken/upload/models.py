@@ -28,6 +28,8 @@ class Upload(models.Model):
     inbox_key = models.CharField(max_length=300)
     # When the archive contains keys we decide NOT to upload
     skipped_keys = ArrayField(models.CharField(max_length=300), null=True)
+    # When certain files are immediately ignored
+    ignored_keys = ArrayField(models.CharField(max_length=300), null=True)
     # When the upload has been extracted and all individual files
     # have been successfully uploaded, this is complete.
     completed_at = models.DateTimeField(null=True)
