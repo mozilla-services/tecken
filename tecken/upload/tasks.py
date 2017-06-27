@@ -142,9 +142,13 @@ def upload_inbox_upload(upload_id):
     )
     previous_uploads_keys = [x.key for x in previous_uploads.only('key')]
     skipped_keys = []
+    ignored_keys = []
     save_upload_now = False
     try:
         for member in get_archive_members(buf, upload.filename):
+            if _ignore_member_file(member.name):
+                ignored_keys.append(member.name)
+                continue
             # XXX consider a metrics timer function here
             file_upload, key_name = create_file_upload(
                 s3_client,
@@ -185,11 +189,15 @@ def upload_inbox_upload(upload_id):
         # We also want to log any skipped keys
         skipped_keys_set = set(skipped_keys)
         skipped_keys_set.update(set(upload.skipped_keys or []))
+        # And the ignored keys
+        ignored_keys_set = set(ignored_keys)
+        ignored_keys_set.update(set(upload.ignored_keys or []))
         if save_upload_now:
             # If an exception has happened, before we let the exception
             # raise, we want to record which ones we skipped
             upload.refresh_from_db()
             upload.skipped_keys = skipped_keys or None
+            upload.ignored_keys = ignored_keys or None
             upload.save()
 
     # Now we can delete the inbox file.
@@ -201,7 +209,20 @@ def upload_inbox_upload(upload_id):
     upload.refresh_from_db()
     upload.completed_at = timezone.now()
     upload.skipped_keys = skipped_keys or None
+    upload.ignored_keys = ignored_keys or None
     upload.save()
+
+
+def _ignore_member_file(filename):
+    """Return true if the given filename (could be a filepath), should
+    be completely ignored in the upload process.
+
+    At the moment the list is "whitelist based", meaning all files are
+    processed and uploaded to S3 unless it meets certain checks.
+    """
+    if filename.lower().endswith('-symbols.txt'):
+        return True
+    return False
 
 
 def _key_existing_size(client, bucket, key):

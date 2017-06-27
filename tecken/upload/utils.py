@@ -1,30 +1,42 @@
 import zipfile
 import gzip
 import tarfile
-from io import StringIO
 
 
 class _ZipMember(object):
 
     def __init__(self, member, container):
-        self.name = member.filename
-        self.size = member.file_size
+        self.member = member
         self.container = container
 
     def extractor(self):
         return self.container.open(self.name)
+
+    @property
+    def name(self):
+        return self.member.filename
+
+    @property
+    def size(self):
+        return self.member.file_size
 
 
 class _TarMember(object):
 
     def __init__(self, member, container):
         self.member = member
-        self.name = member.name
-        self.size = member.size
         self.container = container
 
     def extractor(self):
         return self.container.extractfile(self.member)
+
+    @property
+    def name(self):
+        return self.member.name
+
+    @property
+    def size(self):
+        return self.member.size
 
 
 def get_archive_members(file_object, file_name):
@@ -60,12 +72,3 @@ def get_archive_members(file_object, file_name):
 
     else:
         raise NotImplementedError(file_name)
-
-
-def preview_archive_content(file_object, file_name):
-    """return file listing of the contents of an archive file"""
-    out = StringIO()
-    for member in get_archive_members(file_object, file_name):
-        print(member.name.ljust(70), file=out)
-        print(str(member.size).rjust(9), file=out)
-    return out.getvalue()

@@ -2,9 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import re
 import logging
 import fnmatch
 import hashlib
+import zipfile
 
 from botocore.exceptions import ClientError
 import markus
@@ -20,7 +22,7 @@ from django.shortcuts import get_object_or_404
 from django.core.urlresolvers import reverse
 
 from tecken.base.decorators import api_login_required, api_permission_required
-from tecken.upload.utils import preview_archive_content
+from tecken.upload.utils import get_archive_members
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.s3 import S3Bucket
@@ -31,15 +33,37 @@ logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 
 
-def check_symbols_archive_content(content):
-    """return an error if there was something wrong"""
-    for line in content.splitlines():
+_not_hex_characters = re.compile(r'[^a-f0-9]', re.I)
+
+
+def check_symbols_archive_file_listing(file_listings):
+    """return a string (the error) if there was something not as expected"""
+    for file_listing in file_listings:
         for snippet in settings.DISALLOWED_SYMBOLS_SNIPPETS:
-            if snippet in line:
+            if snippet in file_listing.name:
                 return (
                     "Content of archive file contains the snippet "
                     "'%s' which is not allowed\n" % snippet
                 )
+        # Now check that the filename is matching according to these rules:
+        # 1. Either /<name1>/hex/<name2>,
+        # 2. Or, /<name>-symbols.txt
+        # Anything else should be considered and unrecognized file pattern
+        # and thus rejected.
+        split = file_listing.name.split('/')
+        if len(split) == 3:
+            # check that the middle part is only hex characters
+            if not _not_hex_characters.findall(split[1]):
+                continue
+        elif len(split) == 1:
+            if file_listing.name.lower().endswith('-symbols.txt'):
+                continue
+        # If it didn't get "continued" above, it's an unrecognized file
+        # pattern.
+        return (
+            'Unrecognized file pattern. Should only be <module>/<hex>/<file> '
+            'or <name>-symbols.txt and nothing else.'
+        )
 
 
 def get_bucket_info(user):
@@ -89,8 +113,12 @@ def upload_archive(request):
         # XXX Make this a JSON BadRequest
         return http.HttpResponseBadRequest('File size 0')
 
-    content = preview_archive_content(upload, name)
-    error = check_symbols_archive_content(content)
+    try:
+        file_listing = list(get_archive_members(upload, name))
+    except zipfile.BadZipfile as exception:
+        # XXX Make this a JSON BadRequest
+        return http.HttpResponseBadRequest(exception)
+    error = check_symbols_archive_file_listing(file_listing)
     if error:
         # XXX Make this a JSON BadRequest
         return http.HttpResponseBadRequest(error)
@@ -117,6 +145,10 @@ def upload_archive(request):
             )
         else:  # pragma: no cover
             raise
+    # Turn the file listing into a string to turn it into a hash
+    content = '\n'.join(
+        '{}:{}'.format(x.name, x.size) for x in file_listing
+    )
     content_hash = hashlib.md5(content.encode('utf-8')).hexdigest()[:12]
     key = 'inbox/{date}/{content_hash}/{name}'.format(
         date=timezone.now().strftime('%Y-%m-%d'),
