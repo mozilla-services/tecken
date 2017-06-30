@@ -79,8 +79,6 @@ def check_s3_urls(app_configs, **kwargs):
 
     for url in settings.SYMBOL_URLS:
         check_url(url, 'SYMBOL_URLS')
-    if settings.UPLOAD_DEFAULT_URL:
-        check_url(settings.UPLOAD_DEFAULT_URL, 'UPLOAD_DEFAULT_URL')
     for url in settings.UPLOAD_URL_EXCEPTIONS.values():
         check_url(url, 'UPLOAD_URL_EXCEPTIONS')
 

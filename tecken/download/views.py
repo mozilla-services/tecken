@@ -5,8 +5,10 @@
 import csv
 import datetime
 import logging
+from threading import RLock
 
 import markus
+import cachetools
 
 from django import http
 from django.conf import settings
@@ -16,6 +18,8 @@ from django.core.cache import cache
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import set_request_debug
+from tecken.download.tasks import download_microsoft_symbol
+
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
@@ -34,6 +38,29 @@ def _ignore_symbol(symbol, debugid, filename):
     # The default is to NOT ignore it
 
 
+microsoft_download_cache = cachetools.TTLCache(
+    maxsize=settings.MICROSOFT_DOWNLOAD_CACHE_MAXSIZE,
+    ttl=settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS,
+)
+_microsoft_download_cache_lock = RLock()
+
+
+def download_from_microsoft(symbol, debugid):
+    """return True if we either start a background task to download from
+    Microsoft OR if we have recently started one."""
+
+    @cachetools.cached(
+        microsoft_download_cache,
+        lock=_microsoft_download_cache_lock,
+    )
+    def inner(symbol, debugid):
+        print(f'CALL download_microsoft_symbol.delay({symbol!r}, {debugid!r})')
+        # Commence the background task to try to download from Microsoft
+        download_microsoft_symbol.delay(symbol, debugid)
+
+    return inner(symbol, debugid)
+
+
 @metrics.timer_decorator('download_symbol')
 @set_request_debug
 @require_http_methods(['GET', 'HEAD'])
@@ -44,11 +71,7 @@ def download_symbol(request, symbol, debugid, filename):
     # Not only can we avoid doing a SymbolDownloader call, we also
     # don't have to bother logging that it could not be found.
     if _ignore_symbol(symbol, debugid, filename):
-        logger.debug('Ignoring symbol {}/{}/{}'.format(
-            symbol,
-            debugid,
-            filename,
-        ))
+        logger.debug(f'Ignoring symbol {symbol}/{debugid}/{filename}')
         response = http.HttpResponseNotFound('Symbol Not Found (and ignored)')
         if request._request_debug:
             response['Debug-Time'] = 0
@@ -68,6 +91,10 @@ def download_symbol(request, symbol, debugid, filename):
                 response['Debug-Time'] = downloader.time_took
             return response
 
+    # Assume that we don't do a delayed (background task) lookup and
+    # have not done one recently either.
+    delayed_lookup = False
+
     if request.method == 'GET':
         # Only bother logging it if the client used GET.
         # Otherwise it won't be possible to pick up the extra
@@ -80,7 +107,27 @@ def download_symbol(request, symbol, debugid, filename):
             code_id=request.GET.get('code_id'),
         )
 
-    response = http.HttpResponseNotFound('Symbol Not Found')
+        if (
+            symbol.lower().endswith('.pdb') and
+            filename.lower().endswith('.sym')
+        ):
+            # If we haven't already sent it to the 'download_microsoft_symbol'
+            # background task, do so.
+
+            download_from_microsoft(symbol, debugid)
+
+            downloader.invalidate_cache(symbol, debugid, filename)
+
+            # The querying of Microsoft's server is potentially slow.
+            # That's why this call is down in a celery task.
+            # But there is hope! And the client ought to be informed
+            # that if they just try again in a couple of seconds/minutes
+            # it might just be there.
+            delayed_lookup = True
+
+    response = http.HttpResponseNotFound(
+        'Symbol Not Found Yet' if delayed_lookup else 'Symbol Not Found'
+    )
     if request._request_debug:
         response['Debug-Time'] = downloader.time_took
     return response

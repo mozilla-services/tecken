@@ -65,6 +65,34 @@ which used to manage reporting symbols that can't be found during
 processing. See https://bugzilla.mozilla.org/show_bug.cgi?id=1361809
 
 
+Microsoft on-the-fly Symbol Lookups
+===================================
+
+Under certain conditions, if a symbol can not be found in S3, we might
+try to look it up from Microsoft's download server
+(``https://msdl.microsoft.com/download/symbols/``) if the symbol file
+ends in ``.pdb``.
+
+The HTTP error response code is still ``404`` but the response body will
+be ``Symbol Not Found Yet`` (instead of ``Symbol Not Found``).
+
+The lookup is relatively expensive since it depends two a network calls
+(to Microsoft's server and potentially our S3 upload)
+and various command line subprocesses (``cabextract`` and ``dump_syms``)
+so it's important it runs in the background.
+
+Note that this operation is cached for a limited time so if you ask for
+the same symbol within a short window of time, it does *not* start another
+attempt to download from Microsoft.
+
+The cache is used to guard against repeated triggering of the background
+task excessively. Unfortunately the in-memory cache used by the request
+handler is not accessible to the background task so even if it is
+successfully downloaded from Microsoft's server, the cache guard is blocked
+for (at the time of writing) 60 seconds.
+
+.. note:: This was the original implementation https://gist.github.com/luser/92d5bc88478665554898
+
 Ignore Patterns
 ===============
 

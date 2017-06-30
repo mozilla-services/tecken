@@ -19,10 +19,20 @@ RUN mkdir /app && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apt-transport-https build-essential curl git libpq-dev \
-        postgresql-client gettext libffi-dev jed && \
-    apt-get autoremove -y && \
+        postgresql-client gettext libffi-dev jed
+
+# Install dump_syms
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --no-install-recommends \
+        gyp ninja-build binutils-gold gcc-4.8 g++-4.8 pkg-config cabextract
+COPY ./docker/build_dump_syms.sh /tmp
+RUN /tmp/build_dump_syms.sh
+
+# Clean up apt
+RUN apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 
 # Install node from NodeSource
 #RUN curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \

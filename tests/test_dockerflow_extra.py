@@ -33,7 +33,7 @@ def test_check_s3_urls_client_error(botomock, settings):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'HeadBucket'
-        if api_params['Bucket'] == 'mybucket':
+        if api_params['Bucket'] == 'private':
             response = {'Error': {'Code': '404', 'Message': 'Not found'}}
             raise ClientError(response, operation_name)
         return {}
@@ -42,7 +42,7 @@ def test_check_s3_urls_client_error(botomock, settings):
         errors = dockerflow_extra.check_s3_urls(None)
         assert errors
         error, = errors
-        assert 'mybucket' in error.msg
+        assert 'private' in error.msg
         assert 'ClientError' in error.msg
 
 
@@ -50,7 +50,7 @@ def test_check_s3_urls_endpointconnectionerror(botomock, settings):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'HeadBucket'
-        if api_params['Bucket'] == 'mybucket':
+        if api_params['Bucket'] == 'private':
             raise EndpointConnectionError(endpoint_url='http://s3.example.com')
         return {}
 
@@ -58,7 +58,7 @@ def test_check_s3_urls_endpointconnectionerror(botomock, settings):
         errors = dockerflow_extra.check_s3_urls(None)
         assert errors
         error, = errors
-        assert 'mybucket' in error.msg
+        assert 'private' in error.msg
         assert 'EndpointConnectionError' in error.msg
 
 
@@ -66,7 +66,7 @@ def test_check_s3_urls_other_client_error(botomock, settings):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'HeadBucket'
-        if api_params['Bucket'] == 'mybucket':
+        if api_params['Bucket'] == 'private':
             response = {'Error': {'Code': '500', 'Message': 'Other'}}
             raise ClientError(response, operation_name)
         return {}
