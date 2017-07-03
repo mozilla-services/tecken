@@ -259,7 +259,7 @@ terminal when you have started the development server:
    $ cd tecken-loader
    $ python3.5 main.py stacks http://localhost:8000/
 
-It will keep going to ages. If you kill it with ``Ctrl-C`` it will
+It will keep going for ages. If you kill it with ``Ctrl-C`` it will
 print out a summary of what it has done.
 
 This is useful for sending somewhat realistic symbolication requests
