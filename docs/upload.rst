@@ -119,7 +119,10 @@ To override this amend the ``DJANGO_DISALLOWED_SYMBOLS_SNIPPETS`` environment
 variable as a comma separated list. But be aware to include the existing
 defaults which can be seen in ``settings.py``.
 
-.. note:: More advanced validations is going to be introduced. See https://bugzilla.mozilla.org/show_bug.cgi?id=1367456
+The final check is that each file path in the zip file matches the
+pattern ``<module>/<hex>/<file>`` or ``<name>-symbols.txt``. All other
+file paths are rejected.
+
 
 Gzip
 ====
