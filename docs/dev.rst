@@ -251,7 +251,7 @@ Manual Integration Testing for symbolication
 To do integration testing pasting lots of ``curl`` commands gets
 tedious. Instead use `tecken-loader`_. It's a simple script that
 sends symbolication requests to your local server. Run this in a separate
-termal when you have started the development server:
+terminal when you have started the development server:
 
 .. code-block:: shell
 
