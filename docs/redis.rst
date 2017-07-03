@@ -5,8 +5,8 @@ Redis Documentation
 Usage
 =====
 
-Redis is used for two distinct purposes any shouldn't mixed as the
-configuration is expected to be different.
+Redis is used for two distinct purposes and the different
+configurations shouldn't be mixed.
 
 One is used as an LRU cache for the Symbolication service. It's basically
 an alternative to a disk cache where eviction is automatically taken care
