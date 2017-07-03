@@ -68,9 +68,9 @@ processing. See https://bugzilla.mozilla.org/show_bug.cgi?id=1361809
 Ignore Patterns
 ===============
 
-Certain files are repeatedly queried for by we know with confidence that
-not only is it never in our symbol stores, it's also not worth logging
-that it couldn't be found.
+We know with confidence users repeatedly query certain files that are
+never in our symbol stores. We can ignore them to suppress logging
+that they couldn't be found.
 
 Right now, this is maintained as a configurable blacklist but is hard
 coded inside the ``_ignore_symbol`` code in ``tecken.download.views``.
