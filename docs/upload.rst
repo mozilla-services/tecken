@@ -71,7 +71,7 @@ message queue task. What that task does is that it then downloads the ``.zip``
 from the inbox, unpacks it into memory, then iterates over the files within
 and uploads each and every one to S3. It might seen counter productive to first
 upload, then download it again but the message queue tasks run as completely
-separate processes so they can't share memory. And S2 is preferred instead of
+separate processes so they can't share memory. And S3 is preferred instead of
 relying on disk.
 
 The path of the files uploaded is
