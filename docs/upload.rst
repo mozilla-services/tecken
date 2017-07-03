@@ -74,10 +74,10 @@ upload, then download it again but the message queue tasks run as completely
 separate processes so they can't share memory. And S3 is preferred instead of
 relying on disk.
 
-The path of the files uploaded is
-exactly as the path in the ``.zip`` file. E.g. If you upload a zip file with
-a file within called ``symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym``
-it will be put into S3 as
+The path of the uploaded files exactly match their path in the
+``.zip`` file. E.g. If you upload a zip file with a file within called
+``symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym`` it will be
+put into S3 as
 ``{settings.UPLOAD_FILE_PREFIX}/symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym``.
 
 Once every file has been successfully uploaded, the message queue task
