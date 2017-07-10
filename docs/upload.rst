@@ -63,7 +63,7 @@ such as date, who and size.
 
 When the ``.zip`` is uploaded into the "inbox" folder, the key name
 is determined by today's date, a md5 hash of the ``.zip`` file's content as a
-string listing and the orignal file as it was called when uploaded.
+string listing and the original file as it was called when uploaded.
 So an example key name to the inbox is ``inbox/2017-05-06/51dc30ddc473/myfile.zip``.
 
 That ``Upload`` instance's ID is then sent to a
@@ -71,13 +71,13 @@ message queue task. What that task does is that it then downloads the ``.zip``
 from the inbox, unpacks it into memory, then iterates over the files within
 and uploads each and every one to S3. It might seen counter productive to first
 upload, then download it again but the message queue tasks run as completely
-separate processes so they can't share memory. And S2 is preferred instead of
+separate processes so they can't share memory. And S3 is preferred instead of
 relying on disk.
 
-The path of the files uploaded is
-exactly as the path in the ``.zip`` file. E.g. If you upload a zip file with
-a file within called ``symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym``
-it will be put into S3 as
+The path of the uploaded files exactly match their path in the
+``.zip`` file. E.g. If you upload a zip file with a file within called
+``symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym`` it will be
+put into S3 as
 ``{settings.UPLOAD_FILE_PREFIX}/symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym``.
 
 Once every file has been successfully uploaded, the message queue task
@@ -119,7 +119,10 @@ To override this amend the ``DJANGO_DISALLOWED_SYMBOLS_SNIPPETS`` environment
 variable as a comma separated list. But be aware to include the existing
 defaults which can be seen in ``settings.py``.
 
-.. note:: More advanced validations is going to be introduced. See https://bugzilla.mozilla.org/show_bug.cgi?id=1367456
+The final check is that each file path in the zip file matches the
+pattern ``<module>/<hex>/<file>`` or ``<name>-symbols.txt``. All other
+file paths are rejected.
+
 
 Gzip
 ====

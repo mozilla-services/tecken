@@ -179,7 +179,8 @@ class Core(CSP, AWS, Configuration, Celery):
     SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     SESSION_CACHE_ALIAS = 'default'
 
-    # XXX what IS this?
+    # System Checks
+    # https://docs.djangoproject.com/en/1.11/ref/checks/#security
     SILENCED_SYSTEM_CHECKS = [
         'security.W003',  # We're using django-session-csrf
         # We can't set SECURE_HSTS_INCLUDE_SUBDOMAINS since this runs under a

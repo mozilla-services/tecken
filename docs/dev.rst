@@ -251,7 +251,7 @@ Manual Integration Testing for symbolication
 To do integration testing pasting lots of ``curl`` commands gets
 tedious. Instead use `tecken-loader`_. It's a simple script that
 sends symbolication requests to your local server. Run this in a separate
-termal when you have started the development server:
+terminal when you have started the development server:
 
 .. code-block:: shell
 
@@ -259,7 +259,7 @@ termal when you have started the development server:
    $ cd tecken-loader
    $ python3.5 main.py stacks http://localhost:8000/
 
-It will keep going to ages. If you kill it with ``Ctrl-C`` it will
+It will keep going for ages. If you kill it with ``Ctrl-C`` it will
 print out a summary of what it has done.
 
 This is useful for sending somewhat realistic symbolication requests
