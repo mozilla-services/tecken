@@ -63,7 +63,7 @@ such as date, who and size.
 
 When the ``.zip`` is uploaded into the "inbox" folder, the key name
 is determined by today's date, a md5 hash of the ``.zip`` file's content as a
-string listing and the orignal file as it was called when uploaded.
+string listing and the original file as it was called when uploaded.
 So an example key name to the inbox is ``inbox/2017-05-06/51dc30ddc473/myfile.zip``.
 
 That ``Upload`` instance's ID is then sent to a
