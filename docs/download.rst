@@ -71,7 +71,7 @@ Microsoft on-the-fly Symbol Lookups
 Under certain conditions, if a symbol can not be found in S3, we might
 try to look it up from Microsoft's download server
 (``https://msdl.microsoft.com/download/symbols/``) if the symbol file
-ends in ``.pdb``.
+ends in ``.pdb`` and filename ends in ``.sym``.
 
 The HTTP error response code is still ``404`` but the response body will
 be ``Symbol Not Found Yet`` (instead of ``Symbol Not Found``).
@@ -85,11 +85,23 @@ Note that this operation is cached for a limited time so if you ask for
 the same symbol within a short window of time, it does *not* start another
 attempt to download from Microsoft.
 
-The cache is used to guard against repeated triggering of the background
-task excessively. Unfortunately the in-memory cache used by the request
-handler is not accessible to the background task so even if it is
-successfully downloaded from Microsoft's server, the cache guard is blocked
-for (at the time of writing) 60 seconds.
+All symbols that turns out to not be found are cached by an in-memory cache.
+However, every time the filename is matched to potentially be downloaded
+from Microsoft the general symbol download cache is invalidated. Meaning
+you can do this:
+
+.. code-block:: shell
+
+    $ curl https://symbols.mozilla.org/foo.pdb/HEXHEX/foo.sym
+    ...
+    404 Symbol Not Found Yet
+    $ curl https://symbols.mozilla.org/foo.pdb/HEXHEX/foo.sym
+    ...
+    404 Symbol Not Found Yet
+    $ sleep 3  # roughly assume the download + S3 upload takes less than 3 sec
+    $ curl https://symbols.mozilla.org/foo.pdb/HEXHEX/foo.sym
+    ...
+    302
 
 .. note:: This was the original implementation https://gist.github.com/luser/92d5bc88478665554898
 
