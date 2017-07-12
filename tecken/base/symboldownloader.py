@@ -100,11 +100,6 @@ def exists_in_source(source, key):
                 return True
         return False
 
-    # print(
-    #     "THERE ARE CURRENTLY",
-    #     exists_cache.currsize,
-    #     "KEYS IN THE EXISTS CACHE"
-    # )
     return lookup(source.name, key)
 
 
