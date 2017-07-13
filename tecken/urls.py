@@ -31,9 +31,9 @@ urlpatterns = [
         include('tecken.download.urls', namespace='download')
     ),
     url(
-        r'^(?P<path>contribute\.json)$',
-        static.serve,
-        {'document_root': settings.BASE_DIR}
+        r'^contribute\.json$',
+        views.contribute_json,
+        name='contribute_json'
     ),
     url(
         r'^(?P<path>favicon.ico)$',
