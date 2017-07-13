@@ -101,9 +101,6 @@ django-configurations==2.0 \
 django-cache-url==2.0.0 \
     --hash=sha256:f0009452c4d63468714c7ff59266085947f3f3cc0947b3b2e87121bb27538d6c \
     --hash=sha256:d7e7d3f3fadaa38ab7c655afafc85c2a1b06a3ddc0002af4ae021c1948307f8b
-django-picklefield==0.3.2 \
-    --hash=sha256:fab48a427c6310740755b242128f9300283bef159ffee42d3231a274c65d9ae2 \
-    --hash=sha256:5489fef164de43725242d56e65e016137d3df0d1a00672bda72d807f5b2b0d99
 cryptography==1.9 \
     --hash=sha256:469a9d3d851038f1eb7d7f77bb08bb4775b41483372be450e25b293fe57bd59e \
     --hash=sha256:533143321d15c8743f91eec5c5f495c1b5cad9a25de8f6dab01eddd6b416903e \
