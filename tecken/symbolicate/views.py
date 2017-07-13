@@ -352,9 +352,15 @@ class SymbolicateJSON(LogCacheHitsMixin):
                 # as binary strings.
                 # Let's try to better mimic what django_redis does for
                 # the sake of our logging here.
+                # msgpack (just like pickle) might not be secure because
+                # if an unsuspecting reader can't trust where it was
+                # serialized they might unpack something undesireable.
+                # However, no client can access actually making this
+                # because our own code creates the dicts that we do ultimately
+                # send to msgpack.
                 symbol_map_size = len(zlib.compress(
                     msgpack.dumps(information['symbol_map'])
-                ))
+                ))  # nosec
                 logger.info(
                     'Storing {!r} ({}) in LRU cache (Took {:.2f}s)'.format(
                         cache_key,
