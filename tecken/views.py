@@ -2,13 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
+import json
 import time
 
 from django import http
 from django.template import TemplateDoesNotExist, loader
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_safe
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
+from django.conf import settings
 
 from .symbolicate.views import symbolicate_json
 from tecken.tasks import sample_task
@@ -84,3 +88,17 @@ def task_tester(request):
         return http.HttpResponseServerError(
             'Tried 4 times (4 seconds) and no luck :(\n'
         )
+
+
+@require_safe
+def contribute_json(request):
+    """Advantages of having our own custom view over using
+    django.view.static.serve is that we get the right content-type
+    and as a view we write a unit test that checks that the JSON is valid
+    and can be deserialized."""
+    with open(os.path.join(settings.BASE_DIR, 'contribute.json')) as f:
+        contribute_json_dict = json.load(f)
+    return http.JsonResponse(
+        contribute_json_dict,
+        json_dumps_params={'indent': 3}
+    )

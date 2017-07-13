@@ -37,3 +37,13 @@ def test_client_task_tester(client, clear_redis):
 def test_sample_task(clear_redis):
     sample_task('foo', 'bar', 1)
     cache.get('foo') == 'bar'
+
+
+def test_contribute_json(client):
+    url = reverse('contribute_json')
+    response = client.get(url)
+    assert response.status_code == 200
+    # No point testing that the content can be deserialized because
+    # the view would Internal Server Error if the ./contribute.json
+    # file on disk is invalid.
+    assert response['Content-type'] == 'application/json'
