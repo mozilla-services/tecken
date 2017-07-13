@@ -4,11 +4,12 @@
 
 import time
 import logging
-import pickle
+import zlib
 from bisect import bisect
 from collections import defaultdict
 
 import markus
+import msgpack
 import ujson as json
 
 from django_redis import get_redis_connection
@@ -347,16 +348,13 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     timeout=settings.DEBUG and 60 * 100 or None
                 )
                 # The current configuration of how django_redis works is
-                # that it uses the default implementation, which is to
-                # marshal the objects with pickle as a binary string.
-                # More testing is needed to see if this is worth doing
-                # since the benefits of using JSON is that the Redis LRU
-                # can be opened outside of Python and inspected or mutated.
-                # Also, unpickling is inheritly insecure if you can't trust
-                # the source. We can, but there's a tiny extra vector if
-                # someone hacks our Redis database to inject dangerous
-                # binary strings into it.
-                symbol_map_size = len(pickle.dumps(information['symbol_map']))
+                # that it uses msgpack t o marshal the objects we store
+                # as binary strings.
+                # Let's try to better mimic what django_redis does for
+                # the sake of our logging here.
+                symbol_map_size = len(zlib.compress(
+                    msgpack.dumps(information['symbol_map'])
+                ))
                 logger.info(
                     'Storing {!r} ({}) in LRU cache (Took {:.2f}s)'.format(
                         cache_key,
