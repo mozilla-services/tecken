@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import mock
+import pytest
 
 from tecken.s3 import S3Bucket
 
@@ -24,11 +25,11 @@ def test_use_s3bucket():
     assert not bucket.private
     assert bucket.base_url == 'https://s3.amazonaws.com/some-bucket'
 
-    bucket = S3Bucket('https://s3-us-north-2.amazonaws.com/some-bucket')
+    bucket = S3Bucket('https://s3-eu-west-2.amazonaws.com/some-bucket')
     assert bucket.name == 'some-bucket'
     assert bucket.endpoint_url is None
-    assert bucket.region == 'us-north-2'
-    assert bucket.base_url == 'https://s3-us-north-2.amazonaws.com/some-bucket'
+    assert bucket.region == 'eu-west-2'
+    assert bucket.base_url == 'https://s3-eu-west-2.amazonaws.com/some-bucket'
 
     bucket = S3Bucket('http://s3.example.com/buck/prfx')
     assert bucket.name == 'buck'
@@ -65,9 +66,21 @@ def test_s3bucket_client():
         )
 
         # make a client that requires a different region
-        bucket = S3Bucket('https://s3-us-north-2.amazonaws.com/some-bucket')
+        bucket = S3Bucket('https://s3-eu-west-2.amazonaws.com/some-bucket')
         bucket.s3_client
         mock_session.client.assert_called_with(
             's3',
-            region_name='us-north-2',
+            region_name='eu-west-2',
         )
+
+
+def test_region_checking():
+    bucket = S3Bucket('https://s3.amazonaws.com/some-bucket')
+    assert bucket.region is None
+
+    # a known and classic one
+    bucket = S3Bucket('https://s3-us-west-2.amazonaws.com/some-bucket')
+    assert bucket.region == 'us-west-2'
+
+    with pytest.raises(ValueError):
+        S3Bucket('https://s3-unheardof.amazonaws.com/some-bucket')
