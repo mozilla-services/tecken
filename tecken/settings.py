@@ -537,6 +537,8 @@ class Test(Localdev):
     OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
     OIDC_RP_CLIENT_SECRET = values.Value('not-so-secret-after-all')
 
+    # nosec
+    # Only used for testing to log users in during unit tests
     PASSWORD_HASHERS = (
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )

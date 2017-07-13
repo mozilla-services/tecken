@@ -330,7 +330,11 @@ class SymbolicateJSON(LogCacheHitsMixin):
         """return a list that contains items of 3-tuples of
         (symbol_key, information, module_index)
         """
-        # XXX This could be done concurrently
+        # This could be done concurrently, but from experience we see that
+        # the LRU cache does a very good job staying warm and containing
+        # lots of objects so it's rare that we need to download more things
+        # from S3 via the network. If we do it's very often just 1 more
+        # so there's little point in making that parallel.
         for symbol_key, module_index in requirements:
             cache_key = self._make_cache_key(symbol_key)
             information = {}
