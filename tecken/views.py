@@ -9,6 +9,7 @@ import time
 from django import http
 from django.template import TemplateDoesNotExist, loader
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_safe
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.conf import settings
@@ -89,6 +90,7 @@ def task_tester(request):
         )
 
 
+@require_safe
 def contribute_json(request):
     """Advantages of having our own custom view over using
     django.view.static.serve is that we get the right content-type
