@@ -806,12 +806,12 @@ def test_get_bucket_info(settings):
     assert bucket_info.region is None
 
     settings.UPLOAD_DEFAULT_URL = (
-        'https://s3-us-north-2.amazonaws.com/some-bucket'
+        'https://s3-eu-west-2.amazonaws.com/some-bucket'
     )
     bucket_info = get_bucket_info(user)
     assert bucket_info.name == 'some-bucket'
     assert bucket_info.endpoint_url is None
-    assert bucket_info.region == 'us-north-2'
+    assert bucket_info.region == 'eu-west-2'
 
     settings.UPLOAD_DEFAULT_URL = 'http://s3.example.com/buck/prefix'
     bucket_info = get_bucket_info(user)

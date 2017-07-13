@@ -8,6 +8,11 @@ from urllib.parse import urlparse
 import boto3
 
 
+ALL_POSSIBLE_S3_REGIONS = tuple(
+    boto3.session.Session().get_available_regions('s3')
+)
+
+
 class S3Bucket:
     """
     Deconstructs a URL about an S3 bucket and breaks it into parts that
@@ -53,9 +58,10 @@ class S3Bucket:
                 parsed.scheme,
                 parsed.netloc,
             )
-        # XXX this feels naive.
         region = re.findall(r's3-(.*)\.amazonaws\.com', parsed.netloc)
         if region:
+            if region[0] not in ALL_POSSIBLE_S3_REGIONS:
+                raise ValueError(f'Not valid S3 region {region[0]}')
             self.region = region[0]
 
         # This is only created if/when needed
