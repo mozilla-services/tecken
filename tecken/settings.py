@@ -487,8 +487,10 @@ class Localdev(Base):
     @property
     def VERSION(self):
         output = subprocess.check_output(
-            ['git', 'describe', '--tags', '--always', '--abbrev=0']
-        )
+            # Use the absolute path of 'git' here to avoid 'git'
+            # not being the git we expect in Docker.
+            ['/usr/bin/git', 'describe', '--tags', '--always', '--abbrev=0']
+        )  # nosec
         if output:
             return {'version': output.decode().strip()}
         else:
