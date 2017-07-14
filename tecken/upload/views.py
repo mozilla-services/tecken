@@ -149,7 +149,11 @@ def upload_archive(request):
     content = '\n'.join(
         '{}:{}'.format(x.name, x.size) for x in file_listing
     )
-    content_hash = hashlib.md5(content.encode('utf-8')).hexdigest()[:12]
+    # The MD5 is just used to make the temporary S3 file unique in name
+    # if the client uploads with the same filename in quick succession.
+    content_hash = hashlib.md5(
+        content.encode('utf-8')
+    ).hexdigest()[:12]  # nosec
     key = 'inbox/{date}/{content_hash}/{name}'.format(
         date=timezone.now().strftime('%Y-%m-%d'),
         content_hash=content_hash,
