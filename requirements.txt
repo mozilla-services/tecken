@@ -205,9 +205,9 @@ markus==0.2 \
     --hash=sha256:ca2625716cf9e519280df0754a67780ee44a3d3d0e0e12fb93c8a9afce8fe868
 datadog==0.16.0 \
     --hash=sha256:9ce3c3c4080f6dcb9c799d3d9e43ea3ed61132599d0e9143954d35ae9578a2d1
-decorator==4.0.11 \
-    --hash=sha256:73cbaadb8bc4e3c65fe1100773d56331a2d756cc0f5c7b9d8d5d5223fe04f600 \
-    --hash=sha256:953d6bf082b100f43229cf547f4f97f97e970f5ad645ee7601d55ff87afdfe76
+decorator==4.1.0 \
+    --hash=sha256:2d9de875c80754bedd2536fc7145de5d2a0690deda870c0b30042a07712052b0 \
+    --hash=sha256:53d6e5864a8f11e38eddf2206ad6de3eb4738114e54c9fb6bbe47a7ddbec523b
 simplejson==3.11.1 \
     --hash=sha256:38c2b563cd03363e7cb2bbba6c20ae4eaafd853a83954c8c8dd345ee391787bf \
     --hash=sha256:8d73b96a6ee7c81fd49dac7225e3846fd60b54a0b5b93a0aaea04c5a5d2e7bf2 \
