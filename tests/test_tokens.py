@@ -9,16 +9,17 @@ import pytest
 from django.utils import timezone
 from django.contrib.auth.models import User, Permission, Group
 from django.contrib.contenttypes.models import ContentType
+from django.core.urlresolvers import reverse
 
 from tecken.tokens.models import Token
 
 
 @pytest.mark.django_db
 def test_client_homepage_with_valid_token(client):
-    url = '/'
+    url = reverse('api:auth')
     response = client.get(url)
     assert response.status_code == 200
-    assert 'sign_in_url' in response.json()['user']
+    assert 'sign_in_url' in response.json()
 
     user = User.objects.create(username='peterbe', email='peterbe@example.com')
     token = Token.objects.create(user=user)
@@ -31,7 +32,7 @@ def test_client_homepage_with_valid_token(client):
 
 @pytest.mark.django_db
 def test_client_homepage_with_invalid_token(client):
-    url = '/'
+    url = reverse('api:auth')
     response = client.get(url, HTTP_AUTH_TOKEN='junk')
     assert response.status_code == 403
     assert b'API Token not matched' in response.content

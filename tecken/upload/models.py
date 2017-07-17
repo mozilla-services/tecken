@@ -36,6 +36,12 @@ class Upload(models.Model):
     size = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        permissions = (
+            ('upload_symbols', 'Upload Symbols Files'),
+            ('view_all_uploads', 'View All Symbols Uploads'),
+        )
+
     def __repr__(self):
         return '<{} filename={!r} bucket_name={!r} inbox_key={!r}>'.format(
             self.__class__.__name__,

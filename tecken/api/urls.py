@@ -7,22 +7,22 @@ from django.conf.urls import url
 from . import views
 
 
-app_name = 'upload'
+app_name = 'api'
 
 urlpatterns = [
-    # url(
-    #     r'search/$',
-    #     views.search,
-    #     name='search'
-    # ),
-    # url(
-    #     r'(?P<id>\d+)/$',
-    #     views.upload,
-    #     name='upload'
-    # ),
     url(
-        r'^$',
-        views.upload_archive,
-        name='upload_archive'
+        r'auth/$',
+        views.auth,
+        name='auth'
+    ),
+    url(
+        r'tokens/(?P<id>\d+)$',
+        views.delete_token,
+        name='delete_token'
+    ),
+    url(
+        r'tokens/$',
+        views.tokens,
+        name='tokens'
     ),
 ]

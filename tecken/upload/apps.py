@@ -10,6 +10,7 @@ from django.db.models.signals import post_migrate
 logger = logging.getLogger('django')
 
 
+# XXX Is this needed any more? Aren't all things done by explicit permissions?
 def create_default_groups(sender, **kwargs):
     # Make sure there's a group for uploaders.
     # And if the group didn't exist, make sure it has the "Can add upload"
@@ -20,7 +21,7 @@ def create_default_groups(sender, **kwargs):
     except Group.DoesNotExist:
         group = Group.objects.create(name='Uploaders')
         group.permissions.add(
-            Permission.objects.get(codename='add_upload')
+            Permission.objects.get(codename='upload_symbols')
         )
         logger.info('Group "Uploaders" created')
 

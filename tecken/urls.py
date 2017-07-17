@@ -27,6 +27,10 @@ urlpatterns = [
         include('tecken.upload.urls', namespace='upload')
     ),
     url(
+        r'api/',
+        include('tecken.api.urls', namespace='api')
+    ),
+    url(
         r'',
         include('tecken.download.urls', namespace='download')
     ),
