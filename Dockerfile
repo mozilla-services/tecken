@@ -116,7 +116,7 @@ USER 10001
 #RUN DJANGO_CONFIGURATION=Build && \
 #    python manage.py collectstatic --noinput
 
-RUN cd frontend && yarn run build
+RUN cd frontend && yarn && yarn run build
 
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.
