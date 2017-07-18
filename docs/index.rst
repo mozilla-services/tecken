@@ -34,6 +34,7 @@ Project docs:
 .. toctree::
 
    dev
+   frontend
    redis
    docker
 

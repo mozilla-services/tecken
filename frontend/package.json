@@ -2,6 +2,7 @@
   "name": "tecken",
   "version": "0.1.0",
   "private": false,
+  "license": "MPL-2.0",
   "dependencies": {
     "bulma": "^0.4.3",
     "date-fns": "^v2.0.0-alpha.1",
@@ -22,5 +23,5 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "proxy": "http://localhost:8000"
+  "proxy": "http://web:8000"
 }

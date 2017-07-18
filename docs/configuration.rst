@@ -269,7 +269,7 @@ user does not exist, it gets created.
 
 The easiest way to create your first superuser is to use ``docker-compose``:
 
-.. code-block::
+.. code-block:: shell
 
     docker-compose run web superuser peterbe@example.com
 

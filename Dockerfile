@@ -114,10 +114,24 @@ RUN pip install --no-cache-dir -r requirements.txt
 #    chown -R 10001:10001 /opt/npm && \
 #    npm cache clean
 
+# Build the frontend bundle in /tmp
+#COPY frontend /tmp/frontend
+#WORKDIR /tmp/frontend
+#RUN yarn && yarn run build && yarn cache clean
+
+#WORKDIR /opt/npm
+#COPY frontend /opt/npm
+#WORKDIR /opt/npm/frontend
+#RUN yarn && chown -R 10001:10001 /opt/npm && yarn cache ls && yarn run build
+#ADD frontend/package.json /tmp/package.json
+#RUN cd /tmp && yarn && yarn build
+#RUN mkdir -p /opt/app && cp -a /tmp/node_modules /opt/app/
+
 # Switch back to home directory
 WORKDIR /app
 
 COPY . /app
+#COPY /tmp/frontend/build /app/frontend/build
 
 RUN chown -R 10001:10001 /app
 
@@ -126,9 +140,9 @@ USER 10001
 #RUN DJANGO_CONFIGURATION=Build && \
 #    python manage.py collectstatic --noinput
 
-WORKDIR /app/frontend
-RUN yarn && yarn run build
-WORKDIR /app
+#WORKDIR /app/frontend
+#RUN yarn && yarn run build && yarn cache clean && rm node_modules
+#WORKDIR /app
 
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.
