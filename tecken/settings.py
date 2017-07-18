@@ -239,6 +239,10 @@ class Core(CSP, AWS, Configuration, Celery):
 
     TOKENS_DEFAULT_EXPIRATION_DAYS = values.IntegerValue(365)  # 1 year
 
+    # Feature flag for enabling or disabling the possible downloading
+    # of missing symbols from Microsoft.
+    ENABLE_DOWNLOAD_FROM_MICROSOFT = values.BooleanValue(False)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
@@ -555,6 +559,9 @@ class Test(Localdev):
     # We might not enable it in certain environments but we definitely
     # want to test the code we have.
     ENABLE_TOKENS_AUTHENTICATION = True
+
+    # This feature flag is always on when testing.
+    ENABLE_DOWNLOAD_FROM_MICROSOFT = True
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
 

@@ -108,8 +108,10 @@ def download_symbol(request, symbol, debugid, filename):
         )
 
         if (
+            settings.ENABLE_DOWNLOAD_FROM_MICROSOFT and
             symbol.lower().endswith('.pdb') and
             filename.lower().endswith('.sym')
+
         ):
             # If we haven't already sent it to the 'download_microsoft_symbol'
             # background task, do so.
