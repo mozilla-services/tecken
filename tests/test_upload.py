@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
+# import datetime
 import gzip
 import os
 import re
@@ -17,7 +17,7 @@ from markus import TIMING, INCR
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import timezone
+# from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
