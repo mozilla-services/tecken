@@ -8,7 +8,7 @@ set -eo pipefail
 : "${GUNICORN_WORKERS:=4}"
 
 usage() {
-  echo "usage: bin/run web|web-dev|worker|test|bash"
+  echo "usage: bin/run web|web-dev|worker|test|bash|superuser"
   exit 1
 }
 
@@ -43,6 +43,9 @@ case $1 in
     ;;
   worker)
     exec newrelic-admin run-program celery -A tecken.celery:app worker -l info
+    ;;
+  superuser)
+    exec python manage.py superuser "${@:2}"
     ;;
   test)
     # python manage.py collectstatic --noinput

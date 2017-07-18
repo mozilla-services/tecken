@@ -11,7 +11,7 @@ from django.template import TemplateDoesNotExist, loader
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_safe
 from django.core.cache import cache
-from django.core.urlresolvers import reverse
+# from django.core.urlresolvers import reverse
 from django.conf import settings
 
 from .symbolicate.views import symbolicate_json
@@ -27,20 +27,20 @@ def dashboard(request):
     if request.method == 'POST' and request.body:
         return symbolicate_json(request)
 
-    user = {}
-    if request.user.is_authenticated:
-        user['email'] = request.user.email
-        user['active'] = request.user.is_active
-        user['sign_out_url'] = request.build_absolute_uri(
-            reverse('oidc_logout')
-        )
-    else:
-        user['sign_in_url'] = request.build_absolute_uri(
-            reverse('oidc_authentication_init')
-        )
+    # user = {}
+    # if request.user.is_authenticated:
+    #     user['email'] = request.user.email
+    #     user['active'] = request.user.is_active
+    #     user['sign_out_url'] = request.build_absolute_uri(
+    #         reverse('oidc_logout')
+    #     )
+    # else:
+    #     user['sign_in_url'] = request.build_absolute_uri(
+    #         reverse('oidc_authentication_init')
+    #     )
 
     context = {
-        'user': user,
+        # 'user': user,
         'documentation': 'https://tecken.readthedocs.io',
     }
     return http.JsonResponse(context)

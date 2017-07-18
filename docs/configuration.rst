@@ -253,3 +253,22 @@ Connect provider, use the domain (e.g. ``myoidc.example.com``) and go to
 there it should publish the authorization, token and user endpoints.
 
 .. _`Auth0`: https://auth0.com/
+
+
+First Superuser
+===============
+
+Users need to create their own API tokens but before they can do that they
+need to be promoted to have that permission at all. The only person/people
+who can give other users permissions is the superuser. To bootstrap
+the user administration you need to create at least one superuser.
+That superuser can promote other users to superusers too.
+
+This action does NOT require that the user signs in at least once. If the
+user does not exist, it gets created.
+
+The easiest way to create your first superuser is to use ``docker-compose``:
+
+.. code-block::
+
+    docker-compose run web superuser peterbe@example.com

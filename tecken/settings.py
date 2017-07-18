@@ -116,6 +116,8 @@ class Core(CSP, AWS, Configuration, Celery):
         'tecken.download',
         'tecken.tokens',
         'tecken.upload',
+        'tecken.api',
+        'tecken.useradmin',
 
         # Third party apps
         'dockerflow.django',

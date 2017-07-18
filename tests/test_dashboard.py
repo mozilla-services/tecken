@@ -4,8 +4,6 @@
 
 import pytest
 
-from django.contrib.auth.models import User
-
 from tecken.views import server_error
 
 
@@ -24,19 +22,3 @@ def test_dashboard(client):
     assert response.status_code == 200
     information = response.json()
     assert 'documentation' in information
-    assert 'sign_in_url' in information['user']
-
-    # Now pretend the user goes through the OIDC steps to sign in
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
-    user.set_password('secret')
-    user.save()
-    assert client.login(username='peterbe', password='secret')
-
-    response = client.get('/')
-    assert response.status_code == 200
-    information = response.json()
-    assert 'documentation' in information
-    assert 'sign_in_url' not in information['user']
-    assert 'sign_out_url' in information['user']
-    assert information['user']['email'] == 'peterbe@example.com'
-    assert information['user']['active']

@@ -19,14 +19,14 @@ from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.core.urlresolvers import reverse
+# from django.core.urlresolvers import reverse
 
 from tecken.base.decorators import api_login_required, api_permission_required
 from tecken.upload.utils import get_archive_members
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.s3 import S3Bucket
-from .forms import SearchForm
+# from .forms import SearchForm
 
 
 logger = logging.getLogger('tecken')
@@ -210,46 +210,48 @@ def _serialize_upload(upload, flat=False):
                 'created_at': file_upload.created_at,
             })
     return serialized
+#
+#
+# @api_login_required
+# @api_permission_required('upload.view_all_uploads')
+# def search(request):
+#     """Return a JSON search result. If no parameters are sent, cap
+#     to the top XXX number of uploads.
+#     The results are always sorted by creation date descending.
+#     """
+#     context = {
+#         'uploads': [],
+#     }
+#     # XXX add pagination
+#     # XXX filter, on user, by you being a superuser or not
+#     qs = Upload.objects.all().order_by('-created_at')
+#     form = SearchForm(request.GET)
+#     if not form.is_valid():
+#         # XXX Make this a JSON BadRequest
+#         return http.HttpResponseBadRequest(str(form.errors))
+#
+#     if form.cleaned_data['start_date']:
+#         qs = qs.filter(created_at__gte=form.cleaned_data['start_date'])
+#     if form.cleaned_data['end_date']:
+#         qs = qs.filter(created_at__lt=form.cleaned_data['end_date'])
+#     if form.cleaned_data['user']:
+#         if form.cleaned_data['user'].isdigit():
+#             qs = qs.filter(user_id=int(form.cleaned_data['user']))
+#         else:
+#             qs = qs.filter(user__email__icontains=form.cleaned_data['user'])
+#
+#     for upload in qs.select_related('user'):
+#         serialized = _serialize_upload(upload, flat=True)
+#         serialized['url'] = request.build_absolute_uri(
+#             reverse('upload:upload', args=(upload.id,))
+#         )
+#         context['uploads'].append(serialized)
+#     return http.JsonResponse(context)
+#
 
 
 @api_login_required
-@api_permission_required('upload.add_upload')
-def search(request):
-    """Return a JSON search result. If no parameters are sent, cap
-    to the top XXX number of uploads.
-    The results are always sorted by creation date descending.
-    """
-    context = {
-        'uploads': [],
-    }
-    # XXX add pagination
-    qs = Upload.objects.all().order_by('-created_at')
-    form = SearchForm(request.GET)
-    if not form.is_valid():
-        # XXX Make this a JSON BadRequest
-        return http.HttpResponseBadRequest(str(form.errors))
-
-    if form.cleaned_data['start_date']:
-        qs = qs.filter(created_at__gte=form.cleaned_data['start_date'])
-    if form.cleaned_data['end_date']:
-        qs = qs.filter(created_at__lt=form.cleaned_data['end_date'])
-    if form.cleaned_data['user']:
-        if form.cleaned_data['user'].isdigit():
-            qs = qs.filter(user_id=int(form.cleaned_data['user']))
-        else:
-            qs = qs.filter(user__email__icontains=form.cleaned_data['user'])
-
-    for upload in qs.select_related('user'):
-        serialized = _serialize_upload(upload, flat=True)
-        serialized['url'] = request.build_absolute_uri(
-            reverse('upload:upload', args=(upload.id,))
-        )
-        context['uploads'].append(serialized)
-    return http.JsonResponse(context)
-
-
-@api_login_required
-@api_permission_required('upload.add_upload')
+@api_permission_required('upload.upload_symbols')
 def upload(request, id):
     """Return all the information about one upload or 404.
     """

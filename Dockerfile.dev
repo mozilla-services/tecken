@@ -5,14 +5,14 @@ ENV DJANGO_CONFIGURATION=Localdev
 EXPOSE $PORT
 
 # Switch to root to install stuff
-USER root
+#USER root
 
 # Install build essentials which includes make which we need for docs
 # and also vim for easier debugging/editing in the container
-RUN apt-get install -y --no-install-recommends \
-  jed
+#RUN apt-get install -y --no-install-recommends \
+#  jed
 
 # Switch back to 10001 user
-USER 10001
+#USER 10001
 
 CMD ["web-dev"]

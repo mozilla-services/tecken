@@ -108,3 +108,8 @@ services:
       - HOSTNAME=localstack-s3
     ports:
       - "4572:4572"
+
+  create-react-app:
+    image: teracy/create-react-app
+    ports:
+      - "3000:3000"
