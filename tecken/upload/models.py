@@ -58,7 +58,7 @@ class FileUpload(models.Model):
 
     NOTE! Generally these objects are created in bulk.
     """
-    upload = models.ForeignKey(Upload)
+    upload = models.ForeignKey(Upload, null=True)
     bucket_name = models.CharField(max_length=100)
     key = models.CharField(max_length=300)
     # True if this overwrote an existing key
@@ -66,5 +66,13 @@ class FileUpload(models.Model):
     # True if the file was gzip compressed before being uploaded
     compressed = models.BooleanField(default=False)
     size = models.PositiveIntegerField()
+    # Used when this upload belongs to a Microsoft proxy download
+    microsoft_download = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __repr__(self):
+        return (
+            f'<{self.__class__.__name__} bucket_name={self.bucket_name!r} '
+            f'key={self.key!r} size={self.size}>'
+        )

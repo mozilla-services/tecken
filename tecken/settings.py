@@ -239,6 +239,10 @@ class Core(CSP, AWS, Configuration, Celery):
 
     TOKENS_DEFAULT_EXPIRATION_DAYS = values.IntegerValue(365)  # 1 year
 
+    # Feature flag for enabling or disabling the possible downloading
+    # of missing symbols from Microsoft.
+    ENABLE_DOWNLOAD_FROM_MICROSOFT = values.BooleanValue(False)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
@@ -440,15 +444,35 @@ class Base(Core):
     ]
 
     # This determines how many different symbol keys we store in the
-    # global LRU cache object.
-    SYMBOLDOWNLOAD_EXISTS_TIMEOUT_MAXSIZE = values.IntegerValue(10000)
+    # global TTL cache object used by SymbolDownloader.
+    SYMBOLDOWNLOAD_EXISTS_MAXSIZE = values.IntegerValue(10000)
+    # We can cache quite aggressively here because the SymbolDownloader
+    # has chance to invalidate certain keys.
+    # But we don't want to make it too long since when a symbols.zip file
+    # is uploaded it doesn't have the opportunity to invalidate those
+    # that are uploaded.
+    SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = values.IntegerValue(60 * 10)
 
-    # We use an LRU in-memory cache which means that really popular
-    # symbols will almost never be evicted from the cache. But, if
-    # we have actually "changed the outside world" (i.e. populating the
-    # symbol in S3) we need to force evict it from the LRU cache.
-    # This way it's an LRU + TTL cache sort of.
-    SYMBOLDOWNLOAD_MAX_TTL_SECONDS = values.IntegerValue(60 * 60)
+    # Whether to start a background task to search for symbols
+    # on Microsoft's server is protected by an in-memory cache.
+    # We need to cap its size.
+    MICROSOFT_DOWNLOAD_CACHE_MAXSIZE = values.IntegerValue(1000)
+    # This is quite important. Don't make it too long or else clients
+    # won't be able retry to see if a Microsoft symbol has been successfully
+    # downloaded by the background job.
+    # We can tweak this when we later learn more about the amount
+    # attempted symbol downloads for .pdb files we get that 404.
+    MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS = values.IntegerValue(60)
+
+    # cabextract is installed by Docker and used to unpack .pd_ files to .pdb
+    # It's assumed to be installed on $PATH.
+    CABEXTRACT_PATH = values.Value('cabextract')
+
+    # dump_syms is downloaded and installed by docker/build_dump_syms.sh
+    # and by default gets to put this specific location.
+    # If you change this, please make sure it works with
+    # how docker/build_dump_syms.sh works.
+    DUMP_SYMS_PATH = values.Value('/dump_syms/dump_syms')
 
 
 class Localdev(Base):
@@ -465,7 +489,7 @@ class Localdev(Base):
     # forces you to use/test the symbol downloader based on requests.get().
     SYMBOL_URLS = values.ListValue([
         'http://localstack-s3:4572/testbucket',
-        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
+        # 'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
     ])
 
     # By default, upload all symbols to this when in local dev.
@@ -536,6 +560,9 @@ class Test(Localdev):
     # want to test the code we have.
     ENABLE_TOKENS_AUTHENTICATION = True
 
+    # This feature flag is always on when testing.
+    ENABLE_DOWNLOAD_FROM_MICROSOFT = True
+
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
     OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
@@ -557,9 +584,9 @@ class Test(Localdev):
     )
 
     SYMBOL_FILE_PREFIX = 'v0'
-    UPLOAD_DEFAULT_URL = 'http://s3.example.com/mybucket'
+    UPLOAD_DEFAULT_URL = 'https://s3.example.com/private/prefix/'
     UPLOAD_URL_EXCEPTIONS = {
-        '*@peterbe.com': 'http://s3.example.com/peterbe-com',
+        '*@peterbe.com': 'https://s3.example.com/peterbe-com',
     }
 
 

@@ -75,8 +75,11 @@ def set_time_took(method):
     return wrapper
 
 
-exists_cache = cachetools.LRUCache(
-    maxsize=settings.SYMBOLDOWNLOAD_EXISTS_TIMEOUT_MAXSIZE
+# The TTLCache (unlike LRUCache) has a pop() method which is useful
+# because the SymbolDownloader can invalidate individual keys.
+exists_cache = cachetools.TTLCache(
+    maxsize=settings.SYMBOLDOWNLOAD_EXISTS_MAXSIZE,
+    ttl=settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
 )
 _exists_lock = RLock()
 
@@ -94,16 +97,10 @@ def exists_in_source(source, key):
         for obj in response.get('Contents', []):
             if obj['Key'] == key:
                 # It exists!
-                return (True, time.time())
-        return (False, time.time())
+                return True
+        return False
 
-    exists, timestamp = lookup(source.name, key)
-    age = time.time() - timestamp
-    if age > settings.SYMBOLDOWNLOAD_MAX_TTL_SECONDS:
-        exists_cache.pop((source.name, key))
-        # re-evaluate!
-        exists, _ = lookup(source.name, key)
-    return exists
+    return lookup(source.name, key)
 
 
 class SymbolDownloader:
@@ -179,6 +176,31 @@ class SymbolDownloader:
             self._sources = list(self._get_sources())
         return self._sources
 
+    def invalidate_cache(self, symbol, debugid, filename):
+        # Because we can't know exactly which source (aka URL) was
+        # used when the key was cached by exists_in_source() we have
+        # to iterate over the source.
+        for source in self.sources:
+            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            key = self._make_key(prefix, symbol, debugid, filename)
+            try:
+                exists_cache.pop((source.name, key))
+                break
+            except KeyError:
+                pass
+
+    @staticmethod
+    def _make_key(prefix, symbol, debugid, filename):
+        return '{}/{}/{}/{}'.format(
+            prefix,
+            symbol,
+            # The are some legacy use case where the debug ID might
+            # not already be uppercased. If so, we override it.
+            # Every debug ID is always in uppercase.
+            debugid.upper(),
+            filename,
+        )
+
     def _get(self, symbol, debugid, filename):
         """Return a dict if the symbol can be found. The dict will
         either be `{'url': ...}` or `{'buckey_name': ..., 'key': ...}`
@@ -194,15 +216,7 @@ class SymbolDownloader:
             if source.private:
                 # If it's a private bucket we use boto3.
 
-                key = '{}/{}/{}/{}'.format(
-                    prefix,
-                    symbol,
-                    # The are some legacy use case where the debug ID might
-                    # not already be uppercased. If so, we override it.
-                    # Every debug ID is always in uppercase.
-                    debugid.upper(),
-                    filename,
-                )
+                key = self._make_key(prefix, symbol, debugid, filename)
                 logger.debug(
                     f'Looking for symbol file {key!r} in bucket {source.name}'
                 )
@@ -219,12 +233,14 @@ class SymbolDownloader:
 
             else:
                 # We'll put together the URL manually
-                file_url = '{}/{}/{}/{}/{}'.format(
+                file_url = '{}/{}'.format(
                     source.base_url,
-                    prefix,
-                    symbol,
-                    debugid.upper(),
-                    filename,
+                    self._make_key(
+                        prefix,
+                        symbol,
+                        debugid,
+                        filename,
+                    )
                 )
                 logger.debug(
                     f'Looking for symbol file by URL {file_url!r}'

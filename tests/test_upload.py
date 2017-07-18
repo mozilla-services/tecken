@@ -6,7 +6,6 @@
 import gzip
 import os
 import re
-import pickle
 from io import BytesIO
 
 import pytest
@@ -21,12 +20,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload.tasks import (
-    upload_inbox_upload,
-    OwnEndpointConnectionError,
-    OwnClientError,
-    reraise_endpointconnectionerrors,
-)
+from tecken.upload.tasks import upload_inbox_upload
+from tecken.boto_extra import OwnEndpointConnectionError, OwnClientError
 from tecken.upload.views import get_bucket_info
 from tecken.upload.utils import get_archive_members
 
@@ -62,39 +57,6 @@ def test_get_archive_members():
         for file_listing in file_listings:
             assert file_listing.name
             assert file_listing.size
-
-
-def test_pickle_OwnEndpointConnectionError():
-    """test that it's possible to pickle, and unpickle an instance
-    of a OwnEndpointConnectionError exception class."""
-    exception = OwnEndpointConnectionError(endpoint_url='http://example.com')
-    pickled = pickle.dumps(exception)
-    exception = pickle.loads(pickled)
-    # They can't be compared, but...
-    assert exception.msg == exception.msg
-    assert exception.kwargs == exception.kwargs
-    assert exception.fmt == exception.fmt
-
-
-def test_pickle_OwnClientError():
-    """test that it's possible to pickle, and unpickle an instance
-    of a OwnClientError exception class."""
-    exception = OwnClientError({'Error': {'Code': '123'}}, 'PutObject')
-    pickled = pickle.dumps(exception)
-    exception = pickle.loads(pickled)
-    # They can't be compared, but...
-    assert exception.response == exception.response
-    assert exception.operation_name == exception.operation_name
-
-
-def test_reraise_endpointconnectionerrors_decorator():
-
-    @reraise_endpointconnectionerrors
-    def foo(name, age=100):
-        raise EndpointConnectionError(endpoint_url='http://example.com')
-
-    with pytest.raises(OwnEndpointConnectionError):
-        foo('peter')
 
 
 @pytest.mark.django_db
@@ -715,7 +677,7 @@ def test_upload_client_happy_path(botomock, fakeuser, client):
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params['Bucket'] == 'mybucket'
+        assert api_params['Bucket'] == 'private'
         if operation_name == 'HeadBucket':
             # yep, bucket exists
             return {}
@@ -773,7 +735,7 @@ def test_upload_client_unrecognized_bucket(botomock, fakeuser, client):
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params['Bucket'] == 'mybucket'
+        assert api_params['Bucket'] == 'private'
         if operation_name == 'HeadBucket':
             parsed_response = {
                 'Error': {'Code': '404', 'Message': 'Not found'},

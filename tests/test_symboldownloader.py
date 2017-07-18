@@ -45,12 +45,6 @@ def test_exists_in_source(botomock, settings):
         assert exists_in_source(bucket, 'xul.sym')
         assert len(mock_api_calls) == 2
 
-        # hackishly force the ttl to expire things
-        settings.SYMBOLDOWNLOAD_MAX_TTL_SECONDS = 0
-        assert not exists_in_source(bucket, 'xxx.sym')
-        assert exists_in_source(bucket, 'xul.sym')
-        assert len(mock_api_calls) == 4
-
 
 def test_iter_lines():
 
@@ -167,6 +161,105 @@ def test_has_private(botomock):
             'xxx.sym'
         )
         assert downloader.time_took > 0.0
+
+
+def test_has_private_caching_and_invalidation(botomock):
+
+    mock_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_calls.append(api_params['Prefix'])
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
+
+    urls = (
+        'https://s3.example.com/private/prefix/',
+    )
+    downloader = SymbolDownloader(urls)
+    with botomock(mock_api_call):
+        assert downloader.has_symbol(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        assert len(mock_calls) == 1
+        assert downloader.has_symbol(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        # This should be cached
+        assert len(mock_calls) == 1
+
+        # Now invalidate it
+        downloader.invalidate_cache(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        assert downloader.has_symbol(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        assert len(mock_calls) == 2
+
+        # Invalidating unrecognized keys shouldn't break anything
+        downloader.invalidate_cache(
+            'never',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'heardof'
+        )
+
+
+def test_get_url_private_caching_and_invalidation(botomock):
+
+    mock_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_calls.append(api_params['Prefix'])
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }],
+        }
+
+    urls = (
+        'https://s3.example.com/private/prefix/',
+    )
+    downloader = SymbolDownloader(urls)
+    with botomock(mock_api_call):
+        assert downloader.get_symbol_url(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        assert len(mock_calls) == 1
+        assert downloader.get_symbol_url(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        # This should be cached
+        assert len(mock_calls) == 1
+
+        # Now invalidate it
+        downloader.invalidate_cache(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        assert downloader.get_symbol_url(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym'
+        )
+        assert len(mock_calls) == 2
 
 
 def test_has_private_without_prefix(botomock):

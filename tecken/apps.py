@@ -86,3 +86,13 @@ class TeckenAppConfig(AppConfig):
                     f'You have to set settings.{key} '
                     f'(environment variable DJANGO_{key})'
                 )
+
+        # Also, if UPLOAD_DEFAULT_URL is not in SYMBOL_URLS it's just too
+        # weird. It means we'd upload to a S3 bucket we'd never read
+        # from and thus it'd be impossible to know the upload worked.
+        if settings.UPLOAD_DEFAULT_URL not in settings.SYMBOL_URLS:
+            raise ValueError(
+                f'The settings.UPLOAD_DEFAULT_URL '
+                f'({settings.UPLOAD_DEFAULT_URL!r}) has to be one of the URLs '
+                f'in settings.SYMBOL_URLS ({settings.SYMBOL_URLS!r})'
+            )

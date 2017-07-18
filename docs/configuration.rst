@@ -272,3 +272,16 @@ The easiest way to create your first superuser is to use ``docker-compose``:
 .. code-block::
 
     docker-compose run web superuser peterbe@example.com
+
+
+Microsoft Symbol Download
+=========================
+
+We have, in the Symbol Download, a feature that can attempt to download
+missing symbols from Microsoft's server "on-the-fly". This is a new and
+quite untested feature so it's disabled by default. To enable it set
+the following environment variable:
+
+.. code-block:: shell
+
+    DJANGO_ENABLE_DOWNLOAD_FROM_MICROSOFT=True

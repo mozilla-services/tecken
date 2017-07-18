@@ -6,7 +6,6 @@ import gzip
 import os
 import logging
 from io import BytesIO
-from functools import wraps
 
 import markus
 from botocore.exceptions import (
@@ -23,82 +22,13 @@ from django.utils import timezone
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.utils import get_archive_members
 from tecken.s3 import get_s3_client
-
+from tecken.boto_extra import (
+    reraise_clienterrors,
+    reraise_endpointconnectionerrors
+)
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
-
-
-class OwnEndpointConnectionError(EndpointConnectionError):
-    """Because the botocore.exceptions.EndpointConnectionError can't be
-    pickled, if this exception happens during task work, celery
-    won't be able to pickle it. So we write our own.
-
-    See https://github.com/boto/botocore/pull/1191 for a similar problem
-    with the ClientError exception.
-    """
-
-    def __init__(self, msg=None, **kwargs):
-        if not msg:
-            msg = self.fmt.format(**kwargs)
-        Exception.__init__(self, msg)
-        self.kwargs = kwargs
-        self.msg = msg
-
-    def __reduce__(self):
-        return (self.__class__, (self.msg,), {'kwargs': self.kwargs})
-
-
-class OwnClientError(ClientError):  # XXX Replace "Own" with "Picklable" ?
-    """Because the botocore.exceptions.EndpointConnectionError can't be
-    pickled, if this exception happens during task work, celery
-    won't be able to pickle it. So we write our own.
-
-    See https://github.com/boto/botocore/pull/1191
-    """
-
-    def __reduce__(self):
-        return (
-            self.__class__,
-            (self.response, self.operation_name),
-            {},
-        )
-
-
-def reraise_endpointconnectionerrors(f):
-    """Decorator whose whole job is to re-raise any EndpointConnectionError
-    exceptions raised to be OwnEndpointConnectionError because those
-    exceptions are "better". In other words, if, instead an
-    OwnEndpointConnectionError exception is raised by the task
-    celery can then pickle the error. And if it can pickle the error
-    it can apply its 'autoretry_for' magic.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except EndpointConnectionError as exception:
-            raise OwnEndpointConnectionError(**exception.kwargs)
-    return wrapper
-
-
-def reraise_clienterrors(f):
-    """Decorator whose whole job is to re-raise any ClientError
-    exceptions raised to be OwnClientError because those
-    exceptions are "better". In other words, if, instead an
-    OwnClientError exception is raised by the task
-    celery can then pickle the error. And if it can pickle the error
-    it can apply its 'autoretry_for' magic.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except ClientError as exception:
-            raise OwnClientError(exception.response, exception.operation_name)
-    return wrapper
 
 
 @shared_task(autoretry_for=(
@@ -257,6 +187,16 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
         logger.debug(f'{key_name!r} already uploaded. Skipping')
         return None, key_name
 
+    return upload_file_upload(
+        s3_client,
+        upload.bucket_name,
+        key_name,
+        member.extractor().read(),
+        upload=upload,
+    ), key_name
+
+
+def upload_file_upload(s3_client, bucket_name, key_name, content, upload=None):
     # E.g. 'foo.sym' becomes 'sym' and 'noextension' becomes ''
     key_extension = os.path.splitext(key_name)[1].lower()[1:]
     compress = key_extension in settings.COMPRESS_EXTENSIONS
@@ -274,9 +214,9 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
         # We need to read in the whole file, and compress it to a new
         # bytes object.
         with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
-            f.write(member.extractor().read())
+            f.write(content)
     else:
-        file_buffer.write(member.extractor().read())
+        file_buffer.write(content)
 
     # Extract the size from the file object independent of how it
     # was created; be that by GzipFile or just member.extractor().read().
@@ -285,21 +225,21 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
     file_buffer.seek(0)
 
     # Did we already have this exact file uploaded?
-    size_in_s3 = _key_existing_size(s3_client, upload.bucket_name, key_name)
+    size_in_s3 = _key_existing_size(s3_client, bucket_name, key_name)
     if size_in_s3 is not None:
         # Only upload if the size is different.
         # So set this to None if it's already there and same size.
         if size_in_s3 == size:
             # Moving on.
             logger.debug(
-                f'{key_name!r} ({upload.bucket_name}) has not changed '
+                f'{key_name!r} ({bucket_name}) has not changed '
                 'size. Skipping.'
             )
-            return None, key_name
+            return
 
     file_upload = FileUpload(
         upload=upload,
-        bucket_name=upload.bucket_name,
+        bucket_name=bucket_name,
         key=key_name,
         update=size_in_s3 is not None,
         compressed=compress,
@@ -325,13 +265,13 @@ def create_file_upload(s3_client, upload, member, previous_uploads_keys):
 
     logger.debug('Uploading file {!r} into {!r}'.format(
         key_name,
-        upload.bucket_name,
+        bucket_name,
     ))
     s3_client.put_object(
-        Bucket=upload.bucket_name,
+        Bucket=bucket_name,
         Key=key_name,
         Body=file_buffer,
         **extras,
     )
     file_upload.completed_at = timezone.now()
-    return file_upload, key_name
+    return file_upload
