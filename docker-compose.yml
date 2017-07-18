@@ -101,7 +101,7 @@ services:
   # https://hub.docker.com/r/atlassianlabs/localstack/
   # localstack running a fake S3
   localstack-s3:
-    image: atlassianlabs/localstack:0.5.0
+    image: atlassianlabs/localstack:0.6.1
     environment:
       - SERVICES=s3:4572
       - DEFAULT_REGION=us-east-1
