@@ -19,14 +19,14 @@ from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from django.core.urlresolvers import reverse
+# from django.core.urlresolvers import reverse
 
 from tecken.base.decorators import api_login_required, api_permission_required
 from tecken.upload.utils import get_archive_members
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.s3 import S3Bucket
-from .forms import SearchForm
+# from .forms import SearchForm
 
 
 logger = logging.getLogger('tecken')
@@ -248,6 +248,7 @@ def _serialize_upload(upload, flat=False):
 #         context['uploads'].append(serialized)
 #     return http.JsonResponse(context)
 #
+
 
 @api_login_required
 @api_permission_required('upload.upload_symbols')
