@@ -1,0 +1,26 @@
+# Note! If you make changes it in this file, to rebuild it use:
+#   docker-compose build frontend
+#
+
+# XXX Make this match what's in Dockerfile
+FROM node:6.11.1
+
+# XXX Make this the same version as Dockerfile
+RUN curl -o- -L https://yarnpkg.com/install.sh | bash
+
+ADD frontend/package.json /package.json
+RUN yarn
+
+ENV NODE_PATH=/node_modules
+ENV PATH=$PATH:/node_modules/.bin
+WORKDIR /app
+ADD frontend /app
+
+EXPOSE 3000
+EXPOSE 35729
+
+#CMD ["yarn", "run", "build"]
+#CMD ["yarn", "start"]
+# The `| cat` is to trick Node that this is an non-TTY terminal
+# then react-scripts won't clear the console.
+CMD yarn start | cat

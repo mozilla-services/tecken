@@ -62,7 +62,7 @@ test: .env .docker-build
 	@bin/test
 
 run: .env .docker-build
-	docker-compose up web worker
+	docker-compose up web worker frontend
 
 gunicorn: .env .docker-build
 	docker-compose run --service-ports web web
