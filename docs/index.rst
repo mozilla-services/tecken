@@ -37,6 +37,7 @@ Project docs:
    frontend
    redis
    docker
+   authentication
 
 Indices and tables
 ==================

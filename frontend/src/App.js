@@ -43,7 +43,13 @@ const App = observer(
         .then(r => r.json())
         .then(response => {
           if (response.sign_in_url) {
-            document.location.href = response.sign_in_url
+            let signInUrl = response.sign_in_url
+            // When doing local development, the Django runserver is
+            // running at 'http://web:8000' as far as the React dev
+            // server is concerned. That doesn't work outside Docker
+            // (i.e on the host) so we'll replace this.
+            signInUrl = signInUrl.replace('http://web:8000', 'http://localhost:8000')
+            document.location.href = signInUrl
           } else {
             store.currentUser = response.user.email
             store.signOutUrl = response.sign_out_url
