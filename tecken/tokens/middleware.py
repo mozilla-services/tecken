@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
+from functools import partial
 
 from django import http
 from django.contrib import auth
@@ -14,6 +15,11 @@ from .models import Token
 
 
 logger = logging.getLogger('tecken')
+
+
+def has_perm(all, codename, obj=None):
+    codename = codename.split('.', 1)[1]
+    return all.filter(codename=codename).count()
 
 
 class APITokenAuthenticationMiddleware(MiddlewareMixin):
@@ -52,6 +58,9 @@ class APITokenAuthenticationMiddleware(MiddlewareMixin):
         # It actually doesn't matter so much which backend
         # we use as long as it's something.
         user.backend = 'django.contrib.auth.backends.ModelBackend'
+        # Overwrite the has_perm method so that it's restricted to only
+        # the permission that the Token object specifies.
+        user.has_perm = partial(has_perm, token.permissions.all())
         # User is valid. Set request.user and persist user in the session
         # by logging the user in.
         request.user = user

@@ -4,6 +4,7 @@
 
 from django import forms
 from django.contrib.auth.models import Permission
+from django.contrib.auth.models import User
 
 
 class TokenForm(forms.Form):
@@ -28,3 +29,9 @@ class TokenForm(forms.Form):
                 Permission.objects.get(id=pk)
             )
         return permissions
+
+
+class UserEditForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ('is_active', 'is_superuser', 'groups')

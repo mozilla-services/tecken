@@ -3,16 +3,17 @@ import { Link } from 'react-router-dom'
 
 
 class Help extends Component {
+  pageTitle = 'Help'
   componentDidMount() {
-    document.title = "Help"
+    document.title = 'Help'
   }
   render() {
     return <div className="content">
-      <h1 className="title">Help</h1>
+      <h1 className="title">{this.pageTitle}</h1>
       <h2>Permissions</h2>
       <p>
-        To gain permissions to do things you need to be promoted by an
-        administrator. <br/>
+        To gain permissions to do things you need to be promoted by a
+        superuser. <br/>
         <a rel="noopener noreferrer"
           href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols">
           The best way to do that is to file a bug

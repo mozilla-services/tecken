@@ -13,7 +13,9 @@ import Home from './Home'
 import Help from './Help'
 import Tokens from './Tokens'
 import Uploads from './Uploads'
-
+import Users from './Users'
+import User from './User'
+import FetchError from './FetchError'
 import store from './Store'
 
 const App = observer(
@@ -24,17 +26,23 @@ const App = observer(
         redirectTo: null
       }
     }
-    componentDidMount() {
-      fetch('/api/auth/', { credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(response => {
-          // console.log('RESPONSE', response)
-          if (response.user) {
-            store.currentUser = response.user.email
-            store.signOutUrl = response.sign_out_url
-            // XXX do we need to remove the ?signedin=True in the query string?
+    componentWillMount() {
+      fetch('/api/auth/', { credentials: 'same-origin' }).then(r => {
+        if (r.status === 200) {
+          if (store.fetchError) {
+            store.fetchError = null
           }
-        })
+          r.json().then(response => {
+            if (response.user) {
+              store.currentUser = response.user
+              store.signOutUrl = response.sign_out_url
+              // XXX do we need to remove the ?signedin=True in the query string?
+            }
+          })
+        } else {
+          store.fetchError = r
+        }
+      })
     }
 
     signIn = event => {
@@ -48,10 +56,13 @@ const App = observer(
             // running at 'http://web:8000' as far as the React dev
             // server is concerned. That doesn't work outside Docker
             // (i.e on the host) so we'll replace this.
-            signInUrl = signInUrl.replace('http://web:8000', 'http://localhost:8000')
+            signInUrl = signInUrl.replace(
+              'http://web:8000',
+              'http://localhost:8000'
+            )
             document.location.href = signInUrl
           } else {
-            store.currentUser = response.user.email
+            store.currentUser = response.user
             store.signOutUrl = response.sign_out_url
           }
         })
@@ -88,21 +99,51 @@ const App = observer(
                   <span />
                 </span>
                 <div className="nav-right nav-menu">
-                  <NavLink to="/" exact className="nav-item is-tab" activeClassName="is-active">
+                  <NavLink
+                    to="/"
+                    exact
+                    className="nav-item is-tab"
+                    activeClassName="is-active"
+                  >
                     Home
                   </NavLink>
-                  <NavLink to="/tokens" className="nav-item is-tab" activeClassName="is-active">
+                  {store.currentUser && store.currentUser.is_superuser
+                    ? <NavLink
+                        to="/users"
+                        className="nav-item is-tab"
+                        activeClassName="is-active"
+                      >
+                        User Management
+                      </NavLink>
+                    : null}
+                  <NavLink
+                    to="/tokens"
+                    className="nav-item is-tab"
+                    activeClassName="is-active"
+                  >
                     API Tokens
                   </NavLink>
-                  <NavLink to="/uploads" className="nav-item is-tab" activeClassName="is-active">
+                  <NavLink
+                    to="/uploads"
+                    className="nav-item is-tab"
+                    activeClassName="is-active"
+                  >
                     Uploads
                   </NavLink>
-                  <NavLink to="/help" className="nav-item is-tab" activeClassName="is-active">
+                  <NavLink
+                    to="/help"
+                    className="nav-item is-tab"
+                    activeClassName="is-active"
+                  >
                     Help
                   </NavLink>
                   <span className="nav-item">
                     {store.currentUser
-                      ? <a onClick={this.signOut} className="button is-info">
+                      ? <a
+                          onClick={this.signOut}
+                          className="button is-info"
+                          title={`Signed in as ${store.currentUser.email}`}
+                        >
                           Sign Out
                         </a>
                       : <a onClick={this.signIn} className="button is-info">
@@ -114,10 +155,13 @@ const App = observer(
             </nav>
             <section className="section">
               <div className="container content">
+                <FetchError error={store.fetchError} />
                 <Route path="/" exact component={Home} />
                 <Route path="/help" component={Help} />
                 <Route path="/tokens" component={Tokens} />
                 <Route path="/uploads" component={Uploads} />
+                <Route path="/users/:id" component={User} />
+                <Route path="/users" exact component={Users} />
               </div>
             </section>
             <footer className="footer">

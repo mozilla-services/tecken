@@ -18,7 +18,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import get_object_or_404
+# from django.shortcuts import get_object_or_404
 # from django.core.urlresolvers import reverse
 
 from tecken.base.decorators import api_login_required, api_permission_required
@@ -97,7 +97,7 @@ def get_bucket_info(user):
 @require_POST
 @csrf_exempt
 @api_login_required
-@api_permission_required('upload.add_upload')
+@api_permission_required('upload.upload_symbols')
 @transaction.atomic
 def upload_archive(request):
     for name in request.FILES:
@@ -250,13 +250,13 @@ def _serialize_upload(upload, flat=False):
 #
 
 
-@api_login_required
-@api_permission_required('upload.upload_symbols')
-def upload(request, id):
-    """Return all the information about one upload or 404.
-    """
-    upload = get_object_or_404(Upload, id=id)
-    context = {
-        'upload': _serialize_upload(upload),
-    }
-    return http.JsonResponse(context)
+# @api_login_required
+# @api_permission_required('upload.upload_symbols')
+# def upload(request, id):
+#     """Return all the information about one upload or 404.
+#     """
+#     upload = get_object_or_404(Upload, id=id)
+#     context = {
+#         'upload': _serialize_upload(upload),
+#     }
+#     return http.JsonResponse(context)

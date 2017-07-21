@@ -5,6 +5,7 @@ class Store {
     extendObservable(this, {
       currentUser: null,
       signOutUrl: null,
+      fetchError: null,
     })
   }
 }
