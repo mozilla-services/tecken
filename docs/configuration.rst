@@ -220,6 +220,8 @@ The three environment variables to control the statsd are as follows
 3. ``DJANGO_STATSD_NAMESPACE`` (*''* (empty string))
 
 
+.. _auth0-configuration:
+
 Auth0
 =====
 

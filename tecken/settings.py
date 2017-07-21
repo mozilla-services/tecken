@@ -150,6 +150,8 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.middleware.clickjacking.XFrameOptionsMiddleware',
         'csp.middleware.CSPMiddleware',
         'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
+        # Important that this comes after APITokenAuthenticationMiddleware
+        'tecken.useradmin.middleware.NotBlockedInAuth0Middleware',
     )
 
     ROOT_URLCONF = 'tecken.urls'
@@ -225,6 +227,15 @@ class Core(CSP, AWS, Configuration, Celery):
     OIDC_OP_USER_ENDPOINT = values.URLValue(
         'https://auth.mozilla.auth0.com/userinfo'
     )
+
+    # Feature flag for the Auth0 Management API check that checks if users
+    # are still valid and not blocked in Auth0's user database.
+    ENABLE_AUTH0_BLOCKED_CHECK = values.BooleanValue(True)
+
+    # There's a middleware that checks if the user is NOT blocked in
+    # Auth0. But we don't want to do it for every single request, since
+    # it's slowish, so we throttle that check with a cache interval.
+    NOT_BLOCKED_IN_AUTH0_INTERVAL_SECONDS = values.IntegerValue(60 * 60 * 24)
 
     # Keep it quite short because we don't have a practical way to do
     # OIDC ID token renewal for this AJAX and curl heavy app.
@@ -563,6 +574,10 @@ class Test(Localdev):
     # This feature flag is always on when testing.
     ENABLE_DOWNLOAD_FROM_MICROSOFT = True
 
+    # Disable the Auth0 in all tests. THere are some specific tests
+    # that switch it back on to test the Auth0 blocked middleware.
+    ENABLE_AUTH0_BLOCKED_CHECK = False
+
     SECRET_KEY = values.Value('not-so-secret-after-all')
 
     OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
@@ -581,6 +596,11 @@ class Test(Localdev):
 
     AUTHENTICATION_BACKENDS = (
         'django.contrib.auth.backends.ModelBackend',
+    )
+
+    # This makes sure this is never a real valud
+    OIDC_OP_USER_ENDPOINT = (
+        'https://auth.example.com/authorize'
     )
 
     SYMBOL_FILE_PREFIX = 'v0'
