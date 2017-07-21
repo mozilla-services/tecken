@@ -114,6 +114,10 @@ class NotBlockedInAuth0Middleware(MiddlewareMixin):
                     'User is blocked in Auth0 and made inactive.',
                     status=403
                 )
+            else:
+                logger.info(
+                    f'User {request.user.email} is NOT blocked in Auth0'
+                )
             cache.set(
                 cache_key,
                 True,

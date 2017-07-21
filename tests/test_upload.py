@@ -598,8 +598,8 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         # will also fail because of lack of permission
         assert response.status_code == 403
         # so let's fix that
-        permission, = Permission.objects.filter(codename='add_upload')
-        fakeuser.user_permissions.add(permission)
+        permission, = Permission.objects.filter(codename='upload_symbols')
+        token.permissions.add(permission)
 
         response = client.post(url, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 400
@@ -664,8 +664,8 @@ def test_upload_client_bad_request(fakeuser, client, settings):
 @pytest.mark.django_db
 def test_upload_client_happy_path(botomock, fakeuser, client):
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename='add_upload')
-    fakeuser.user_permissions.add(permission)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
     url = reverse('upload:upload_archive')
 
     # The key name for the inbox file upload contains today's date
@@ -728,8 +728,8 @@ def test_upload_client_unrecognized_bucket(botomock, fakeuser, client):
     """The upload view raises an error if you try to upload into a bucket
     that doesn't exist."""
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename='add_upload')
-    fakeuser.user_permissions.add(permission)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
     url = reverse('upload:upload_archive')
 
     def mock_api_call(self, operation_name, api_params):

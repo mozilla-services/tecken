@@ -4,11 +4,12 @@
 
 import pytest
 
-from django.contrib.auth.models import User, Permission
+from django.contrib.auth.models import User, Permission, Group
 from django.core.urlresolvers import reverse
 from django.utils import timezone
 
 from tecken.tokens.models import Token
+from tecken.upload.models import Upload
 
 
 @pytest.mark.django_db
@@ -27,7 +28,7 @@ def test_auth(client):
     response = client.get(url)
     assert response.status_code == 200
     data = response.json()
-    assert data['user']['active']
+    assert data['user']['is_active']
     assert data['user']['email']
     assert data['sign_out_url']
 
@@ -174,3 +175,83 @@ def test_tokens_delete(client):
     response = client.delete(url)
     assert response.status_code == 200
     assert not Token.objects.filter(user=other_user)
+
+
+@pytest.mark.django_db
+def test_users(client):
+    url = reverse('api:users')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.is_superuser = True
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    assert response.status_code == 200
+    found_user, = response.json()['users']
+    assert found_user['email'] == user.email
+
+    group = Group.objects.get(name='Uploaders')
+    user.groups.add(group)
+    Upload.objects.create(
+        user=user,
+        size=1234,
+    )
+    Token.objects.create(
+        user=user,
+    )
+    response = client.get(url)
+    assert response.status_code == 200
+    found_user, = response.json()['users']
+    assert found_user['no_tokens'] == 1
+    assert found_user['no_uploads'] == 1
+    assert found_user['groups'][0]['name'] == 'Uploaders'
+    assert found_user['permissions'][0]['name'] == 'Upload Symbols Files'
+
+
+@pytest.mark.django_db
+def test_edit_user(client):
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    url = reverse('api:edit_user', args=(user.id,))
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user.is_superuser = True
+    user.save()
+    group = Group.objects.get(name='Uploaders')
+    user.groups.add(group)
+    response = client.get(url)
+    assert response.status_code == 200
+    assert response.json()['groups']
+    assert response.json()['user']['groups'][0]['name'] == 'Uploaders'
+
+    new_group = Group.objects.create(name='New Group')
+    response = client.post(url, {
+        'groups': 'JUNK',
+        'is_active': False,
+        'is_superuser': True,
+    })
+    assert response.status_code == 400
+
+    response = client.post(url, {
+        'groups': new_group.id,
+        'is_active': False,
+        'is_superuser': True,
+    })
+    assert response.status_code == 200
+    user.refresh_from_db()
+    assert user.groups.all().count() == 1
+    assert not user.is_active
+    assert user.is_superuser
+
+    # Now that we're inactive, we can't GET any more.
+    # We've basically locked ourselves out. Nuts but should work.
+    response = client.get(url)
+    assert response.status_code == 403

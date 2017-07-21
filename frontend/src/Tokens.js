@@ -3,72 +3,59 @@ import { Link } from 'react-router-dom'
 
 import { toDate, isBefore, formatDistanceStrict } from 'date-fns/esm'
 
-import { Loading, FetchError } from './Common'
-import './Tokens.css'
+import { Loading } from './Common'
+import store from './Store'
 
 class Tokens extends Component {
   constructor(props) {
     super(props)
+    this.pageTitle = 'API Tokens'
     this.state = {
-      loading: true, // done by componentDidMount
-      fetchError: null,
+      loading: true, // undone by componentDidMount
       tokens: null,
       permissions: null
     }
   }
   componentDidMount() {
-    document.title = 'API Tokens'
+    document.title = this.pageTitle
 
     this._fetchTokens()
   }
 
   _fetchTokens = () => {
+    this.setState({ loading: true })
     fetch('/api/tokens/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
       if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null
+        }
         return r.json().then(response => {
           this.setState({
-            fetchError: null,
             tokens: response.tokens,
             permissions: response.permissions
           })
         })
       } else {
-        this.setState({ fetchError: r })
+        store.fetchError = r
+        // this.setState({ fetchError: r })
       }
     })
   }
 
-  createToken = (permissions, expires, notes) => {
-    this.setState({ loading: true })
-    const formData = new FormData()
-    formData.append('permissions', permissions)
-    formData.append('expires', expires)
-    formData.append('notes', notes.trim())
-    fetch('/api/tokens/', {
-      method: 'POST',
-      body: formData,
-      credentials: 'same-origin'
-    }).then(r => {
-      this.setState({ loading: false })
-      if (r.status === 201) {
-        this._fetchTokens()
-      } else {
-        this.setState({ fetchError: r })
-      }
-    })
-  }
-
-
-  deleteToken = (id) => {
+  deleteToken = id => {
     fetch(`/api/tokens/${id}`, {
       method: 'DELETE',
       credentials: 'same-origin'
     }).then(r => {
       if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null
+        }
         this._fetchTokens()
       } else {
-        this.setState({ fetchError: r })
+        store.fetchError = r
+        // this.setState({ fetchError: r })
       }
     })
   }
@@ -76,11 +63,8 @@ class Tokens extends Component {
   render() {
     return (
       <div>
-        <h1 className="title">API Tokens</h1>
-        {this.state.loading ? <Loading /> : null}
-        {this.state.fetchError
-          ? <FetchError error={this.state.fetchError} />
-          : null}
+        <h1 className="title">{this.pageTitle}</h1>
+        {this.state.loading && <Loading />}
 
         {this.state.permissions && !this.state.permissions.length
           ? <article className="message is-warning">
@@ -112,15 +96,14 @@ class Tokens extends Component {
             </div>
           : null}
 
-        {!this.state.loading &&
-        this.state.permissions &&
-        this.state.permissions.length
+        {this.state.permissions && this.state.permissions.length
           ? <div>
               <hr />
               <h2 className="title">Create new API Token</h2>
               <CreateTokenForm
                 permissions={this.state.permissions}
                 createToken={this.createToken}
+                refreshTokens={this._fetchTokens}
               />
             </div>
           : null}
@@ -132,6 +115,13 @@ class Tokens extends Component {
 export default Tokens
 
 class CreateTokenForm extends Component {
+  state = {
+    loading: false,
+    validationErrors: null
+  }
+  componentWillUnmount() {
+    this.dismounted = true
+  }
   submitCreate = event => {
     event.preventDefault()
     const expires = this.refs.expires.value
@@ -142,17 +132,52 @@ class CreateTokenForm extends Component {
         permissions.push(option.value)
       }
     })
-    this.props.createToken(permissions, expires, notes)
+    this.setState({ loading: true })
+    const formData = new FormData()
+    formData.append('permissions', permissions)
+    formData.append('expires', expires)
+    formData.append('notes', notes.trim())
+    return fetch('/api/tokens/', {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin'
+    }).then(r => {
+      if (store.fetchError) {
+        store.fetchError = null
+      }
+      if (r.status === 201) {
+        this.setState({ loading: false, validationErrors: null })
+        this._resetForm()
+        this.props.refreshTokens()
+      } else if (r.status === 400) {
+        r.json().then(data => {
+          this.setState({ loading: false, validationErrors: data.errors })
+        })
+      } else {
+        // this.setState({ fetchError: r })
+        store.fetchError = r
+      }
+    })
   }
+
+  _resetForm = () => {
+    this.refs.notes.value = ''
+  }
+
   render() {
+    let validationErrors = this.state.validationErrors
+    if (validationErrors === null) {
+      // makes it easier to reference in the JSX
+      validationErrors = {}
+    }
     return (
       <form onSubmit={this.submitCreate}>
         <div className="field">
           <label className="label">Permissions</label>
-          <p className="control">
+          <div className="select select-multiple">
             <select
               multiple={true}
-              className="multi-select"
+              className={validationErrors.permissions ? 'is-danger' : ''}
               ref="permissions"
               size={this.props.permissions.length}
             >
@@ -164,13 +189,22 @@ class CreateTokenForm extends Component {
                 )
               })}
             </select>
-          </p>
+          </div>
+          {validationErrors.permissions
+            ? <p className="help is-danger">
+                {validationErrors.permissions[0]}
+              </p>
+            : null}
         </div>
         <div className="field">
           <label className="label">Expires</label>
           <p className="control">
             <span className="select">
-              <select ref="expires" defaultValue={365}>
+              <select
+                ref="expires"
+                defaultValue={365}
+                className={validationErrors.expires ? 'is-danger' : ''}
+              >
                 <option value={1}>1 day</option>
                 <option value={7}>1 week</option>
                 <option value={30}>1 month</option>
@@ -179,16 +213,39 @@ class CreateTokenForm extends Component {
               </select>
             </span>
           </p>
+          {validationErrors.expires
+            ? <p className="help is-danger">
+                {validationErrors.expires[0]}
+              </p>
+            : null}
         </div>
         <div className="field">
           <label className="label">Notes</label>
           <p className="control">
-            <textarea ref="notes" className="textarea" placeholder="" />
+            <textarea
+              ref="notes"
+              placeholder="optional notes..."
+              className={
+                validationErrors.notes ? 'textarea is-danger' : 'textarea'
+              }
+            />
           </p>
+          {validationErrors.notes
+            ? <p className="help is-danger">
+                {validationErrors.notes[0]}
+              </p>
+            : null}
         </div>
         <div className="field is-grouped">
           <p className="control">
-            <button type="submit" className="button is-primary">
+            <button
+              type="submit"
+              className={
+                this.state.loading
+                  ? 'button is-primary is-loading'
+                  : 'button is-primary'
+              }
+            >
               Create
             </button>
           </p>
@@ -199,7 +256,6 @@ class CreateTokenForm extends Component {
 }
 
 class DisplayTokens extends Component {
-
   onDelete = (event, id, expired) => {
     event.preventDefault()
     if (expired || window.confirm('Are you sure?')) {
@@ -208,11 +264,18 @@ class DisplayTokens extends Component {
   }
 
   render() {
+    if (!this.props.tokens.length) {
+      return (
+        <p>
+          You don't have any tokens <b>yet</b>
+        </p>
+      )
+    }
     return (
       <table className="table">
         <thead>
           <tr>
-            <th>Key</th>
+            <th style={{ width: 380 }}>Key</th>
             <th>Expires</th>
             <th>Permissions</th>
             <th>Notes</th>
@@ -227,24 +290,27 @@ class DisplayTokens extends Component {
                   <DisplayKey tokenKey={token.key} />
                 </td>
                 <td>
-                  <DisplayExpires expires={token.expires_at}/>
+                  <DisplayExpires expires={token.expires_at} />
                 </td>
                 <td>
                   {token.permissions.map(p =>
-                    <code key={p.id} style={{display: 'block'}}>
+                    <code key={p.id} style={{ display: 'block' }}>
                       {p.name}
                     </code>
                   )}
                 </td>
-                <td style={{maxWidth: 250}}>
+                <td style={{ maxWidth: 250 }}>
                   {token.notes}
                 </td>
                 <td>
                   <button
                     type="button"
                     className="button is-danger"
-                    onClick={event => this.onDelete(event, token.id, token.is_expired)}
-                    >Delete</button>
+                    onClick={event =>
+                      this.onDelete(event, token.id, token.is_expired)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             )
@@ -261,33 +327,55 @@ class DisplayKey extends Component {
     this.setState({ truncate: !this.state.truncate })
   }
   render() {
+    let code = (
+      <code>
+        {this.props.tokenKey}
+      </code>
+    )
     if (this.state.truncate) {
       const truncated = this.props.tokenKey.substr(0, 10)
-      return (
-        <code
-          onClick={this.toggle}
-          title="Click to see the whole thing"
-        >{`${truncated}…`}</code>
-      )
-    } else {
-      return (
+      code = (
         <code>
-          {this.props.tokenKey}
+          {`${truncated}…`}
         </code>
       )
     }
+
+    return (
+      <p>
+        {code}
+        <a
+          title="Click to toggle displaying the whole key"
+          className="button is-small"
+          onClick={this.toggle}
+        >
+          <span className="icon is-small">
+            <i
+              className={
+                this.state.truncate ? 'fa fa-expand' : 'fa fa-compress'
+              }
+            />
+          </span>
+        </a>
+      </p>
+    )
   }
 }
-
 
 const DisplayExpires = ({ expires }) => {
   const date = toDate(expires)
   const now = new Date()
   if (isBefore(date, now)) {
-    return <span
-      className="token-expired">{formatDistanceStrict(date, now)} ago</span>
+    return (
+      <span className="token-expired">
+        {formatDistanceStrict(date, now)} ago
+      </span>
+    )
   } else {
-    return <span>in {formatDistanceStrict(date, now)}</span>
-
+    return (
+      <span>
+        in {formatDistanceStrict(date, now)}
+      </span>
+    )
   }
 }

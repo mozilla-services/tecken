@@ -16,13 +16,23 @@ urlpatterns = [
         name='auth'
     ),
     url(
+        r'tokens/$',
+        views.tokens,
+        name='tokens'
+    ),
+    url(
         r'tokens/(?P<id>\d+)$',
         views.delete_token,
         name='delete_token'
     ),
     url(
-        r'tokens/$',
-        views.tokens,
-        name='tokens'
+        r'users/$',
+        views.users,
+        name='users'
+    ),
+    url(
+        r'users/(?P<id>\d+)$',
+        views.edit_user,
+        name='edit_user'
     ),
 ]
