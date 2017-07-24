@@ -1,4 +1,4 @@
-.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test run django-shell docs psql
+.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test run django-shell docs psql build-frontend
 
 help:
 	@echo "Welcome to the tecken\n"
@@ -16,7 +16,8 @@ help:
 	@echo "  stop         Stops the docker containers"
 	@echo "  systemtest   Run system tests against a running tecken"
 	@echo "  django-shell Django integrative shell"
-	@echo "  psql         Open the psql cli\n"
+	@echo "  psql         Open the psql cli"
+	@echo "  build-frontend  Builds the frontend static files\n"
 
 # Dev configuration steps
 .docker-build:
@@ -78,3 +79,6 @@ systemtest: .env .docker-build
 
 tag:
 	@bin/make-tag.py
+
+build-frontend:
+	docker-compose run -u 0 web ./bin/build_frontend.sh
