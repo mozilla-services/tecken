@@ -8,6 +8,13 @@ set -eo pipefail
 # Builds the React frontend
 
 pushd frontend
-yarn --no-progress
-yarn run --no-progress build
+
+if [[ -z ${CI+check} ]]; then
+    yarn
+    yarn run build
+fi
+if [[ ! -z ${CI+check} ]]; then
+    yarn --no-progress --non-interactive
+    yarn run --no-progress --non-interactive build
+fi
 popd
