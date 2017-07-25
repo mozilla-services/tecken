@@ -9,10 +9,6 @@ set -eo pipefail
 
 pushd frontend
 
-echo "FIRST:"
-echo "$CI"
-echo "SECOND:"
-echo ${CI+check}
 if [[ -z ${CI+check} ]]; then
     yarn
     yarn run build
