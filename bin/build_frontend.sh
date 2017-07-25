@@ -9,11 +9,14 @@ set -eo pipefail
 
 pushd frontend
 
+echo "FIRST:"
+echo "$CI"
+echo "SECOND:"
+echo ${CI+check}
 if [[ -z ${CI+check} ]]; then
     yarn
     yarn run build
-fi
-if [[ ! -z ${CI+check} ]]; then
+else
     yarn --no-progress --non-interactive
     yarn run --no-progress --non-interactive build
 fi
