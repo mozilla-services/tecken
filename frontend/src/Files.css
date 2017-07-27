@@ -1,0 +1,11 @@
+table.metadata-table {
+  color: red;
+  margin-bottom: 0;
+}
+
+table.metadata-table th,
+table.metadata-table td {
+  font-size: 90%;
+  padding: 0.3em 0.5em;
+
+}

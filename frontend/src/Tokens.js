@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { toDate, isBefore, formatDistanceStrict } from 'date-fns/esm'
 
 import { Loading } from './Common'
+import Fetch from './Fetch'
 import store from './Store'
 
 class Tokens extends Component {
@@ -16,15 +17,19 @@ class Tokens extends Component {
       permissions: null
     }
   }
+
+  componentWillMount() {
+    store.resetApiRequests()
+  }
+
   componentDidMount() {
     document.title = this.pageTitle
-
     this._fetchTokens()
   }
 
   _fetchTokens = () => {
     this.setState({ loading: true })
-    fetch('/api/tokens/', { credentials: 'same-origin' }).then(r => {
+    Fetch('/api/tokens/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -44,7 +49,7 @@ class Tokens extends Component {
   }
 
   deleteToken = id => {
-    fetch(`/api/tokens/${id}`, {
+    Fetch(`/api/tokens/${id}`, {
       method: 'DELETE',
       credentials: 'same-origin'
     }).then(r => {
@@ -63,7 +68,9 @@ class Tokens extends Component {
   render() {
     return (
       <div>
-        <h1 className="title">{this.pageTitle}</h1>
+        <h1 className="title">
+          {this.pageTitle}
+        </h1>
         {this.state.loading && <Loading />}
 
         {this.state.permissions && !this.state.permissions.length
@@ -137,7 +144,7 @@ class CreateTokenForm extends Component {
     formData.append('permissions', permissions)
     formData.append('expires', expires)
     formData.append('notes', notes.trim())
-    return fetch('/api/tokens/', {
+    return Fetch('/api/tokens/', {
       method: 'POST',
       body: formData,
       credentials: 'same-origin'

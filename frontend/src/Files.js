@@ -1,29 +1,28 @@
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
 
-import { format } from 'date-fns/esm'
-
 import queryString from 'query-string'
 import {
   Loading,
   DisplayDate,
-  DisplayDateDifference,
   formatFileSize,
   Pagination,
+  BooleanIcon,
   TableSubTitle
 } from './Common'
 import Fetch from './Fetch'
-import './Uploads.css'
+import './Upload.css' // they have enough in common
+import './Files.css'
 
 import store from './Store'
 
-class Uploads extends Component {
+class Files extends Component {
   constructor(props) {
     super(props)
-    this.pageTitle = 'Uploads'
+    this.pageTitle = 'Files Uploaded'
     this.state = {
       loading: true, // undone by componentDidMount
-      uploads: null,
+      files: null,
       total: null,
       batchSize: null,
       apiUrl: null,
@@ -41,20 +40,20 @@ class Uploads extends Component {
       this.setState(
         { filter: queryString.parse(this.props.location.search) },
         () => {
-          this._fetchUploads(false)
+          this._fetchFiles(false)
         }
       )
     } else {
-      this._fetchUploads(false)
+      this._fetchFiles(false)
     }
   }
 
-  _fetchUploads = (updateHistory = true) => {
+  _fetchFiles = (updateHistory = true) => {
     // delay the loading animation in case it loads really fast
     this.setLoadingTimer = window.setTimeout(() => {
       this.setState({ loading: true })
     }, 500)
-    let url = '/api/uploads/'
+    let url = '/api/uploads/files'
     let qs = ''
     if (Object.keys(this.state.filter).length) {
       qs = '?' + queryString.stringify(this.state.filter)
@@ -75,7 +74,7 @@ class Uploads extends Component {
         }
         return r.json().then(response => {
           this.setState({
-            uploads: response.uploads,
+            files: response.files,
             total: response.total,
             batchSize: response.batch_size
           })
@@ -89,15 +88,20 @@ class Uploads extends Component {
   filterOnAll = event => {
     event.preventDefault()
     const filter = this.state.filter
-    delete filter.user
-    this.setState({ filter: filter }, this._fetchUploads)
+    // delete filter.user
+    delete filter.download
+    filter.page = 1
+    filter.key = ''
+    filter.size = ''
+    this.setState({ filter: filter }, this._fetchFiles)
   }
 
-  filterOnYours = event => {
+  filterOnMicrosoftDownloads = event => {
     event.preventDefault()
     const filter = this.state.filter
-    filter.user = store.currentUser.email
-    this.setState({ filter: filter }, this._fetchUploads)
+    filter.download = 'microsoft'
+    filter.page = 1
+    this.setState({ filter: filter }, this._fetchFiles)
   }
 
   updateFilter = newFilters => {
@@ -105,7 +109,7 @@ class Uploads extends Component {
       {
         filter: Object.assign({}, this.state.filter, newFilters)
       },
-      this._fetchUploads
+      this._fetchFiles
     )
   }
 
@@ -115,21 +119,25 @@ class Uploads extends Component {
         {store.hasPermission('view_all_uploads')
           ? <div className="tabs is-centered">
               <ul>
-                <li className={!this.state.filter.user && 'is-active'}>
-                  <Link to="/uploads" onClick={this.filterOnAll}>
-                    All Uploads
+                <li className={!this.state.filter.download && 'is-active'}>
+                  <Link to="/uploads/files" onClick={this.filterOnAll}>
+                    All Files
                   </Link>
                 </li>
-                <li className={this.state.filter.user && 'is-active'}>
+                <li
+                  className={
+                    this.state.filter.download === 'microsoft' && 'is-active'
+                  }
+                >
                   <Link
-                    to={`/uploads?user=${store.currentUser.email}`}
-                    onClick={this.filterOnYours}
+                    to="/uploads/files?download=microsoft"
+                    onClick={this.filterOnMicrosoftDownloads}
                   >
-                    Your Uploads
+                    Microsoft Download Files
                   </Link>
                 </li>
                 <li className={false && 'is-active'}>
-                  <Link to="/uploads/files">All Files</Link>
+                  <Link to="/uploads">All Uploads</Link>
                 </li>
               </ul>
             </div>
@@ -146,9 +154,9 @@ class Uploads extends Component {
               batchSize={this.state.batchSize}
             />}
 
-        {this.state.uploads &&
-          <DisplayUploads
-            uploads={this.state.uploads}
+        {this.state.files &&
+          <DisplayFiles
+            files={this.state.files}
             total={this.state.total}
             batchSize={this.state.batchSize}
             location={this.props.location}
@@ -160,83 +168,66 @@ class Uploads extends Component {
   }
 }
 
-export default Uploads
+export default Files
 
-class DisplayUploads extends Component {
+class DisplayFiles extends Component {
   componentDidMount() {
     // XXX perhaps this stuff should happen in a componentWillReceiveProps too
     const filter = this.props.filter
-    this.refs.user.value = filter.user || ''
+    this.refs.key.value = filter.key || ''
     this.refs.size.value = filter.size || ''
-    this.refs.created_at.value = filter.created_at || ''
-    this.refs.completed_at.value = filter.completed_at || ''
+    this.refs.bucketName.value = filter.bucket_name || ''
+    // this.refs.created_at.value = filter.created_at || ''
+    // this.refs.completed_at.value = filter.completed_at || ''
   }
 
   submitForm = event => {
     event.preventDefault()
-    const user = this.refs.user.value.trim()
+    const key = this.refs.key.value.trim()
     const size = this.refs.size.value.trim()
-    const created_at = this.refs.created_at.value.trim()
-    const completed_at = this.refs.completed_at.value.trim()
+    const bucketName = this.refs.bucketName.value.trim()
+    // const created_at = this.refs.created_at.value.trim()
+    // const completed_at = this.refs.completed_at.value.trim()
     this.props.updateFilter({
-      user,
+      key,
       size,
-      created_at,
-      completed_at
+      bucket_name: bucketName,
+      page: 1
     })
   }
 
   resetFilter = event => {
-    this.refs.user.value = ''
+    this.refs.key.value = ''
     this.refs.size.value = ''
-    this.refs.created_at.value = ''
-    this.refs.completed_at.value = ''
+    this.refs.bucketName.value = ''
+    // this.refs.created_at.value = ''
+    // this.refs.completed_at.value = ''
     this.submitForm(event)
-    this.props.updateFilter({ page: 1 })
+    this.props.updateFilter({ download: '' })
   }
   render() {
-    const { uploads } = this.props
+    const { files } = this.props
 
-    const todayStr = format(new Date(), 'YYYY-MM-DD')
-    const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
-    // if (!uploads.length) {
-    //   return (
-    //     <p>
-    //       <i>No uploads found.</i>
-    //     </p>
-    //   )
-    // }
+    // const todayStr = format(new Date(), 'YYYY-MM-DD')
+    // const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
     return (
       <form onSubmit={this.submitForm}>
-        <table className="table">
+        <table className="table files-table">
           <thead>
             <tr>
-              <th>Files</th>
-              <th>User</th>
+              <th>Key</th>
               <th>Size</th>
-              <th>Uploaded</th>
-              <th>Completed</th>
+              <th>Bucket Name</th>
+              <th>Metadata</th>
             </tr>
           </thead>
           <tfoot>
             <tr>
               <td>
-                <button type="submit" className="button is-primary">
-                  Filter Uploads
-                </button>{' '}
-                <button
-                  type="button"
-                  onClick={this.resetFilter}
-                  className="button"
-                >
-                  Reset Filter
-                </button>
-              </td>
-              <td>
                 <input
                   type="text"
                   className="input"
-                  ref="user"
+                  ref="key"
                   placeholder="filter..."
                 />
               </td>
@@ -253,52 +244,77 @@ class DisplayUploads extends Component {
                 <input
                   type="text"
                   className="input"
-                  ref="created_at"
+                  ref="bucketName"
                   placeholder="filter..."
                 />
               </td>
               <td>
-                <input
-                  type="text"
-                  className="input"
-                  ref="completed_at"
-                  placeholder="filter..."
-                />
+                <button type="submit" className="button is-primary">
+                  Filter Files
+                </button>{' '}
+                <button
+                  type="button"
+                  onClick={this.resetFilter}
+                  className="button"
+                >
+                  Reset Filter
+                </button>
               </td>
             </tr>
           </tfoot>
           <tbody>
-            {uploads.map(upload =>
-              <tr key={upload.id}>
+            {files.map(file =>
+              <tr key={file.id}>
                 <td>
-                  <Link
-                    to={`/uploads/upload/${upload.id}`}
-                    title="Click to see detailed information about all uploads"
-                  >
-                    {DisplayFilesSummary(
-                      upload.files_count,
-                      upload.skipped_keys.length,
-                      upload.ignored_keys.length
-                    )}
-                  </Link>
+                  {file.key}
                 </td>
                 <td>
-                  {upload.user.email}
+                  {formatFileSize(file.size)}
                 </td>
                 <td>
-                  {formatFileSize(upload.size)}
+                  {file.bucket_name}
                 </td>
                 <td>
-                  <DisplayDate date={upload.created_at} />
-                </td>
-                <td>
-                  {upload.completed_at
-                    ? <DisplayDateDifference
-                        from={upload.created_at}
-                        to={upload.completed_at}
-                        suffix="after"
-                      />
-                    : <i>Incomplete!</i>}
+                  <table className="table metadata-table">
+                    <tbody>
+                      <tr>
+                        <th>Upload</th>
+                        <td colSpan={6}>
+                          {file.upload
+                            ? <Link to={`/uploads/upload/${file.upload.id}`}>
+                                <DisplayDate date={file.upload.created_at} />
+                                {' by '}
+                                {file.upload.user.email}
+                              </Link>
+                            : <i>n/a</i>}
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>Date</th>
+                        <td colSpan={6}>
+                          <DisplayDate date={file.completed_at} />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th title="Did it replace an existing file">Update</th>
+                        <td>
+                          {BooleanIcon(file.update)}
+                        </td>
+                        <th title="Was it gzip compressed before upload">
+                          Compressed
+                        </th>
+                        <td>
+                          {BooleanIcon(file.compressed)}
+                        </td>
+                        <th title="Was it uploaded by the Microsoft Download job">
+                          Microsoft
+                        </th>
+                        <td>
+                          {BooleanIcon(file.microsoft_download)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
               </tr>
             )}
@@ -313,7 +329,7 @@ class DisplayUploads extends Component {
           currentPage={this.props.filter.page}
         />
 
-        <article className="message" style={{ marginTop: 50 }}>
+        {/* <article className="message" style={{ marginTop: 50 }}>
           <div className="message-body">
             <h4 className="title is-4">Examples of Filtering</h4>
             <ul>
@@ -339,11 +355,8 @@ class DisplayUploads extends Component {
               </li>
             </ul>
           </div>
-        </article>
+        </article> */}
       </form>
     )
   }
 }
-
-const DisplayFilesSummary = (files, skipped, ignored) =>
-  `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`

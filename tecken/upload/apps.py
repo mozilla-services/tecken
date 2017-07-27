@@ -15,14 +15,22 @@ def create_default_groups(sender, **kwargs):
     # And if the group didn't exist, make sure it has the "Can add upload"
     # permission.
     from django.contrib.auth.models import Group, Permission
-    try:
-        Group.objects.get(name='Uploaders')
-    except Group.DoesNotExist:
-        group = Group.objects.create(name='Uploaders')
+
+    name = 'Uploaders'
+    if not Group.objects.filter(name=name).exists():
+        group = Group.objects.create(name=name)
         group.permissions.add(
             Permission.objects.get(codename='upload_symbols')
         )
-        logger.info('Group "Uploaders" created')
+        logger.info(f'Group "{name}" created')
+
+    name = 'Upload Auditors'
+    if not Group.objects.filter(name=name).exists():
+        group = Group.objects.create(name=name)
+        group.permissions.add(
+            Permission.objects.get(codename='view_all_uploads')
+        )
+        logger.info(f'Group "{name}" created')
 
 
 class UploadAppConfig(AppConfig):

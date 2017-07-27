@@ -13,9 +13,13 @@ import Home from './Home'
 import Help from './Help'
 import Tokens from './Tokens'
 import Uploads from './Uploads'
+import Upload from './Upload'
+import Files from './Files'
 import Users from './Users'
 import User from './User'
 import FetchError from './FetchError'
+import Fetch from './Fetch'
+import DisplayAPIRequests from './APIRequests'
 import store from './Store'
 
 const App = observer(
@@ -27,7 +31,7 @@ const App = observer(
       }
     }
     componentWillMount() {
-      fetch('/api/auth/', { credentials: 'same-origin' }).then(r => {
+      Fetch('/api/auth/', { credentials: 'same-origin' }).then(r => {
         if (r.status === 200) {
           if (store.fetchError) {
             store.fetchError = null
@@ -70,7 +74,7 @@ const App = observer(
 
     signOut = event => {
       event.preventDefault()
-      fetch(store.signOutUrl, {
+      Fetch(store.signOutUrl, {
         method: 'POST',
         credentials: 'same-origin'
       }).then(r => {
@@ -154,14 +158,18 @@ const App = observer(
               </div>
             </nav>
             <section className="section">
-              <div className="container content">
+              <div className="container">
                 <FetchError error={store.fetchError} />
                 <Route path="/" exact component={Home} />
                 <Route path="/help" component={Help} />
                 <Route path="/tokens" component={Tokens} />
-                <Route path="/uploads" component={Uploads} />
+                <Route path="/uploads/files" exact component={Files} />
+                <Route path="/uploads/upload/:id" component={Upload} />
+                <Route path="/uploads" exact component={Uploads} />
                 <Route path="/users/:id" component={User} />
                 <Route path="/users" exact component={Users} />
+
+                <DisplayAPIRequests />
               </div>
             </section>
             <footer className="footer">

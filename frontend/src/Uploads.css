@@ -1,0 +1,8 @@
+table.upload-metadata {
+  font-size: 80%;
+}
+
+table.upload-metadata th,
+table.upload-metadata td {
+  padding: 0.3em 0.5em;
+}
