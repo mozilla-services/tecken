@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import { Redirect, Link } from 'react-router-dom'
 
 import { Loading } from './Common'
+import Fetch from './Fetch'
 import store from './Store'
 
 export default class User extends Component {
@@ -15,6 +16,10 @@ export default class User extends Component {
       redirectTo: null
     }
   }
+  componentWillMount() {
+    store.resetApiRequests()
+  }
+
   componentDidMount() {
     document.title = this.pageTitle
     this._fetchUser(this.props.match.params.id)
@@ -22,7 +27,7 @@ export default class User extends Component {
 
   _fetchUser = id => {
     this.setState({ loading: true })
-    fetch(`/api/users/${id}`, { credentials: 'same-origin' }).then(r => {
+    Fetch(`/api/users/${id}`, { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -67,8 +72,8 @@ export default class User extends Component {
             editUser={this.editUser}
             userSaved={this.goBack}
           />}
-        <hr/>
-        {this.state.groups && <ExplainGroups groups={this.state.groups}/>}
+        <hr />
+        {this.state.groups && <ExplainGroups groups={this.state.groups} />}
       </div>
     )
   }
@@ -208,39 +213,43 @@ class EditUserForm extends Component {
   }
 }
 
-
 const ExplainGroups = ({ groups }) => {
   return (
-      <div className="container">
-        <h1 className="title">Groups</h1>
-        <p>
-          Every action requires a <b>permission</b> but to give users permissions,
-          this is done by putting the user in <b>groups</b> that <i>contain</i> permissions.
-        </p>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Group Name</th>
-              <th>Permissions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {
-              groups.map(group => {
-                return <tr key={group.id}>
-                  <td>{group.name}</td>
-                  <td>
-                    <ul style={{marginTop: 0}}>
-                      {
-                        group.permissions.map(p => <li key={p.id}>{p.name}</li>)
-                      }
-                    </ul>
-                  </td>
-                </tr>
-              })
-            }
-          </tbody>
-        </table>
-      </div>
-    )
+    <div className="container">
+      <h1 className="title">Groups</h1>
+      <p>
+        Every action requires a <b>permission</b> but to give users permissions,
+        this is done by putting the user in <b>groups</b> that <i>contain</i>{' '}
+        permissions.
+      </p>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Group Name</th>
+            <th>Permissions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map(group => {
+            return (
+              <tr key={group.id}>
+                <td>
+                  {group.name}
+                </td>
+                <td>
+                  <ul style={{ marginTop: 0 }}>
+                    {group.permissions.map(p =>
+                      <li key={p.id}>
+                        {p.name}
+                      </li>
+                    )}
+                  </ul>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
 }

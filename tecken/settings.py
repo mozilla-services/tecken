@@ -485,6 +485,11 @@ class Base(Core):
     # how docker/build_dump_syms.sh works.
     DUMP_SYMS_PATH = values.Value('/dump_syms/dump_syms')
 
+    # How many uploads to display per page when paginating through
+    # past uploads.
+    API_UPLOADS_BATCH_SIZE = 20
+    API_FILES_BATCH_SIZE = 20
+
 
 class Localdev(Base):
     """Configuration to be used during local development and base class
@@ -561,6 +566,11 @@ class Localdev(Base):
         #     'class': 'tecken.markus_extra.CacheMetrics',
         # },
     ]
+
+    # Set these to smaller numbers for the sake of more easily testing
+    # pagination in local development.
+    API_UPLOADS_BATCH_SIZE = 5
+    API_FILES_BATCH_SIZE = 5
 
 
 class Test(Localdev):

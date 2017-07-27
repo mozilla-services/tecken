@@ -29,6 +29,11 @@ class Token(models.Model):
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        permissions = (
+            ('manage_tokens', 'Manage Your API Tokens'),
+        )
+
     @property
     def is_expired(self):
         return self.expires_at < timezone.now()

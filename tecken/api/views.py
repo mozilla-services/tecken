@@ -6,17 +6,24 @@ import datetime
 import logging
 
 from django import http
+from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission, User, Group
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
 
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload
+from tecken.upload.models import Upload, FileUpload
 from tecken.base.decorators import api_login_required, api_permission_required
-from .forms import TokenForm, UserEditForm
+from .forms import (
+    TokenForm,
+    UserEditForm,
+    UploadsForm,
+    FileUploadsForm,
+    PaginationForm,
+)
 
 logger = logging.getLogger('tecken')
 
@@ -28,7 +35,18 @@ def auth(request):
             'email': request.user.email,
             'is_active': request.user.is_active,
             'is_superuser': request.user.is_superuser,
+            'permissions': [],
         }
+        possible_permissions = (
+            'upload.view_all_uploads',
+            'upload.upload_symbols',
+            'tokens.manage_tokens',
+        )
+        for name in possible_permissions:
+            if request.user.has_perm(name):
+                context['user']['permissions'].append(name.split('.')[-1])
+
+        # do we need to add the one for managing tokens?
         context['sign_out_url'] = request.build_absolute_uri(
             reverse('oidc_logout')
         )
@@ -41,6 +59,7 @@ def auth(request):
 
 
 @api_login_required
+@api_permission_required('tokens.manage_tokens')
 def tokens(request):
 
     def serialize_permissions(permissions):
@@ -55,11 +74,15 @@ def tokens(request):
     all_permissions = (
         Permission.objects.get(codename='upload_symbols'),
         Permission.objects.get(codename='view_all_uploads'),
+        Permission.objects.get(codename='manage_tokens'),
     )
     all_user_permissions = request.user.get_all_permissions()
     possible_permissions = [
         x for x in all_permissions
-        if f'{x.content_type}.{x.codename}' in all_user_permissions
+        if (
+            f'{x.content_type}.{x.codename}' in all_user_permissions or
+            request.user.is_superuser
+        )
     ]
 
     if request.method == 'POST':
@@ -212,4 +235,268 @@ def edit_user(request, id):
     context['groups'] = [
         _serialize_group(x) for x in Group.objects.all()
     ]
+    return http.JsonResponse(context)
+
+
+@api_login_required
+def uploads(request):
+    context = {
+        'uploads': [],
+        'can_view_all': request.user.has_perm('upload.view_all_uploads'),
+    }
+
+    form = UploadsForm(request.GET)
+    if not form.is_valid():
+        return http.JsonResponse({'errors': form.errors}, status=400)
+
+    pagination_form = PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse(
+            {'errors': pagination_form.errors},
+            status=400
+        )
+
+    qs = Upload.objects.all()
+    # Force the filtering to *your* symbols unless you have the
+    # 'view_all_uploads' permission.
+    if context['can_view_all']:
+        if form.cleaned_data['user']:
+            qs = qs.filter(user=form.cleaned_data['user'])
+    else:
+        qs = qs.filter(user=request.user)
+    orm_operators = {
+        '<=': 'lte',
+        '>=': 'gte',
+        '=': 'exact',
+        '<': 'lt',
+        '>': 'gt',
+    }
+    for operator, value in form.cleaned_data['size']:
+        orm_operator = 'size__{}'.format(
+            orm_operators[operator]
+        )
+        qs = qs.filter(**{orm_operator: value})
+    for key in ('created_at', 'completed_at'):
+        for operator, value in form.cleaned_data.get(key, []):
+            if value is None:
+                orm_operator = f'{key}__isnull'
+                qs = qs.filter(**{orm_operator: True})
+            elif operator == '=' and value.hour == 0 and value.minute == 0:
+                # When querying on a specific day, make it a little easier
+                qs = qs.filter(**{
+                    f'{key}__gte': value,
+                    f'{key}__lt': value + datetime.timedelta(days=1),
+                })
+            else:
+                orm_operator = '{}__{}'.format(
+                    key,
+                    orm_operators[operator]
+                )
+                qs = qs.filter(**{orm_operator: value})
+
+    qs = qs.select_related('user')
+
+    batch_size = settings.API_UPLOADS_BATCH_SIZE
+
+    page = pagination_form.cleaned_data['page']
+    start = (page - 1) * batch_size
+    end = start + batch_size
+
+    rows = []
+    for upload in qs.order_by('-created_at')[start:end]:
+        rows.append({
+            'id': upload.id,
+            'user': {
+                'email': upload.user.email,
+            },
+            'filename': upload.filename,
+            'size': upload.size,
+            'bucket_name': upload.bucket_name,
+            'bucket_region': upload.bucket_region,
+            'bucket_endpoint_url': upload.bucket_endpoint_url,
+            'inbox_key': upload.inbox_key,
+            'skipped_keys': upload.skipped_keys or [],
+            'ignored_keys': upload.ignored_keys or [],
+            'completed_at': upload.completed_at,
+            'created_at': upload.created_at,
+        })
+    # Make a FileUpload aggregate count on these uploads
+    file_upload_counts = FileUpload.objects.filter(
+        upload_id__in=[x['id'] for x in rows]
+    ).values('upload').annotate(count=Count('upload'))
+    # Convert it to a dict
+    file_upload_counts_map = {
+        x['upload']: x['count'] for x in file_upload_counts
+    }
+    for upload in rows:
+        upload['files_count'] = file_upload_counts_map.get(upload['id'], 0)
+
+    context['uploads'] = rows
+    context['total'] = qs.count()
+    context['batch_size'] = batch_size
+
+    return http.JsonResponse(context)
+
+
+@api_login_required
+def upload(request, id):
+    obj = get_object_or_404(Upload, id=id)
+    # You're only allowed to see this if it's yours or you have the
+    # 'view_all_uploads' permission.
+    if not (
+        obj.user == request.user or
+        request.user.has_perm('upload.view_all_uploads')
+    ):
+        return http.JsonResponse({
+            'error': 'Insufficient access to view this upload'
+        }, status=403)
+
+    upload_dict = {
+        'id': obj.id,
+        'filename': obj.filename,
+        'user': {
+            'id': obj.user.id,
+            'email': obj.user.email,
+        },
+        'size': obj.size,
+        'bucket_name': obj.bucket_name,
+        'bucket_region': obj.bucket_region,
+        'bucket_endpoint_url': obj.bucket_endpoint_url,
+        'inbox_key': obj.inbox_key,
+        'skipped_keys': obj.skipped_keys or [],
+        'ignored_keys': obj.ignored_keys or [],
+        'completed_at': obj.completed_at,
+        'created_at': obj.created_at,
+        'file_uploads': [],
+    }
+    file_uploads_qs = FileUpload.objects.filter(upload=obj)
+    for file_upload in file_uploads_qs.order_by('created_at'):
+        upload_dict['file_uploads'].append({
+            'id': file_upload.id,
+            'bucket_name': file_upload.bucket_name,
+            'key': file_upload.key,
+            'update': file_upload.update,
+            'compressed': file_upload.compressed,
+            'size': file_upload.size,
+            'microsoft_download': file_upload.microsoft_download,
+            'completed_at': file_upload.completed_at,
+            'created_at': file_upload.created_at,
+        })
+    context = {
+        'upload': upload_dict,
+    }
+    return http.JsonResponse(context)
+
+
+@api_login_required
+@api_permission_required('upload.view_all_uploads')
+def upload_files(request):
+    pagination_form = PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse(
+            {'errors': pagination_form.errors},
+            status=400
+        )
+    page = pagination_form.cleaned_data['page']
+
+    form = FileUploadsForm(request.GET)
+    if not form.is_valid():
+        return http.JsonResponse({'errors': form.errors}, status=400)
+
+    qs = FileUpload.objects.all()
+    orm_operators = {
+        '<=': 'lte',
+        '>=': 'gte',
+        '=': 'exact',
+        '<': 'lt',
+        '>': 'gt',
+    }
+    for operator, value in form.cleaned_data['size']:
+        orm_operator = 'size__{}'.format(
+            orm_operators[operator]
+        )
+        qs = qs.filter(**{orm_operator: value})
+    for key in ('created_at', 'completed_at'):
+        for operator, value in form.cleaned_data.get(key, []):
+            if value is None:
+                orm_operator = f'{key}__isnull'
+                qs = qs.filter(**{orm_operator: True})
+            elif operator == '=' and value.hour == 0 and value.minute == 0:
+                # When querying on a specific day, make it a little easier
+                qs = qs.filter(**{
+                    f'{key}__gte': value,
+                    f'{key}__lt': value + datetime.timedelta(days=1),
+                })
+            else:
+                orm_operator = '{}__{}'.format(
+                    key,
+                    orm_operators[operator]
+                )
+                qs = qs.filter(**{orm_operator: value})
+    if form.cleaned_data.get('key'):
+        key_q = Q(key__icontains=form.cleaned_data['key'][0])
+        for other in form.cleaned_data['key'][1:]:
+            key_q &= Q(key__icontains=other)
+        qs = qs.filter(key_q)
+    if form.cleaned_data['download']:
+        if form.cleaned_data['download'] == 'microsoft':
+            qs = qs.filter(microsoft_download=True)
+    if form.cleaned_data.get('bucket_name'):
+        qs = qs.filter(bucket_name__in=form.cleaned_data.get('bucket_name'))
+
+    files = []
+    batch_size = settings.API_FILES_BATCH_SIZE
+    start = (page - 1) * batch_size
+    end = start + batch_size
+
+    upload_ids = set()
+    for file_upload in qs.order_by('-created_at')[start:end]:
+        files.append({
+            'id': file_upload.id,
+            'key': file_upload.key,
+            'update': file_upload.update,
+            'compressed': file_upload.compressed,
+            'microsoft_download': file_upload.microsoft_download,
+            'size': file_upload.size,
+            'bucket_name': file_upload.bucket_name,
+            'completed_at': file_upload.completed_at,
+            'created_at': file_upload.created_at,
+            'upload': file_upload.upload_id,
+        })
+        if file_upload.upload_id:
+            upload_ids.add(file_upload.upload_id)
+
+    uploads = {
+        x.id: x
+        for x in Upload.objects.filter(
+            id__in=upload_ids
+        ).select_related('user')
+    }
+
+    uploads_cache = {}
+
+    def hydrate_upload(upload_id):
+        if upload_id:
+            if upload_id not in uploads_cache:
+                upload = uploads[upload_id]
+                uploads_cache[upload_id] = {
+                    'id': upload.id,
+                    'user': {
+                        'id': upload.user.id,
+                        'email': upload.user.email,
+                    },
+                    'created_at': upload.created_at,
+                }
+            return uploads_cache[upload_id]
+
+    for file_upload in files:
+        file_upload['upload'] = hydrate_upload(file_upload['upload'])
+
+    total = qs.count()
+    context = {
+        'files': files,
+        'total': total,
+        'batch_size': batch_size,
+    }
+
     return http.JsonResponse(context)

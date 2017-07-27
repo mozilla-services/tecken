@@ -320,35 +320,35 @@ class MetricsLines extends Component {
         : null
       }
       <div className="metricsline">
-        <h3>Hits and Misses</h3>
+        <h3 className="title">Hits and Misses</h3>
         <Line
           data={this.state.hits}
           options={this.hitsOptions}/>
       </div>
       <div className="metricsline">
-        <h3>Hit Ratio</h3>
+        <h3 className="title">Hit Ratio</h3>
         <Line
           data={this.state.hitRatio}
           options={this.hitRatioOptions}/>
       </div>
       <div className="metricsline">
-        <h3>Keys</h3>
+        <h3 className="title">Keys</h3>
         <Line
           data={this.state.keys}
           options={this.baseOptions}/>
       </div>
       <div className="metricsline">
-        <h3>Max Memory</h3>
+        <h3 className="title">Max Memory</h3>
         <Line
           data={this.state.maxmemory}
           options={this.maxmemoryOptions}/>
       </div>
       <div className="metricsline">
-        <h3>Storage</h3>
+        <h3 className="title">Storage</h3>
         <Number
           number={this.state.stored}/>
         <small>Total amount of data written to the LRU cache</small>
-        <h3>Retrieved</h3>
+        <h3 className="title">Retrieved</h3>
         <Number
           number={this.state.retrieved}/>
         <small>Total amount of data extracted out of the LRU cache</small>

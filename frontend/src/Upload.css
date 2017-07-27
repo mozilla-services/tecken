@@ -1,0 +1,14 @@
+th.bool-row {
+  max-width: 40px;
+  overflow: hidden;
+  text-overflow: hidden;
+  white-space: nowrap;
+}
+
+
+table.files-table th,
+table.files-table td {
+  font-size: 90%;
+}
+
+dl dt { font-weight: bold; }

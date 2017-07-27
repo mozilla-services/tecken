@@ -1,9 +1,8 @@
 import React, { Component } from 'react'
 import { Redirect } from 'react-router-dom'
 
-import { toDate, isBefore, formatDistance } from 'date-fns/esm'
-
-import { Loading } from './Common'
+import { Loading, DisplayDate } from './Common'
+import Fetch from './Fetch'
 import store from './Store'
 
 class Users extends Component {
@@ -16,6 +15,10 @@ class Users extends Component {
       redirectTo: null
     }
   }
+  componentWillMount() {
+    store.resetApiRequests()
+  }
+
   componentDidMount() {
     document.title = this.pageTitle
     this._fetchUsers()
@@ -23,7 +26,7 @@ class Users extends Component {
 
   _fetchUsers = () => {
     this.setState({ loading: true })
-    fetch('/api/users/', { credentials: 'same-origin' }).then(r => {
+    Fetch('/api/users/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -195,24 +198,6 @@ class DisplayUsers extends Component {
           })}
         </tbody>
       </table>
-    )
-  }
-}
-
-const DisplayDate = ({ date }) => {
-  const dateObj = toDate(date)
-  const now = new Date()
-  if (isBefore(dateObj, now)) {
-    return (
-      <span>
-        {formatDistance(date, now)} ago
-      </span>
-    )
-  } else {
-    return (
-      <span>
-        in {formatDistance(date, now)}
-      </span>
     )
   }
 }

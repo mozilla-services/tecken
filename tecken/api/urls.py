@@ -26,6 +26,21 @@ urlpatterns = [
         name='delete_token'
     ),
     url(
+        r'uploads/$',
+        views.uploads,
+        name='uploads'
+    ),
+    url(
+        r'uploads/files$',
+        views.upload_files,
+        name='upload_files'
+    ),
+    url(
+        r'uploads/upload/(?P<id>\d+)$',
+        views.upload,
+        name='upload'
+    ),
+    url(
         r'users/$',
         views.users,
         name='users'
