@@ -1,23 +1,24 @@
-.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell stop test run django-shell docs psql build-frontend
+.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell currentshell stop test run django-shell docs psql build-frontend
 
 help:
 	@echo "Welcome to the tecken\n"
 	@echo "The list of commands for local development:\n"
-	@echo "  build        Builds the docker images for the docker-compose setup"
-	@echo "  ci           Run the test with the CI specific Docker setup"
-	@echo "  clean        Stops and removes all docker containers"
-	@echo "  migrate      Runs the Django database migrations"
+	@echo "  build            Builds the docker images for the docker-compose setup"
+	@echo "  ci               Run the test with the CI specific Docker setup"
+	@echo "  clean            Stops and removes all docker containers"
+	@echo "  migrate          Runs the Django database migrations"
 	@echo "  redis-cache-cli  Opens a Redis CLI to the cache Redis server"
 	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
-	@echo "  shell        Opens a Bash shell"
-	@echo "  test         Runs the Python test suite"
-	@echo "  run          Runs the whole stack, served on http://localhost:8000/"
-	@echo "  gunicorn     Runs the whole stack using gunicorn on http://localhost:8000/"
-	@echo "  stop         Stops the docker containers"
-	@echo "  systemtest   Run system tests against a running tecken"
-	@echo "  django-shell Django integrative shell"
-	@echo "  psql         Open the psql cli"
-	@echo "  build-frontend  Builds the frontend static files\n"
+	@echo "  shell            Opens a Bash shell"
+	@echo "  currentshell     Opens a Bash shell into existing running 'web' container"
+	@echo "  test             Runs the Python test suite"
+	@echo "  run              Runs the whole stack, served on http://localhost:8000/"
+	@echo "  gunicorn         Runs the whole stack using gunicorn on http://localhost:8000/"
+	@echo "  stop             Stops the docker containers"
+	@echo "  systemtest       Run system tests against a running tecken"
+	@echo "  django-shell     Django integrative shell"
+	@echo "  psql             Open the psql cli"
+	@echo "  build-frontend   Builds the frontend static files\n"
 
 # Dev configuration steps
 .docker-build:
