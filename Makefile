@@ -63,7 +63,7 @@ test: .env .docker-build
 	@bin/test.sh
 
 run: .env .docker-build
-	docker-compose up web worker frontend
+	docker-compose up localstack-s3 statsd web worker frontend
 
 gunicorn: .env .docker-build
 	docker-compose run --service-ports web web
