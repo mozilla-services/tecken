@@ -10,12 +10,6 @@ app_name = 'symbolicate'
 
 urlpatterns = [
     url(
-        'metrics',
-        views.metrics_insight,
-        name='metrics',
-    ),
-    # must be last
-    url(
         r'v4',
         views.symbolicate_json,
         name='symbolicate_json'

@@ -16,10 +16,9 @@ from django_redis import get_redis_connection
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.core.cache import cache, caches
+from django.core.cache import caches
 from django.views.decorators.csrf import csrf_exempt
 from django.template.defaultfilters import filesizeformat as dj_filesizeformat
-from django.core.exceptions import ImproperlyConfigured
 
 from tecken.base.symboldownloader import (
     SymbolDownloader,
@@ -49,17 +48,6 @@ class SymbolFileEmpty(Exception):
     entirely empty."""
 
 
-class LogCacheHitsMixin:
-    """Mixing for storing information about cache hits and misses.
-    """
-
-    def log_symbol_cache_miss(self):
-        metrics.incr('cache_miss', 1)
-
-    def log_symbol_cache_hit(self):
-        metrics.incr('cache_hit', 1)
-
-
 class JsonResponse(HttpResponse):
     """
     An "overwrite" of django.http.JsonResponse that uses "our"
@@ -83,7 +71,7 @@ class JsonResponse(HttpResponse):
         super().__init__(content=data, **kwargs)
 
 
-class SymbolicateJSON(LogCacheHitsMixin):
+class SymbolicateJSON:
     def __init__(self, stacks, memory_map, debug=False):
         self.stacks = stacks
         self.memory_map = memory_map
@@ -304,7 +292,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
             symbol_map = many.get(cache_key)
             if symbol_map is None:  # not existant in cache
                 # Need to download this from the Internet.
-                self.log_symbol_cache_miss()
+                metrics.incr('symbolicate_cache_miss', 1)
                 # If the symbols weren't in the cache, this will be dealt
                 # with later by this method's caller.
             else:
@@ -317,7 +305,7 @@ class SymbolicateJSON(LogCacheHitsMixin):
                     information['symbol_map'] = {}
                     information['found'] = False
                 else:
-                    self.log_symbol_cache_hit()
+                    metrics.incr('symbolicate_cache_hit', 1)
                     # If it was in cache, that means it was originally found.
                     information['symbol_map'] = symbol_map
                     information['found'] = True
@@ -503,45 +491,3 @@ def symbolicate_json(request):
         debug=request._request_debug,
     )
     return JsonResponse(symbolicator.result)
-
-
-def metrics_insight(request):
-    markus_backend_classes = [x['class'] for x in settings.MARKUS_BACKENDS]
-    if 'tecken.markus_extra.CacheMetrics' not in markus_backend_classes:  # noqa
-        raise ImproperlyConfigured(
-            'It only makes sense to use this view when you have configured '
-            "to use the 'tecken.markus_extra.CacheMetrics' backend."
-        )
-
-    count_keys = len(list(store.iter_keys('symbol:*')))
-    sum_hits = cache.get('tecken.cache_hit', 0)
-    sum_misses = cache.get('tecken.cache_miss', 0)
-
-    sum_stored = cache.get('tecken.storing_symbol')
-    sum_retrieved = cache.get('tecken.retrieving_symbol')
-
-    context = {}
-    context['keys'] = count_keys
-    context['hits'] = sum_hits
-    context['misses'] = sum_misses
-    if sum_hits or sum_misses:
-        context['ratio_of_hits'] = sum_hits / (sum_hits + sum_misses)
-        context['percent_of_hits'] = 100 * context['ratio_of_hits']
-
-    context['retrieved'] = sum_retrieved,
-    context['stored'] = sum_stored
-
-    redis_store_connection = get_redis_connection('store')
-    info = redis_store_connection.info()
-
-    context['maxmemory'] = {
-        'bytes': info['maxmemory'],
-        'human': info['maxmemory_human'],
-    }
-    context['used_memory'] = {
-        'bytes': info['used_memory'],
-        'human': info['used_memory_human'],
-        'ratio': info['used_memory'] / info['maxmemory'],
-        'percent': 100 * info['used_memory'] / info['maxmemory'],
-    }
-    return JsonResponse(context)
