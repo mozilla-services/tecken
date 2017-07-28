@@ -117,6 +117,7 @@ services:
       - DEFAULT_REGION=us-east-1
       - HOSTNAME=localstack-s3
     ports:
+      - "8080:8080"
       - "4572:4572"
 
   frontend:
