@@ -215,36 +215,6 @@ You might want to temporarily edit ``.env`` and set ``DJANGO_DEBUG=False``
 to run it in a more production realistic way.
 
 
-Development Metrics for Symbolication
-=====================================
-
-When you run the server in development mode, it's configured to log every
-cache miss and cache hit, not only to ``statsd`` but also storing it
-in the cache framework. This makes it possible to query the metrics
-insight view:
-
-.. code-block:: shell
-
-   $ curl http://localhost:8000/symbolicate/metrics
-
-That gives you numbers about what the metrics are up to right now.
-
-The best way to visualize this is to start the ``metricsapp`` which
-is a simple single-page-app that reads this above mentioned URL
-repeatedly and draws graphs. It also helps you understand how the
-LRU cache works.
-
-To start the ``metricsapp`` do:
-
-.. code-block:: shell
-
-   $ cd metricsapp
-   $ yarn  # Only needed the first time!
-   $ yarn start
-
-Then go to ``http://localhost:3000/`` and keep watching it as you
-do more and more symbolication requests locally.
-
 Manual Integration Testing for symbolication
 ============================================
 

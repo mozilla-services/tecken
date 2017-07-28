@@ -3,7 +3,7 @@ import gzip
 import tarfile
 
 
-class _ZipMember(object):
+class _ZipMember:
 
     def __init__(self, member, container):
         self.member = member
@@ -21,7 +21,7 @@ class _ZipMember(object):
         return self.member.file_size
 
 
-class _TarMember(object):
+class _TarMember:
 
     def __init__(self, member, container):
         self.member = member

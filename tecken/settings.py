@@ -561,10 +561,6 @@ class Localdev(Base):
         #     }
         # },
 
-        # Only uncomment this when using that old metricsapp
-        # {
-        #     'class': 'tecken.markus_extra.CacheMetrics',
-        # },
     ]
 
     # Set these to smaller numbers for the sake of more easily testing

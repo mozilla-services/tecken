@@ -24,22 +24,6 @@ def reload_downloader(urls):
     views.downloader = SymbolDownloader(urls)
 
 
-def test_log_cache_hits_and_misses(clear_redis, metricsmock):
-    instance = views.LogCacheHitsMixin()
-
-    # A hit!
-    instance.log_symbol_cache_hit()
-    # Another hit!
-    instance.log_symbol_cache_hit()
-    # A miss
-    instance.log_symbol_cache_miss()
-
-    records = metricsmock.get_records()
-    assert records[0] == (INCR, 'tecken.cache_hit', 1, None)
-    assert records[1] == (INCR, 'tecken.cache_hit', 1, None)
-    assert records[2] == (INCR, 'tecken.cache_miss', 1, None)
-
-
 # Marked skipped because testing tecken.markus_extra.CacheMetrics
 # might not be important.
 @pytest.mark.skip
@@ -165,8 +149,12 @@ def test_symbolicate_json_happy_path_django_view(
     ]
 
     metrics_records = metricsmock.get_records()
-    assert metrics_records[0] == (INCR, 'tecken.cache_miss', 1, None)
-    assert metrics_records[1] == (INCR, 'tecken.cache_miss', 1, None)
+    assert metrics_records[0] == (
+        INCR, 'tecken.symbolicate_cache_miss', 1, None
+    )
+    assert metrics_records[1] == (
+        INCR, 'tecken.symbolicate_cache_miss', 1, None
+    )
 
     # The reason these numbers are hardcoded is because we know
     # predictable that the size of the pickled symbol map strings.
