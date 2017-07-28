@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Redirect } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import { Loading, DisplayDate } from './Common'
 import Fetch from './Fetch'
@@ -12,7 +12,6 @@ class Users extends Component {
     this.state = {
       loading: true,
       users: null,
-      redirectTo: null
     }
   }
   componentWillMount() {
@@ -28,6 +27,13 @@ class Users extends Component {
     this.setState({ loading: true })
     Fetch('/api/users/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
+      if (r.status === 403 && !store.currentUser) {
+        store.setRedirectTo(
+          '/',
+          `You have to be signed in to view "${this.pageTitle}"`
+        )
+        return
+      }
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null
@@ -40,23 +46,11 @@ class Users extends Component {
         })
       } else {
         store.fetchError = r
-        // this.setState({ fetchError: r })
-      }
-    })
-  }
-
-  editUser = id => {
-    this.setState({
-      redirectTo: {
-        pathname: `/users/${id}`
       }
     })
   }
 
   render() {
-    if (this.state.redirectTo) {
-      return <Redirect to={this.state.redirectTo} />
-    }
     return (
       <div>
         <h1 className="title">
@@ -64,7 +58,7 @@ class Users extends Component {
         </h1>
         {this.state.loading
           ? <Loading />
-          : <DisplayUsers users={this.state.users} editUser={this.editUser} />}
+          : <DisplayUsers users={this.state.users} />}
       </div>
     )
   }
@@ -185,13 +179,12 @@ class DisplayUsers extends Component {
                   {user.no_tokens}
                 </td>
                 <td>
-                  <button
-                    type="button"
+                  <Link
+                    to={`/users/${user.id}`}
                     className="button is-info"
-                    onClick={event => this.onEdit(event, user.id)}
                   >
                     Edit
-                  </button>
+                  </Link>
                 </td>
               </tr>
             )

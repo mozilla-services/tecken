@@ -21,6 +21,11 @@ urlpatterns = [
         name='tokens'
     ),
     url(
+        r'stats/$',
+        views.stats,
+        name='stats'
+    ),
+    url(
         r'tokens/(?P<id>\d+)$',
         views.delete_token,
         name='delete_token'

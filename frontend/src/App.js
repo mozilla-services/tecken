@@ -30,6 +30,7 @@ const App = observer(
         redirectTo: null
       }
     }
+
     componentWillMount() {
       Fetch('/api/auth/', { credentials: 'same-origin' }).then(r => {
         if (r.status === 200) {
@@ -40,7 +41,9 @@ const App = observer(
             if (response.user) {
               store.currentUser = response.user
               store.signOutUrl = response.sign_out_url
-              // XXX do we need to remove the ?signedin=True in the query string?
+              // XXX do with the ?signedin=true in the query string?
+            } else {
+              store.signInUrl = response.sign_in_url
             }
           })
         } else {
@@ -51,41 +54,45 @@ const App = observer(
 
     signIn = event => {
       event.preventDefault()
-      fetch('/api/auth/', { credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(response => {
-          if (response.sign_in_url) {
-            let signInUrl = response.sign_in_url
-            // When doing local development, the Django runserver is
-            // running at 'http://web:8000' as far as the React dev
-            // server is concerned. That doesn't work outside Docker
-            // (i.e on the host) so we'll replace this.
-            signInUrl = signInUrl.replace(
-              'http://web:8000',
-              'http://localhost:8000'
-            )
-            document.location.href = signInUrl
-          } else {
-            store.currentUser = response.user
-            store.signOutUrl = response.sign_out_url
-          }
-        })
+      let url = store.signInUrl
+      /* When doing local development, the Django runserver is
+         running at 'http://web:8000', in Docker, as far as the React dev
+         server is concerned. That doesn't work outside Docker
+         (i.e on the host) so we'll replace this.
+         It's safe since the string replace is hardcoded and only does
+         something if the original URL matched.
+         */
+      url = url.replace('http://web:8000/', 'http://localhost:8000/')
+      document.location.href = url
     }
 
     signOut = event => {
       event.preventDefault()
-      Fetch(store.signOutUrl, {
+      let url = store.signOutUrl
+      // See above explanation, in 'signIn()' about this "hack"
+      url = url.replace('http://web:8000/', 'http://localhost:3000/')
+      Fetch(url, {
         method: 'POST',
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        redirect: 'manual'
       }).then(r => {
-        console.log('SIGNED OUT:')
-        console.log(r)
+        store.setRedirectTo('/', {
+          message: 'Signed out',
+          success: true
+        })
       })
     }
 
     render() {
-      if (this.state.redirectTo) {
-        return <Redirect to={this.state.redirectTo} />
+      // The reason we make this conditional first, rather than letting
+      // RedirectMaybe be its own observer, is that this way we can
+      // *immediately* do an "early exit" if it's set to something.
+      if (store.redirectTo) {
+        return (
+          <Router>
+            <RedirectMaybe redirectTo={store.redirectTo} />
+          </Router>
+        )
       }
       return (
         <Router>
@@ -120,20 +127,22 @@ const App = observer(
                         User Management
                       </NavLink>
                     : null}
-                  <NavLink
-                    to="/tokens"
-                    className="nav-item is-tab"
-                    activeClassName="is-active"
-                  >
-                    API Tokens
-                  </NavLink>
-                  <NavLink
-                    to="/uploads"
-                    className="nav-item is-tab"
-                    activeClassName="is-active"
-                  >
-                    Uploads
-                  </NavLink>
+                  {store.currentUser &&
+                    <NavLink
+                      to="/tokens"
+                      className="nav-item is-tab"
+                      activeClassName="is-active"
+                    >
+                      API Tokens
+                    </NavLink>}
+                  {store.currentUser &&
+                    <NavLink
+                      to="/uploads"
+                      className="nav-item is-tab"
+                      activeClassName="is-active"
+                    >
+                      Uploads
+                    </NavLink>}
                   <NavLink
                     to="/help"
                     className="nav-item is-tab"
@@ -143,24 +152,39 @@ const App = observer(
                   </NavLink>
                   <span className="nav-item">
                     {store.currentUser
-                      ? <a
+                      ? <button
                           onClick={this.signOut}
                           className="button is-info"
                           title={`Signed in as ${store.currentUser.email}`}
                         >
                           Sign Out
-                        </a>
-                      : <a onClick={this.signIn} className="button is-info">
+                        </button>
+                      : <button
+                          onClick={this.signIn}
+                          className="button is-info"
+                        >
                           Sign In
-                        </a>}
+                        </button>}
                   </span>
                 </div>
               </div>
             </nav>
             <section className="section">
               <div className="container">
+                <DisplayNotificationMessage
+                  message={store.notificationMessage}
+                />
                 <FetchError error={store.fetchError} />
-                <Route path="/" exact component={Home} />
+                <Route
+                  path="/"
+                  exact
+                  render={props =>
+                    <Home
+                      {...props}
+                      signIn={this.signIn}
+                      signOut={this.signOut}
+                    />}
+                />
                 <Route path="/help" component={Help} />
                 <Route path="/tokens" component={Tokens} />
                 <Route path="/uploads/files" exact component={Files} />
@@ -204,3 +228,46 @@ const App = observer(
 )
 
 export default App
+
+class RedirectMaybe extends Component {
+  componentDidMount() {
+    if (this.props.redirectTo) {
+      // tell the store we've used it
+      store.redirectTo = null
+    }
+  }
+  render() {
+    const redirectTo = this.props.redirectTo
+    if (redirectTo) {
+      return <Redirect to={redirectTo} />
+    }
+    return null
+  }
+}
+
+class DisplayNotificationMessage extends Component {
+  reset = event => {
+    store.notificationMessage = null
+  }
+
+  render() {
+    const { message } = this.props
+    if (!message) {
+      return null
+    }
+    let className = 'notification'
+    if (message.success) {
+      className += ' is-success'
+    } else if (message.warning) {
+      className += ' is-warning'
+    } else {
+      className += ' is-info'
+    }
+    return (
+      <div className={className}>
+        <button className="delete" onClick={this.reset} />
+        {message.message}
+      </div>
+    )
+  }
+}

@@ -9,7 +9,7 @@ from django import http
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission, User, Group
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
@@ -499,4 +499,58 @@ def upload_files(request):
         'batch_size': batch_size,
     }
 
+    return http.JsonResponse(context)
+
+
+@api_login_required
+def stats(request):
+    # XXX Perhaps we should have some stats coming from Redis about the
+    # state of the LRU cache.
+
+    numbers = {}
+
+    # Gather some numbers about uploads
+    def count_and_size(start, end):
+        qs = Upload.objects.filter(created_at__gte=start, created_at__lt=end)
+        return {
+            'count': qs.count(),
+            'total_size': qs.aggregate(size=Sum('size'))['size'],
+        }
+
+    today = timezone.now()
+    start_today = today.replace(hour=0, minute=0, second=0)
+    uploads_today = count_and_size(start_today, today)
+    start_yesterday = start_today - datetime.timedelta(days=1)
+    uploads_yesterday = count_and_size(start_yesterday, start_today)
+    start_this_month = today.replace(day=1)
+    uploads_this_month = count_and_size(start_this_month, today)
+    start_this_year = start_this_month.replace(month=1)
+    uploads_this_year = count_and_size(start_this_year, today)
+    numbers['uploads'] = {
+        'today': uploads_today,
+        'yesterday': uploads_yesterday,
+        'this_month': uploads_this_month,
+        'this_year': uploads_this_year,
+    }
+
+    # Gather some numbers about tokens
+    tokens_qs = Token.objects.filter(user=request.user)
+    numbers['tokens'] = {
+        'total': tokens_qs.count(),
+        'expired': tokens_qs.filter(expires_at__lt=today).count(),
+    }
+
+    # Gather some numbers about users
+    if request.user.is_superuser:
+        users_qs = User.objects.all()
+        numbers['users'] = {
+            'total': users_qs.count(),
+            'superusers': users_qs.filter(is_superuser=True).count(),
+            'active': users_qs.filter(is_active=True).count(),
+            'not_active': users_qs.filter(is_active=False).count(),
+        }
+
+    context = {
+        'stats': numbers,
+    }
     return http.JsonResponse(context)
