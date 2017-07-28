@@ -14,4 +14,4 @@ export DJANGO_CONFIGURATION=Test
     export CI_ENV=`bash <(curl -s https://codecov.io/env)`
 
 # run docker compose with the given environment variables
-docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV web test $@
+docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV test test $@
