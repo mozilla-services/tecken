@@ -24,12 +24,20 @@ class Tokens extends Component {
 
   componentDidMount() {
     document.title = this.pageTitle
+    // You have no business being here if you're not signed in
     this._fetchTokens()
   }
 
   _fetchTokens = () => {
     this.setState({ loading: true })
     Fetch('/api/tokens/', { credentials: 'same-origin' }).then(r => {
+      if (r.status === 403 && !store.currentUser) {
+        store.setRedirectTo(
+          '/',
+          `You have to be signed in to view "${this.pageTitle}"`
+        )
+        return
+      }
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -43,7 +51,6 @@ class Tokens extends Component {
         })
       } else {
         store.fetchError = r
-        // this.setState({ fetchError: r })
       }
     })
   }
@@ -60,7 +67,6 @@ class Tokens extends Component {
         this._fetchTokens()
       } else {
         store.fetchError = r
-        // this.setState({ fetchError: r })
       }
     })
   }
@@ -126,9 +132,6 @@ class CreateTokenForm extends Component {
     loading: false,
     validationErrors: null
   }
-  componentWillUnmount() {
-    this.dismounted = true
-  }
   submitCreate = event => {
     event.preventDefault()
     const expires = this.refs.expires.value
@@ -161,7 +164,6 @@ class CreateTokenForm extends Component {
           this.setState({ loading: false, validationErrors: data.errors })
         })
       } else {
-        // this.setState({ fetchError: r })
         store.fetchError = r
       }
     })
@@ -298,6 +300,8 @@ class DisplayTokens extends Component {
                 </td>
                 <td>
                   <DisplayExpires expires={token.expires_at} />
+                  {' '}
+                  {token.is_expired && <span className="tag is-danger">Expired</span>}
                 </td>
                 <td>
                   {token.permissions.map(p =>
@@ -312,7 +316,7 @@ class DisplayTokens extends Component {
                 <td>
                   <button
                     type="button"
-                    className="button is-danger"
+                    className="button is-danger is-small"
                     onClick={event =>
                       this.onDelete(event, token.id, token.is_expired)}
                   >

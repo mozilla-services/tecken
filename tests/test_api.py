@@ -651,3 +651,31 @@ def test_upload_files(client, settings):
     assert response.status_code == 200
     data = response.json()
     assert [x['id'] for x in data['files']] == [file_upload1.id]
+
+
+@pytest.mark.django_db
+def test_stats(client):
+    # This view isn't super important so we'll just make sure it runs at all
+    url = reverse('api:stats')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['stats']['uploads']
+    assert 'users' not in data['stats']
+    assert data['stats']['tokens']
+
+    user.is_superuser = True
+    user.save()
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['stats']['users']

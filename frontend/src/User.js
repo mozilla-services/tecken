@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Redirect, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 import { Loading } from './Common'
 import Fetch from './Fetch'
@@ -12,8 +12,7 @@ export default class User extends Component {
     this.state = {
       loading: true,
       user: null,
-      groups: null,
-      redirectTo: null
+      groups: null
     }
   }
   componentWillMount() {
@@ -28,6 +27,10 @@ export default class User extends Component {
   _fetchUser = id => {
     this.setState({ loading: true })
     Fetch(`/api/users/${id}`, { credentials: 'same-origin' }).then(r => {
+      if (r.status === 403 && !store.currentUser) {
+        store.setRedirectTo('/', 'You have to be signed in to edit this user')
+        return
+      }
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -42,23 +45,15 @@ export default class User extends Component {
         })
       } else {
         store.fetchError = r
-        // this.setState({ fetchError: r })
       }
     })
   }
 
   goBack = () => {
-    this.setState({
-      redirectTo: {
-        pathname: '/users'
-      }
-    })
+    store.setRedirectTo('/users')
   }
 
   render() {
-    if (this.state.redirectTo) {
-      return <Redirect to={this.state.redirectTo} />
-    }
     return (
       <div>
         <h1 className="title">

@@ -12,12 +12,13 @@ import {
 } from 'date-fns/esm'
 
 export const Loading = () =>
-  <p className="has-text-centered">
-    <span className="icon is-large">
-      <FontAwesome name="cog" spin size="5x" />
-      <span className="sr-only">Loading...</span>
-    </span>
-  </p>
+<p className="has-text-centered">
+  <span className="icon is-large">
+    <FontAwesome name="cog" spin size="5x" />
+    <span className="sr-only">Loading...</span>
+  </span>
+</p>
+
 
 export const DisplayDate = ({ date }) => {
   if (date === null) {

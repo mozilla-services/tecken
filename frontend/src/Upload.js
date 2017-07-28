@@ -18,7 +18,6 @@ export default class Upload extends Component {
     this.state = {
       loading: true,
       upload: null
-      // redirectTo: null
     }
   }
   componentWillMount() {
@@ -38,6 +37,13 @@ export default class Upload extends Component {
     this.setState({ loading: true })
     Fetch(`/api/uploads/upload/${id}`, { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
+      if (r.status === 403 && !store.currentUser) {
+        store.setRedirectTo(
+          '/',
+          `You have to be signed in to view "${this.pageTitle}"`
+        )
+        return
+      }
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null
@@ -55,9 +61,6 @@ export default class Upload extends Component {
   }
 
   render() {
-    // if (this.state.redirectTo) {
-    //   return <Redirect to={this.state.redirectTo} />
-    // }
     return (
       <div>
         <h1 className="title">

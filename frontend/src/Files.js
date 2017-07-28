@@ -67,6 +67,13 @@ class Files extends Component {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer)
       }
+      if (r.status === 403 && !store.currentUser) {
+        store.setRedirectTo(
+          '/',
+          `You have to be signed in to view "${this.pageTitle}"`
+        )
+        return
+      }
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
