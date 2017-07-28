@@ -60,7 +60,7 @@ stop: .env
 	docker-compose stop
 
 test: .env .docker-build
-	@bin/test
+	@bin/test.sh
 
 run: .env .docker-build
 	docker-compose up web worker frontend

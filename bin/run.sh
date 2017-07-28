@@ -8,7 +8,7 @@ set -eo pipefail
 : "${GUNICORN_WORKERS:=4}"
 
 usage() {
-  echo "usage: bin/run web|web-dev|worker|test|bash|superuser"
+  echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|superuser"
   exit 1
 }
 
@@ -29,7 +29,7 @@ wait_for() {
 
 # Only wait for backend services in development
 # http://stackoverflow.com/a/13864829
-# For example, bin/test sets 'DEVELOPMENT' to something
+# For example, bin/test.sh sets 'DEVELOPMENT' to something
 [ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis-cache 6379 && wait_for redis-store 6379
 
 case $1 in

@@ -15,7 +15,7 @@ To check if any file is lacking a license preamble, run:
 
 .. code-block:: shell
 
-    $ ./bin/sanspreamble
+    $ ./bin/sanspreamble.sh
 
 It will exit non-zero if there are files lacking the preamble. It only
 checks git checked in files.
