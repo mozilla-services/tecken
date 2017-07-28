@@ -48,10 +48,19 @@ services:
       - db
       - redis-store
       - redis-cache
-      - statsd
       - localstack-s3
-      - frontend
+      - statsd
     command: web-dev
+
+  # Container specifically for running tests
+  test:
+    extends:
+      service: base
+    links:
+      - db
+      - redis-store
+      - redis-cache
+    command: test
 
   # Container specifically for running system tests against a remote.
   # Python based but distinct from the 'web' container.
