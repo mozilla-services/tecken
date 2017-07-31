@@ -82,4 +82,4 @@ tag:
 	@bin/make-tag.py
 
 build-frontend:
-	docker-compose run -u 0 -e CI web ./bin/build_frontend.sh
+	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
