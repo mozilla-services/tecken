@@ -8,11 +8,12 @@ set -eo pipefail
 # Builds the React frontend
 
 pushd frontend
-
 if [[ -z ${CI+check} ]]; then
+    echo "NOT running in CI"
     yarn
     yarn run build
 else
+    echo "Running this in CI"
     yarn --no-progress --non-interactive
     yarn run --no-progress --non-interactive build
 fi

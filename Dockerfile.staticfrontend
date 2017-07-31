@@ -58,4 +58,5 @@ RUN set -ex \
 
 USER 10001
 
-CMD ["bash", "bin/build_frontend.sh"]
+#CMD ["bash", "bin/build_frontend.sh"]
+RUN bash bin/build_frontend.sh
