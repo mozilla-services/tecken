@@ -56,6 +56,6 @@ RUN set -ex \
 
 # ...End of Node 6 install steps.
 
-USER 1001
+USER 10001
 
 CMD ["bash", "bin/build_frontend.sh"]
