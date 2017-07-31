@@ -1,5 +1,6 @@
 FROM tecken:deploy_base
 
+USER root
 
 # Install Node 6
 # From: https://github.com/nodejs/docker-node/blob/bb200caf20280e436dedc56a5f194fd21e684758/6.11/Dockerfile
@@ -55,5 +56,6 @@ RUN set -ex \
 
 # ...End of Node 6 install steps.
 
+USER 1001
 
 CMD ["bash", "bin/build_frontend.sh"]
