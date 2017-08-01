@@ -51,9 +51,11 @@ COPY requirements.txt /tmp/
 WORKDIR /tmp
 RUN pip install --no-cache-dir -r requirements.txt
 
-
 # Switch back to home directory
 WORKDIR /app
+
+# Build the frontend, if in CircleCI and its a "tagged build"
+RUN bash bin/build_frontend_maybe.sh
 
 COPY . /app
 
