@@ -123,7 +123,7 @@ class Files extends Component {
   render() {
     return (
       <div>
-        {store.hasPermission('view_all_uploads')
+        {store.hasPermission('upload.view_all_uploads')
           ? <div className="tabs is-centered">
               <ul>
                 <li className={!this.state.filter.download && 'is-active'}>

@@ -36,12 +36,18 @@ class Store {
         this.redirectTo = null
       }),
       get hasPermission() {
-        return perm => {
-          return (
-            this.currentUser &&
-            (this.currentUser.is_superuser ||
-              this.currentUser.permissions.contains(perm))
-          )
+        return codename => {
+          if (this.currentUser) {
+            if (this.currentUser.is_superuser) {
+              return true
+            } else {
+              // need to bother looping over permissions
+              return !!this.currentUser.permissions.find(p => {
+                return p.codename === codename
+              })
+            }
+          }
+          return false
         }
       }
     })

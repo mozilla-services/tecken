@@ -45,8 +45,12 @@ def test_auth(client):
     response = client.get(url)
     assert response.status_code == 200
     data = response.json()
-    assert 'upload_symbols' in data['user']['permissions']
-    assert 'manage_tokens' in data['user']['permissions']
+    assert 'upload.upload_symbols' in [
+        x['codename'] for x in data['user']['permissions']
+    ]
+    assert 'tokens.manage_tokens' in [
+        x['codename'] for x in data['user']['permissions']
+    ]
 
 
 @pytest.mark.django_db
@@ -669,6 +673,7 @@ def test_stats(client):
     assert response.status_code == 200
     data = response.json()
     assert data['stats']['uploads']
+    assert not data['stats']['uploads']['all_uploads']
     assert 'users' not in data['stats']
     assert data['stats']['tokens']
 
@@ -679,3 +684,4 @@ def test_stats(client):
     assert response.status_code == 200
     data = response.json()
     assert data['stats']['users']
+    assert data['stats']['uploads']['all_uploads']

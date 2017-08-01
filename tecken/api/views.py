@@ -37,14 +37,22 @@ def auth(request):
             'is_superuser': request.user.is_superuser,
             'permissions': [],
         }
-        possible_permissions = (
-            'upload.view_all_uploads',
-            'upload.upload_symbols',
-            'tokens.manage_tokens',
-        )
-        for name in possible_permissions:
-            if request.user.has_perm(name):
-                context['user']['permissions'].append(name.split('.')[-1])
+        permissions = Permission.objects.filter(codename__in=(
+            'view_all_uploads',
+            'upload_symbols',
+            'manage_tokens',
+        ))
+        user_permissions = request.user.get_all_permissions()
+        for permission in permissions.select_related('content_type'):
+            codename = (
+                f'{permission.content_type.app_label}.{permission.codename}'
+            )
+            if codename in user_permissions:
+                context['user']['permissions'].append({
+                    'id': permission.id,
+                    'codename': codename,
+                    'name': permission.name
+                })
 
         # do we need to add the one for managing tokens?
         context['sign_out_url'] = request.build_absolute_uri(
@@ -511,9 +519,14 @@ def stats(request):
 
     numbers = {}
 
+    all_uploads = request.user.has_perm('upload.can_view_all')
+    upload_qs = Upload.objects.all()
+    if not all_uploads:
+        upload_qs = upload_qs.filter(user=request.user)
+
     # Gather some numbers about uploads
     def count_and_size(start, end):
-        qs = Upload.objects.filter(created_at__gte=start, created_at__lt=end)
+        qs = upload_qs.filter(created_at__gte=start, created_at__lt=end)
         return {
             'count': qs.count(),
             'total_size': qs.aggregate(size=Sum('size'))['size'],
@@ -529,6 +542,7 @@ def stats(request):
     start_this_year = start_this_month.replace(month=1)
     uploads_this_year = count_and_size(start_this_year, today)
     numbers['uploads'] = {
+        'all_uploads': all_uploads,
         'today': uploads_today,
         'yesterday': uploads_yesterday,
         'this_month': uploads_this_month,

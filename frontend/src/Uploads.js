@@ -20,8 +20,8 @@ import store from './Store'
 class Uploads extends Component {
   constructor(props) {
     super(props)
-    this.pageTitle = 'Uploads'
     this.state = {
+      pageTitle: 'Uploads',
       loading: true, // undone by componentDidMount
       uploads: null,
       total: null,
@@ -36,7 +36,7 @@ class Uploads extends Component {
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
+    document.title = this.state.pageTitle
     if (this.props.location.search) {
       this.setState(
         { filter: queryString.parse(this.props.location.search) },
@@ -47,6 +47,15 @@ class Uploads extends Component {
     } else {
       this._fetchUploads(false)
     }
+
+    // If the current user can only see her uploads, change the
+    // title accordingly.
+    if (!store.hasPermission('upload.view_all_uploads')) {
+      this.setState({pageTitle: 'Your Uploads'}, () => {
+        document.title = this.state.pageTitle
+      })
+    }
+
   }
 
   _fetchUploads = (updateHistory = true) => {
@@ -119,7 +128,7 @@ class Uploads extends Component {
   render() {
     return (
       <div>
-        {store.hasPermission('view_all_uploads')
+        {store.hasPermission('upload.view_all_uploads')
           ? <div className="tabs is-centered">
               <ul>
                 <li className={!this.state.filter.user && 'is-active'}>
@@ -142,7 +151,7 @@ class Uploads extends Component {
             </div>
           : null}
         <h1 className="title">
-          {this.pageTitle}
+          {this.state.pageTitle}
         </h1>
 
         {this.state.loading
