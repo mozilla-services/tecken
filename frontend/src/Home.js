@@ -69,7 +69,11 @@ const SignedInTiles = ({ signOut, loading, stats }) =>
         }
       >
         <article className="tile is-child box">
-          <p className="title">Uploaded Symbols</p>
+          <p className="title">
+            {loading || (stats && stats.uploads.all_uploads)
+              ? 'Uploaded Symbols'
+              : 'Your Uploaded Symbols'}
+          </p>
           {loading || !stats
             ? <Loading />
             : <table className="table">
@@ -149,7 +153,9 @@ const SignedInTiles = ({ signOut, loading, stats }) =>
               : <p>
                   There <b>{stats.users.total} users</b> in total of which{' '}
                   <b>{stats.users.superusers}</b>{' '}
-                  {stats.users.superusers === 1 ? 'is superuser' : 'are superusers'},
+                  {stats.users.superusers === 1
+                    ? 'is superuser'
+                    : 'are superusers'},
                   <b>{stats.users.not_active}</b> are inactive.
                 </p>}
             <p>
@@ -173,12 +179,16 @@ const SignedInTiles = ({ signOut, loading, stats }) =>
                 You are a <b>superuser</b>
               </span>}
           </p>
-
-          <p className="has-text-centered">
-            <button onClick={signOut} className="button is-info">
-              Sign Out
-            </button>
-          </p>
+          <p style={{ marginTop: 20 }}>You have the following permissions:</p>
+          <ul>
+            {store.currentUser.permissions.map(perm =>
+              <li key={perm.id}>
+                <b>
+                  {perm.name}
+                </b>
+              </li>
+            )}
+          </ul>
         </article>
       </div>
       <div className="tile is-parent is-8">
