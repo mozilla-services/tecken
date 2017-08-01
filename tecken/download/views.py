@@ -86,6 +86,17 @@ def download_symbol(request, symbol, debugid, filename):
     else:
         url = downloader.get_symbol_url(symbol, debugid, filename)
         if url:
+            # If doing local development, with Docker, you're most likely
+            # running motocker as a fake S3 client. It runs on its own
+            # hostname that is only available from other Docker containers.
+            # But to make it really convenient, for testing symbol download
+            # we'll rewrite the URL to one that is possible to reach
+            # from the host.
+            if (
+                settings.DEBUG and
+                'http://motocker:5000' in url
+            ):  # pragma: no cover
+                url = url.replace('motocker:5000', 'localhost:5000')
             response = http.HttpResponseRedirect(url)
             if request._request_debug:
                 response['Debug-Time'] = downloader.time_took

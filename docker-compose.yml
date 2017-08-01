@@ -48,7 +48,7 @@ services:
       - db
       - redis-store
       - redis-cache
-      - localstack-s3
+      - motocker
       - statsd
     command: web-dev
 
@@ -108,19 +108,6 @@ services:
       - redis-cache
     command: worker
 
-  # https://hub.docker.com/r/atlassianlabs/localstack/
-  # localstack running a fake S3
-  localstack-s3:
-    image: localstack/localstack:0.7.3
-    environment:
-      # - DEBUG=1
-      - SERVICES=s3:4572
-      - DEFAULT_REGION=us-east-1
-      - HOSTNAME=localstack-s3
-    ports:
-      - "8080:8080"
-      - "4572:4572"
-
   frontend:
     build:
       context: .
@@ -132,3 +119,11 @@ services:
       - "35729:35729"
     volumes:
       - $PWD/frontend:/app
+
+  motocker:
+    image: picadoh/motocker
+    environment:
+      - MOTO_SERVICE=s3
+      - MOTO_HOST=motocker
+    ports:
+      - "5000:5000"
