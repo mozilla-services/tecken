@@ -201,6 +201,10 @@ const DisplayUpload = ({ upload }) => {
                 : null}
             </td>
           </tr>
+          <tr>
+            <th>Attempts</th>
+            <td>{upload.attempts}</td>
+          </tr>
         </tbody>
       </table>
       <h3 className="title">Files</h3>

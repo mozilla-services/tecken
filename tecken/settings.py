@@ -488,7 +488,22 @@ class Base(Core):
     # How many uploads to display per page when paginating through
     # past uploads.
     API_UPLOADS_BATCH_SIZE = 20
-    API_FILES_BATCH_SIZE = 20
+    API_FILES_BATCH_SIZE = 10
+
+    # Every time we do a symbol upload, we also take a look to see if there
+    # are incomplete uploads that could have failed due to some unlucky
+    # temporary glitch.
+    # When we do the reattempt, we need to wait sufficiently long because
+    # the upload might just be incomplete because it's in the queue, not
+    # because it failed.
+    # Note also, if the job is put back into a celery job, we also log
+    # this in the cache so that it doesn't add it more than once. That
+    # caching uses this same timeout.
+    UPLOAD_REATTEMPT_LIMIT_SECONDS = values.IntegerValue(60 * 60 * 12)
+
+    # When we re-attempt those that have failed before, we only bother
+    # with those that have failed less than this number of times.
+    UPLOAD_REATTEMPT_LIMIT_TIMES = values.IntegerValue(10)
 
 
 class Localdev(Base):
@@ -565,7 +580,7 @@ class Localdev(Base):
 
     # Set these to smaller numbers for the sake of more easily testing
     # pagination in local development.
-    API_UPLOADS_BATCH_SIZE = 5
+    API_UPLOADS_BATCH_SIZE = 10
     API_FILES_BATCH_SIZE = 5
 
 

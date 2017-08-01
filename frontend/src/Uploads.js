@@ -186,6 +186,7 @@ class DisplayUploads extends Component {
     const created_at = this.refs.created_at.value.trim()
     const completed_at = this.refs.completed_at.value.trim()
     this.props.updateFilter({
+      page: 1,
       user,
       size,
       created_at,
@@ -206,13 +207,6 @@ class DisplayUploads extends Component {
 
     const todayStr = format(new Date(), 'YYYY-MM-DD')
     const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
-    // if (!uploads.length) {
-    //   return (
-    //     <p>
-    //       <i>No uploads found.</i>
-    //     </p>
-    //   )
-    // }
     return (
       <form onSubmit={this.submitForm}>
         <table className="table">
@@ -306,6 +300,8 @@ class DisplayUploads extends Component {
                         suffix="after"
                       />
                     : <i>Incomplete!</i>}
+                  {' '}
+                  {!upload.completed_at && ` (${upload.attempts} attempts)`}
                 </td>
               </tr>
             )}
