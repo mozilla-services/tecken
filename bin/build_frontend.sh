@@ -17,4 +17,5 @@ else
     yarn --no-progress --non-interactive
     yarn run --no-progress --non-interactive build
 fi
+mv build /app/frontend/
 popd
