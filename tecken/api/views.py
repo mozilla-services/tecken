@@ -319,6 +319,7 @@ def uploads(request):
             'ignored_keys': upload.ignored_keys or [],
             'completed_at': upload.completed_at,
             'created_at': upload.created_at,
+            'attempts': upload.attempts,
         })
     # Make a FileUpload aggregate count on these uploads
     file_upload_counts = FileUpload.objects.filter(
@@ -367,6 +368,7 @@ def upload(request, id):
         'ignored_keys': obj.ignored_keys or [],
         'completed_at': obj.completed_at,
         'created_at': obj.created_at,
+        'attempts': obj.attempts,
         'file_uploads': [],
     }
     file_uploads_qs = FileUpload.objects.filter(upload=obj)

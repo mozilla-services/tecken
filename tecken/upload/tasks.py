@@ -51,6 +51,11 @@ def upload_inbox_upload(upload_id):
     """
 
     upload = Upload.objects.get(id=upload_id)
+    # Immediately persist that we are about to attempt to process this upload.
+    # The reason for doing this here rather than at the end when
+    # we call the .save() is that errors could happen in between.
+    upload.attempts += 1
+    upload.save()
 
     s3_client = get_s3_client(
         endpoint_url=upload.bucket_endpoint_url,

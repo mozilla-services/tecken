@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import datetime
 import re
 import logging
 import fnmatch
@@ -18,6 +19,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
+from django.core.cache import cache
 
 from tecken.base.decorators import api_login_required, api_permission_required
 from tecken.upload.utils import get_archive_members
@@ -175,6 +177,32 @@ def upload_archive(request):
         )
 
     upload_inbox_upload.delay(upload_obj.pk)
+
+    # Take the opportunity to also try to clear out old uploads that
+    # have gotten stuck and still hasn't moved for some reason.
+    # Note! This might be better to do with a cron job some day. But that
+    # requires a management command that can be run in production.
+    incomplete_uploads = Upload.objects.filter(
+        completed_at__isnull=True,
+        created_at__lt=(
+            timezone.now() - datetime.timedelta(
+                seconds=settings.UPLOAD_REATTEMPT_LIMIT_SECONDS
+            )
+        ),
+        attempts__lt=settings.UPLOAD_REATTEMPT_LIMIT_TIMES
+    )
+    for old_upload_obj in incomplete_uploads.order_by('created_at'):
+        cache_key = f'reattempt:{old_upload_obj.id}'
+        if not cache.get(cache_key):
+            logger.info(
+                f'Reattempting incomplete upload from {old_upload_obj!r}'
+            )
+            upload_inbox_upload.delay(old_upload_obj.id)
+            cache.set(
+                cache_key,
+                True,
+                settings.UPLOAD_REATTEMPT_LIMIT_SECONDS
+            )
 
     return http.JsonResponse(
         {'upload': _serialize_upload(upload_obj)},

@@ -184,8 +184,6 @@ class DisplayFiles extends Component {
     this.refs.key.value = filter.key || ''
     this.refs.size.value = filter.size || ''
     this.refs.bucketName.value = filter.bucket_name || ''
-    // this.refs.created_at.value = filter.created_at || ''
-    // this.refs.completed_at.value = filter.completed_at || ''
   }
 
   submitForm = event => {
@@ -193,13 +191,11 @@ class DisplayFiles extends Component {
     const key = this.refs.key.value.trim()
     const size = this.refs.size.value.trim()
     const bucketName = this.refs.bucketName.value.trim()
-    // const created_at = this.refs.created_at.value.trim()
-    // const completed_at = this.refs.completed_at.value.trim()
     this.props.updateFilter({
+      page: 1,
       key,
       size,
-      bucket_name: bucketName,
-      page: 1
+      bucket_name: bucketName
     })
   }
 
@@ -207,16 +203,11 @@ class DisplayFiles extends Component {
     this.refs.key.value = ''
     this.refs.size.value = ''
     this.refs.bucketName.value = ''
-    // this.refs.created_at.value = ''
-    // this.refs.completed_at.value = ''
     this.submitForm(event)
-    this.props.updateFilter({ download: '' })
   }
   render() {
     const { files } = this.props
 
-    // const todayStr = format(new Date(), 'YYYY-MM-DD')
-    // const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
     return (
       <form onSubmit={this.submitForm}>
         <table className="table files-table">

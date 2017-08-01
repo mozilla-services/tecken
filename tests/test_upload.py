@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-# import datetime
+import datetime
 import gzip
 import os
 import re
@@ -16,7 +16,8 @@ from markus import TIMING, INCR
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
-# from django.utils import timezone
+from django.db.models import F
+from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -180,6 +181,7 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
     assert upload.completed_at
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ['build-symbols.txt']
+    assert upload.attempts == 1
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
@@ -724,6 +726,91 @@ def test_upload_client_happy_path(botomock, fakeuser, client):
 
 
 @pytest.mark.django_db
+def test_upload_client_reattempt(botomock, fakeuser, client, clear_cache):
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    # The key name for the inbox file upload contains today's date
+    # and a MD5 hash of its content based on using 'ZIP_FILE'
+    expected_inbox_key_name_regex = re.compile(
+        r'inbox/\d{4}-\d{2}-\d{2}/[a-f0-9]{12}/(\w+)\.zip'
+    )
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'PutObject' and
+            expected_inbox_key_name_regex.findall(api_params['Key'])
+        ):
+            content = api_params['Body'].read()
+            assert isinstance(content, bytes)
+            # based on `ls -l tests/sample.zip` knowledge
+            assert len(content) == 69812
+
+            # ...pretend to actually upload it.
+            return {
+                # Should there be anything here?
+            }
+
+        raise NotImplementedError((operation_name, api_params))
+
+    task_arguments = []
+
+    # Pretend this upload is old and stuck
+    old_upload = Upload.objects.create(
+        user=fakeuser,
+        filename='sample.zip',
+        bucket_name='mybucket',
+        inbox_key='inbox/01/sample.zip',
+        bucket_endpoint_url='http://s4.example.com',
+        bucket_region='eu-south-1',
+        size=123456,
+        attempts=1,
+    )
+    # Have to manually edit because 'created_at' is auto_now_add=True
+    old_upload.created_at = (
+        timezone.now() - datetime.timedelta(days=1)
+    )
+    old_upload.save()
+
+    def fake_task(upload_id):
+        task_arguments.append(upload_id)
+        # pretend we successfully process it
+        Upload.objects.filter(id=upload_id).update(
+            attempts=F('attempts') + 1,
+            completed_at=timezone.now()
+        )
+
+    _mock_function = 'tecken.upload.views.upload_inbox_upload.delay'
+    with mock.patch(_mock_function, new=fake_task):
+        with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+            response = client.post(
+                url,
+                {'file.zip': f},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 201
+
+            assert len(task_arguments) == 2
+            upload = Upload.objects.get(id=task_arguments[0])
+            assert expected_inbox_key_name_regex.findall(upload.inbox_key)
+            assert upload.completed_at
+            assert upload.attempts == 1
+
+            old_upload.refresh_from_db()
+            assert old_upload.completed_at
+            assert old_upload.attempts == 2
+
+
+@pytest.mark.django_db
 def test_upload_client_unrecognized_bucket(botomock, fakeuser, client):
     """The upload view raises an error if you try to upload into a bucket
     that doesn't exist."""
@@ -801,120 +888,3 @@ def test_get_bucket_info_exceptions(settings):
     user = FakeUser('Tucker@example.com')
     bucket_info = get_bucket_info(user)
     assert bucket_info.name == 'excepty'
-
-
-# @pytest.mark.django_db
-# def test_search_client(fakeuser, client):
-#     token = Token.objects.create(user=fakeuser)
-#     permission, = Permission.objects.filter(codename='add_upload')
-#     fakeuser.user_permissions.add(permission)
-#     url = reverse('upload:search')
-#     response = client.get(url)
-#     assert response.status_code == 403
-#
-#     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 200
-#     assert not response.json()['uploads']
-#
-#     upload = Upload.objects.create(
-#         user=fakeuser,
-#         bucket_name='anything',
-#         inbox_key='foo.zip',
-#         filename='symbols.zip',
-#         size=1234567,
-#     )
-#
-#     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 200
-#     first, = response.json()['uploads']
-#     assert first['id'] == upload.id
-#     assert first['size'] == upload.size
-#     assert first['filename'] == upload.filename
-#     assert first['user'] == fakeuser.email
-#     assert first['bucket'] == upload.bucket_name
-#     assert 'files' not in first
-#     assert 'url' in first
-
-
-# @pytest.mark.django_db
-# def test_search_client_filtering(fakeuser, client):
-#     token = Token.objects.create(user=fakeuser)
-#     permission, = Permission.objects.filter(codename='add_upload')
-#     fakeuser.user_permissions.add(permission)
-#     url = reverse('upload:search')
-#     upload = Upload.objects.create(
-#         user=fakeuser,
-#         bucket_name='anything',
-#         inbox_key='foo.zip',
-#         filename='symbols.zip',
-#         size=1234567,
-#     )
-#
-#     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 200
-#     assert response.json()['uploads']
-#
-#     # Search by all possible filters
-#     today = timezone.now()
-#     tomorrow = today + datetime.timedelta(days=1)
-#     params = {
-#         'user': str(upload.user.id),
-#         'start_date': timezone.now().date(),
-#         'end_date': tomorrow.date(),
-#     }
-#     response = client.get(url, params, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 200
-#     assert response.json()['uploads']
-#
-#     # Or search by user email
-#     params = {'user': fakeuser.email.upper()[:5]}
-#     response = client.get(url, params, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 200
-#     assert response.json()['uploads']
-#
-#     # Invalid params
-#     params = {'start_date': 'junk'}
-#     response = client.get(url, params, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 400
-
-
-# @pytest.mark.django_db
-# def test_view_upload_client(fakeuser, client):
-#     token = Token.objects.create(user=fakeuser)
-#     permission, = Permission.objects.filter(codename='add_upload')
-#     fakeuser.user_permissions.add(permission)
-#     upload = Upload.objects.create(
-#         user=fakeuser,
-#         bucket_name='anything',
-#         inbox_key='foo.zip',
-#         filename='symbols.zip',
-#         size=1234567,
-#     )
-#     FileUpload.objects.create(
-#         upload=upload,
-#         bucket_name=upload.bucket_name,
-#         key='foo.sym',
-#         compressed=True,
-#         update=True,
-#         size=12345,
-#     )
-#     url = reverse('upload:upload', args=(upload.id,))
-#     response = client.get(url)
-#     assert response.status_code == 403
-#
-#     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
-#     assert response.status_code == 200
-#     result = response.json()['upload']
-#     assert result['size'] == upload.size
-#     assert result['bucket'] == upload.bucket_name
-#     assert result['user'] == upload.user.email
-#     assert result['created_at']
-#     assert not result['completed_at']
-#
-#     file_, = result['files']
-#     assert file_['key'] == 'foo.sym'
-#     assert file_['size'] == 12345
-#     assert file_['update']
-#     assert file_['compressed']
-#     assert file_['created_at']
-#     assert not file_['completed_at']

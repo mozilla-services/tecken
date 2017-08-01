@@ -24,6 +24,11 @@ def clear_redis():
     caches['store'].clear()
 
 
+@pytest.fixture
+def clear_cache():
+    caches['default'].clear()
+
+
 @pytest.fixture(autouse=True)
 def clear_exists_cache():
     """autouse=True fixtures (fixtures that get used in every test in

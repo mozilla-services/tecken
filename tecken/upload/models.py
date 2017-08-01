@@ -34,6 +34,8 @@ class Upload(models.Model):
     # have been successfully uploaded, this is complete.
     completed_at = models.DateTimeField(null=True)
     size = models.PositiveIntegerField()
+    # One increment for every attempt of processing the upload.
+    attempts = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
