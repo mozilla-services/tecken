@@ -41,7 +41,17 @@ const App = observer(
             if (response.user) {
               store.currentUser = response.user
               store.signOutUrl = response.sign_out_url
-              // XXX do with the ?signedin=true in the query string?
+              if (
+                document.location.search.match(/signedin=true/) &&
+                !sessionStorage.getItem('signedin')
+              ) {
+                sessionStorage.setItem('signedin', true)
+                // you have just signed in
+                store.notificationMessage = {
+                  message: `You have signed in as ${response.user.email}`,
+                  success: true
+                }
+              }
             } else {
               store.signInUrl = response.sign_in_url
             }
@@ -76,6 +86,7 @@ const App = observer(
         credentials: 'same-origin',
         redirect: 'manual'
       }).then(r => {
+        sessionStorage.removeItem('signedin')
         store.setRedirectTo('/', {
           message: 'Signed out',
           success: true
