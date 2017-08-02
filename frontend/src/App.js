@@ -138,7 +138,7 @@ const App = observer(
                         User Management
                       </NavLink>
                     : null}
-                  {store.currentUser &&
+                  {store.currentUser && store.hasPermission('tokens.manage_tokens') &&
                     <NavLink
                       to="/tokens"
                       className="nav-item is-tab"
@@ -146,7 +146,7 @@ const App = observer(
                     >
                       API Tokens
                     </NavLink>}
-                  {store.currentUser &&
+                  {store.currentUser && store.hasPermission('upload.upload_symbols') &&
                     <NavLink
                       to="/uploads"
                       className="nav-item is-tab"
