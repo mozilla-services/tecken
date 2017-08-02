@@ -58,6 +58,8 @@ class Home extends Component {
 
 export default Home
 
+//
+
 const SignedInTiles = ({ signOut, loading, stats }) =>
   <div>
     <div className="tile is-ancestor">
@@ -68,81 +70,14 @@ const SignedInTiles = ({ signOut, loading, stats }) =>
             : 'tile is-parent is-8'
         }
       >
-        <article className="tile is-child box">
-          <p className="title">
-            {loading || (stats && stats.uploads.all_uploads)
-              ? 'Uploaded Symbols'
-              : 'Your Uploaded Symbols'}
-          </p>
-          {loading || !stats
-            ? <Loading />
-            : <table className="table">
-                <thead>
-                  <tr>
-                    <th />
-                    <th>Count</th>
-                    <th>Total Size</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <th>Today</th>
-                    <td>
-                      {stats.uploads.today.count}
-                    </td>
-                    <td>
-                      {formatFileSize(stats.uploads.today.total_size)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>Yesterday</th>
-                    <td>
-                      {stats.uploads.yesterday.count}
-                    </td>
-                    <td>
-                      {formatFileSize(stats.uploads.yesterday.total_size)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>This Month</th>
-                    <td>
-                      {stats.uploads.this_month.count}
-                    </td>
-                    <td>
-                      {formatFileSize(stats.uploads.this_month.total_size)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>This Year</th>
-                    <td>
-                      {stats.uploads.this_year.count}
-                    </td>
-                    <td>
-                      {formatFileSize(stats.uploads.this_year.total_size)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>}
-          <Link to="/uploads">
-            Go to <b>Uploads</b>
-          </Link>
-        </article>
+        {store.hasPermission('upload.upload_symbols')
+          ? <AboutUploadsTile loading={loading} stats={stats} />
+          : <AboutUploadsPermissionTile />}
       </div>
       <div className="tile is-parent">
-        <article className="tile is-child box">
-          <p className="title">API Tokens</p>
-          {loading || !stats
-            ? <Loading />
-            : <p>
-                You have <b>{stats.tokens.total} API Tokens</b> of which{' '}
-                <b>{stats.tokens.expired}</b> have expired.
-              </p>}
-          <p>
-            <Link to="/tokens">
-              Go to <b>API Tokens</b>
-            </Link>
-          </p>
-        </article>
+        {store.hasPermission('tokens.manage_tokens')
+          ? <AboutTokensTile loading={loading} stats={stats} />
+          : <AboutTokensPermissionTile />}
       </div>
       {store.currentUser.is_superuser &&
         <div className="tile is-parent">
@@ -172,23 +107,19 @@ const SignedInTiles = ({ signOut, loading, stats }) =>
         <article className="tile is-child box">
           <p className="title">Authenticated</p>
           <p className="subtitle">
-            You are signed in as <b>{store.currentUser.email}</b>
+            You are signed in as <b>{store.currentUser.email}</b>.
             <br />
             {store.currentUser.is_superuser &&
               <span>
-                You are a <b>superuser</b>
+                You are a <b>superuser</b>.
               </span>}
           </p>
           <p style={{ marginTop: 20 }}>You have the following permissions:</p>
-          <ul>
-            {store.currentUser.permissions.map(perm =>
-              <li key={perm.id}>
-                <b>
-                  {perm.name}
-                </b>
-              </li>
-            )}
-          </ul>
+          {store.currentUser.permissions && store.currentUser.permissions.length ?
+            <ListYourPermissions permissions={store.currentUser.permissions} /> :
+            <AboutPermissions/>
+          }
+
         </article>
       </div>
       <div className="tile is-parent is-8">
@@ -223,13 +154,130 @@ const SignedInTiles = ({ signOut, loading, stats }) =>
               className="is-size-5"
               rel="noopener noreferrer"
             >
-              Open Source code on GitHub
+              Code on GitHub
             </a>
           </p>
         </article>
       </div>
     </div>
   </div>
+
+const ListYourPermissions = ({ permissions }) =>
+  <ul>
+    {permissions.map(perm =>
+      <li key={perm.id}>
+        <b>
+          {perm.name}
+        </b>
+      </li>
+    )}
+  </ul>
+
+const AboutPermissions = () => (
+  <p>
+    <i>None!</i>
+    {' '}
+    <a
+      href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+      rel="noopener noreferrer"
+    >
+      File a bug to ask for permissions.
+    </a><br/>
+    <small>Don't forget to mention the email you used to sign in.</small>
+  </p>
+)
+const AboutUploadsPermissionTile = () =>
+  <article className="tile is-child box">
+    <p className="title">Uploaded Symbols</p>
+    <p>
+      <i>You currently don't have permission to upload symbols.</i>
+    </p>
+  </article>
+
+const AboutUploadsTile = ({ loading, stats }) =>
+  <article className="tile is-child box">
+    <p className="title">
+      {loading || (stats && stats.uploads.all_uploads)
+        ? 'Uploaded Symbols'
+        : 'Your Uploaded Symbols'}
+    </p>
+    {loading || !stats
+      ? <Loading />
+      : <table className="table">
+          <thead>
+            <tr>
+              <th />
+              <th>Count</th>
+              <th>Total Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Today</th>
+              <td>
+                {stats.uploads.today.count}
+              </td>
+              <td>
+                {formatFileSize(stats.uploads.today.total_size)}
+              </td>
+            </tr>
+            <tr>
+              <th>Yesterday</th>
+              <td>
+                {stats.uploads.yesterday.count}
+              </td>
+              <td>
+                {formatFileSize(stats.uploads.yesterday.total_size)}
+              </td>
+            </tr>
+            <tr>
+              <th>This Month</th>
+              <td>
+                {stats.uploads.this_month.count}
+              </td>
+              <td>
+                {formatFileSize(stats.uploads.this_month.total_size)}
+              </td>
+            </tr>
+            <tr>
+              <th>This Year</th>
+              <td>
+                {stats.uploads.this_year.count}
+              </td>
+              <td>
+                {formatFileSize(stats.uploads.this_year.total_size)}
+              </td>
+            </tr>
+          </tbody>
+        </table>}
+    <Link to="/uploads">
+      Go to <b>Uploads</b>
+    </Link>
+  </article>
+
+const AboutTokensPermissionTile = () =>
+  <article className="tile is-child box">
+    <p className="title">API Tokens</p>
+    <p>
+      <i>You currently don't have permission to create API Tokens.</i>
+    </p>
+  </article>
+
+const AboutTokensTile = ({ loading, stats }) =>
+  <article className="tile is-child box">
+    <p className="title">API Tokens</p>
+    {loading || !stats
+      ? <Loading />
+      : <p>
+          You have <b>{stats.tokens.total} API Tokens</b> of which{' '}
+          <b>{stats.tokens.expired}</b> have expired.
+        </p>}
+    <p>
+      <Link to="/tokens">
+        Go to <b>API Tokens</b>
+      </Link>
+    </p>
+  </article>
 
 const AnonymousTiles = ({ signIn }) =>
   <div>
