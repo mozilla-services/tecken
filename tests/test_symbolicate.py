@@ -2,12 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import pytest
 import requests
 from markus import INCR, GAUGE
 
 from django.core.urlresolvers import reverse
-from django.core.cache import caches
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.symbolicate import views
@@ -22,31 +20,6 @@ def reload_downloader(urls):
     if isinstance(urls, str):
         urls = tuple([urls])
     views.downloader = SymbolDownloader(urls)
-
-
-# Marked skipped because testing tecken.markus_extra.CacheMetrics
-# might not be important.
-@pytest.mark.skip
-def test_log_cache_evictions_from_metrics_view(client, clear_redis, settings):
-    settings.MARKUS_BACKENDS = [{
-        'class': 'tecken.markus_extra.CacheMetrics',
-    }]
-    instance = views.LogCacheHitsMixin()
-    for i in range(10):
-        instance.log_symbol_cache_hit()
-    for i in range(2):
-        instance.log_symbol_cache_miss()
-    caches['store'].set('symbol:foo', 'something')
-    caches['store'].set('symbol:buz', 'else')
-    caches['store'].set('symbol:bar', 'different')
-    caches['store'].set('symbol:bar', 'changed')
-
-    url = reverse('symbolicate:metrics')
-    response = client.get(url)
-    metrics = response.json()
-    assert metrics['hits'] == 10
-    assert metrics['misses'] == 2
-    assert metrics['keys'] == 3
 
 
 def test_symbolicate_json_bad_inputs(client, json_poster):
