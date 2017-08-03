@@ -176,18 +176,27 @@ def users(request):
         'users': [],
     }
 
-    group_permissions = {}
+    # A cache. If two users belong to the same group, we don't want to
+    # have to figure out that group's permissions more than once.
+    all_group_permissions = {}
 
     def groups_to_permissions(groups):
-        permissions = []
+        all_permissions = []
+        permission_ids = set()
         for group in groups:
-            if group.id not in group_permissions:
-                permission_names = [
-                    _serialize_permission(x) for x in group.permissions.all()
-                ]
-                group_permissions[group.id] = permission_names
-            permissions.extend(group_permissions[group.id])
-        return sorted(permissions)
+            if group.id not in all_group_permissions:
+                # populate the cache for this group
+                all_group_permissions[group.id] = []
+                for perm in group.permissions.all():
+                    all_group_permissions[group.id].append(
+                        _serialize_permission(perm)
+                    )
+            for permission in all_group_permissions[group.id]:
+                if permission['id'] in permission_ids:
+                    continue
+                permission_ids.add(permission['id'])
+                all_permissions.append(permission)
+        return sorted(all_permissions, key=lambda x: x['name'])
 
     # Make a map of user_id to count of Token objects
     tokens_count = {}
@@ -226,6 +235,12 @@ def edit_user(request, id):
         form = UserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
+            # Remove all the groups that user might have been in before
+            groups = form.cleaned_data['groups']
+            for group in set(user.groups.all()) - set(groups):
+                user.groups.remove(group)
+            for group in set(groups) - set(user.groups.all()):
+                user.groups.add(group)
             return http.JsonResponse({'ok': True}, status=200)
         else:
             return http.JsonResponse({'errors': form.errors}, status=400)

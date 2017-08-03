@@ -235,8 +235,43 @@ def test_users(client):
     found_user, = response.json()['users']
     assert found_user['no_tokens'] == 1
     assert found_user['no_uploads'] == 1
-    assert found_user['groups'][0]['name'] == 'Uploaders'
-    assert found_user['permissions'][0]['name'] == 'Upload Symbols Files'
+    group, = found_user['groups']
+    assert group['name'] == 'Uploaders'
+    user_permissions_names = [x['name'] for x in found_user['permissions']]
+    assert 'Upload Symbols Files' in user_permissions_names
+    assert 'Manage Your API Tokens' in user_permissions_names
+
+
+@pytest.mark.django_db
+def test_users_permissions(client):
+    """when you query all users, for each user it lists all the permissions.
+    This is done by "expanding" each user's groups' permissions.
+    But it must repeat permissions that are found in multiple groups.
+    """
+    # log in as a superuser.
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.is_superuser = True
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    # Create a second user we're going to manipulate.
+    user = User.objects.create(username='you', email='you@example.com')
+    # Both of these groups have overlapping permissions.
+    # Namely, they both imply the 'Manage Your API Tokens' permission.
+    user.groups.add(Group.objects.get(name='Uploaders'))
+    user.groups.add(Group.objects.get(name='Upload Auditors'))
+
+    url = reverse('api:users')
+    response = client.get(url)
+    assert response.status_code == 200
+    user_record, = [x for x in response.json()['users'] if x['id'] == user.id]
+    # print(response.json())
+    print(user_record)
+    user_permissions_names = [x['name'] for x in user_record['permissions']]
+    assert 'Manage Your API Tokens' in user_permissions_names
+    assert 'View All Symbols Uploads' in user_permissions_names
+    assert 'Upload Symbols Files' in user_permissions_names
 
 
 @pytest.mark.django_db
@@ -282,6 +317,50 @@ def test_edit_user(client):
     # We've basically locked ourselves out. Nuts but should work.
     response = client.get(url)
     assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_edit_user_permissions(client):
+    """user permissions is a bit more non-trivial so this test is all about
+    changing a users permissions (done by adding/removing groups)."""
+
+    # log in as a superuser.
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.is_superuser = True
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    # Create a second user we're going to manipulate.
+    user = User.objects.create(username='you', email='you@example.com')
+    url = reverse('api:edit_user', args=(user.id,))
+    response = client.get(url)
+    assert response.status_code == 200
+    assert response.json()['user']['groups'] == []
+    # The JSON response will also contain a list of all possible groups.
+    # These should be the ones hardcoded in the apps' model Metas.
+    all_group_names = [x['name'] for x in response.json()['groups']]
+    assert 'Uploaders' in all_group_names
+    assert 'Upload Auditors' in all_group_names
+
+    # Make this user belong to "Uploaders" now
+    response = client.post(url, {
+        'is_active': True,
+        'groups': Group.objects.get(name='Uploaders').id,
+    })
+    assert response.status_code == 200
+    # assert user.groups.all().count() == 1
+    assert user.groups.filter(name='Uploaders').exists()
+    assert not user.groups.filter(name='Upload Auditors').exists()
+
+    # Change our mind and make the user belong to the other one.
+    response = client.post(url, {
+        'is_active': True,
+        'groups': Group.objects.get(name='Upload Auditors').id,
+    })
+    assert response.status_code == 200
+    assert not user.groups.filter(name='Uploaders').exists()
+    assert user.groups.filter(name='Upload Auditors').exists()
 
 
 def test_uploadsform_dates():
