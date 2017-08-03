@@ -13,7 +13,7 @@ from tecken.useradmin.middleware import find_users
 
 
 class Command(BaseCommand):
-    help = 'Create or toggle an existing user being a superuser.'
+    help = 'Find out if a user is blocked in Auth0 on the command line'
 
     def add_arguments(self, parser):
         parser.add_argument('email')
