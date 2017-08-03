@@ -8,11 +8,10 @@ set -eo pipefail
 export DEVELOPMENT=1
 export DJANGO_CONFIGURATION=Test
 
-# Disabled! See note in run.sh around codecov.
-# # pass CI env vars into docker containers for codecov submission
-# [ ! -z ${CI+check} ] && \
-#     echo "Getting Codecov environment variables" && \
-#     export CI_ENV=`bash <(curl -s https://codecov.io/env)`
+# pass CI env vars into docker containers for codecov submission
+[ ! -z ${CI+check} ] && \
+    echo "Getting Codecov environment variables" && \
+    export CI_ENV=`bash <(curl -s https://codecov.io/env)`
 
 # run docker compose with the given environment variables
 docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV test test $@
