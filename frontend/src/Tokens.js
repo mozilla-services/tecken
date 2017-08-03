@@ -183,7 +183,7 @@ class CreateTokenForm extends Component {
       <form onSubmit={this.submitCreate}>
         <div className="field">
           <label className="label">Permissions</label>
-          <div className="select select-multiple">
+          <div className="select is-multiple">
             <select
               multiple={true}
               className={validationErrors.permissions ? 'is-danger' : ''}

@@ -53,6 +53,13 @@ export default class User extends Component {
     store.setRedirectTo('/users')
   }
 
+  userSaved = () => {
+    store.setRedirectTo('/users', {
+      message: 'User changes saved.',
+      success: true
+    })
+  }
+
   render() {
     return (
       <div>
@@ -65,7 +72,7 @@ export default class User extends Component {
             user={this.state.user}
             groups={this.state.groups}
             editUser={this.editUser}
-            userSaved={this.goBack}
+            userSaved={this.userSaved}
           />}
         <hr />
         {this.state.groups && <ExplainGroups groups={this.state.groups} />}

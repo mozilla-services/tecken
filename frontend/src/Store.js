@@ -19,7 +19,6 @@ class Store {
             pathname: destination,
           }
         }
-        // console.log('typeof destination:', typeof destination);
         this.redirectTo = destination
         if (message) {
           if (typeof message === 'string') {

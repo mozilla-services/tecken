@@ -17,7 +17,9 @@ def create_default_groups(sender, **kwargs):
     from django.contrib.auth.models import Group, Permission
 
     name = 'Uploaders'
-    if not Group.objects.filter(name=name).exists():
+    try:
+        group = Group.objects.get(name=name)
+    except Group.DoesNotExist:
         group = Group.objects.create(name=name)
         group.permissions.add(
             Permission.objects.get(codename='upload_symbols')
@@ -25,7 +27,9 @@ def create_default_groups(sender, **kwargs):
         logger.info(f'Group "{name}" created')
 
     name = 'Upload Auditors'
-    if not Group.objects.filter(name=name).exists():
+    try:
+        group = Group.objects.get(name=name)
+    except Group.DoesNotExist:
         group = Group.objects.create(name=name)
         group.permissions.add(
             Permission.objects.get(codename='view_all_uploads')

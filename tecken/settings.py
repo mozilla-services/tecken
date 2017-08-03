@@ -114,8 +114,8 @@ class Core(CSP, AWS, Configuration, Celery):
         'tecken.apps.TeckenAppConfig',
         'tecken.symbolicate',
         'tecken.download',
-        'tecken.tokens',
         'tecken.upload',
+        'tecken.tokens',
         'tecken.api',
         'tecken.useradmin',
 

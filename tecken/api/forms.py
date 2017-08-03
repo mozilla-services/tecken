@@ -6,8 +6,7 @@ import re
 import dateutil
 
 from django import forms
-from django.contrib.auth.models import Permission
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, Group, User
 from django.utils import timezone
 
 
@@ -36,9 +35,22 @@ class TokenForm(forms.Form):
 
 
 class UserEditForm(forms.ModelForm):
+
+    groups = forms.CharField(required=False)
+
     class Meta:
         model = User
-        fields = ('is_active', 'is_superuser', 'groups')
+        fields = ('is_active', 'is_superuser')
+
+    def clean_groups(self):
+        value = self.cleaned_data['groups']
+        groups = []
+        for pk in [x for x in value.split(',') if x.strip()]:
+            try:
+                groups.append(Group.objects.get(id=pk))
+            except ValueError:
+                raise forms.ValidationError('Invalid group ID')
+        return groups
 
 
 class PaginationForm(forms.Form):
