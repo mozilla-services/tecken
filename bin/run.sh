@@ -56,12 +56,16 @@ case $1 in
       # generate code coverage to disk
       coverage html --skip-covered
     fi
-    if [[ ! -z ${CI+check} ]]; then
-      # submit coverage
-      coverage xml
-      env
-      bash <(curl -s https://codecov.io/bash) -s /tmp
-    fi
+    # Temporarily disabled. The team is small and codecov's report inside
+    # pull requests (as comments) is more noise than help.
+    # Also, code coverage is mostly useful when contributors help and
+    # add more code without adding tests to cover.
+    # if [[ ! -z ${CI+check} ]]; then
+    #   # submit coverage
+    #   coverage xml
+    #   env
+    #   bash <(curl -s https://codecov.io/bash) -s /tmp
+    # fi
     ;;
   bash)
     # The likelyhood of needing pytest-watch when in shell is
