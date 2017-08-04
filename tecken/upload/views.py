@@ -14,14 +14,17 @@ import markus
 
 from django import http
 from django.conf import settings
-from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 
-from tecken.base.decorators import api_login_required, api_permission_required
+from tecken.base.decorators import (
+    api_login_required,
+    api_permission_required,
+    api_require_POST
+)
 from tecken.upload.utils import get_archive_members
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
@@ -41,8 +44,8 @@ def check_symbols_archive_file_listing(file_listings):
         for snippet in settings.DISALLOWED_SYMBOLS_SNIPPETS:
             if snippet in file_listing.name:
                 return (
-                    "Content of archive file contains the snippet "
-                    "'%s' which is not allowed\n" % snippet
+                    f"Content of archive file contains the snippet "
+                    f"'{snippet}' which is not allowed"
                 )
         # Now check that the filename is matching according to these rules:
         # 1. Either /<name1>/hex/<name2>,
@@ -93,7 +96,7 @@ def get_bucket_info(user):
 
 
 @metrics.timer_decorator('upload_archive')
-@require_POST
+@api_require_POST
 @csrf_exempt
 @api_login_required
 @api_permission_required('upload.upload_symbols')
@@ -104,23 +107,26 @@ def upload_archive(request):
         size = upload.size
         break
     else:
-        # XXX Make this a JSON BadRequest
-        return http.HttpResponseBadRequest(
-            "Must be multipart form data with at least one file"
+        return http.JsonResponse(
+            {'error': 'Must be multipart form data with at least one file'},
+            status=400,
         )
     if not size:
-        # XXX Make this a JSON BadRequest
-        return http.HttpResponseBadRequest('File size 0')
+        return http.JsonResponse(
+            {'error': 'File size 0'},
+            status=400
+        )
 
     try:
         file_listing = list(get_archive_members(upload, name))
     except zipfile.BadZipfile as exception:
-        # XXX Make this a JSON BadRequest
-        return http.HttpResponseBadRequest(exception)
+        return http.JsonResponse(
+            {'error': str(exception)},
+            status=400,
+        )
     error = check_symbols_archive_file_listing(file_listing)
     if error:
-        # XXX Make this a JSON BadRequest
-        return http.HttpResponseBadRequest(error)
+        return http.JsonResponse({'error': error.strip()}, status=400)
 
     # Upload the archive file into the "inbox".
     # This is a folder in the root of the bucket where the upload

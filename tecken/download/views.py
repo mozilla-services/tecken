@@ -12,12 +12,14 @@ import cachetools
 
 from django import http
 from django.conf import settings
-from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.core.cache import cache
 
 from tecken.base.symboldownloader import SymbolDownloader
-from tecken.base.decorators import set_request_debug
+from tecken.base.decorators import (
+    set_request_debug,
+    api_require_http_methods,
+)
 from tecken.download.tasks import download_microsoft_symbol
 
 
@@ -63,7 +65,7 @@ def download_from_microsoft(symbol, debugid):
 
 @metrics.timer_decorator('download_symbol')
 @set_request_debug
-@require_http_methods(['GET', 'HEAD'])
+@api_require_http_methods(['GET', 'HEAD'])
 def download_symbol(request, symbol, debugid, filename):
     # First there's an opportunity to do some basic pattern matching on
     # the symbol, debugid, and filename parameters to determine

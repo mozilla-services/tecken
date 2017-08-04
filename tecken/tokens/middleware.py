@@ -38,21 +38,21 @@ class APITokenAuthenticationMiddleware(MiddlewareMixin):
         try:
             token = Token.objects.select_related('user').get(key=key)
             if token.is_expired:
-                # XXX change to one that produces JSON
-                return http.HttpResponseForbidden(
-                    'API Token found but expired'
+                return http.JsonResponse(
+                    {'error': 'API Token found but expired'},
+                    status=403,
                 )
         except Token.DoesNotExist:
-            # XXX change to one that produces JSON
-            return http.HttpResponseForbidden(
-                'API Token not matched'
+            return http.JsonResponse(
+                {'error': 'API Token not matched'},
+                status=403,
             )
 
         user = token.user
         if not user.is_active:
-            # XXX change to one that produces JSON
-            return http.HttpResponseForbidden(
-                'API Token matched but user not active'
+            return http.JsonResponse(
+                {'error': 'API Token matched but user not active'},
+                status=403,
             )
 
         # It actually doesn't matter so much which backend

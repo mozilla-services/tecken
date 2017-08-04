@@ -11,12 +11,15 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission, User, Group
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
-from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.base.decorators import api_login_required, api_permission_required
+from tecken.base.decorators import (
+    api_login_required,
+    api_permission_required,
+    api_require_http_methods,
+)
 from .forms import (
     TokenForm,
     UserEditForm,
@@ -140,7 +143,7 @@ def tokens(request):
     return http.JsonResponse(context)
 
 
-@require_http_methods(['DELETE'])
+@api_require_http_methods(['DELETE'])
 @api_login_required
 def delete_token(request, id):
     if request.user.is_superuser:
