@@ -7,14 +7,13 @@ import json
 import time
 
 from django import http
-from django.template import TemplateDoesNotExist, loader
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_safe
 from django.core.cache import cache
 from django.shortcuts import redirect
 from django.conf import settings
 
 from .symbolicate.views import symbolicate_json
+from tecken.base.decorators import api_require_safe
 from tecken.tasks import sample_task
 
 
@@ -40,23 +39,20 @@ def dashboard(request):
     return http.JsonResponse(context)
 
 
-def server_error(request, template_name='500.html'):
-    """
-    500 error handler.
+def handler500(request):
+    return http.JsonResponse({'error': 'Internal Server Error'}, status=500)
 
-    Templates: :template:`500.html`
-    Context: None
-    """
-    try:
-        template = loader.get_template(template_name)
-    except TemplateDoesNotExist:
-        return http.HttpResponseServerError(
-            '<h1>Server Error (500)</h1>',
-            content_type='text/html'
-        )
-    return http.HttpResponseServerError(template.render({
-        'request': request,
-    }))
+
+def handler400(request):
+    return http.JsonResponse({'error': 'Bad Request'}, status=400)
+
+
+def handler403(request):
+    return http.JsonResponse({'error': 'Forbidden'}, status=403)
+
+
+def handler404(request):
+    return http.JsonResponse({'error': 'Not Found'}, status=404)
 
 
 @csrf_exempt
@@ -84,7 +80,7 @@ def task_tester(request):
         )
 
 
-@require_safe
+@api_require_safe
 def contribute_json(request):
     """Advantages of having our own custom view over using
     django.view.static.serve is that we get the right content-type

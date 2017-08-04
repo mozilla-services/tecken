@@ -6,12 +6,16 @@ import os
 
 from django.conf import settings
 from django.conf.urls import include, url
-from django.views import generic, static
+from django.views import static
 
 from . import views
 
-
-handler500 = 'tecken.views.server_error'
+# These handlers are for dealing with exceptions raised from within
+# Django. Most other 4xx errors happen explicitly in the view functions.
+handler500 = 'tecken.views.handler500'
+handler400 = 'tecken.views.handler400'
+handler403 = 'tecken.views.handler403'
+handler404 = 'tecken.views.handler404'
 
 
 urlpatterns = [
@@ -44,6 +48,4 @@ urlpatterns = [
         static.serve,
         {'document_root': os.path.join(settings.BASE_DIR, 'favicons')}
     ),
-    url(r'^404/$', generic.TemplateView.as_view(template_name='404.html')),
-    url(r'^500/$', generic.TemplateView.as_view(template_name='500.html')),
 ]

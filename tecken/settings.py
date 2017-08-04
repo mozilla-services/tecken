@@ -107,8 +107,6 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.auth',
         'django.contrib.contenttypes',
         'django.contrib.sessions',
-        'django.contrib.messages',
-        'django.contrib.staticfiles',
 
         # Project specific apps
         'tecken.apps.TeckenAppConfig',
@@ -191,28 +189,6 @@ class Core(CSP, AWS, Configuration, Celery):
         # mozilla.org subdomain
         'security.W005',
         'security.W009',  # we know the SECRET_KEY is strong
-    ]
-
-    TEMPLATES = [
-        {
-            'BACKEND': 'django.template.backends.django.DjangoTemplates',
-            'OPTIONS': {
-                'context_processors': [
-                    'django.contrib.auth.context_processors.auth',
-                    'django.template.context_processors.debug',
-                    'django.template.context_processors.i18n',
-                    'django.template.context_processors.media',
-                    'django.template.context_processors.static',
-                    'django.template.context_processors.tz',
-                    'django.template.context_processors.request',
-                    'django.contrib.messages.context_processors.messages',
-                ],
-                'loaders': [
-                    'django.template.loaders.filesystem.Loader',
-                    'django.template.loaders.app_directories.Loader',
-                ],
-            }
-        },
     ]
 
     OIDC_RP_CLIENT_ID = values.SecretValue()
@@ -520,7 +496,7 @@ class Localdev(Base):
     # forces you to use/test the symbol downloader based on requests.get().
     SYMBOL_URLS = values.ListValue([
         'http://motocker:5000/testbucket',
-        # 'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
+        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
     ])
 
     # By default, upload all symbols to this when in local dev.

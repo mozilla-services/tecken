@@ -2,10 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import logging
 from functools import wraps
 
 from django import http
+from django.utils.decorators import available_attrs
 from django.contrib.auth.decorators import permission_required
+
+logger = logging.getLogger('tecken')
 
 
 def api_login_required(view_func):
@@ -15,8 +19,11 @@ def api_login_required(view_func):
     @wraps(view_func)
     def inner(request, *args, **kwargs):
         if not request.user.is_active:
-            return http.HttpResponseForbidden(
-                "This requires an Auth-Token to authenticate the request"
+            return http.JsonResponse(
+                {'error': (
+                    'This requires an Auth-Token to authenticate the request'
+                )},
+                status=403,
             )
         return view_func(request, *args, **kwargs)
 
@@ -53,3 +60,54 @@ def set_request_debug(view_func):
         return view_func(request, *args, **kwargs)
 
     return wrapper
+
+
+class JsonHttpResponseNotAllowed(http.JsonResponse):
+    status_code = 405
+
+    def __init__(self, permitted_methods, data, *args, **kwargs):
+        super(JsonHttpResponseNotAllowed, self).__init__(data, *args, **kwargs)
+        self['Allow'] = ', '.join(permitted_methods)
+
+
+def api_require_http_methods(request_method_list):
+    """
+    This is copied verbatim from django.views.decorators.require_http_methods
+    *except* it changes which HTTP response class to return.
+    All of this just to make it possible to always return a JSON response
+    when the request method is not allowed.
+    Also, it's changed to use the f'' string format.
+    """
+    def decorator(func):
+        @wraps(func, assigned=available_attrs(func))
+        def inner(request, *args, **kwargs):
+            if request.method not in request_method_list:
+                message = (
+                    f'Method Not Allowed ({request.method}): {request.path}'
+                )
+                logger.warning(
+                    message,
+                    extra={'status_code': 405, 'request': request}
+                )
+                return JsonHttpResponseNotAllowed(request_method_list, {
+                    'error': message,
+                })
+            return func(request, *args, **kwargs)
+        return inner
+    return decorator
+
+
+api_require_GET = api_require_http_methods(["GET"])
+api_require_GET.__doc__ = (
+    "Decorator to require that a view only accepts the GET method."
+)
+
+api_require_POST = api_require_http_methods(["POST"])
+api_require_POST.__doc__ = (
+    "Decorator to require that a view only accepts the POST method."
+)
+
+api_require_safe = api_require_http_methods(["GET", "HEAD"])
+api_require_safe.__doc__ = (
+    "Decorator to require that a view only accepts safe methods: GET and HEAD."
+)

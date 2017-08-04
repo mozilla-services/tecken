@@ -591,22 +591,28 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         url = reverse('upload:upload_archive')
         response = client.get(url)
         assert response.status_code == 405
+        error_msg = 'Method Not Allowed (GET): /upload/'
+        assert response.json()['error'] == error_msg
 
         response = client.post(url)
         assert response.status_code == 403
+        error_msg = 'This requires an Auth-Token to authenticate the request'
+        assert response.json()['error'] == error_msg
 
         token = Token.objects.create(user=fakeuser)
         response = client.post(url, HTTP_AUTH_TOKEN=token.key)
         # will also fail because of lack of permission
         assert response.status_code == 403
+        assert response.json()['error'] == 'Forbidden'
+
         # so let's fix that
         permission, = Permission.objects.filter(codename='upload_symbols')
         token.permissions.add(permission)
 
         response = client.post(url, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 400
-        error_msg = b'Must be multipart form data with at least one file'
-        assert error_msg in response.content
+        error_msg = 'Must be multipart form data with at least one file'
+        assert response.json()['error'] == error_msg
 
         # Upload an empty file
         empty_fileobject = BytesIO()
@@ -616,8 +622,7 @@ def test_upload_client_bad_request(fakeuser, client, settings):
             HTTP_AUTH_TOKEN=token.key,
         )
         assert response.status_code == 400
-        error_msg = b'File size 0'
-        assert error_msg in response.content
+        assert response.json()['error'] == 'File size 0'
 
         settings.DISALLOWED_SYMBOLS_SNIPPETS = ('xpcshell.sym',)
 
@@ -629,10 +634,10 @@ def test_upload_client_bad_request(fakeuser, client, settings):
             )
             assert response.status_code == 400
             error_msg = (
-                b"Content of archive file contains the snippet "
-                b"'xpcshell.sym' which is not allowed"
+                "Content of archive file contains the snippet "
+                "'xpcshell.sym' which is not allowed"
             )
-            assert error_msg in response.content
+            assert response.json()['error'] == error_msg
 
         # Undo that setting override
         settings.DISALLOWED_SYMBOLS_SNIPPETS = ('nothing',)
@@ -646,10 +651,10 @@ def test_upload_client_bad_request(fakeuser, client, settings):
             )
             assert response.status_code == 400
             error_msg = (
-                b'Unrecognized file pattern. Should only be '
-                b'<module>/<hex>/<file> or <name>-symbols.txt and nothing else'
+                'Unrecognized file pattern. Should only be '
+                '<module>/<hex>/<file> or <name>-symbols.txt and nothing else.'
             )
-            assert error_msg in response.content
+            assert response.json()['error'] == error_msg
 
         # Now upload a file that isn't a zip file
         with open(ACTUALLY_NOT_ZIP_FILE, 'rb') as f:
@@ -659,8 +664,8 @@ def test_upload_client_bad_request(fakeuser, client, settings):
                 HTTP_AUTH_TOKEN=token.key,
             )
             assert response.status_code == 400
-            error_msg = b'File is not a zip file'
-            assert error_msg in response.content
+            error_msg = 'File is not a zip file'
+            assert response.json()['error'] == error_msg
 
 
 @pytest.mark.django_db
