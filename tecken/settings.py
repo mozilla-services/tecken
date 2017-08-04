@@ -606,6 +606,26 @@ class Test(Localdev):
         '*@peterbe.com': 'https://s3.example.com/peterbe-com',
     }
 
+    @property
+    def CACHES(self):
+        parent = super(Test, self).CACHES
+        parent['default'] = {
+            # 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'BACKEND': 'tecken.cache_extra.RedisLocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+        # parent['default']['OPTIONS']['REDIS_CLIENT_CLASS'] = (
+        #     'fakeredis.FakeStrictRedis'
+        # )
+        # parent['default'] = {
+        #     'BACKEND': 'django_redis.cache.RedisCache',
+        #     'LOCATION':
+        #     'OPTIONS': {
+        #         'REDIS_CLIENT_CLASS': 'fakeredis.FakeStrictRedis',
+        #     }
+        # }
+        return parent
+
 
 class Dev(Base):
     """Configuration to be used in dev server environment"""
