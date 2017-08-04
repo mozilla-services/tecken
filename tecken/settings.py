@@ -215,7 +215,7 @@ class Core(CSP, AWS, Configuration, Celery):
 
     # Keep it quite short because we don't have a practical way to do
     # OIDC ID token renewal for this AJAX and curl heavy app.
-    SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 7)
+    SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 365)
 
     # Where users get redirected after successfully signing in
     LOGIN_REDIRECT_URL = '/?signedin=true'
