@@ -158,7 +158,8 @@ class DisplayUsers extends Component {
                     : null}
                 </td>
                 <td>
-                  <DisplayDate date={user.last_login} /> <br />
+                  {user.last_login ? <DisplayDate date={user.last_login} /> : <i>never logged in</i> }
+                  <br />
                   <small>
                     (joined <DisplayDate date={user.date_joined} />)
                   </small>
