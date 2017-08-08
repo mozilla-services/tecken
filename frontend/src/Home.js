@@ -1,12 +1,30 @@
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
+import { observer } from 'mobx-react'
 
 import './Home.css'
 import { formatFileSize, Loading } from './Common'
 import Fetch from './Fetch'
 import store from './Store'
 
-class Home extends Component {
+const Home = observer(
+  class Home extends Component {
+    componentDidMount() {
+      document.title = 'Mozilla Symbol Server'
+    }
+
+    render() {
+      if (store.currentUser) {
+        return <SignedInTiles user={store.currentUser} />
+      }
+      return <AnonymousTiles signIn={this.props.signIn} />
+    }
+  }
+)
+
+export default Home
+
+class SignedInTiles extends Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -16,16 +34,12 @@ class Home extends Component {
   }
 
   componentDidMount() {
-    document.title = 'Mozilla Symbol Server'
     this._fetchStats()
   }
 
   _fetchStats = () => {
     this.setState({ loading: true })
     Fetch('/api/stats/', { credentials: 'same-origin' }).then(r => {
-      if (r.status === 403 && !store.currentUser) {
-        return
-      }
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -43,124 +57,110 @@ class Home extends Component {
   }
 
   render() {
-    if (store.currentUser) {
-      return (
-        <SignedInTiles
-          signOut={this.props.signOut}
-          stats={this.state.stats}
-          loading={this.state.loading}
-        />
-      )
-    }
-    return <AnonymousTiles signIn={this.props.signIn} />
+    const { user } = this.props
+    const { stats, loading } = this.state
+    return (
+      <div>
+        <div className="tile is-ancestor">
+          <div
+            className={
+              user.is_superuser ? 'tile is-parent' : 'tile is-parent is-8'
+            }
+          >
+            {store.hasPermission('upload.upload_symbols')
+              ? <AboutUploadsTile loading={loading} stats={stats} />
+              : <AboutUploadsPermissionTile />}
+          </div>
+          <div className="tile is-parent">
+            {store.hasPermission('tokens.manage_tokens')
+              ? <AboutTokensTile loading={loading} stats={stats} />
+              : <AboutTokensPermissionTile />}
+          </div>
+          {user.is_superuser &&
+            <div className="tile is-parent">
+              <article className="tile is-child box">
+                <p className="title">Users</p>
+                {loading || !stats
+                  ? <Loading />
+                  : <p>
+                      There <b>{stats.users.total} users</b> in total of which{' '}
+                      <b>{stats.users.superusers}</b>{' '}
+                      {stats.users.superusers === 1
+                        ? 'is superuser'
+                        : 'are superusers'},
+                      <b>{stats.users.not_active}</b> are inactive.
+                    </p>}
+                <p>
+                  <Link to="/users">
+                    Go to <b>User Management</b>
+                  </Link>
+                </p>
+              </article>
+            </div>}
+        </div>
+
+        <div className="tile is-ancestor">
+          <div className="tile is-parent">
+            <article className="tile is-child box">
+              <p className="title">Authenticated</p>
+              <p className="subtitle">
+                You are signed in as <b>{user.email}</b>.
+                <br />
+                {user.is_superuser &&
+                  <span>
+                    You are a <b>superuser</b>.
+                  </span>}
+              </p>
+              <p style={{ marginTop: 20 }}>
+                You have the following permissions:
+              </p>
+              {user.permissions && user.permissions.length
+                ? <ListYourPermissions permissions={user.permissions} />
+                : <AboutPermissions />}
+            </article>
+          </div>
+          <div className="tile is-parent is-8">
+            <article className="tile is-child box">
+              <p className="title">Where do you want to go?</p>
+              <p>
+                <Link to="/help" className="is-size-5">
+                  Help
+                </Link>
+              </p>
+              <p>
+                <a
+                  href="https://tecken.readthedocs.io"
+                  className="is-size-5"
+                  rel="noopener noreferrer"
+                >
+                  Documentation on Readthedocs
+                </a>
+              </p>
+              <p>
+                <a
+                  href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+                  className="is-size-5"
+                  rel="noopener noreferrer"
+                >
+                  File a bug
+                </a>
+              </p>
+              <p>
+                <a
+                  href="https://github.com/mozilla-services/tecken"
+                  className="is-size-5"
+                  rel="noopener noreferrer"
+                >
+                  Code on GitHub
+                </a>
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+    )
   }
 }
-
-export default Home
-
-//
-
-const SignedInTiles = ({ signOut, loading, stats }) =>
-  <div>
-    <div className="tile is-ancestor">
-      <div
-        className={
-          store.currentUser.is_superuser
-            ? 'tile is-parent'
-            : 'tile is-parent is-8'
-        }
-      >
-        {store.hasPermission('upload.upload_symbols')
-          ? <AboutUploadsTile loading={loading} stats={stats} />
-          : <AboutUploadsPermissionTile />}
-      </div>
-      <div className="tile is-parent">
-        {store.hasPermission('tokens.manage_tokens')
-          ? <AboutTokensTile loading={loading} stats={stats} />
-          : <AboutTokensPermissionTile />}
-      </div>
-      {store.currentUser.is_superuser &&
-        <div className="tile is-parent">
-          <article className="tile is-child box">
-            <p className="title">Users</p>
-            {loading || !stats
-              ? <Loading />
-              : <p>
-                  There <b>{stats.users.total} users</b> in total of which{' '}
-                  <b>{stats.users.superusers}</b>{' '}
-                  {stats.users.superusers === 1
-                    ? 'is superuser'
-                    : 'are superusers'},
-                  <b>{stats.users.not_active}</b> are inactive.
-                </p>}
-            <p>
-              <Link to="/users">
-                Go to <b>User Management</b>
-              </Link>
-            </p>
-          </article>
-        </div>}
-    </div>
-
-    <div className="tile is-ancestor">
-      <div className="tile is-parent">
-        <article className="tile is-child box">
-          <p className="title">Authenticated</p>
-          <p className="subtitle">
-            You are signed in as <b>{store.currentUser.email}</b>.
-            <br />
-            {store.currentUser.is_superuser &&
-              <span>
-                You are a <b>superuser</b>.
-              </span>}
-          </p>
-          <p style={{ marginTop: 20 }}>You have the following permissions:</p>
-          {store.currentUser.permissions && store.currentUser.permissions.length ?
-            <ListYourPermissions permissions={store.currentUser.permissions} /> :
-            <AboutPermissions/>
-          }
-
-        </article>
-      </div>
-      <div className="tile is-parent is-8">
-        <article className="tile is-child box">
-          <p className="title">Where do you want to go?</p>
-          <p>
-            <Link to="/help" className="is-size-5">
-              Help
-            </Link>
-          </p>
-          <p>
-            <a
-              href="https://tecken.readthedocs.io"
-              className="is-size-5"
-              rel="noopener noreferrer"
-            >
-              Documentation on Readthedocs
-            </a>
-          </p>
-          <p>
-            <a
-              href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
-              className="is-size-5"
-              rel="noopener noreferrer"
-            >
-              File a bug
-            </a>
-          </p>
-          <p>
-            <a
-              href="https://github.com/mozilla-services/tecken"
-              className="is-size-5"
-              rel="noopener noreferrer"
-            >
-              Code on GitHub
-            </a>
-          </p>
-        </article>
-      </div>
-    </div>
-  </div>
 
 const ListYourPermissions = ({ permissions }) =>
   <ul>
@@ -173,19 +173,18 @@ const ListYourPermissions = ({ permissions }) =>
     )}
   </ul>
 
-const AboutPermissions = () => (
+const AboutPermissions = () =>
   <p>
-    <i>None!</i>
-    {' '}
+    <i>None!</i>{' '}
     <a
       href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
       rel="noopener noreferrer"
     >
       File a bug to ask for permissions.
-    </a><br/>
+    </a>
+    <br />
     <small>Don't forget to mention the email you used to sign in.</small>
   </p>
-)
 const AboutUploadsPermissionTile = () =>
   <article className="tile is-child box">
     <p className="title">Uploaded Symbols</p>

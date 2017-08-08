@@ -87,6 +87,7 @@ const App = observer(
         redirect: 'manual'
       }).then(r => {
         sessionStorage.removeItem('signedin')
+        store.currentUser = null
         store.setRedirectTo('/', {
           message: 'Signed out',
           success: true
@@ -138,7 +139,8 @@ const App = observer(
                         User Management
                       </NavLink>
                     : null}
-                  {store.currentUser && store.hasPermission('tokens.manage_tokens') &&
+                  {store.currentUser &&
+                    store.hasPermission('tokens.manage_tokens') &&
                     <NavLink
                       to="/tokens"
                       className="nav-item is-tab"
@@ -146,7 +148,8 @@ const App = observer(
                     >
                       API Tokens
                     </NavLink>}
-                  {store.currentUser && store.hasPermission('upload.upload_symbols') &&
+                  {store.currentUser &&
+                    store.hasPermission('upload.upload_symbols') &&
                     <NavLink
                       to="/uploads"
                       className="nav-item is-tab"
@@ -189,12 +192,9 @@ const App = observer(
                 <Route
                   path="/"
                   exact
-                  render={props =>
-                    <Home
-                      {...props}
-                      signIn={this.signIn}
-                      signOut={this.signOut}
-                    />}
+                  render={props => {
+                    return <Home {...props} signIn={this.signIn} />
+                  }}
                 />
                 <Route path="/help" component={Help} />
                 <Route path="/tokens" component={Tokens} />
