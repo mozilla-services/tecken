@@ -28,7 +28,11 @@ dependencies:
     # build image
     - make build
     # Build the static files for the front-end if in a Circle tag build
-    - if [[ -n "$CIRCLE_TAG" || "$CIRCLE_BRANCH" == "master" ]]; then docker build -f Dockerfile.staticfrontend -t tecken:deploy_base .; fi
+    - >
+        if [[ -n "$CIRCLE_TAG" || "$CIRCLE_BRANCH" == "master" ]]; then
+          docker build --build-arg SENTRY_PUBLIC_DSN=$tecken_frontend_sentry_public_dsn \
+            -f Dockerfile.staticfrontend -t tecken:deploy_base .
+        fi
     # Clean up old image and save the new one
     - >
       mkdir -p ~/cache/docker;
