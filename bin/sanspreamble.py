@@ -7,14 +7,18 @@
 import os
 import itertools
 import subprocess
+import fnmatch
 
 
 def run():
 
     exceptions = (
+        '.*',
         'docs/conf.py',
         'tests/blockade.py',
         'setup.py',
+        'tecken/*/migrations/*',
+        'registerServiceWorker.js',
     )
 
     alreadies = subprocess.check_output([
@@ -31,7 +35,7 @@ def run():
             continue
         if not os.stat(fp).st_size:
             continue
-        if fp in exceptions:
+        if [x for x in exceptions if fnmatch.fnmatch(fp, x)]:
             continue
         if True in itertools.imap(fp.endswith, ('.py', '.js')):
             suspect.append(fp)
