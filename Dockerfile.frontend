@@ -19,8 +19,6 @@ ADD frontend /app
 EXPOSE 3000
 EXPOSE 35729
 
-#ENV REACT_APP_SENTRY_PUBLIC_DSN=https://7f68162baf9b492aa16fe9c09162268a@sentry.prod.mozaws.net/196
-
 #CMD ["yarn", "run", "build"]
 #CMD ["yarn", "start"]
 # The `| cat` is to trick Node that this is an non-TTY terminal
