@@ -245,6 +245,7 @@ class Base(Core):
 
     REDIS_URL = values.Value('redis://redis-cache:6379/0')
     REDIS_STORE_URL = values.Value('redis://redis-store:6379/0')
+    MEMCACHED_LOCAL_URL = values.Value('memcached:11211')
 
     # Use redis as the Celery broker.
     @property
@@ -269,6 +270,10 @@ class Base(Core):
                     'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # noqa
                     'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',  # noqa
                 },
+            },
+            'local': {
+                'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
+                'LOCATION': self.MEMCACHED_LOCAL_URL,
             },
         }
 
@@ -430,9 +435,6 @@ class Base(Core):
         'tecken.dockerflow_extra.check_s3_urls',
     ]
 
-    # This determines how many different symbol keys we store in the
-    # global TTL cache object used by SymbolDownloader.
-    SYMBOLDOWNLOAD_EXISTS_MAXSIZE = values.IntegerValue(10000)
     # We can cache quite aggressively here because the SymbolDownloader
     # has chance to invalidate certain keys.
     # But we don't want to make it too long since when a symbols.zip file
@@ -442,8 +444,6 @@ class Base(Core):
 
     # Whether to start a background task to search for symbols
     # on Microsoft's server is protected by an in-memory cache.
-    # We need to cap its size.
-    MICROSOFT_DOWNLOAD_CACHE_MAXSIZE = values.IntegerValue(1000)
     # This is quite important. Don't make it too long or else clients
     # won't be able retry to see if a Microsoft symbol has been successfully
     # downloaded by the background job.
@@ -568,8 +568,9 @@ class Test(Localdev):
     # want to test the code we have.
     ENABLE_TOKENS_AUTHENTICATION = True
 
-    # This feature flag is always on when testing.
-    ENABLE_DOWNLOAD_FROM_MICROSOFT = True
+    # This feature flag is always off when testing except the tests
+    # that enable it on and deliberately test Microsoft download.
+    ENABLE_DOWNLOAD_FROM_MICROSOFT = False
 
     # Disable the Auth0 in all tests. THere are some specific tests
     # that switch it back on to test the Auth0 blocked middleware.
@@ -610,20 +611,13 @@ class Test(Localdev):
     def CACHES(self):
         parent = super(Test, self).CACHES
         parent['default'] = {
-            # 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
             'BACKEND': 'tecken.cache_extra.RedisLocMemCache',
             'LOCATION': 'unique-snowflake',
         }
-        # parent['default']['OPTIONS']['REDIS_CLIENT_CLASS'] = (
-        #     'fakeredis.FakeStrictRedis'
-        # )
-        # parent['default'] = {
-        #     'BACKEND': 'django_redis.cache.RedisCache',
-        #     'LOCATION':
-        #     'OPTIONS': {
-        #         'REDIS_CLIENT_CLASS': 'fakeredis.FakeStrictRedis',
-        #     }
-        # }
+        parent['local'] = {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'uniquer-snowflake',
+        }
         return parent
 
 

@@ -75,18 +75,6 @@ def test_client_happy_path(client, botomock, metricsmock):
         assert response.status_code == 200
         assert response.content == b''
 
-        metrics_records = metricsmock.get_records()
-        timing_metrics = [
-            (thing, stat, value, tags)
-            for thing, stat, value, tags in metrics_records
-            if thing == TIMING
-        ]
-        assert len(timing_metrics) == 2
-        assert timing_metrics[0][1] == 'tecken.download_symbol'
-        assert timing_metrics[1][1] == 'tecken.download_symbol'
-        assert isinstance(timing_metrics[0][2], float)
-        assert isinstance(timing_metrics[1][2], float)
-
 
 def test_client_with_debug(client, botomock, metricsmock):
     reload_downloader('https://s3.example.com/private/prefix/')
@@ -310,7 +298,8 @@ def test_missing_symbols_csv(client, clear_redis):
     assert last_line[3] == 'deadbeef'
 
 
-def test_get_microsoft_symbol_client(client, botomock):
+def test_get_microsoft_symbol_client(client, botomock, settings):
+    settings.ENABLE_DOWNLOAD_FROM_MICROSOFT = True
     reload_downloader('https://s3.example.com/private/prefix/')
 
     mock_calls = []
@@ -328,8 +317,8 @@ def test_get_microsoft_symbol_client(client, botomock):
 
     task_arguments = []
 
-    def fake_task(symbol, debugid):
-        task_arguments.append((symbol, debugid))
+    def fake_task(symbol, debugid, **kwargs):
+        task_arguments.append((symbol, debugid, kwargs))
 
     _mock_function = 'tecken.download.views.download_microsoft_symbol.delay'
     with mock.patch(_mock_function, new=fake_task):
@@ -339,10 +328,8 @@ def test_get_microsoft_symbol_client(client, botomock):
             assert response.content == b'Symbol Not Found Yet'
             assert task_arguments
             task_argument, = task_arguments
-            assert task_argument == (
-                'foo.pdb',
-                '44E4EC8C2F41492B9369D6B9A059577C2'
-            )
+            assert task_argument[0] == 'foo.pdb'
+            assert task_argument[1] == '44E4EC8C2F41492B9369D6B9A059577C2'
 
             # Pretend we're excessively eager
             response = client.get(url)

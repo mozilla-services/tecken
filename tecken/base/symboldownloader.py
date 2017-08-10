@@ -2,23 +2,26 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import hashlib
 import time
 from io import BytesIO
 from gzip import GzipFile
 from functools import wraps
-from threading import RLock
 
 import logging
-import cachetools
 import requests
+import markus
 from botocore.exceptions import ClientError
 
 from django.conf import settings
+from django.core.cache import caches
+from django.utils.encoding import force_bytes
 
 from tecken.s3 import S3Bucket
 
 
 logger = logging.getLogger('tecken')
+metrics = markus.get_metrics('tecken')
 
 ITER_CHUNK_SIZE = 512
 
@@ -75,21 +78,27 @@ def set_time_took(method):
     return wrapper
 
 
-# The TTLCache (unlike LRUCache) has a pop() method which is useful
-# because the SymbolDownloader can invalidate individual keys.
-exists_cache = cachetools.TTLCache(
-    maxsize=settings.SYMBOLDOWNLOAD_EXISTS_MAXSIZE,
-    ttl=settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-)
-_exists_lock = RLock()
+def make_symbol_cache_key(bucket_name, key):
+    return hashlib.md5(force_bytes(f'symbol:{bucket_name}:{key}')).hexdigest()
 
 
+@metrics.timer_decorator('symboldownloader_exists_combined')
 def exists_in_source(source, key):
     """return true if this file exists in the S3 bucket as specified
     by the source (S3Bucket instance) object."""
+    local_cache = caches['local']
 
-    @cachetools.cached(exists_cache, lock=_exists_lock)
+    cache_key = make_symbol_cache_key(source.name, key)
+    with metrics.timer('symboldownloader_exists_local_cache'):
+        cached = local_cache.get(cache_key)
+    if cached is not None:
+        metrics.incr('symboldownloader_exists_cache_hit', 1)
+        # That was easy! No point doing an actual S3 lookup
+        return cached
+
+    @metrics.timer_decorator('symboldownloader_exists_s3')
     def lookup(bucket_name, key):
+        metrics.incr('symboldownloader_exists_cache_miss', 1)
         response = source.s3_client.list_objects_v2(
             Bucket=source.name,
             Prefix=key,
@@ -100,7 +109,13 @@ def exists_in_source(source, key):
                 return True
         return False
 
-    return lookup(source.name, key)
+    exists = lookup(source.name, key)
+    local_cache.set(
+        cache_key,
+        exists,
+        settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS
+    )
+    return exists
 
 
 class SymbolDownloader:
@@ -180,14 +195,14 @@ class SymbolDownloader:
         # Because we can't know exactly which source (aka URL) was
         # used when the key was cached by exists_in_source() we have
         # to iterate over the source.
+        cache = caches['local']
         for source in self.sources:
             prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
-            key = self._make_key(prefix, symbol, debugid, filename)
-            try:
-                exists_cache.pop((source.name, key))
-                break
-            except KeyError:
-                pass
+            cache_key = make_symbol_cache_key(
+                source.name,
+                self._make_key(prefix, symbol, debugid, filename),
+            )
+            cache.delete(cache_key)
 
     @staticmethod
     def _make_key(prefix, symbol, debugid, filename):
