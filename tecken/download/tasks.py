@@ -41,11 +41,11 @@ class DumpSymsError(Exception):
 ))
 @reraise_clienterrors
 @reraise_endpointconnectionerrors
-def download_microsoft_symbol(symbol, debugid):
+def download_microsoft_symbol(symbol, debugid, code_file=None, code_id=None):
     MS_URL = 'https://msdl.microsoft.com/download/symbols/'
     MS_USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
     debug_file = symbol
-    url = MS_URL + "/".join([debug_file, debugid, debug_file[:-1] + '_'])
+    url = MS_URL + '/'.join([debug_file, debugid, debug_file[:-1] + '_'])
     session = requests_retry_session()
     r = session.get(url, headers={'User-Agent': MS_USER_AGENT})
     if r.status_code != 200:
