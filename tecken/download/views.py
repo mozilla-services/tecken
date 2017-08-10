@@ -4,16 +4,16 @@
 
 import csv
 import datetime
+import hashlib
 import logging
-from threading import RLock
 
 import markus
-import cachetools
 
 from django import http
 from django.conf import settings
 from django.utils import timezone
-from django.core.cache import cache
+from django.core.cache import cache, caches
+from django.utils.encoding import force_bytes
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
@@ -38,29 +38,30 @@ def _ignore_symbol(symbol, debugid, filename):
         return True
 
     # The default is to NOT ignore it
+    return False
 
 
-microsoft_download_cache = cachetools.TTLCache(
-    maxsize=settings.MICROSOFT_DOWNLOAD_CACHE_MAXSIZE,
-    ttl=settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS,
-)
-_microsoft_download_cache_lock = RLock()
+def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
+    """Only kick off the 'download_microsoft_symbol' background task
+    if we haven't already done so recently."""
 
-
-def download_from_microsoft(symbol, debugid):
-    """return True if we either start a background task to download from
-    Microsoft OR if we have recently started one."""
-
-    @cachetools.cached(
-        microsoft_download_cache,
-        lock=_microsoft_download_cache_lock,
-    )
-    def inner(symbol, debugid):
-        print(f'CALL download_microsoft_symbol.delay({symbol!r}, {debugid!r})')
+    local_cache = caches['local']
+    cache_key = hashlib.md5(force_bytes(
+        f'microsoft-download:{symbol}:{debugid}'
+    )).hexdigest()
+    if not local_cache.get(cache_key):
         # Commence the background task to try to download from Microsoft
-        download_microsoft_symbol.delay(symbol, debugid)
-
-    return inner(symbol, debugid)
+        download_microsoft_symbol.delay(
+            symbol,
+            debugid,
+            code_file=code_file,
+            code_id=code_id,
+        )
+        local_cache.set(
+            cache_key,
+            True,
+            settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS
+        )
 
 
 @metrics.timer_decorator('download_symbol')
@@ -129,7 +130,12 @@ def download_symbol(request, symbol, debugid, filename):
             # If we haven't already sent it to the 'download_microsoft_symbol'
             # background task, do so.
 
-            download_from_microsoft(symbol, debugid)
+            download_from_microsoft(
+                symbol,
+                debugid,
+                code_file=request.GET.get('code_file'),
+                code_id=request.GET.get('code_id'),
+            )
 
             downloader.invalidate_cache(symbol, debugid, filename)
 
