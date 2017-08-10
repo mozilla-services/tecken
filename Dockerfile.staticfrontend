@@ -58,7 +58,9 @@ RUN set -ex \
 
 USER 10001
 
-ENV REACT_APP_SENTRY_PUBLIC_DSN=$SENTRY_PUBLIC_DSN
+# Carry this build argument from the
+# `docker build --build-arg SENTRY_PUBLIC_DSN=...` command.
+ARG SENTRY_PUBLIC_DSN
 
 #CMD ["bash", "bin/build_frontend.sh"]
-RUN bash bin/build_frontend.sh
+RUN bin/build_frontend.sh

@@ -7,6 +7,9 @@ set -eo pipefail
 
 # Builds the React frontend
 
+# Because this is what create-react-app needs as a prefix
+REACT_APP_SENTRY_PUBLIC_DSN=$SENTRY_PUBLIC_DSN
+
 pushd frontend
 if [[ -z ${CI+check} ]]; then
     echo "NOT running in CI"
