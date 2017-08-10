@@ -287,8 +287,6 @@ def test_missing_symbols_csv(client, clear_redis):
 
     content = response.content.decode('utf-8')
     reader = csv.reader(StringIO(content))
-    # print(next(reader))
-    # print(next(reader))
     lines_of_lines = list(reader)
     assert len(lines_of_lines) == 2
     last_line = lines_of_lines[-1]
