@@ -38,7 +38,7 @@ https://app.datadoghq.com/dash/286319/tecken
 Whatsdeployed
 -------------
 
-Check out https://whatsdeployed.io/s-gUQ
+Check out https://whatsdeployed.io/s-5HY
 
 At the moment, this only covers Dev and Stage.
 
