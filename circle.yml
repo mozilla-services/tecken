@@ -31,7 +31,7 @@ dependencies:
     - >
         if [[ -n "$CIRCLE_TAG" || "$CIRCLE_BRANCH" == "master" ]]; then
           # TECKEN_FRONTEND_SENTRY_PUBLIC_DSN should be set in circleci
-          docker build --build-arg SENTRY_PUBLIC_DSN=$TECKEN_FRONTEND_SENTRY_PUBLIC_DSN \
+          docker build --build-arg SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN \
             -f Dockerfile.staticfrontend -t tecken:deploy_base .
         fi
     # Clean up old image and save the new one
