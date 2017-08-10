@@ -40,8 +40,6 @@ Whatsdeployed
 
 Check out https://whatsdeployed.io/s-5HY
 
-At the moment, this only covers Dev and Stage.
-
 
 The Logo
 --------
