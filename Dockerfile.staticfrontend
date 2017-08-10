@@ -58,5 +58,7 @@ RUN set -ex \
 
 USER 10001
 
+ENV REACT_APP_SENTRY_PUBLIC_DSN=$SENTRY_PUBLIC_DSN
+
 #CMD ["bash", "bin/build_frontend.sh"]
 RUN bash bin/build_frontend.sh

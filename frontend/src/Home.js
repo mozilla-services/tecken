@@ -185,6 +185,7 @@ const AboutPermissions = () =>
     <br />
     <small>Don't forget to mention the email you used to sign in.</small>
   </p>
+
 const AboutUploadsPermissionTile = () =>
   <article className="tile is-child box">
     <p className="title">Uploaded Symbols</p>
