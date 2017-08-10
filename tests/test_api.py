@@ -266,8 +266,6 @@ def test_users_permissions(client):
     response = client.get(url)
     assert response.status_code == 200
     user_record, = [x for x in response.json()['users'] if x['id'] == user.id]
-    # print(response.json())
-    print(user_record)
     user_permissions_names = [x['name'] for x in user_record['permissions']]
     assert 'Manage Your API Tokens' in user_permissions_names
     assert 'View All Symbols Uploads' in user_permissions_names
