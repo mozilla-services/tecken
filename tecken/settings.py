@@ -649,7 +649,6 @@ class Dev(Base):
 
     # Sentry setup
     SENTRY_DSN = values.Value(environ_prefix=None)
-    SENTRY_PUBLIC_DSN = values.Value(environ_prefix=None)
 
     MIDDLEWARE_CLASSES = (
         'raven.contrib.django.raven_compat.middleware'
