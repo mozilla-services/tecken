@@ -10,7 +10,6 @@ import subprocess
 import os
 
 from configurations import Configuration, values
-from django.contrib.messages import constants as messages
 from dockerflow.version import get_version
 from raven.transport.requests import RequestsHTTPTransport
 
@@ -98,7 +97,6 @@ class Core(AWS, Configuration, Celery):
         'django.middleware.common.CommonMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-        'django.contrib.messages.middleware.MessageMiddleware',
         'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
         # Important that this comes after APITokenAuthenticationMiddleware
         'tecken.useradmin.middleware.NotBlockedInAuth0Middleware',
@@ -113,10 +111,6 @@ class Core(AWS, Configuration, Celery):
         'django.contrib.auth.backends.ModelBackend',
         'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
     )
-
-    MESSAGE_TAGS = {
-        messages.ERROR: 'danger'
-    }
 
     # Internationalization
     # https://docs.djangoproject.com/en/1.9/topics/i18n/
