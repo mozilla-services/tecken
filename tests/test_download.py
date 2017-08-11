@@ -218,7 +218,10 @@ def test_client_404_logged(client, botomock, clear_redis):
         assert response.status_code == 404
         assert response.content == b'Symbol Not Found (and ignored)'
 
-        # This should have logged the missing symbols twice.
+        # This "should" have logged the missing symbols twice.
+        # Actually it shouldn't log it twice because the work on logging
+        # missing symbols is guarded by a memoizer that prevents it from
+        # executing more than once per arguments.
         key, = list(cache.iter_keys('missingsymbols:*'))
         # The key should contain today's date
         today = timezone.now().strftime('%Y-%m-%d')
@@ -232,7 +235,7 @@ def test_client_404_logged(client, botomock, clear_redis):
         assert code_file == ''
         assert code_id == ''
         value = cache.get(key)
-        assert value == 2
+        assert value == 1
 
         # Now look it up with ?code_file= and ?code_id= etc.
         assert client.get(url, {'code_file': 'xul.dll'}).status_code == 404

@@ -19,6 +19,7 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
     set_request_debug,
     api_require_http_methods,
+    local_cache_memoize_void,
 )
 from tecken.download.tasks import download_microsoft_symbol
 
@@ -154,6 +155,7 @@ def download_symbol(request, symbol, debugid, filename):
     return response
 
 
+@local_cache_memoize_void(settings.MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS)
 def log_symbol_get_404(
     symbol,
     debugid,

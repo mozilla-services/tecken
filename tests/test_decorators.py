@@ -25,3 +25,29 @@ def test_set_request_debug():
     request = RequestFactory(HTTP_DEBUG='0').get('/')
     response = myview(request)
     assert response.content == b'debug=False'
+
+
+def test_local_cache_memoize_void():
+
+    calls_made = []
+
+    @decorators.local_cache_memoize_void(10)
+    def runmeonce(a, b, k='bla'):
+        calls_made.append((a, b, k))
+
+    runmeonce(1, 2)
+    runmeonce(1, 2)
+    assert len(calls_made) == 1
+    runmeonce(1, 3)
+    assert len(calls_made) == 2
+    # should work with most basic types
+    runmeonce(1.1, 'foo')
+    runmeonce(1.1, 'foo')
+    assert len(calls_made) == 3
+    # even more "advanced" types
+    runmeonce(1.1, 'foo', k=list('åäö'))
+    runmeonce(1.1, 'foo', k=list('åäö'))
+    assert len(calls_made) == 4
+    # And shouldn't be a problem even if the arguments are really long
+    runmeonce('A' * 200, 'B' * 200, {'C' * 100: 'D' * 100})
+    assert len(calls_made) == 5

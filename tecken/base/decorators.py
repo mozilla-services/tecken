@@ -3,11 +3,14 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
+import hashlib
 from functools import wraps
 
 from django import http
 from django.utils.decorators import available_attrs
 from django.contrib.auth.decorators import permission_required
+from django.core.cache import caches
+from django.utils.encoding import force_text, force_bytes
 
 logger = logging.getLogger('tecken')
 
@@ -111,3 +114,51 @@ api_require_safe = api_require_http_methods(["GET", "HEAD"])
 api_require_safe.__doc__ = (
     "Decorator to require that a view only accepts safe methods: GET and HEAD."
 )
+
+
+def local_cache_memoize_void(timeout):
+    """Decorator for memoizing function calls that don't return anything.
+    Meaning, it only runs once per arguments + keyword arguments as a
+    cache key.
+
+    For example:
+
+        >>> from tecken.base.decorators import local_cache_memoize_void
+        >>> @local_cache_memoize_void(10)
+        ... def runmeonce(a, b, k='bla'):
+        ...     print((a, b, k))
+        ...
+        >>> runmeonce(1, 2)
+        (1, 2, 'bla')
+        >>> runmeonce(1, 2)
+        >>> runmeonce(1, 2, k=1.0)
+        (1, 2, 1.0)
+        >>> runmeonce(1, 2, k=1.0)
+        >>> runmeonce(1, 2, k=1.1)
+        (1, 2, 1.1)
+        >>> runmeonce(1, 'fö')
+        (1, 'fö', 'bla')
+        >>> runmeonce(1, 'fö')
+
+    Note how it only prints if the arguments are different.
+    """
+
+    def decorator(func):
+        # The local cache is the memcached service that is expected to
+        # run on the same server as the webapp.
+        local_cache = caches['local']
+
+        @wraps(func)
+        def inner(*args, **kwargs):
+            cache_key = ':'.join(
+                [force_text(x) for x in args] +
+                [force_text(f'{k}={v}') for k, v in kwargs.items()]
+            )
+            cache_key = hashlib.md5(force_bytes(cache_key)).hexdigest()
+            if local_cache.get(cache_key) is None:
+                func(*args, **kwargs)
+                local_cache.set(cache_key, True, timeout)
+
+        return inner
+
+    return decorator
