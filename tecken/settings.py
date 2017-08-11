@@ -389,6 +389,13 @@ class Base(Core):
         'tecken.dockerflow_extra.check_s3_urls',
     ]
 
+    # Override certain builtin Django system checks because we know
+    # with confidence we do these good deeds in Nginx.
+    # See https://docs.djangoproject.com/en/1.11/ref/checks/#security
+    SILENCED_SYSTEM_CHECKS = [
+        'security.W002',
+    ]
+
     # We can cache quite aggressively here because the SymbolDownloader
     # has chance to invalidate certain keys.
     # But we don't want to make it too long since when a symbols.zip file
