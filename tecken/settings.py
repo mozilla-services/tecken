@@ -176,6 +176,13 @@ class Core(AWS, Configuration, Celery):
     # of missing symbols from Microsoft.
     ENABLE_DOWNLOAD_FROM_MICROSOFT = values.BooleanValue(False)
 
+    # When a symbol is tried to be downloaded, and it turns out the symbol
+    # does *not* exist in S3, we write this down so all missing symbols
+    # can be post-processed after.
+    # But we only need to write it down once per symbol. There's a memoizing
+    # guard and this defines how long it should cache that it memoized.
+    MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS = values.IntegerValue(60 * 60 * 24)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
