@@ -45,6 +45,26 @@ def check_redis_store_connected(app_configs, **kwargs):
     return errors
 
 
+def check_local_cache_connected(app_configs, **kwargs):
+    """
+    This makes sure we can connect to the 'local_cache' cache configuration.
+    It should
+    """
+
+    from django.core.cache import caches
+    errors = []
+    local_cache = caches['local']
+    local_cache.set('dockerflowtest', True, 5)
+    if not local_cache.get('dockerflowtest'):
+        location = settings.CACHES['local']['location']
+        msg = (
+            f'Unable to set a value in the local cache and immediately '
+            f'retrieve it (LOCATION={location!r})'
+        )
+        errors.append(checks.Error(msg, id='tecken.health.E003'))
+    return errors
+
+
 def check_s3_urls(app_configs, **kwargs):
     errors = []
     checked = []
