@@ -14,7 +14,6 @@ import markus
 from botocore.exceptions import ClientError
 
 from django.conf import settings
-from django.core.cache import caches
 from django.utils.encoding import force_bytes
 
 from tecken.base.decorators import local_cache_memoize
