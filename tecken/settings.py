@@ -25,52 +25,6 @@ class AWS:
     }
 
 
-class CSP:
-    # Django-CSP
-    CSP_DEFAULT_SRC = (
-        "'self'",
-    )
-    CSP_FONT_SRC = (
-        "'self'",
-        # 'http://*.mozilla.net',
-        # 'https://*.mozilla.net',
-        # 'http://*.mozilla.org',
-        # 'https://*.mozilla.org',
-    )
-    CSP_IMG_SRC = (
-        "'self'",
-        # "data:",
-        # 'http://*.mozilla.net',
-        # 'https://*.mozilla.net',
-        # 'http://*.mozilla.org',
-        # 'https://*.mozilla.org',
-        # 'https://sentry.prod.mozaws.net',
-    )
-    CSP_SCRIPT_SRC = (
-        "'self'",
-        # 'http://*.mozilla.org',
-        # 'https://*.mozilla.org',
-        # 'http://*.mozilla.net',
-        # 'https://*.mozilla.net',
-        # 'https://cdn.ravenjs.com',
-    )
-    CSP_STYLE_SRC = (
-        "'self'",
-        "'unsafe-inline'",
-        # 'http://*.mozilla.org',
-        # 'https://*.mozilla.org',
-        # 'http://*.mozilla.net',
-        # 'https://*.mozilla.net',
-    )
-    CSP_CONNECT_SRC = (
-        "'self'",
-        # 'https://sentry.prod.mozaws.net',
-    )
-    CSP_OBJECT_SRC = (
-        "'none'",
-    )
-
-
 class Celery:
 
     # Use the django_celery_results database backend.
@@ -89,7 +43,7 @@ class Celery:
     CELERY_TASK_TIME_LIMIT = CELERY_TASK_SOFT_TIME_LIMIT * 2
 
 
-class Core(CSP, AWS, Configuration, Celery):
+class Core(AWS, Configuration, Celery):
     """Settings that will never change per-environment."""
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -145,8 +99,6 @@ class Core(CSP, AWS, Configuration, Celery):
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware',
-        'django.middleware.clickjacking.XFrameOptionsMiddleware',
-        'csp.middleware.CSPMiddleware',
         'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
         # Important that this comes after APITokenAuthenticationMiddleware
         'tecken.useradmin.middleware.NotBlockedInAuth0Middleware',
@@ -674,9 +626,6 @@ class Dev(Base):
                 ''
             )
         return config
-
-    # Report CSP reports to this URL that is only available in stage and prod
-    CSP_REPORT_URI = '/__cspreport__'
 
     # Defaulting to 'localhost' here because that's where the Datadog
     # agent is expected to run in production.
