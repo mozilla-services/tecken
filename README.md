@@ -30,9 +30,12 @@ Datadog
 -------
 
 If you have access to a Mozilla Cloud Ops Datadog account, use this to
-consume the metrics Tecken sends via `statsd`:
+consume the metrics Tecken sends via `statsd`. One is for staying health, the other is for 
+keeping track how it does things.
 
-https://app.datadoghq.com/dash/286319/tecken
+[Tecken Operations](https://app.datadoghq.com/dash/286319/tecken)
+
+[Tecken Performance](https://app.datadoghq.com/dash/339351/tecken-performance)
 
 
 Whatsdeployed
