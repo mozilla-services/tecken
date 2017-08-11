@@ -19,7 +19,7 @@ Git clone and then run:
     make build
     make run
 
-Now a development server should be available at `http://localhost:8000`.
+Now a development server should be available at `http://localhost:3000`.
 
 To test the symbolication run:
 
