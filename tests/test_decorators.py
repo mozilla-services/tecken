@@ -27,13 +27,14 @@ def test_set_request_debug():
     assert response.content == b'debug=False'
 
 
-def test_local_cache_memoize_void():
+def test_local_cache_memoize():
 
     calls_made = []
 
-    @decorators.local_cache_memoize_void(10)
+    @decorators.local_cache_memoize(10)
     def runmeonce(a, b, k='bla'):
         calls_made.append((a, b, k))
+        return '{} {} {}'.format(a, b, k)  # sample implementation
 
     runmeonce(1, 2)
     runmeonce(1, 2)
@@ -51,3 +52,27 @@ def test_local_cache_memoize_void():
     # And shouldn't be a problem even if the arguments are really long
     runmeonce('A' * 200, 'B' * 200, {'C' * 100: 'D' * 100})
     assert len(calls_made) == 5
+
+    # different prefixes
+    @decorators.local_cache_memoize(10, prefix='first')
+    def foo(value):
+        calls_made.append(value)
+        return 'ho'
+
+    @decorators.local_cache_memoize(10, prefix='second')
+    def bar(value):
+        calls_made.append(value)
+        return 'ho'
+
+    foo('hey')
+    bar('hey')
+    assert len(calls_made) == 7
+
+    # Test when you don't care about the result
+    @decorators.local_cache_memoize(10, store_result=False, prefix='different')
+    def returnnothing(a, b, k='bla'):
+        calls_made.append((a, b, k))
+        # note it returns None
+    returnnothing(1, 2)
+    returnnothing(1, 2)
+    assert len(calls_made) == 8
