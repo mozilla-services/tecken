@@ -116,49 +116,104 @@ api_require_safe.__doc__ = (
 )
 
 
-def local_cache_memoize_void(timeout):
-    """Decorator for memoizing function calls that don't return anything.
-    Meaning, it only runs once per arguments + keyword arguments as a
-    cache key.
+def local_cache_memoize(
+    timeout,
+    prefix='',
+    args_rewrite=None,
+    hit_callable=None,
+    miss_callable=None,
+    store_result=True,
+):
+    """Decorator for memoizing function calls where we use the
+    "local cache" to store the result.
 
-    For example:
+    :arg int time: Number of seconds to store the result if not None
+    :arg string prefix: If you want to assure you don't clash with other keys.
+    :arg function args_rewrite: Callable that rewrites the args first useful
+    if your function needs nontrivial types but you know a simple way to
+    re-represent them for the sake of the cache key.
+    :arg function hit_callable: Gets executed if key was in cache.
+    :arg function miss_callable: Gets executed if key was *not* in cache.
+    :arg bool store_result: If you know the result is not important, just
+    that the cache blocked it from running repeatedly, set this to False.
 
-        >>> from tecken.base.decorators import local_cache_memoize_void
-        >>> @local_cache_memoize_void(10)
-        ... def runmeonce(a, b, k='bla'):
-        ...     print((a, b, k))
-        ...
-        >>> runmeonce(1, 2)
-        (1, 2, 'bla')
-        >>> runmeonce(1, 2)
-        >>> runmeonce(1, 2, k=1.0)
-        (1, 2, 1.0)
-        >>> runmeonce(1, 2, k=1.0)
-        >>> runmeonce(1, 2, k=1.1)
-        (1, 2, 1.1)
-        >>> runmeonce(1, 'fö')
-        (1, 'fö', 'bla')
-        >>> runmeonce(1, 'fö')
+    Usage::
 
-    Note how it only prints if the arguments are different.
+        @local_cache_memoize(
+            300,  # 5 min
+            args_rewrite=lambda user: user.email,
+            hit_callable=lambda: print("Cache hit!"),
+            miss_callable=lambda: print("Cache miss :("),
+        )
+        def hash_user_email(user):
+            dk = hashlib.pbkdf2_hmac('sha256', user.email, b'salt', 100000)
+            return binascii.hexlify(dk)
+
+    Or, when you don't actually need the result, useful if you know it's not
+    valuable to store the execution result::
+
+        @local_cache_memoize(
+            300,  # 5 min
+            store_result=False,
+        )
+        def send_email(email):
+            somelib.send(email, subject="You rock!", ...)
+
+    Also, whatever you do where things get cached, you can undo that.
+    For example::
+
+
+        @local_cache_memoize(100)
+        def callmeonce(arg1):
+            print(arg1)
+
+        callmeonce('peter')  # will print 'peter'
+        callmeonce('peter')  # nothing printed
+        callmeonce.invalidate('peter')
+        callmeonce('peter')  # will print 'peter'
+
     """
+
+    if args_rewrite is None:
+        def noop(*args):
+            return args
+        args_rewrite = noop
 
     def decorator(func):
         # The local cache is the memcached service that is expected to
         # run on the same server as the webapp.
         local_cache = caches['local']
 
-        @wraps(func)
-        def inner(*args, **kwargs):
+        def _make_cache_key(*args, **kwargs):
             cache_key = ':'.join(
-                [force_text(x) for x in args] +
+                [force_text(x) for x in args_rewrite(*args)] +
                 [force_text(f'{k}={v}') for k, v in kwargs.items()]
             )
-            cache_key = hashlib.md5(force_bytes(cache_key)).hexdigest()
-            if local_cache.get(cache_key) is None:
-                func(*args, **kwargs)
-                local_cache.set(cache_key, True, timeout)
+            return hashlib.md5(force_bytes(
+                'local_cache_memoize' + prefix + cache_key
+            )).hexdigest()
 
+        @wraps(func)
+        def inner(*args, **kwargs):
+            cache_key = _make_cache_key(*args, **kwargs)
+            result = local_cache.get(cache_key)
+            if result is None:
+                result = func(*args, **kwargs)
+                if not store_result:
+                    local_cache.set(cache_key, True, timeout)
+                elif result is not None:
+                    local_cache.set(cache_key, result, timeout)
+                if hit_callable:
+                    hit_callable()
+            elif miss_callable:
+                miss_callable()
+            return result
+
+        def invalidate(*args, **kwargs):
+            cache_key = _make_cache_key(*args, **kwargs)
+            local_cache.delete(cache_key)
+
+        inner.invalidate = invalidate
         return inner
 
     return decorator

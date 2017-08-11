@@ -19,7 +19,7 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
     set_request_debug,
     api_require_http_methods,
-    local_cache_memoize_void,
+    local_cache_memoize,
 )
 from tecken.download.tasks import download_microsoft_symbol
 
@@ -42,6 +42,9 @@ def _ignore_symbol(symbol, debugid, filename):
     return False
 
 
+# Note! The reason this can't use the local_cache_memoize decorator
+# is because we need tight control of what the cache key becomes. That
+# way we can cache invalidate it later.
 def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
     """Only kick off the 'download_microsoft_symbol' background task
     if we haven't already done so recently."""
@@ -155,7 +158,12 @@ def download_symbol(request, symbol, debugid, filename):
     return response
 
 
-@local_cache_memoize_void(settings.MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS)
+@local_cache_memoize(
+    settings.MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS,
+    # When you just want this to be a "guard" that protects it from
+    # executing more than once.
+    store_result=False,
+)
 def log_symbol_get_404(
     symbol,
     debugid,
