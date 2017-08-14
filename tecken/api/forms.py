@@ -34,6 +34,18 @@ class TokenForm(forms.Form):
         return permissions
 
 
+class TokensForm(forms.Form):
+    state = forms.CharField(required=False)
+
+    def clean_state(self):
+        value = self.cleaned_data['state']
+        if value and value not in ('expired', 'all'):
+            raise forms.ValidationError(
+                f'Unrecognized state value {value!r}'
+            )
+        return value
+
+
 class UserEditForm(forms.ModelForm):
 
     groups = forms.CharField(required=False)

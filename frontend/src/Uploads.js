@@ -41,11 +41,11 @@ class Uploads extends Component {
       this.setState(
         { filter: queryString.parse(this.props.location.search) },
         () => {
-          this._fetchUploads(false)
+          this._fetchUploads()
         }
       )
     } else {
-      this._fetchUploads(false)
+      this._fetchUploads()
     }
 
     // If the current user can only see her uploads, change the
@@ -58,7 +58,7 @@ class Uploads extends Component {
 
   }
 
-  _fetchUploads = (updateHistory = true) => {
+  _fetchUploads = () => {
     // delay the loading animation in case it loads really fast
     this.setLoadingTimer = window.setTimeout(() => {
       this.setState({ loading: true })
