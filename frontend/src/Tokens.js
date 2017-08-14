@@ -74,9 +74,6 @@ class Tokens extends Component {
   render() {
     return (
       <div>
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
         {this.state.loading && <Loading />}
 
         {this.state.permissions && !this.state.permissions.length

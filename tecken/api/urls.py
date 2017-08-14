@@ -9,21 +9,28 @@ from . import views
 
 app_name = 'api'
 
+"""
+Note!
+The endpoints that start with a '_' are basically only relevant
+for the sake of the frontend. Meaning, it doesn't make sense to use
+them in your curl script, for example.
+"""
+
 urlpatterns = [
     url(
-        r'auth/$',
+        r'_auth/$',
         views.auth,
         name='auth'
+    ),
+    url(
+        r'_stats/$',
+        views.stats,
+        name='stats'
     ),
     url(
         r'tokens/$',
         views.tokens,
         name='tokens'
-    ),
-    url(
-        r'stats/$',
-        views.stats,
-        name='stats'
     ),
     url(
         r'tokens/(?P<id>\d+)$',
@@ -46,12 +53,12 @@ urlpatterns = [
         name='upload'
     ),
     url(
-        r'users/$',
+        r'_users/$',
         views.users,
         name='users'
     ),
     url(
-        r'users/(?P<id>\d+)$',
+        r'_users/(?P<id>\d+)$',
         views.edit_user,
         name='edit_user'
     ),

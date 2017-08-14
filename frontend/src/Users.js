@@ -25,7 +25,7 @@ class Users extends Component {
 
   _fetchUsers = () => {
     this.setState({ loading: true })
-    Fetch('/api/users/', { credentials: 'same-origin' }).then(r => {
+    Fetch('/api/_users/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(

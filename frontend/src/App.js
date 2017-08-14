@@ -37,7 +37,7 @@ const App = observer(
     }
 
     componentWillMount() {
-      Fetch('/api/auth/', { credentials: 'same-origin' }).then(r => {
+      Fetch('/api/_auth/', { credentials: 'same-origin' }).then(r => {
         if (r.status === 200) {
           if (store.fetchError) {
             store.fetchError = null

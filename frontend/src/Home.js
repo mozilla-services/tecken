@@ -39,7 +39,7 @@ class SignedInTiles extends Component {
 
   _fetchStats = () => {
     this.setState({ loading: true })
-    Fetch('/api/stats/', { credentials: 'same-origin' }).then(r => {
+    Fetch('/api/_stats/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loading: false })
       if (r.status === 200) {
         if (store.fetchError) {
