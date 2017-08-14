@@ -128,9 +128,12 @@ class Core(AWS, Configuration, Celery):
     SESSION_CACHE_ALIAS = 'default'
 
     # System Checks
+    # Override certain builtin Django system checks because we know
+    # with confidence we do these good deeds in Nginx.
     # https://docs.djangoproject.com/en/1.11/ref/checks/#security
     SILENCED_SYSTEM_CHECKS = [
-        'security.W003',  # We're using django-session-csrf
+        'security.W002',  # Dealt with using Nginx headers
+        'security.W003',  # CSRF is explicit only on the views that need it
         # We can't set SECURE_HSTS_INCLUDE_SUBDOMAINS since this runs under a
         # mozilla.org subdomain
         'security.W005',
@@ -390,13 +393,6 @@ class Base(Core):
         'tecken.dockerflow_extra.check_redis_store_connected',
         'tecken.dockerflow_extra.check_local_cache_connected',
         'tecken.dockerflow_extra.check_s3_urls',
-    ]
-
-    # Override certain builtin Django system checks because we know
-    # with confidence we do these good deeds in Nginx.
-    # See https://docs.djangoproject.com/en/1.11/ref/checks/#security
-    SILENCED_SYSTEM_CHECKS = [
-        'security.W002',
     ]
 
     # We can cache quite aggressively here because the SymbolDownloader
