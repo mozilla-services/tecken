@@ -52,10 +52,9 @@ const App = observer(
               ) {
                 sessionStorage.setItem('signedin', true)
                 // you have just signed in
-                store.notificationMessage = {
-                  message: `You have signed in as ${response.user.email}`,
-                  success: true
-                }
+                store.setNotificationMessage(
+                  `You have signed in as ${response.user.email}`
+                )
               }
             } else {
               store.signInUrl = response.sign_in_url

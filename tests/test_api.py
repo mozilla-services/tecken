@@ -115,6 +115,62 @@ def test_tokens(client):
 
 
 @pytest.mark.django_db
+def test_tokens_filtering(client):
+    url = reverse('api:tokens')
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+    permission = Permission.objects.get(codename='manage_tokens')
+    user.user_permissions.add(permission)
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['tokens'] == []
+    assert data['totals'] == {
+        'active': 0,
+        'all': 0,
+        'expired': 0
+    }
+
+    # Create 2 tokens. One expired and one not expired.
+    t1 = Token.objects.create(user=user, notes='current')
+    assert not t1.is_expired
+    yesterday = timezone.now() - datetime.timedelta(days=1)
+    t2 = Token.objects.create(user=user, expires_at=yesterday, notes='gone')
+    assert t2.is_expired
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data['tokens']) == 1
+    assert [x['notes'] for x in data['tokens']] == ['current']
+    assert data['totals'] == {
+        'active': 1,
+        'all': 2,
+        'expired': 1
+    }
+
+    # Filter on the expired ones
+    response = client.get(url, {'state': 'expired'})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data['tokens']) == 1
+    assert [x['notes'] for x in data['tokens']] == ['gone']
+
+    # Filter on 'all'
+    response = client.get(url, {'state': 'all'})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data['tokens']) == 2
+    assert [x['notes'] for x in data['tokens']] == ['gone', 'current']
+
+    # Filter incorrectly
+    response = client.get(url, {'state': 'junks'})
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
 def test_tokens_create(client):
     url = reverse('api:tokens')
     response = client.post(url)

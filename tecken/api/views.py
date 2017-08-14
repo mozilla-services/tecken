@@ -21,13 +21,7 @@ from tecken.base.decorators import (
     api_permission_required,
     api_require_http_methods,
 )
-from .forms import (
-    TokenForm,
-    UserEditForm,
-    UploadsForm,
-    FileUploadsForm,
-    PaginationForm,
-)
+from . import forms
 
 logger = logging.getLogger('tecken')
 
@@ -98,7 +92,7 @@ def tokens(request):
     ]
 
     if request.method == 'POST':
-        form = TokenForm(request.POST)
+        form = forms.TokenForm(request.POST)
         if form.is_valid():
             # Check that none of the sent permissions isn't possible
             for permission in form.cleaned_data['permissions']:
@@ -125,11 +119,31 @@ def tokens(request):
         else:
             return http.JsonResponse({'errors': form.errors}, status=400)
 
+    form = forms.TokensForm(request.GET)
+    if not form.is_valid():
+        return http.JsonResponse({'errors': form.errors}, status=400)
+
+    filter_state = form.cleaned_data['state']
+
     context = {
         'tokens': [],
         'permissions': serialize_permissions(possible_permissions),
     }
     qs = Token.objects.filter(user=request.user)
+    # Before we filter the queryset further, use it to calculate counts.
+    context['totals'] = {
+        'all': qs.count(),
+        'active': qs.filter(expires_at__gt=timezone.now()).count(),
+        'expired': qs.filter(expires_at__lte=timezone.now()).count(),
+    }
+    if filter_state == 'all':
+        pass
+    elif filter_state == 'expired':
+        qs = qs.filter(expires_at__lte=timezone.now())
+    else:
+        # The default is to only return active ones
+        qs = qs.filter(expires_at__gt=timezone.now())
+
     for token in qs.order_by('-created_at'):
         context['tokens'].append({
             'id': token.id,
@@ -237,7 +251,7 @@ def edit_user(request, id):
     user = get_object_or_404(User, id=id)
 
     if request.method == 'POST':
-        form = UserEditForm(request.POST, instance=user)
+        form = forms.UserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
             # Remove all the groups that user might have been in before
@@ -277,11 +291,11 @@ def uploads(request):
         'can_view_all': request.user.has_perm('upload.view_all_uploads'),
     }
 
-    form = UploadsForm(request.GET)
+    form = forms.UploadsForm(request.GET)
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
 
-    pagination_form = PaginationForm(request.GET)
+    pagination_form = forms.PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse(
             {'errors': pagination_form.errors},
@@ -425,7 +439,7 @@ def upload(request, id):
 @api_login_required
 @api_permission_required('upload.view_all_uploads')
 def upload_files(request):
-    pagination_form = PaginationForm(request.GET)
+    pagination_form = forms.PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse(
             {'errors': pagination_form.errors},
@@ -433,7 +447,7 @@ def upload_files(request):
         )
     page = pagination_form.cleaned_data['page']
 
-    form = FileUploadsForm(request.GET)
+    form = forms.FileUploadsForm(request.GET)
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
 

@@ -8,6 +8,15 @@ class Store {
       signOutUrl: null,
       fetchError: null,
       notificationMessage: null,
+      setNotificationMessage: action(
+        (message, success = true, warning = false) => {
+          this.notificationMessage = {
+            message,
+            warning,
+            success
+          }
+        }
+      ),
       redirectTo: null,
       apiRequests: [],
       resetApiRequests: action(() => {
@@ -16,7 +25,7 @@ class Store {
       setRedirectTo: action((destination, message = null) => {
         if (typeof destination === 'string') {
           destination = {
-            pathname: destination,
+            pathname: destination
           }
         }
         this.redirectTo = destination
@@ -24,7 +33,7 @@ class Store {
           if (typeof message === 'string') {
             this.notificationMessage = {
               message: message,
-              warning: true,
+              warning: true
             }
           } else {
             this.notificationMessage = message

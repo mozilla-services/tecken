@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
+import queryString from 'query-string'
 
 import { toDate, isBefore, formatDistanceStrict } from 'date-fns/esm'
 
@@ -14,7 +15,9 @@ class Tokens extends Component {
     this.state = {
       loading: true, // undone by componentDidMount
       tokens: null,
-      permissions: null
+      totals: {},
+      permissions: null,
+      filter: {}
     }
   }
 
@@ -24,13 +27,33 @@ class Tokens extends Component {
 
   componentDidMount() {
     document.title = this.pageTitle
-    // You have no business being here if you're not signed in
-    this._fetchTokens()
+
+    if (this.props.location.search) {
+      this.setState(
+        { filter: queryString.parse(this.props.location.search) },
+        () => {
+          this._fetchTokens()
+        }
+      )
+    } else {
+      this._fetchTokens()
+    }
   }
 
   _fetchTokens = () => {
     this.setState({ loading: true })
-    Fetch('/api/tokens/', { credentials: 'same-origin' }).then(r => {
+
+    let url = '/api/tokens/'
+    let qs = ''
+    if (Object.keys(this.state.filter).length) {
+      qs = '?' + queryString.stringify(this.state.filter)
+    }
+    if (qs) {
+      url += qs
+    }
+    this.props.history.push({ search: qs })
+
+    Fetch(url, { credentials: 'same-origin' }).then(r => {
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
           '/',
@@ -46,6 +69,7 @@ class Tokens extends Component {
         return r.json().then(response => {
           this.setState({
             tokens: response.tokens,
+            totals: response.totals,
             permissions: response.permissions
           })
         })
@@ -53,6 +77,15 @@ class Tokens extends Component {
         store.fetchError = r
       }
     })
+  }
+
+  updateFilter = newFilters => {
+    this.setState(
+      {
+        filter: Object.assign({}, this.state.filter, newFilters)
+      },
+      this._fetchTokens
+    )
   }
 
   deleteToken = id => {
@@ -64,6 +97,7 @@ class Tokens extends Component {
         if (store.fetchError) {
           store.fetchError = null
         }
+        store.setNotificationMessage('API Token deleted')
         this._fetchTokens()
       } else {
         store.fetchError = r
@@ -80,7 +114,6 @@ class Tokens extends Component {
           ? <article className="message is-warning">
               <div className="message-header">
                 <p>Warning</p>
-                {/* <button className="delete"></button> */}
               </div>
               <div className="message-body">
                 <p>
@@ -101,7 +134,10 @@ class Tokens extends Component {
               <h2 className="title">Your API Tokens</h2>
               <DisplayTokens
                 tokens={this.state.tokens}
+                totals={this.state.totals}
+                filter={this.state.filter}
                 deleteToken={this.deleteToken}
+                updateFilter={this.updateFilter}
               />
             </div>
           : null}
@@ -155,7 +191,13 @@ class CreateTokenForm extends Component {
       if (r.status === 201) {
         this.setState({ loading: false, validationErrors: null })
         this._resetForm()
+        store.setNotificationMessage('New API Token created')
         this.props.refreshTokens()
+        // Scroll up to the top to see the notification message
+        // and the new entry in the table.
+        setTimeout(() => {
+          window.scroll(0, 0)
+        })
       } else if (r.status === 400) {
         r.json().then(data => {
           this.setState({ loading: false, validationErrors: data.errors })
@@ -269,62 +311,102 @@ class DisplayTokens extends Component {
     }
   }
 
+  filterOnAll = event => {
+    event.preventDefault()
+    const filter = this.props.filter
+    filter.state = 'all'
+    this.props.updateFilter(filter)
+  }
+
+  filterOnActive = event => {
+    event.preventDefault()
+    const filter = this.props.filter
+    delete filter.state
+    this.props.updateFilter(filter)
+  }
+
+  filterOnExpired = event => {
+    event.preventDefault()
+    const filter = this.props.filter
+    filter.state = 'expired'
+    this.props.updateFilter(filter)
+  }
+
   render() {
-    if (!this.props.tokens.length) {
-      return (
-        <p>
-          You don't have any tokens <b>yet</b>
-        </p>
-      )
-    }
+    const { tokens, totals, filter } = this.props
     return (
-      <table className="table">
-        <thead>
-          <tr>
-            <th style={{ width: 380 }}>Key</th>
-            <th>Expires</th>
-            <th>Permissions</th>
-            <th>Notes</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {this.props.tokens.map(token => {
-            return (
-              <tr key={token.id}>
-                <td>
-                  <DisplayKey tokenKey={token.key} />
-                </td>
-                <td>
-                  <DisplayExpires expires={token.expires_at} />
-                  {' '}
-                  {token.is_expired && <span className="tag is-danger">Expired</span>}
-                </td>
-                <td>
-                  {token.permissions.map(p =>
-                    <code key={p.id} style={{ display: 'block' }}>
-                      {p.name}
-                    </code>
-                  )}
-                </td>
-                <td style={{ maxWidth: 250 }}>
-                  {token.notes}
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="button is-danger is-small"
-                    onClick={event =>
-                      this.onDelete(event, token.id, token.is_expired)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+      <div>
+        <div className="tabs is-centered">
+          <ul>
+            <li className={!filter.state && 'is-active'}>
+              <Link to="/tokens?state=active"
+                onClick={this.filterOnActive}
+              >
+                Active ({totals.active})
+              </Link>
+            </li>
+            <li className={filter.state === 'all' && 'is-active'}>
+              <Link to="/tokens" onClick={this.filterOnAll}>
+                All ({totals.all})
+              </Link>
+            </li>
+            <li className={filter.state === 'expired' && 'is-active'}>
+              <Link to="/tokens?state=expired"
+                onClick={this.filterOnExpired}
+              >
+                Expired ({totals.expired})
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th style={{ width: 380 }}>Key</th>
+              <th>Expires</th>
+              <th>Permissions</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tokens.map(token => {
+              return (
+                <tr key={token.id}>
+                  <td>
+                    <DisplayKey tokenKey={token.key} />
+                  </td>
+                  <td>
+                    <DisplayExpires expires={token.expires_at} />
+                    {' '}
+                    {token.is_expired && <span className="tag is-danger">Expired</span>}
+                  </td>
+                  <td>
+                    {token.permissions.map(p =>
+                      <code key={p.id} style={{ display: 'block' }}>
+                        {p.name}
+                      </code>
+                    )}
+                  </td>
+                  <td style={{ maxWidth: 250 }}>
+                    {token.notes}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="button is-danger is-small"
+                      onClick={event =>
+                        this.onDelete(event, token.id, token.is_expired)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     )
   }
 }
