@@ -37,6 +37,7 @@ export default class User extends Component {
           store.fetchError = null
         }
         return r.json().then(response => {
+          this.csrfToken = response.csrf_token
           this.setState({
             user: response.user,
             groups: response.groups,
@@ -69,6 +70,7 @@ export default class User extends Component {
         {this.state.loading && <Loading />}
         {this.state.user &&
           <EditUserForm
+            csrfToken={this.csrfToken}
             user={this.state.user}
             groups={this.state.groups}
             editUser={this.editUser}
@@ -108,7 +110,10 @@ class EditUserForm extends Component {
     return fetch(`/api/_users/${this.props.user.id}`, {
       method: 'POST',
       body: formData,
-      credentials: 'same-origin'
+      credentials: 'same-origin',
+      headers: new Headers({
+        'X-CSRFToken': this.props.csrfToken
+      }),
     }).then(r => {
       if (store.fetchError) {
         store.fetchError = null

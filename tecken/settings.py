@@ -92,7 +92,7 @@ class Core(AWS, Configuration, Celery):
     MIDDLEWARE_CLASSES = (
         'django.middleware.security.SecurityMiddleware',
         'dockerflow.django.middleware.DockerflowMiddleware',
-        # 'whitenoise.middleware.WhiteNoiseMiddleware',
+        # 'django.middleware.csrf.CsrfViewMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -322,6 +322,9 @@ class Base(Core):
                 },
             },
         }
+
+    CSRF_FAILURE_VIEW = 'tecken.views.csrf_failure'
+    CSRF_USE_SESSIONS = values.BooleanValue(True)
 
     # The order here matters. Symbol download goes through these one
     # at a time.

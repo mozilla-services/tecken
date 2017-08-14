@@ -12,6 +12,7 @@ from django.contrib.auth.models import Permission, User, Group
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_protect
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -229,6 +230,7 @@ def users(request):
     return http.JsonResponse(context)
 
 
+@csrf_protect
 @api_login_required
 @api_permission_required('users.change_user')
 def edit_user(request, id):
@@ -261,6 +263,10 @@ def edit_user(request, id):
     context['groups'] = [
         _serialize_group(x) for x in Group.objects.all()
     ]
+    # print([x for x in dir(request) if x])
+    # print([x for x in dir(request) if 'csrf' in x])
+    from django.middleware.csrf import get_token
+    context['csrf_token'] = get_token(request)
     return http.JsonResponse(context)
 
 
