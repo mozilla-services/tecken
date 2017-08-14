@@ -57,7 +57,6 @@ deployment:
       # set DOCKER_DEPLOY=true in Circle UI to do deploys
       - DOCKER_DEPLOY="${DOCKER_DEPLOY:-false}"
       - bin/ci/deploy-dockerhub.sh latest
-      - bin/ci/deploy-dockerhub.sh "$CIRCLE_BUILD_NUM"
 
   tags:
     # push all tags
