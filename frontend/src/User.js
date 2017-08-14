@@ -26,7 +26,7 @@ export default class User extends Component {
 
   _fetchUser = id => {
     this.setState({ loading: true })
-    Fetch(`/api/users/${id}`, { credentials: 'same-origin' }).then(r => {
+    Fetch(`/api/_users/${id}`, { credentials: 'same-origin' }).then(r => {
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo('/', 'You have to be signed in to edit this user')
         return
@@ -105,7 +105,7 @@ class EditUserForm extends Component {
     formData.append('groups', groups)
     formData.append('is_active', isActive)
     formData.append('is_superuser', isSuperuser)
-    return fetch(`/api/users/${this.props.user.id}`, {
+    return fetch(`/api/_users/${this.props.user.id}`, {
       method: 'POST',
       body: formData,
       credentials: 'same-origin'
