@@ -134,7 +134,7 @@ class Core(AWS, Configuration, Celery):
         # We can't set SECURE_HSTS_INCLUDE_SUBDOMAINS since this runs under a
         # mozilla.org subdomain
         'security.W005',
-        'security.W009',  # we know the SECRET_KEY is strong
+        'security.W004',  # Strict-Transport-Security is set in Nginx
     ]
 
     OIDC_RP_CLIENT_ID = values.SecretValue()
