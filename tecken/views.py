@@ -55,6 +55,13 @@ def handler404(request):
     return http.JsonResponse({'error': 'Not Found'}, status=404)
 
 
+def csrf_failure(request, reason=''):
+    return http.JsonResponse({
+        'error': reason or 'CSRF failure',
+        'csrf_error': True,
+    }, status=403)
+
+
 @csrf_exempt
 def task_tester(request):
     if request.method == 'POST':
