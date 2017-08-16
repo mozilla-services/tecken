@@ -261,6 +261,40 @@ def test_client_404_logged(client, botomock, clear_redis):
         assert code_id == 'deadbeef'
 
 
+def test_log_symbol_get_404_metrics(metricsmock):
+    views.log_symbol_get_404(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+        code_file='',
+        code_id='',
+    )
+    records = metricsmock.get_records()
+    assert len(records) == 1
+
+    # Call it again with the exact same parameters
+    views.log_symbol_get_404(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+        code_file='',
+        code_id='',
+    )
+    records = metricsmock.get_records()
+    assert len(records) == 1  # unchanged
+
+    # change one parameter slightly
+    views.log_symbol_get_404(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+        code_file='',
+        code_id='deadbeef',
+    )
+    records = metricsmock.get_records()
+    assert len(records) == 2  # changed
+
+
 def test_missing_symbols_csv(client, clear_redis):
     # Log at least one line
     views.log_symbol_get_404(
