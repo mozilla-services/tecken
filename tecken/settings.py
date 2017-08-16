@@ -503,6 +503,9 @@ class Localdev(Base):
                 'statsd_namespace': ''
             }
         },
+        {
+            'class': 'tecken.markus_extra.LogAllMetricsKeys',
+        },
         # {
         #     'class': 'markus.backends.logging.LoggingRollupMetrics',
         #     'options': {
