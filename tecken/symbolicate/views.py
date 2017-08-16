@@ -199,7 +199,7 @@ class SymbolicateJSON:
                     try:
                         response_stack.append(hex(module_offset))
                     except TypeError:
-                        metrics.incr('typerror', 1)
+                        metrics.incr('symbolicate_typerror', 1)
                         # Happens if 'module_offset' is not an int16
                         # and thus can't be represented in hex.
                         response_stack.append(str(module_offset))
@@ -274,7 +274,7 @@ class SymbolicateJSON:
     def _make_cache_key(symbol_key):
         return 'symbol:{}/{}'.format(*symbol_key)
 
-    @metrics.timer_decorator('cache_lookup_symbols')
+    @metrics.timer_decorator('symbolicate_get_symbol_maps')
     def get_symbol_maps(self, symbol_keys):
         cache_keys = {self._make_cache_key(x): x for x in symbol_keys}
         # output of 'store.get_many' is an OrderedDict
@@ -297,7 +297,7 @@ class SymbolicateJSON:
                 # with later by this method's caller.
             else:
                 assert isinstance(symbol_map, dict)
-                if not symbol_map:
+                if not symbol_map:  # e.g. an empty dict
                     # It was cached but empty. That means it was logged that
                     # it was previously attempted but failed.
                     # The reason it's cached is to avoid it being looked up
@@ -360,7 +360,7 @@ class SymbolicateJSON:
                         information['download_time'],
                     )
                 )
-                metrics.gauge('storing_symbol', symbol_map_size)
+                metrics.gauge('symbolicate_storing_symbol', symbol_map_size)
                 information['found'] = True
 
                 # We don't need to know the store cache's memory usage
@@ -369,8 +369,10 @@ class SymbolicateJSON:
                 # the amount of memory the store is using
                 redis_store_connection = get_redis_connection('store')
                 info = redis_store_connection.info()
-                metrics.gauge('store_memory', info['used_memory'])
-                metrics.gauge('store_keys', redis_store_connection.dbsize())
+                metrics.gauge('symbolicate_store_memory', info['used_memory'])
+                metrics.gauge(
+                    'symbolicate_store_keys', redis_store_connection.dbsize()
+                )
 
             except (SymbolNotFound, SymbolFileEmpty, SymbolDownloadError):
                 # If it can't be downloaded, cache it as an empty result
@@ -388,7 +390,7 @@ class SymbolicateJSON:
                 information['found'] = False
             yield (symbol_key, information, module_index)
 
-    @metrics.timer_decorator('load_symbol')
+    @metrics.timer_decorator('symbolicate_load_symbol')
     def load_symbol(self, filename, debug_id):
         t0 = time.time()
         stream = self.get_download_symbol_stream(filename, debug_id)
