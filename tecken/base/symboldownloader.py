@@ -82,7 +82,7 @@ def make_symbol_cache_key(bucket_name, key):
     return hashlib.md5(force_bytes(f'symbol:{bucket_name}:{key}')).hexdigest()
 
 
-@metrics.timer_decorator('symboldownloader_exists_combined')
+@metrics.timer_decorator('symboldownloader_exists')
 @local_cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     args_rewrite=lambda source, key: (source.name, key),
@@ -105,7 +105,7 @@ def exists_in_source(source, key):
     return False
 
 
-@metrics.timer_decorator('symboldownloader_public_exists_combined')
+@metrics.timer_decorator('symboldownloader_public_exists')
 @local_cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     hit_callable=lambda: metrics.incr(
