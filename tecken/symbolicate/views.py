@@ -199,7 +199,6 @@ class SymbolicateJSON:
                     try:
                         response_stack.append(hex(module_offset))
                     except TypeError:
-                        metrics.incr('symbolicate_typerror', 1)
                         # Happens if 'module_offset' is not an int16
                         # and thus can't be represented in hex.
                         response_stack.append(str(module_offset))
