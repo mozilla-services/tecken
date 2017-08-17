@@ -592,6 +592,9 @@ class Test(Localdev):
                 'statsd_namespace': ''
             }
         },
+        # {
+        #     'class': 'tecken.markus_extra.LogAllMetricsKeys',
+        # },
     ]
 
 

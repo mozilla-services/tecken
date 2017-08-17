@@ -97,11 +97,11 @@ def upload_inbox_upload(upload_id):
             if file_upload:
                 logger.info(f'Uploaded key {key_name}')
                 file_uploads_created.append(file_upload)
-                metrics.incr('file_upload_upload', 1)
+                metrics.incr('upload_file_upload_upload', 1)
             elif key_name not in previous_uploads_keys:
                 logger.info(f'Skipped key {key_name}')
                 skipped_keys.append(key_name)
-                metrics.incr('file_upload_skip', 1)
+                metrics.incr('upload_file_upload_skip', 1)
     except Exception:
         save_upload_now = True
         raise
@@ -176,7 +176,7 @@ def _key_existing_size(client, bucket, key):
             return obj['Size']
 
 
-@metrics.timer_decorator('create_file_upload')
+@metrics.timer_decorator('upload_create_file_upload')
 def create_file_upload(s3_client, upload, member, previous_uploads_keys):
     """Actually do the S3 PUT of an individual file (member of an archive).
     Returns a tuple of (FileUpload instance, key name). If we decide to

@@ -478,7 +478,9 @@ def test_upload_inbox_upload_task_nothing(
     upload.refresh_from_db()
     assert upload.completed_at
     assert len(upload.skipped_keys) == 2
-    assert metricsmock.has_record(INCR, 'tecken.file_upload_skip', 1, None)
+    assert metricsmock.has_record(
+        INCR, 'tecken.upload_file_upload_skip', 1, None
+    )
     assert not FileUpload.objects.all().exists()
 
 
@@ -574,8 +576,12 @@ def test_upload_inbox_upload_task_one_uploaded_one_skipped(
     upload.refresh_from_db()
     assert upload.completed_at
     assert len(upload.skipped_keys) == 1
-    assert metricsmock.has_record(INCR, 'tecken.file_upload_skip', 1, None)
-    assert metricsmock.has_record(INCR, 'tecken.file_upload_upload', 1, None)
+    assert metricsmock.has_record(
+        INCR, 'tecken.upload_file_upload_skip', 1, None
+    )
+    assert metricsmock.has_record(
+        INCR, 'tecken.upload_file_upload_upload', 1, None
+    )
     assert FileUpload.objects.all().count() == 1
 
 

@@ -25,7 +25,7 @@ class Auth0ManagementAPIError(Exception):
     """happens if the Auth0 management API can't be reached"""
 
 
-@metrics.timer_decorator('is_blocked_in_auth0')
+@metrics.timer_decorator('useradmin_is_blocked_in_auth0')
 def is_blocked_in_auth0(email):
     session = requests_retry_session(retries=5)
     users = find_users(
