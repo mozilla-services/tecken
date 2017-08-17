@@ -400,7 +400,7 @@ class Base(Core):
     # But we don't want to make it too long since when a symbols.zip file
     # is uploaded it doesn't have the opportunity to invalidate those
     # that are uploaded.
-    SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = values.IntegerValue(60 * 10)
+    SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = values.IntegerValue(60 * 60)
 
     # Whether to start a background task to search for symbols
     # on Microsoft's server is protected by an in-memory cache.
