@@ -3,6 +3,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""
+Script to print out the contents of the 'all-metrics-key.json' file.
+Useful to get an insight into what metrics keys are being used.
+"""
+
 import json
 import time
 
@@ -10,7 +15,7 @@ import time
 def run():
     with open('all-metrics-keys.json') as f:
         all_keys = json.load(f)
-    for key in all_keys:
+    for key in sorted(all_keys):
         if key.startswith('_documentation'):
             continue
         age = time.time() - all_keys[key]['timestamp']

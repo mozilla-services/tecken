@@ -383,3 +383,25 @@ how:
 
 Alternatively, just do step 1, from the list above, and then run:
 ``docker-compose up motocker web worker frontend``.
+
+
+All metrics keys
+================
+
+To get insight into all metrics keys that are used, a special Markus backend
+is enabled called ``tecken.markus_extra.LogAllMetricsKeys``. It's enabled
+by default in local development. And to inspect its content you can either
+open ``all-metrics-keys.json`` directly (it's git ignored) or you can run:
+
+.. code-block:: shell
+
+    $ make shell
+    $ ./bin/list-all-metrics-keys.py
+
+Now you can see a list of all keys that are used. Take this and, for example,
+make sure you make a graph in Datadog of each and everyone. If there's a key
+in there that you know you don't need or care about in Datadog, then delete
+it from the code.
+
+The file ``all-metrics-keys.json`` can be deleted any time and it will be
+recreated again.

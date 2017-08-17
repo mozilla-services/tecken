@@ -583,6 +583,17 @@ class Test(Localdev):
         }
         return parent
 
+    MARKUS_BACKENDS = [
+        {
+            'class': 'markus.backends.datadog.DatadogMetrics',
+            'options': {
+                'statsd_host': 'statsd',
+                'statsd_port': 8125,
+                'statsd_namespace': ''
+            }
+        },
+    ]
+
 
 class Dev(Base):
     """Configuration to be used in dev server environment"""

@@ -55,8 +55,6 @@ case $1 in
     if [[ -z ${CI+check} ]]; then  # when doing local `make test`
       # generate code coverage to disk
       coverage html --skip-covered
-      echo "All metrics keys used..."
-      python bin/list-all-metrics-keys.py
     fi
     # Temporarily disabled. The team is small and codecov's report inside
     # pull requests (as comments) is more noise than help.
