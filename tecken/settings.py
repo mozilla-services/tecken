@@ -503,6 +503,9 @@ class Localdev(Base):
                 'statsd_namespace': ''
             }
         },
+        {
+            'class': 'tecken.markus_extra.LogAllMetricsKeys',
+        },
         # {
         #     'class': 'markus.backends.logging.LoggingRollupMetrics',
         #     'options': {
@@ -579,6 +582,17 @@ class Test(Localdev):
             'LOCATION': 'uniquer-snowflake',
         }
         return parent
+
+    MARKUS_BACKENDS = [
+        {
+            'class': 'markus.backends.datadog.DatadogMetrics',
+            'options': {
+                'statsd_host': 'statsd',
+                'statsd_port': 8125,
+                'statsd_namespace': ''
+            }
+        },
+    ]
 
 
 class Dev(Base):

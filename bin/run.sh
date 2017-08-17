@@ -52,7 +52,7 @@ case $1 in
     coverage erase
     coverage run -m py.test --flake8 "${@:2}"
     coverage report -m
-    if [[ -z ${CI+check} ]]; then
+    if [[ -z ${CI+check} ]]; then  # when doing local `make test`
       # generate code coverage to disk
       coverage html --skip-covered
     fi
@@ -66,6 +66,7 @@ case $1 in
     #   env
     #   bash <(curl -s https://codecov.io/bash) -s /tmp
     # fi
+
     ;;
   bash)
     # The likelyhood of needing pytest-watch when in shell is
