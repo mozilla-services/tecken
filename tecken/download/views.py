@@ -164,7 +164,7 @@ def download_symbol(request, symbol, debugid, filename):
     # executing more than once.
     store_result=False,
 )
-@metrics.timer('log_symbol_get_404')
+@metrics.timer('download_log_symbol_get_404')
 def log_symbol_get_404(
     symbol,
     debugid,
