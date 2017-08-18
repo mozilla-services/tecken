@@ -2,7 +2,7 @@ Tecken - All things Mozilla Symbol Server
 =========================================
 
 [![CircleCI](https://circleci.com/gh/mozilla-services/tecken.svg?style=svg)](https://circleci.com/gh/mozilla-services/tecken)
-[![codecov](https://codecov.io/gh/mozilla-services/tecken/branch/master/graph/badge.svg)](https://codecov.io/gh/mozilla-services/tecken)
+<!-- [![codecov](https://codecov.io/gh/mozilla-services/tecken/branch/master/graph/badge.svg)](https://codecov.io/gh/mozilla-services/tecken) -->
 [![Updates](https://pyup.io/repos/github/mozilla-services/tecken/shield.svg)](https://pyup.io/repos/github/mozilla-services/tecken/)
 
 
@@ -30,7 +30,7 @@ Datadog
 -------
 
 If you have access to a Mozilla Cloud Ops Datadog account, use this to
-consume the metrics Tecken sends via `statsd`. One is for staying health, the other is for 
+consume the metrics Tecken sends via `statsd`. One is for staying health, the other is for
 keeping track how it does things.
 
 [Tecken Operations](https://app.datadoghq.com/dash/286319/tecken)
