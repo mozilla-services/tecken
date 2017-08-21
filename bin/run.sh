@@ -44,6 +44,14 @@ case $1 in
   worker)
     exec newrelic-admin run-program celery -A tecken.celery:app worker -l info
     ;;
+  worker-purge)
+    # Start worker but first purge ALL old stale tasks.
+    # Only useful in local development where you might have accidentally
+    # started waaaay too make background tasks when debugging something.
+    # Or perhaps the jobs belong to the wrong branch as you stop/checkout/start
+    # the docker container.
+    exec celery -A tecken.celery:app worker -l info --purge
+    ;;
   superuser)
     exec python manage.py superuser "${@:2}"
     ;;
