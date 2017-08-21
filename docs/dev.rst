@@ -405,3 +405,27 @@ it from the code.
 
 The file ``all-metrics-keys.json`` can be deleted any time and it will be
 recreated again.
+
+
+Celery in local development mode
+================================
+
+When you do something like ``make run`` it starts Django, the frontend
+and the Celery worker. But it's important to note that it starts Celery
+with ``--purge``. That means that every time you start up the worker,
+all jobs that have been previously added to the Celery query are purged.
+
+This is to prevent foot-shooting. Perhaps a rogue unit test that didn't mock
+the broker and accidentally added hundreds of jobs that all fail.
+Or perhaps you're working on a git branch that changes how the worker job
+works and as you're jumping between git branches you start and stop the worker
+so that the wrong jobs are sent using the wrong branch.
+
+Another real thing that can happen is that when you're doing loadtesting of
+the web app, and only run that in docker, but since the web app writes to
+the same Redis (the broker) thousands of jobs might be written that never
+get a chance to be consumed by the worker.
+
+This is why ``docker-compose`` starts ``worker-purge`` instead of ``worker``
+which is the same thing except it's started with ``--purge`` and this should
+only ever be done on local docker development.

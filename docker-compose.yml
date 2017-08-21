@@ -111,7 +111,7 @@ services:
     links:
       - db
       - redis-cache
-    command: worker
+    command: worker-purge
 
   frontend:
     build:
