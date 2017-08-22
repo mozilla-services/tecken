@@ -101,7 +101,8 @@ def download_symbol(request, symbol, debugid, filename):
             # from the host.
             if (
                 settings.DEBUG and
-                'http://motocker:5000' in url
+                'http://motocker:5000' in url and
+                request.get_host() == 'localhost:8000'
             ):  # pragma: no cover
                 url = url.replace('motocker:5000', 'localhost:5000')
             response = http.HttpResponseRedirect(url)

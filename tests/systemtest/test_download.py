@@ -3,7 +3,10 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+
 import requests
+import pytest
+
 
 BASE_URL = os.environ.get('BASE_URL')
 assert BASE_URL
@@ -26,6 +29,16 @@ def _test(uri, firstline=None, expect_status_code=200):
         assert firstline == response.text.splitlines()[0]
 
 
+def large_symbols_available():
+    """return true if we should attempt to do request.HEAD on symbol
+    URLs that are huuuge.
+    The reason this is off by default is because it's not feasible to
+    upload certain symbols in a S3 mock because they're just too large.
+    """
+    var = str(os.environ.get('TEST_LARGE_SYMBOLS', False)).lower().strip()
+    return var in ('true', 'yes', '1')
+
+
 def test_basic_get():
     _test(
         '/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym',
@@ -38,10 +51,12 @@ def test_basic_pdb():
     _test('/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.pd_')
 
 
+@pytest.mark.skipif(large_symbols_available, reason='Not testing HUGE symbols')
 def test_basic_dbg():
     _test('/libxul.so/20BC1801B0B1864324D3B9E933328A170/libxul.so.dbg.gz')
 
 
+@pytest.mark.skipif(large_symbols_available, reason='Not testing HUGE symbols')
 def test_basic_dsym():
     _test('/XUL/E3532A114F1C37E2AF567D8E6975F80C0/XUL.dSYM.tar.bz2')
 
