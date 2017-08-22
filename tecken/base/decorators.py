@@ -7,6 +7,7 @@ import hashlib
 from functools import wraps
 
 from django import http
+from django.conf import settings
 from django.utils.decorators import available_attrs
 from django.contrib.auth.decorators import permission_required
 from django.core.cache import caches
@@ -22,12 +23,12 @@ def api_login_required(view_func):
     @wraps(view_func)
     def inner(request, *args, **kwargs):
         if not request.user.is_active:
-            return http.JsonResponse(
-                {'error': (
-                    'This requires an Auth-Token to authenticate the request'
-                )},
-                status=403,
+            error_msg = (
+                'This requires an Auth-Token to authenticate the request'
             )
+            if not settings.ENABLE_TOKENS_AUTHENTICATION:  # pragma: no cover
+                error_msg += ' (ENABLE_TOKENS_AUTHENTICATION is False)'
+            return http.JsonResponse({'error': error_msg}, status=403)
         return view_func(request, *args, **kwargs)
 
     return inner

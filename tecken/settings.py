@@ -171,7 +171,7 @@ class Core(AWS, Configuration, Celery):
 
     # API Token authentication is off by default until Tecken has
     # gone through a security checklist.
-    ENABLE_TOKENS_AUTHENTICATION = values.BooleanValue(False)
+    ENABLE_TOKENS_AUTHENTICATION = values.BooleanValue(True)
 
     TOKENS_DEFAULT_EXPIRATION_DAYS = values.IntegerValue(365)  # 1 year
 
