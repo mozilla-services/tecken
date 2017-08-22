@@ -47,6 +47,10 @@ def test_basic_symbolication():
 
 
 def test_basic_symbolication_with_debug():
+    """Same as test_basic_symbolication() but this time we're sending an
+    extra HTTP header called "Debug: true" which means the response JSON
+    will contain a block called "debug"
+    """
     crash_ping = {
         'version': 4,
         'memoryMap': [

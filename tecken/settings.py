@@ -456,7 +456,6 @@ class Localdev(Base):
     # forces you to use/test the symbol downloader based on requests.get().
     SYMBOL_URLS = values.ListValue([
         'http://motocker:5000/testbucket',
-        'https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/?access=public',  # noqa
     ])
 
     # By default, upload all symbols to this when in local dev.

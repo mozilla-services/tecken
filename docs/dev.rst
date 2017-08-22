@@ -308,32 +308,6 @@ you normally put Nginx configuration files. For example:
     $ ./test-with-nginx/generate.py > /etc/nginx/sites-enabled/tecken.conf
     $ # however you reload nginx
 
-System tests
-============
-
-System test aims to replace and be similar to doing manual testing with
-your browser or ``curl``. They depend on the server being up and running
-but will start a web server if it's not already running.
-
-To start the system tests run:
-
-.. code-block:: shell
-
-    $ make systemtest
-
-If you want to see the requests coming in in foreground logging, you can
-start the server in another terminal first, and then run ``make systemtest``
-in a second terminal.
-
-If you need to do some debugging into a specific test with system tests,
-it's tedious to have to run all the tests every time. One trick is to
-take the command that ``make systemtest`` represents in ``Makefile``
-and then run it with extra ``pytest`` parameters. For example:
-
-.. code-block:: shell
-
-    $ docker-compose run systemtest tests/systemtest/run_tests.sh -k test_delberately_404ing_and_csv_reporting
-
 Shells and ``hack.py``
 ======================
 

@@ -36,6 +36,7 @@ Project docs:
    dev
    frontend
    redis
+   systemtests
    docker
    authentication
 
