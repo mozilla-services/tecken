@@ -463,6 +463,9 @@ class Localdev(Base):
         'http://motocker:5000/testbucket'
     )
 
+    # Run this much sooner in local development.
+    UPLOAD_REATTEMPT_LIMIT_SECONDS = values.IntegerValue(60)
+
     @classmethod
     def post_setup(cls):
         super().post_setup()
