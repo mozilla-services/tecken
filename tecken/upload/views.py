@@ -25,7 +25,10 @@ from tecken.base.decorators import (
     api_permission_required,
     api_require_POST
 )
-from tecken.upload.utils import get_archive_members
+from tecken.upload.utils import (
+    get_archive_members,
+    UnrecognizedArchiveFileExtension,
+)
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.s3 import S3Bucket
@@ -124,6 +127,11 @@ def upload_archive(request):
             {'error': str(exception)},
             status=400,
         )
+    except UnrecognizedArchiveFileExtension as exception:
+        return http.JsonResponse(
+            {'error': f'Unrecognized archive file extension "{exception}"'},
+            status=400,
+        )
     error = check_symbols_archive_file_listing(file_listing)
     if error:
         return http.JsonResponse({'error': error.strip()}, status=400)
@@ -182,7 +190,8 @@ def upload_archive(request):
             Body=upload,
         )
 
-    upload_inbox_upload.delay(upload_obj.pk)
+    logger.info(f'Upload object created with ID {upload_obj.id}')
+    upload_inbox_upload.delay(upload_obj.id)
 
     # Take the opportunity to also try to clear out old uploads that
     # have gotten stuck and still hasn't moved for some reason.

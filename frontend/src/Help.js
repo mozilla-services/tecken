@@ -28,7 +28,7 @@ class Help extends Component {
         <Link to="/tokens">API tokens</Link>.
       </p>
 
-      <h2>Upload Symbols Archives</h2>
+      <h2 id="upload-symbols-archives">Upload Symbols Archives</h2>
       <p>
         To upload symbols archives (<code>.zip</code> files full of symbol files)
         there are certain requirements:
