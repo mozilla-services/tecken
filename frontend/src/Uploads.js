@@ -55,7 +55,6 @@ class Uploads extends Component {
         document.title = this.state.pageTitle
       })
     }
-
   }
 
   _fetchUploads = () => {
@@ -147,9 +146,24 @@ class Uploads extends Component {
                 <li className={false && 'is-active'}>
                   <Link to="/uploads/files">All Files</Link>
                 </li>
+                <li className={false && 'is-active'}>
+                  <Link to="/uploads/upload">Upload Now</Link>
+                </li>
               </ul>
             </div>
-          : null}
+          : <div className="tabs is-centered">
+            <ul>
+              <li className={!this.state.filter.user && 'is-active'}>
+                <Link to="/uploads">
+                  All Uploads
+                </Link>
+              </li>
+              <li className={false && 'is-active'}>
+                <Link to="/uploads/upload">Upload Now</Link>
+              </li>
+            </ul>
+          </div>
+        }
         <h1 className="title">
           {this.state.pageTitle}
         </h1>

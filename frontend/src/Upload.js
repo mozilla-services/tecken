@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 
+import { toDate, differenceInMinutes } from 'date-fns/esm'
+
 import {
   Loading,
   DisplayDate,
@@ -17,15 +19,21 @@ export default class Upload extends Component {
     this.pageTitle = 'Symbol Upload'
     this.state = {
       loading: true,
-      upload: null
+      upload: null,
+      refreshingInterval: null
     }
   }
   componentWillMount() {
     store.resetApiRequests()
   }
 
+  componentWillUnmount() {
+    this.dismounted = true
+  }
+
   componentDidMount() {
     document.title = this.pageTitle
+    this.setState({ loading: true })
     this._fetchUpload(this.props.match.params.id)
   }
 
@@ -34,8 +42,12 @@ export default class Upload extends Component {
   }
 
   _fetchUpload = id => {
-    this.setState({ loading: true })
-    Fetch(`/api/uploads/upload/${id}`, { credentials: 'same-origin' }).then(r => {
+    return Fetch(`/api/uploads/upload/${id}`, {
+      credentials: 'same-origin'
+    }).then(r => {
+      if (this.dismounted) {
+        return
+      }
       this.setState({ loading: false })
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
@@ -53,11 +65,50 @@ export default class Upload extends Component {
             upload: response.upload,
             loading: false
           })
+          if (this.recentUpload) {
+            this.keepRefreshing()
+          }
         })
       } else {
         store.fetchError = r
       }
     })
+  }
+
+  keepRefreshing = () => {
+    let refreshingInterval = this.state.refreshingInterval
+    if (!refreshingInterval) {
+      refreshingInterval = 5 // start with every 5 seconds
+    } else {
+      refreshingInterval *= 1.5
+    }
+    if (!this.dismounted) {
+      window.setTimeout(() => {
+        if (this.dismounted) {
+          return
+        }
+        if (this.state.upload) {
+          this._fetchUpload(this.state.upload.id)
+        }
+      }, refreshingInterval * 1000)
+      this.setState({
+        refreshingInterval: refreshingInterval
+      })
+    }
+  }
+
+  refreshUpload = event => {
+    event.preventDefault()
+    this.setState({
+      loading: true,
+      refreshingInterval: 3 // reset this if it was manually clicked
+    })
+    this._fetchUpload(this.state.upload.id)
+  }
+
+  recentUpload = date => {
+    const dateObj = toDate(date)
+    return differenceInMinutes(new Date(), dateObj) < 30
   }
 
   render() {
@@ -67,7 +118,7 @@ export default class Upload extends Component {
           {this.pageTitle}
         </h1>
         {this.props.history.length > 1
-          ? <p>
+          ? <p className="is-pulled-right">
               <a className="button is-small is-info" onClick={this.goBack}>
                 <span className="icon">
                   <i className="fa fa-backward" />
@@ -78,7 +129,73 @@ export default class Upload extends Component {
           : null}
 
         {this.state.loading && <Loading />}
+        {this.state.upload &&
+          !this.state.loading &&
+          this.recentUpload(this.state.upload.created_at) &&
+          <p className="is-pulled-right">
+            <a
+              className="button is-small is-primary"
+              onClick={this.refreshUpload}
+            >
+              <span className="icon">
+                <i className="fa fa-refresh" />
+              </span>{' '}
+              <span>Refresh</span>
+            </a>
+          </p>}
+        {this.state.upload &&
+          this.state.refreshingInterval &&
+          <DisplayRefreshingInterval
+            interval={this.state.refreshingInterval}
+          />}
         {this.state.upload && <DisplayUpload upload={this.state.upload} />}
+      </div>
+    )
+  }
+}
+
+class DisplayRefreshingInterval extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { seconds: this._roundInterval(props.interval) }
+  }
+  _roundInterval = interval => Math.round(Number(interval))
+  componentWillUnmount() {
+    this.dismounted = true
+  }
+  componentWillReceiveProps(nextProps) {
+    this.setState({ seconds: this._roundInterval(nextProps.interval) })
+  }
+  componentDidMount() {
+    this.loop = window.setInterval(() => {
+      if (this.dismounted) {
+        window.clearInterval(this.loop)
+      } else {
+        this.setState(state => {
+          return { seconds: state.seconds - 1 }
+        })
+      }
+    }, 1000)
+  }
+  render() {
+    if (this.state.seconds <= 0) {
+      return (
+        <div className="tags">
+          <span className="tag">Refreshing now</span>
+        </div>
+      )
+    }
+    let prettyTime = `${this.state.seconds} s`
+    if (this.state.seconds >= 60) {
+      const minutes = Math.floor(this.state.seconds / 60)
+      prettyTime = `${minutes} m`
+    }
+    return (
+      <div className="tags has-addons">
+        <span className="tag">Refreshing in</span>
+        <span className="tag is-primary">
+          {prettyTime}
+        </span>
       </div>
     )
   }
@@ -127,7 +244,7 @@ const DisplayUpload = ({ upload }) => {
 
   return (
     <div>
-      <h3 className="title">Metadata</h3>
+      <h4 className="title is-4">Metadata</h4>
       <table className="table">
         <tbody>
           <tr>
@@ -203,11 +320,13 @@ const DisplayUpload = ({ upload }) => {
           </tr>
           <tr>
             <th>Attempts</th>
-            <td>{upload.attempts}</td>
+            <td>
+              {upload.attempts}
+            </td>
           </tr>
         </tbody>
       </table>
-      <h3 className="title">Files</h3>
+      <h4 className="title is-4">Files</h4>
       <table className="table files-table">
         <thead>
           <tr>
@@ -291,7 +410,9 @@ const DisplayUpload = ({ upload }) => {
         </dd>
 
         <dt>Files Not Uploaded</dt>
-        <dd>{upload.skipped_keys.length}</dd>
+        <dd>
+          {upload.skipped_keys.length}
+        </dd>
       </dl>
     </div>
   )

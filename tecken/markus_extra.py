@@ -26,7 +26,10 @@ class LogAllMetricsKeys(BackendBase):  # pragma: no cover
         try:
             with open(filename) as f:
                 all_keys = json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.decoder.JSONDecodeError):
+            # This file gets written in an not thread-safe way
+            # so sometimes the file is all messed up. Pretend
+            # it didn't exist if the exception was a JSONDecodeError.
             all_keys = {
                 '_documentation': (
                     'This file was created so you can see all metrics '

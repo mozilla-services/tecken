@@ -17,7 +17,10 @@ const Home = observer(
       if (store.currentUser) {
         return <SignedInTiles user={store.currentUser} />
       }
-      return <AnonymousTiles signIn={this.props.signIn} />
+      return <AnonymousTiles
+        signIn={this.props.signIn}
+        authLoaded={store.signInUrl}
+       />
     }
   }
 )
@@ -279,7 +282,7 @@ const AboutTokensTile = ({ loading, stats }) =>
     </p>
   </article>
 
-const AnonymousTiles = ({ signIn }) =>
+const AnonymousTiles = ({ signIn, authLoaded }) =>
   <div>
     <div className="tile is-ancestor">
       <div className="tile is-parent is-12">
@@ -307,11 +310,14 @@ const AnonymousTiles = ({ signIn }) =>
       <div className="tile is-parent">
         <article className="tile is-child box">
           <p className="title">Authentication</p>
-          <p className="has-text-centered">
-            <button onClick={signIn} className="button is-info is-large">
-              Sign In
-            </button>
-          </p>
+          {
+            !authLoaded ? <Loading/> :
+            <p className="has-text-centered">
+              <button onClick={signIn} className="button is-info is-large">
+                Sign In
+              </button>
+            </p>
+          }
         </article>
       </div>
       <div className="tile is-parent is-8">

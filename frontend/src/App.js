@@ -15,6 +15,7 @@ import Help from './Help'
 import Tokens from './Tokens'
 import Uploads from './Uploads'
 import Upload from './Upload'
+import UploadNow from './UploadNow'
 import Files from './Files'
 import Users from './Users'
 import User from './User'
@@ -91,7 +92,7 @@ const App = observer(
         redirect: 'manual'
       }).then(r => {
         sessionStorage.removeItem('signedin')
-        store.currentUser = null
+        store.currentUser = false
         store.setRedirectTo('/', {
           message: 'Signed out',
           success: true
@@ -170,19 +171,22 @@ const App = observer(
                   </NavLink>
                   <span className="nav-item">
                     {store.currentUser
-                      ? <button
+                      && <button
                           onClick={this.signOut}
                           className="button is-info"
                           title={`Signed in as ${store.currentUser.email}`}
                         >
                           Sign Out
                         </button>
-                      : <button
+                      }
+                    {!store.currentUser && store.signInUrl &&
+                      <button
                           onClick={this.signIn}
                           className="button is-info"
                         >
                           Sign In
-                        </button>}
+                        </button>
+                    }
                   </span>
                 </div>
               </div>
@@ -203,6 +207,7 @@ const App = observer(
                 <Route path="/help" component={Help} />
                 <Route path="/tokens" component={Tokens} />
                 <Route path="/uploads/files" exact component={Files} />
+                <Route path="/uploads/upload" exact component={UploadNow} />
                 <Route path="/uploads/upload/:id" component={Upload} />
                 <Route path="/uploads" exact component={Uploads} />
                 <Route path="/users/:id" component={User} />

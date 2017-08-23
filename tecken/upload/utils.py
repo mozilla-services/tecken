@@ -2,9 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
 import zipfile
 import gzip
 import tarfile
+
+
+class UnrecognizedArchiveFileExtension(ValueError):
+    pass
 
 
 class _ZipMember:
@@ -75,4 +80,4 @@ def get_archive_members(file_object, file_name):
                 )
 
     else:
-        raise NotImplementedError(file_name)
+        raise UnrecognizedArchiveFileExtension(os.path.splitext(file_name)[1])

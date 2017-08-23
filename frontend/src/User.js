@@ -127,7 +127,6 @@ class EditUserForm extends Component {
           this.setState({ loading: false, validationErrors: data.errors })
         })
       } else {
-        // this.setState({ fetchError: r })
         store.fetchError = r
       }
     })
