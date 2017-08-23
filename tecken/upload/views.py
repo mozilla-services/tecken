@@ -172,25 +172,28 @@ def upload_archive(request):
         content_hash=content_hash,
         name=name,
     )
-    # Record that we made this upload
-    upload_obj = Upload.objects.create(
-        user=request.user,
-        filename=name,
-        inbox_key=key,
-        bucket_name=bucket_info.name,
-        bucket_region=bucket_info.region,
-        bucket_endpoint_url=bucket_info.endpoint_url,
-        size=size,
-    )
-    with metrics.timer('upload_to_inbox'):
-        upload.seek(0)
-        bucket_info.s3_client.put_object(
-            Bucket=bucket_info.name,
-            Key=key,
-            Body=upload,
+    # Bundle the creation of the upload object with the task of uploading
+    # the inbox file. If the latter fails, the Upload object creation
+    # should be cancelled too.
+    with transaction.atomic():
+        upload_obj = Upload.objects.create(
+            user=request.user,
+            filename=name,
+            inbox_key=key,
+            bucket_name=bucket_info.name,
+            bucket_region=bucket_info.region,
+            bucket_endpoint_url=bucket_info.endpoint_url,
+            size=size,
         )
+        with metrics.timer('upload_to_inbox'):
+            upload.seek(0)
+            bucket_info.s3_client.put_object(
+                Bucket=bucket_info.name,
+                Key=key,
+                Body=upload,
+            )
+        logger.info(f'Upload object created with ID {upload_obj.id}')
 
-    logger.info(f'Upload object created with ID {upload_obj.id}')
     upload_inbox_upload.delay(upload_obj.id)
 
     # Take the opportunity to also try to clear out old uploads that
