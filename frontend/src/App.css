@@ -19,8 +19,3 @@ body {
 .select select[multiple=""] option {
     padding: 0.5em 1em;
 }
-
-
-a.navbar-item.is-active {
-  font-weight: bold;
-}

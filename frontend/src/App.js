@@ -38,6 +38,10 @@ const App = observer(
     }
 
     componentWillMount() {
+      this._fetchAuth()
+    }
+
+    _fetchAuth = () => {
       Fetch('/api/_auth/', { credentials: 'same-origin' }).then(r => {
         if (r.status === 200) {
           if (store.fetchError) {
@@ -97,6 +101,8 @@ const App = observer(
           message: 'Signed out',
           success: true
         })
+        // This'll refetch the signInUrl
+        this._fetchAuth()
       })
     }
 
@@ -115,8 +121,6 @@ const App = observer(
         <Router>
           <div>
             <Nav
-              currentUser={store.currentUser}
-              signInUrl={store.signInUrl}
               signIn={this.signIn}
               signOut={this.signOut}
             />

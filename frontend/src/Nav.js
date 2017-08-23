@@ -1,114 +1,120 @@
 import React, { Component } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-
+import { observer } from 'mobx-react'
+import './Nav.css'
 import store from './Store'
 
-class Nav extends Component {
-  constructor(props) {
-    super(props)
+const Nav = observer(
+  class Nav extends Component {
+    constructor(props) {
+      super(props)
 
-    this.state = {
-      menuToggled: true
+      this.state = {
+        menuToggled: true
+      }
     }
-  }
 
-  toggleMenu = event => {
-    event.preventDefault()
-    this.setState({ menuToggled: !this.state.menuToggled })
-  }
+    toggleMenu = event => {
+      event.preventDefault()
+      this.setState({ menuToggled: !this.state.menuToggled })
+    }
 
-  render() {
-    return (
-      <nav className="navbar has-shadow" id="top">
-        <div className="navbar-brand">
-          <Link className="navbar-item" to="/">
-            Mozilla Symbol Server
-          </Link>
+    render() {
+      return (
+        <nav className="navbar has-shadow" id="top">
+          <div className="navbar-brand">
+            <Link className="navbar-item" to="/">
+              Mozilla Symbol Server
+            </Link>
+
+            <div
+              data-target="navMenubd-example"
+              className={
+                this.state.menuToggled
+                  ? 'navbar-burger'
+                  : 'navbar-burger is-active'
+              }
+              onClick={this.toggleMenu}
+            >
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
 
           <div
-            data-target="navMenubd-example"
+            id="navMenubd-example"
             className={
-              this.state.menuToggled
-                ? 'navbar-burger'
-                : 'navbar-burger is-active'
+              this.state.menuToggled ? 'navbar-menu' : 'navbar-menu is-active'
             }
-            onClick={this.toggleMenu}
           >
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
-
-        <div
-          id="navMenubd-example"
-          className={
-            this.state.menuToggled ? 'navbar-menu' : 'navbar-menu is-active'
-          }
-        >
-          <div className="navbar-end">
-            <NavLink
-              to="/"
-              exact
-              className="navbar-item"
-              activeClassName="is-active"
-            >
-              Home
-            </NavLink>
-            {this.props.currentUser && this.props.currentUser.is_superuser
-              ? <NavLink
-                  to="/users"
+            <div className="navbar-end">
+              <NavLink
+                to="/"
+                exact
+                className="navbar-item"
+                activeClassName="is-active"
+              >
+                Home
+              </NavLink>
+              {store.currentUser && store.currentUser.is_superuser
+                ? <NavLink
+                    to="/users"
+                    className="navbar-item"
+                    activeClassName="is-active"
+                  >
+                    User Management
+                  </NavLink>
+                : null}
+              {store.currentUser &&
+                store.hasPermission('tokens.manage_tokens') &&
+                <NavLink
+                  to="/tokens"
                   className="navbar-item"
                   activeClassName="is-active"
                 >
-                  User Management
-                </NavLink>
-              : null}
-            {this.props.currentUser &&
-              store.hasPermission('tokens.manage_tokens') &&
-              <NavLink
-                to="/tokens"
-                className="navbar-item"
-                activeClassName="is-active"
-              >
-                API Tokens
-              </NavLink>}
-            {this.props.currentUser &&
-              store.hasPermission('upload.upload_symbols') &&
-              <NavLink
-                to="/uploads"
-                className="navbar-item"
-                activeClassName="is-active"
-              >
-                Uploads
-              </NavLink>}
-            <NavLink
-              to="/help"
-              className="navbar-item"
-              activeClassName="is-active"
-            >
-              Help
-            </NavLink>
-            <span className="navbar-item">
-              {this.props.currentUser &&
-                <button
-                  onClick={this.props.signOut}
-                  className="button is-info"
-                  title={`Signed in as ${this.props.currentUser.email}`}
+                  API Tokens
+                </NavLink>}
+              {store.currentUser &&
+                store.hasPermission('upload.upload_symbols') &&
+                <NavLink
+                  to="/uploads"
+                  className="navbar-item"
+                  activeClassName="is-active"
                 >
-                  Sign Out
-                </button>}
-              {!this.props.currentUser &&
-                this.props.signInUrl &&
-                <button onClick={this.props.signIn} className="button is-info">
-                  Sign In
-                </button>}
-            </span>
+                  Uploads
+                </NavLink>}
+              <NavLink
+                to="/help"
+                className="navbar-item"
+                activeClassName="is-active"
+              >
+                Help
+              </NavLink>
+              <span className="navbar-item">
+                {store.currentUser &&
+                  <button
+                    onClick={this.props.signOut}
+                    className="button is-info"
+                    title={`Signed in as ${store.currentUser.email}`}
+                  >
+                    Sign Out
+                  </button>}
+                {!store.currentUser &&
+                  store.signInUrl &&
+                  <button
+                    onClick={this.props.signIn}
+                    className="button is-info"
+                  >
+                    Sign In
+                  </button>}
+              </span>
+            </div>
           </div>
-        </div>
-      </nav>
-    )
+        </nav>
+      )
+    }
   }
-}
+)
 
 export default Nav
