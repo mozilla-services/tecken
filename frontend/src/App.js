@@ -3,13 +3,13 @@ import './App.css'
 import {
   BrowserRouter as Router,
   Route,
-  NavLink,
   Redirect
 } from 'react-router-dom'
 import Raven from 'raven-js'
 import { observer } from 'mobx-react'
 import 'bulma/css/bulma.css'
 
+import Nav from './Nav'
 import Home from './Home'
 import Help from './Help'
 import Tokens from './Tokens'
@@ -114,83 +114,12 @@ const App = observer(
       return (
         <Router>
           <div>
-            <nav className="nav has-shadow" id="top">
-              <div className="container">
-                <div className="nav-left">
-                  <a className="nav-item" href="/">
-                    Mozilla Symbol Server
-                  </a>
-                </div>
-                <span className="nav-toggle">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-                <div className="nav-right nav-menu">
-                  <NavLink
-                    to="/"
-                    exact
-                    className="nav-item is-tab"
-                    activeClassName="is-active"
-                  >
-                    Home
-                  </NavLink>
-                  {store.currentUser && store.currentUser.is_superuser
-                    ? <NavLink
-                        to="/users"
-                        className="nav-item is-tab"
-                        activeClassName="is-active"
-                      >
-                        User Management
-                      </NavLink>
-                    : null}
-                  {store.currentUser &&
-                    store.hasPermission('tokens.manage_tokens') &&
-                    <NavLink
-                      to="/tokens"
-                      className="nav-item is-tab"
-                      activeClassName="is-active"
-                    >
-                      API Tokens
-                    </NavLink>}
-                  {store.currentUser &&
-                    store.hasPermission('upload.upload_symbols') &&
-                    <NavLink
-                      to="/uploads"
-                      className="nav-item is-tab"
-                      activeClassName="is-active"
-                    >
-                      Uploads
-                    </NavLink>}
-                  <NavLink
-                    to="/help"
-                    className="nav-item is-tab"
-                    activeClassName="is-active"
-                  >
-                    Help
-                  </NavLink>
-                  <span className="nav-item">
-                    {store.currentUser
-                      && <button
-                          onClick={this.signOut}
-                          className="button is-info"
-                          title={`Signed in as ${store.currentUser.email}`}
-                        >
-                          Sign Out
-                        </button>
-                      }
-                    {!store.currentUser && store.signInUrl &&
-                      <button
-                          onClick={this.signIn}
-                          className="button is-info"
-                        >
-                          Sign In
-                        </button>
-                    }
-                  </span>
-                </div>
-              </div>
-            </nav>
+            <Nav
+              currentUser={store.currentUser}
+              signInUrl={store.signInUrl}
+              signIn={this.signIn}
+              signOut={this.signOut}
+            />
             <section className="section">
               <div className="container">
                 <DisplayNotificationMessage
