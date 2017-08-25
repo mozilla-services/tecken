@@ -64,10 +64,14 @@ export default class Upload extends Component {
           this.setState({
             upload: response.upload,
             loading: false
+          }, () => {
+            if (this.recentAndIncompleteUpload()) {
+              this.keepRefreshing()
+            } else if (this.state.refreshingInterval) {
+              this.setState({refreshingInterval: null})
+            }
           })
-          if (this.recentUpload) {
-            this.keepRefreshing()
-          }
+
         })
       } else {
         store.fetchError = r
@@ -78,7 +82,7 @@ export default class Upload extends Component {
   keepRefreshing = () => {
     let refreshingInterval = this.state.refreshingInterval
     if (!refreshingInterval) {
-      refreshingInterval = 5 // start with every 5 seconds
+      refreshingInterval = 2 // start with every 2 seconds
     } else {
       refreshingInterval *= 1.5
     }
@@ -101,14 +105,17 @@ export default class Upload extends Component {
     event.preventDefault()
     this.setState({
       loading: true,
-      refreshingInterval: 3 // reset this if it was manually clicked
+      refreshingInterval: 2 // reset this if it was manually clicked
     })
     this._fetchUpload(this.state.upload.id)
   }
 
-  recentUpload = date => {
-    const dateObj = toDate(date)
-    return differenceInMinutes(new Date(), dateObj) < 30
+  recentAndIncompleteUpload = () => {
+    if (!this.state.upload.completed_at) {
+      const dateObj = toDate(this.state.upload.created_at)
+      return differenceInMinutes(new Date(), dateObj) < 30
+    }
+    return false
   }
 
   render() {
@@ -131,7 +138,7 @@ export default class Upload extends Component {
         {this.state.loading && <Loading />}
         {this.state.upload &&
           !this.state.loading &&
-          this.recentUpload(this.state.upload.created_at) &&
+          this.recentAndIncompleteUpload() &&
           <p className="is-pulled-right">
             <a
               className="button is-small is-primary"
