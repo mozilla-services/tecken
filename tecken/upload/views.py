@@ -105,9 +105,6 @@ def get_bucket_info(user):
 @api_permission_required('upload.upload_symbols')
 @transaction.atomic
 def upload_archive(request):
-    import time
-    print(   "Slowing things down...."  )
-    time.sleep(5)
     for name in request.FILES:
         upload = request.FILES[name]
         size = upload.size
