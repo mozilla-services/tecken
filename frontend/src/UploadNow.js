@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
 
-import { Loading } from './Common'
+import { Loading, formatFileSize } from './Common'
 import store from './Store'
 
 export default class UploadNow extends Component {
@@ -109,7 +109,7 @@ class UploadForm extends Component {
     super(props)
     this.state = {
       loading: false,
-      fileName: null,
+      fileInfo: null,
       warning: null,
       validationError: null
     }
@@ -167,7 +167,13 @@ class UploadForm extends Component {
     } else if (this.state.warning) {
       this.setState({ warning: null })
     }
-    this.setState({ fileName: file.name })
+    this.setState({
+      fileInfo: {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }
+    })
   }
 
   render() {
@@ -199,8 +205,8 @@ class UploadForm extends Component {
               </span>
 
               <span className="file-name">
-                {this.state.fileName
-                  ? this.state.fileName
+                {this.state.fileInfo
+                  ? <ShowFileInfo info={this.state.fileInfo} />
                   : <i>no file selected yet</i>}
               </span>
             </label>
@@ -214,7 +220,15 @@ class UploadForm extends Component {
           </article>}
         <div className="field is-grouped">
           <p className="control">
-            <button type="submit" className="button is-primary">
+            <button
+              type="submit"
+              className={
+                this.state.loading
+                  ? 'button is-primary is-loading'
+                  : 'button is-primary'
+              }
+              disabled={this.state.loading}
+            >
               Upload
             </button>
           </p>
@@ -228,3 +242,8 @@ class UploadForm extends Component {
     )
   }
 }
+
+const ShowFileInfo = ({ info }) =>
+  <span>
+    {info.name} <small>({formatFileSize(info.size)} {info.type})</small>
+  </span>
