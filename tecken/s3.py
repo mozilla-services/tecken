@@ -54,10 +54,7 @@ class S3Bucket:
         self.region = None
         if not parsed.netloc.endswith('.amazonaws.com'):
             # the endpoint_url will be all but the path
-            self.endpoint_url = '{}://{}'.format(
-                parsed.scheme,
-                parsed.netloc,
-            )
+            self.endpoint_url = f'{parsed.scheme}://{parsed.netloc}'
         region = re.findall(r's3-(.*)\.amazonaws\.com', parsed.netloc)
         if region:
             if region[0] not in ALL_POSSIBLE_S3_REGIONS:

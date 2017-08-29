@@ -11,6 +11,7 @@ from io import BytesIO
 import pytest
 import mock
 from botocore.exceptions import ClientError, EndpointConnectionError
+from requests.exceptions import ConnectionError
 from markus import TIMING, INCR
 
 from django.core.urlresolvers import reverse
@@ -24,6 +25,7 @@ from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.boto_extra import OwnEndpointConnectionError, OwnClientError
 from tecken.upload.views import get_bucket_info
+from tecken.upload.forms import UploadByDownloadForm
 from tecken.upload.utils import get_archive_members
 
 
@@ -630,6 +632,18 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         assert response.status_code == 400
         assert response.json()['error'] == 'File size 0'
 
+        # Unrecognized file extension
+        with open(ZIP_FILE, 'rb') as f:
+            response = client.post(
+                url,
+                {'myfile.rar': f},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 400
+            assert response.json()['error'] == (
+                'Unrecognized archive file extension ".rar"'
+            )
+
         settings.DISALLOWED_SYMBOLS_SNIPPETS = ('xpcshell.sym',)
 
         with open(ZIP_FILE, 'rb') as f:
@@ -899,3 +913,229 @@ def test_get_bucket_info_exceptions(settings):
     user = FakeUser('Tucker@example.com')
     bucket_info = get_bucket_info(user)
     assert bucket_info.name == 'excepty'
+
+
+@pytest.mark.django_db
+def test_upload_client_by_download_url(
+    botomock,
+    fakeuser,
+    client,
+    settings,
+    requestsmock,
+):
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/symbols.zip',
+        }
+    )
+    requestsmock.head(
+        'https://whitelisted.example.com/bad.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://bad.example.com/symbols.zip',
+        }
+    )
+
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
+        'whitelisted.example.com',
+        'download.example.com',
+    ]
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    # The key name for the inbox file upload contains today's date
+    # and a MD5 hash of its content based on using 'ZIP_FILE'
+    expected_inbox_key_name_regex = re.compile(
+        r'inbox/\d{4}-\d{2}-\d{2}/[a-f0-9]{12}/(\w+)\.zip'
+    )
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'PutObject' and
+            expected_inbox_key_name_regex.findall(api_params['Key'])
+        ):
+            content = api_params['Body'].read()
+            assert isinstance(content, bytes)
+            # based on `ls -l tests/sample.zip` knowledge
+            assert len(content) == 69812
+
+            # ...pretend to actually upload it.
+            return {
+                # Should there be anything here?
+            }
+
+        raise NotImplementedError((operation_name, api_params))
+
+    task_arguments = []
+
+    def fake_task(upload_id):
+        task_arguments.append(upload_id)
+
+    _mock_function = 'tecken.upload.views.upload_inbox_upload.delay'
+    with mock.patch(_mock_function, new=fake_task):
+        with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+            response = client.post(
+                url,
+                data={'url': 'http://example.com/symbols.zip'},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 400
+            assert response.json()['error'] == 'Insecure URL'
+
+            response = client.post(
+                url,
+                data={'url': 'https://notwhitelisted.example.com/symbols.zip'},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 400
+            assert response.json()['error'] == (
+                "Not an allowed domain ('notwhitelisted.example.com') to "
+                "download from"
+            )
+
+            # More tricky, a URL that when redirecting, redirects
+            # somewhere "bad".
+            response = client.post(
+                url,
+                data={'url': 'https://whitelisted.example.com/bad.zip'},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 400
+            assert response.json()['error'] == (
+                "Not an allowed domain ('bad.example.com') to "
+                "download from"
+            )
+
+            # Lastly, the happy path
+            zip_file_content = f.read()
+            requestsmock.head(
+                'https://download.example.com/symbols.zip',
+                content=b'',
+                status_code=200,
+                headers={
+                    'Content-Length': str(len(zip_file_content)),
+                }
+            )
+            requestsmock.get(
+                'https://download.example.com/symbols.zip',
+                content=zip_file_content,
+                status_code=200,
+            )
+            response = client.post(
+                url,
+                data={'url': 'https://whitelisted.example.com/symbols.zip'},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+            assert response.status_code == 201
+            assert response.json()['upload']['download_url'] == (
+                'https://download.example.com/symbols.zip'
+            )
+            upload = Upload.objects.get(id=task_arguments[0])
+            assert upload.user == fakeuser
+            assert upload.download_url == (
+                'https://download.example.com/symbols.zip'
+            )
+            assert expected_inbox_key_name_regex.findall(upload.inbox_key)
+            assert upload.filename == 'symbols.zip'
+            assert not upload.completed_at
+            # based on `ls -l tests/sample.zip` knowledge
+            assert upload.size == 69812
+
+
+def test_upload_by_download_form_happy_path(requestsmock, settings):
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ['whitelisted.example.com']
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        content=b'content',
+        status_code=200,
+        headers={
+            'Content-Length': '1234',
+        }
+    )
+
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/symbols.zip',
+    })
+    assert form.is_valid()
+    assert form.cleaned_data['url'] == (
+        'https://whitelisted.example.com/symbols.zip'
+    )
+    assert form.cleaned_data['upload']['name'] == 'symbols.zip'
+    assert form.cleaned_data['upload']['size'] == 1234
+
+
+def test_upload_by_download_form_connectionerrors(requestsmock, settings):
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
+        'whitelisted.example.com',
+        'download.example.com',
+    ]
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        exc=ConnectionError,
+    )
+
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/symbols.zip',
+    })
+    assert not form.is_valid()
+    validation_errors, = form.errors.as_data().values()
+    assert validation_errors[0].message == (
+        'ConnectionError trying to open '
+        'https://whitelisted.example.com/symbols.zip'
+    )
+
+    # Suppose the HEAD request goes to another URL which eventually
+    # raises a ConnectionError.
+
+    requestsmock.head(
+        'https://whitelisted.example.com/redirect.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/busted.zip'
+        }
+    )
+    requestsmock.head(
+        'https://download.example.com/busted.zip',
+        exc=ConnectionError,
+    )
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/redirect.zip',
+    })
+    assert not form.is_valid()
+    validation_errors, = form.errors.as_data().values()
+    assert validation_errors[0].message == (
+        'ConnectionError trying to open '
+        'https://download.example.com/busted.zip'
+    )
+
+    # Suppose the URL simply is not found.
+    requestsmock.head(
+        'https://whitelisted.example.com/404.zip',
+        text='Not Found',
+        status_code=404,
+    )
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/404.zip',
+    })
+    assert not form.is_valid()
+    validation_errors, = form.errors.as_data().values()
+    assert validation_errors[0].message == (
+        "https://whitelisted.example.com/404.zip can't be found (404)"
+    )

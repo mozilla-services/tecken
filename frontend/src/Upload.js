@@ -273,6 +273,12 @@ const DisplayUpload = ({ upload }) => {
             </td>
           </tr>
           <tr>
+            <th>Download URL</th>
+            <td>
+              {upload.download_url ? upload.download_url : <i>null</i>}
+            </td>
+          </tr>
+          <tr>
             <th>Bucket Name</th>
             <td>
               {upload.bucket_name}

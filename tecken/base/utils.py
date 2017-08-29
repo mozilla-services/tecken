@@ -6,6 +6,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
+from django.template.defaultfilters import filesizeformat as dj_filesizeformat
+
 
 def requests_retry_session(
     retries=3,
@@ -43,3 +45,11 @@ def requests_retry_session(
     session.mount('http://', adapter)
     session.mount('https://', adapter)
     return session
+
+
+def filesizeformat(bytes):
+    """the function django.template.defaultfilters.filesizeformat is
+    nifty but it's meant for displaying in templates so it uses a
+    whitespace-looking character instead of a space so it doesn't
+    break in display. We don't need that here in this context."""
+    return dj_filesizeformat(bytes).replace('\xa0', ' ')

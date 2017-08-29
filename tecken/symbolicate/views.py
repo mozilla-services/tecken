@@ -18,8 +18,8 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.core.cache import caches
 from django.views.decorators.csrf import csrf_exempt
-from django.template.defaultfilters import filesizeformat as dj_filesizeformat
 
+from tecken.base.utils import filesizeformat
 from tecken.base.symboldownloader import (
     SymbolDownloader,
     SymbolNotFound,
@@ -33,14 +33,6 @@ metrics = markus.get_metrics('tecken')
 store = caches['store']
 
 downloader = SymbolDownloader(settings.SYMBOL_URLS)
-
-
-def filesizeformat(bytes):
-    """the function django.template.defaultfilters.filesizeformat is
-    nifty but it's meant for displaying in templates so it uses a
-    whitespace-looking character instead of a space so it doesn't
-    break in display. We don't need that here in this context."""
-    return dj_filesizeformat(bytes).replace('\xa0', ' ')
 
 
 class SymbolFileEmpty(Exception):

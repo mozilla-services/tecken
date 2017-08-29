@@ -5,10 +5,12 @@
 import datetime
 import re
 import logging
+import io
 import fnmatch
 import hashlib
 import zipfile
 
+import requests
 from botocore.exceptions import ClientError
 import markus
 
@@ -20,6 +22,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 
+from tecken.base.utils import filesizeformat
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
@@ -29,8 +32,9 @@ from tecken.upload.utils import (
     get_archive_members,
     UnrecognizedArchiveFileExtension,
 )
-from tecken.upload.models import Upload, FileUpload
+from tecken.upload.models import Upload
 from tecken.upload.tasks import upload_inbox_upload
+from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
 
 
@@ -108,12 +112,35 @@ def upload_archive(request):
     for name in request.FILES:
         upload = request.FILES[name]
         size = upload.size
+        url = None
         break
     else:
-        return http.JsonResponse(
-            {'error': 'Must be multipart form data with at least one file'},
-            status=400,
-        )
+        if request.POST.get('url'):
+            form = UploadByDownloadForm(request.POST)
+            if form.is_valid():
+                url = form.cleaned_data['url']
+                name = form.cleaned_data['upload']['name']
+                size = form.cleaned_data['upload']['size']
+                size_fmt = filesizeformat(size)
+                logger.info(
+                    f'Download to upload {url} ({size_fmt})'
+                )
+                upload = io.BytesIO(requests.get(url).content)
+            else:
+                for key, errors in form.errors.as_data().items():
+                    return http.JsonResponse(
+                        {'error': errors[0].message},
+                        status=400,
+                    )
+        else:
+            return http.JsonResponse(
+                {
+                    'error': (
+                        'Must be multipart form data with at least one file'
+                    )
+                },
+                status=400,
+            )
     if not size:
         return http.JsonResponse(
             {'error': 'File size 0'},
@@ -184,6 +211,7 @@ def upload_archive(request):
             bucket_region=bucket_info.region,
             bucket_endpoint_url=bucket_info.endpoint_url,
             size=size,
+            download_url=url,
         )
         with metrics.timer('upload_to_inbox'):
             upload.seek(0)
@@ -228,28 +256,16 @@ def upload_archive(request):
     )
 
 
-def _serialize_upload(upload, flat=False):
-    serialized = {
+def _serialize_upload(upload):
+    return {
         'id': upload.id,
         'size': upload.size,
         'filename': upload.filename,
         'bucket': upload.bucket_name,
         'region': upload.bucket_region,
+        'download_url': upload.download_url,
         'completed_at': upload.completed_at,
         'created_at': upload.created_at,
         'user': upload.user.email,
         'skipped_keys': upload.skipped_keys or [],
     }
-    if not flat:
-        serialized['files'] = []
-        for file_upload in FileUpload.objects.filter(upload=upload):
-            serialized['files'].append({
-                'bucket': file_upload.bucket_name,
-                'key': file_upload.key,
-                'update': file_upload.update,
-                'compressed': file_upload.compressed,
-                'size': file_upload.size,
-                'completed_at': file_upload.completed_at,
-                'created_at': file_upload.created_at,
-            })
-    return serialized

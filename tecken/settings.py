@@ -441,6 +441,14 @@ class Base(Core):
     # with those that have failed less than this number of times.
     UPLOAD_REATTEMPT_LIMIT_TIMES = values.IntegerValue(10)
 
+    # When you "upload by download", the URL's domain needs to be in this
+    # whitelist. This is to double-check that we don't allow downloads from
+    # domains we don't fully trust.
+    ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue([
+        'queue.taskcluster.net',
+        'public-artifacts.taskcluster.net',
+    ])
+
 
 class Localdev(Base):
     """Configuration to be used during local development and base class
