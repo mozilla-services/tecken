@@ -5,10 +5,12 @@
 import datetime
 import re
 import logging
+import io
 import fnmatch
 import hashlib
 import zipfile
 
+import requests
 from botocore.exceptions import ClientError
 import markus
 
@@ -20,6 +22,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
 
+from tecken.base.utils import filesizeformat
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
@@ -31,6 +34,7 @@ from tecken.upload.utils import (
 )
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.tasks import upload_inbox_upload
+from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
 
 
@@ -110,10 +114,32 @@ def upload_archive(request):
         size = upload.size
         break
     else:
-        return http.JsonResponse(
-            {'error': 'Must be multipart form data with at least one file'},
-            status=400,
-        )
+        if request.POST.get('url'):
+            form = UploadByDownloadForm(request.POST)
+            if form.is_valid():
+                url = form.cleaned_data['url']
+                name = form.cleaned_data['upload']['name']
+                size = form.cleaned_data['upload']['size']
+                size_fmt = filesizeformat(size)
+                logger.info(
+                    f'Download to upload {url} ({size_fmt})'
+                )
+                upload = io.BytesIO(requests.get(url).content)
+            else:
+                for key, errors in form.errors.as_data().items():
+                    return http.JsonResponse(
+                        {'error': errors[0].message},
+                        status=400,
+                    )
+        else:
+            return http.JsonResponse(
+                {
+                    'error': (
+                        'Must be multipart form data with at least one file'
+                    )
+                },
+                status=400,
+            )
     if not size:
         return http.JsonResponse(
             {'error': 'File size 0'},

@@ -10,19 +10,14 @@ from . import views
 app_name = 'upload'
 
 urlpatterns = [
-    # url(
-    #     r'search/$',
-    #     views.search,
-    #     name='search'
-    # ),
-    # url(
-    #     r'(?P<id>\d+)/$',
-    #     views.upload,
-    #     name='upload'
-    # ),
     url(
         r'^$',
         views.upload_archive,
         name='upload_archive'
+    ),
+    url(
+        r'^download/$',
+        views.upload_archive,
+        name='upload_by_download_archive'
     ),
 ]

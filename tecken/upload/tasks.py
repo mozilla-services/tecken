@@ -49,7 +49,14 @@ def upload_inbox_upload(upload_id):
     When running this, we see one "Starting new HTTPS connection"
     for each file in the zip.
     """
-    upload = Upload.objects.get(id=upload_id)
+    try:
+        upload = Upload.objects.get(id=upload_id)
+    except Upload.DoesNotExist:
+        print(f"FAILED TO FIND {upload_id}")
+        recent_uploads = Upload.objects.all().order_by('-created')[:5]
+        for up in recent_uploads:
+            print(f'\t{up.id}\t{up.created}')
+        raise
     # Immediately persist that we are about to attempt to process this upload.
     # The reason for doing this here rather than at the end when
     # we call the .save() is that errors could happen in between.

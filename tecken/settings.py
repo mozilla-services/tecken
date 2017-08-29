@@ -441,6 +441,11 @@ class Base(Core):
     # with those that have failed less than this number of times.
     UPLOAD_REATTEMPT_LIMIT_TIMES = values.IntegerValue(10)
 
+    # Whether to enable the ability to upload symbols by specifying a URL.
+    ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue([
+        'queue.taskcluster.net',
+    ])
+
 
 class Localdev(Base):
     """Configuration to be used during local development and base class
