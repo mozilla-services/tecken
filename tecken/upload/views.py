@@ -32,7 +32,7 @@ from tecken.upload.utils import (
     get_archive_members,
     UnrecognizedArchiveFileExtension,
 )
-from tecken.upload.models import Upload, FileUpload
+from tecken.upload.models import Upload
 from tecken.upload.tasks import upload_inbox_upload
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
@@ -112,6 +112,7 @@ def upload_archive(request):
     for name in request.FILES:
         upload = request.FILES[name]
         size = upload.size
+        url = None
         break
     else:
         if request.POST.get('url'):
@@ -210,6 +211,7 @@ def upload_archive(request):
             bucket_region=bucket_info.region,
             bucket_endpoint_url=bucket_info.endpoint_url,
             size=size,
+            download_url=url,
         )
         with metrics.timer('upload_to_inbox'):
             upload.seek(0)
@@ -254,28 +256,16 @@ def upload_archive(request):
     )
 
 
-def _serialize_upload(upload, flat=False):
-    serialized = {
+def _serialize_upload(upload):
+    return {
         'id': upload.id,
         'size': upload.size,
         'filename': upload.filename,
         'bucket': upload.bucket_name,
         'region': upload.bucket_region,
+        'download_url': upload.download_url,
         'completed_at': upload.completed_at,
         'created_at': upload.created_at,
         'user': upload.user.email,
         'skipped_keys': upload.skipped_keys or [],
     }
-    if not flat:
-        serialized['files'] = []
-        for file_upload in FileUpload.objects.filter(upload=upload):
-            serialized['files'].append({
-                'bucket': file_upload.bucket_name,
-                'key': file_upload.key,
-                'update': file_upload.update,
-                'compressed': file_upload.compressed,
-                'size': file_upload.size,
-                'completed_at': file_upload.completed_at,
-                'created_at': file_upload.created_at,
-            })
-    return serialized

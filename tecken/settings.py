@@ -441,9 +441,12 @@ class Base(Core):
     # with those that have failed less than this number of times.
     UPLOAD_REATTEMPT_LIMIT_TIMES = values.IntegerValue(10)
 
-    # Whether to enable the ability to upload symbols by specifying a URL.
+    # When you "upload by download", the URL's domain needs to be in this
+    # whitelist. This is to double-check that we don't allow downloads from
+    # domains we don't fully trust.
     ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue([
         'queue.taskcluster.net',
+        'public-artifacts.taskcluster.net',
     ])
 
 

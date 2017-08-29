@@ -47,6 +47,7 @@ Or if you do it in Python ``requests``:
 
     >>> import requests
     >>> files = {'myfile.zip': open('path/to/myfile.zip', 'rb')}
+    >>> url = 'https://symbols.mozilla.org/upload/'
     >>> response = requests.post(url, files=files, headers={'Auth-token': 'xxx'})
     >>> response.status_code
     201
@@ -83,6 +84,46 @@ put into S3 as
 Once every file has been successfully uploaded, the message queue task
 logs it all as individual ``FileUpload`` ORM objects. One for each file, all
 foreign keyed to the ``Upload`` object.
+
+Upload by download URL
+======================
+
+If you have a ``my-symbols.zip`` file on disk, you should HTTPS POST it as
+mentioned above. However, a possible optimization is to instead let Tecken
+**download** the archive file into itself instead.
+If it's already available on a public URL, you can just HTTP POST that URL.
+For example:
+
+.. code-block:: shell
+
+    $ curl -X POST -H 'auth-token: xxx' -d url="https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip" https://symbols.mozilla.org/upload/
+
+Or with Python:
+
+.. code-block:: python
+
+    >>> import requests
+    >>> url = 'https://symbols.mozilla.org/upload/'
+    >>> data = {'url': 'https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip'}
+    >>> response = requests.post(url, data=data, headers={'Auth-token': 'xxx'})
+    >>> response.status_code
+    201
+
+
+The list of domains that are allowed depends on a whitelist. It's maintained
+in the ``DJANGO_ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS`` environment variable and
+currently defaults to::
+
+    queue.taskcluster.net
+    public-artifacts.taskcluster.net
+
+If you need it to be something else, `file a bug`_.
+
+Note that the whitelist will check redirects. At first a HEAD request is made
+with whichever URL you supply. That needs to be whitelisted. If that URL
+redirects to a different domain that needs to be whitelisted too.
+
+.. _`file a bug`: https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols
 
 Which S3 Bucket
 ===============

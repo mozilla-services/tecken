@@ -21,13 +21,16 @@ class UploadByDownloadForm(forms.Form):
         parsed = urlparse(url)
         if parsed.scheme != 'https':
             raise forms.ValidationError('Insecure URL')
+        self._check_url_domain(url)
+        return url
 
-        netloc_wo_port = parsed.netloc.split(':')[0]
+    @staticmethod
+    def _check_url_domain(url):
+        netloc_wo_port = urlparse(url).netloc.split(':')[0]
         if netloc_wo_port not in settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS:
             raise forms.ValidationError(
-                f'Not an allowed domain ({netloc_wo_port}) to download from'
+                f'Not an allowed domain ({netloc_wo_port!r}) to download from'
             )
-        return url
 
     def clean(self):
         cleaned_data = super().clean()
@@ -40,7 +43,19 @@ class UploadByDownloadForm(forms.Form):
                 raise forms.ValidationError(
                     f'ConnectionError trying to open {url}'
                 )
-            if response.status_code != 200:
+            if response.status_code >= 300 and response.status_code < 400:
+                # Original URL redirected! We need to check the domain
+                # it redirected to too.
+                url = response.headers['location']
+                self._check_url_domain(url)
+                try:
+                    response = requests.head(url)
+                except ConnectionError:
+                    raise forms.ValidationError(
+                        f'ConnectionError trying to open {url}'
+                    )
+                cleaned_data['url'] = url
+            if response.status_code >= 400:
                 raise forms.ValidationError(
                     f"{url} can't be found ({response.status_code})"
                 )

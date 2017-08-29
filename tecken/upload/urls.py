@@ -15,9 +15,4 @@ urlpatterns = [
         views.upload_archive,
         name='upload_archive'
     ),
-    url(
-        r'^download/$',
-        views.upload_archive,
-        name='upload_by_download_archive'
-    ),
 ]

@@ -252,17 +252,17 @@ class UploadForm extends Component {
 
 const ShowFileInfo = ({ info }) =>
   <span>
-    {info.name} <small>({formatFileSize(info.size)} {info.type})</small>
+    {info.name}{' '}
+    <small>
+      ({formatFileSize(info.size)} {info.type})
+    </small>
   </span>
 
 class UploadByDownloadForm extends UploadForm {
   constructor(props) {
     super(props)
     this.state = {
-      // loading: false,
-      url: null,
-      // warning: null,
-      // validationError: null
+      url: null
     }
   }
   submitForm = event => {
@@ -331,9 +331,16 @@ class UploadByDownloadForm extends UploadForm {
             </div>
           </article>}
         <div className="field">
-          <input className="input" type="text"
+          <input
+            className="input"
+            type="text"
             placeholder="E.g. https://download.example.com/YYYYMMDD/symbols.zip"
-           ref="url"/>
+            ref="url"
+          />
+          <p className="help">
+            The upload by download is restricted to a whitelist of domains from
+            which you can download.
+          </p>
         </div>
         {this.state.warning &&
           <article className="message is-warning">
@@ -343,7 +350,15 @@ class UploadByDownloadForm extends UploadForm {
           </article>}
         <div className="field is-grouped">
           <p className="control">
-            <button type="submit" className="button is-primary">
+            <button
+              type="submit"
+              className={
+                this.state.loading
+                  ? 'button is-primary is-loading'
+                  : 'button is-primary'
+              }
+              disabled={this.state.loading}
+            >
               Upload
             </button>
           </p>
