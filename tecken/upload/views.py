@@ -230,6 +230,7 @@ def upload_archive(request):
     # requires a management command that can be run in production.
     incomplete_uploads = Upload.objects.filter(
         completed_at__isnull=True,
+        cancelled_at__isnull=True,
         created_at__lt=(
             timezone.now() - datetime.timedelta(
                 seconds=settings.UPLOAD_REATTEMPT_LIMIT_SECONDS

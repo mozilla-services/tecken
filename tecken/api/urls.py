@@ -53,6 +53,11 @@ urlpatterns = [
         name='upload'
     ),
     url(
+        r'uploads/upload/(?P<id>\d+)/cancel$',
+        views.cancel_upload,
+        name='cancel_upload'
+    ),
+    url(
         r'_users/$',
         views.users,
         name='users'

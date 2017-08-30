@@ -10,6 +10,9 @@ class Store {
       notificationMessage: null,
       setNotificationMessage: action(
         (message, success = true, warning = false) => {
+          if (warning) {
+            success = false
+          }
           this.notificationMessage = {
             message,
             warning,

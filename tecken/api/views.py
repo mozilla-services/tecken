@@ -20,6 +20,7 @@ from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
     api_require_http_methods,
+    api_require_POST,
 )
 from . import forms
 
@@ -367,6 +368,8 @@ def uploads(request):
             'completed_at': upload.completed_at,
             'created_at': upload.created_at,
             'attempts': upload.attempts,
+            'cancelled_at': upload.cancelled_at,
+            'cancellable': _is_cancellable(upload),
         })
     # Make a FileUpload aggregate count on these uploads
     file_upload_counts = FileUpload.objects.filter(
@@ -384,6 +387,14 @@ def uploads(request):
     context['batch_size'] = batch_size
 
     return http.JsonResponse(context)
+
+
+def _is_cancellable(upload_obj):
+    return (
+        not upload_obj.cancelled_at and
+        not upload_obj.completed_at and
+        upload_obj.attempts < settings.UPLOAD_REATTEMPT_LIMIT_TIMES
+    )
 
 
 @api_login_required
@@ -418,6 +429,8 @@ def upload(request, id):
         'created_at': obj.created_at,
         'attempts': obj.attempts,
         'file_uploads': [],
+        'cancelled_at': obj.cancelled_at,
+        'cancellable': _is_cancellable(obj),
     }
     file_uploads_qs = FileUpload.objects.filter(upload=obj)
     for file_upload in file_uploads_qs.order_by('created_at'):
@@ -436,6 +449,25 @@ def upload(request, id):
         'upload': upload_dict,
     }
     return http.JsonResponse(context)
+
+
+@api_login_required
+@api_require_POST
+def cancel_upload(request, id):
+    obj = get_object_or_404(Upload, id=id)
+    # You're only allowed to see this if it's yours or you have the
+    # 'view_all_uploads' permission.
+    if not (
+        obj.user == request.user or
+        request.user.has_perm('upload.view_all_uploads')
+    ):
+        return http.JsonResponse({
+            'error': 'Insufficient access to view this upload'
+        }, status=403)
+
+    obj.cancelled_at = timezone.now()
+    obj.save()
+    return http.JsonResponse({'ok': True})
 
 
 @api_login_required
