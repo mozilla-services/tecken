@@ -324,7 +324,8 @@ class DisplayUploads extends Component {
                       />
                     : <i>Incomplete!</i>}
                   {' '}
-                  {!upload.completed_at && ` (${upload.attempts} attempts)`}
+                  {!upload.completed_at && !upload.cancelled_at && ` (${upload.attempts} attempts)`}
+                  {!upload.completed_at && upload.cancelled_at && ` (manually cancelled)`}
                 </td>
               </tr>
             )}

@@ -61,17 +61,19 @@ export default class Upload extends Component {
           store.fetchError = null
         }
         return r.json().then(response => {
-          this.setState({
-            upload: response.upload,
-            loading: false
-          }, () => {
-            if (this.recentAndIncompleteUpload()) {
-              this.keepRefreshing()
-            } else if (this.state.refreshingInterval) {
-              this.setState({refreshingInterval: null})
+          this.setState(
+            {
+              upload: response.upload,
+              loading: false
+            },
+            () => {
+              if (this.recentAndIncompleteUpload()) {
+                this.keepRefreshing()
+              } else if (this.state.refreshingInterval) {
+                this.setState({ refreshingInterval: null })
+              }
             }
-          })
-
+          )
         })
       } else {
         store.fetchError = r
@@ -118,6 +120,30 @@ export default class Upload extends Component {
     return false
   }
 
+  cancelUpload = upload => {
+    return Fetch(`/api/uploads/upload/${upload.id}/cancel`, {
+      method: 'POST',
+      credentials: 'same-origin'
+    }).then(r => {
+      if (this.dismounted) {
+        return
+      }
+      this.setState({ loading: false })
+      if (r.status === 200) {
+        store.setRedirectTo(`/uploads/upload/${upload.id}`, {
+          message: 'Upload cancelled.',
+          success: true
+        })
+      } else {
+        store.setRedirectTo(`/uploads/upload/${upload.id}`, {
+          message: 'Unable to cancel upload.',
+          success: false,
+          warning: true
+        })
+      }
+    })
+  }
+
   render() {
     return (
       <div>
@@ -155,7 +181,8 @@ export default class Upload extends Component {
           <DisplayRefreshingInterval
             interval={this.state.refreshingInterval}
           />}
-        {this.state.upload && <DisplayUpload upload={this.state.upload} />}
+        {this.state.upload &&
+          <DisplayUpload upload={this.state.upload} onCancel={this.cancelUpload} />}
       </div>
     )
   }
@@ -246,11 +273,16 @@ const makeFileSummary = upload => {
   }
 }
 
-const DisplayUpload = ({ upload }) => {
+const DisplayUpload = ({ upload, onCancel }) => {
   const filesSummary = makeFileSummary(upload)
 
   return (
     <div>
+      { upload.cancelled_at &&
+      <div className="notification is-warning">
+        This upload was <b>cancelled</b> from reattempts <DisplayDate date={upload.cancelled_at} />.
+      </div>
+    }
       <h4 className="title is-4">Metadata</h4>
       <table className="table">
         <tbody>
@@ -414,7 +446,7 @@ const DisplayUpload = ({ upload }) => {
         </tbody>
       </table>
 
-      <h3 className="title">Files Summary</h3>
+      <h4 className="title is-4">Files Summary</h4>
       <dl>
         <dt>Files Uploaded</dt>
         <dd>
@@ -427,6 +459,80 @@ const DisplayUpload = ({ upload }) => {
           {upload.skipped_keys.length}
         </dd>
       </dl>
+
+      {!upload.completed_at &&
+        upload.cancellable &&
+        <div style={{ marginTop: 100 }}>
+          <CancelReattemptForm upload={upload} onCancel={onCancel} />
+        </div>}
     </div>
   )
+}
+
+class CancelReattemptForm extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      askedConfirm: false
+    }
+  }
+  toggleConfirm = event => {
+    event.preventDefault()
+    this.setState({ askedConfirm: !this.state.askedConfirm })
+  }
+  confirmCancel = event => {
+    event.preventDefault()
+    this.props.onCancel(this.props.upload)
+  }
+  render() {
+    if (this.state.askedConfirm) {
+      return (
+        <article className="message is-danger">
+          <div className="message-header">
+            <p>Stop Reattempts?</p>
+          </div>
+          <div className="message-body">
+            <p>
+              Please confirm.
+            </p>
+            <button
+              type="button"
+              className="button is-danger"
+              onClick={this.confirmCancel}
+            >
+              Do it
+            </button>
+            {' '}
+            <button
+              type="button"
+              className="button"
+              onClick={this.toggleConfirm}
+            >
+              Cancel
+            </button>
+          </div>
+        </article>
+      )
+    }
+    return (
+      <article className="message is-warning">
+        <div className="message-header">
+          <p>Stop Reattempts?</p>
+        </div>
+        <div className="message-body">
+          <p>
+            This upload is <b>incomplete</b> and <b>can be cancelled</b> for
+            further reattempts.
+          </p>
+          <button
+            type="button"
+            className="button is-warning"
+            onClick={this.toggleConfirm}
+          >
+            Stop
+          </button>
+        </div>
+      </article>
+    )
+  }
 }

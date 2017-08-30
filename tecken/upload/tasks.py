@@ -57,6 +57,7 @@ def upload_inbox_upload(upload_id):
         for up in recent_uploads:
             print(f'\t{up.id}\t{up.created}')
         raise
+
     # Immediately persist that we are about to attempt to process this upload.
     # The reason for doing this here rather than at the end when
     # we call the .save() is that errors could happen in between.
