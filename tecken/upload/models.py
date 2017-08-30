@@ -51,11 +51,10 @@ class Upload(models.Model):
         )
 
     def __repr__(self):
-        return '<{} filename={!r} bucket_name={!r} inbox_key={!r}>'.format(
-            self.__class__.__name__,
-            self.filename,
-            self.bucket_name,
-            self.inbox_key,
+        return (
+            f'<{self.__class__.__name__} id={self.id} '
+            f'filename={self.filename!r} '
+            f'bucket_name={self.bucket_name!r} inbox_key={self.inbox_key!r}>'
         )
 
 
