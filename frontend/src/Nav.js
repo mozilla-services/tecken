@@ -14,6 +14,15 @@ const Nav = observer(
       }
     }
 
+    shouldComponentUpdate(nextProps, nextState) {
+      // We do this so that this component is always re-rendered.
+      // The reason is that the NavLink component in react-router-dom
+      // might get a different idea of what's active and what's not
+      // if the location has changed but none of the "local" props
+      // and state has changed.
+      return true
+    }
+
     toggleMenu = event => {
       event.preventDefault()
       this.setState({ menuToggled: !this.state.menuToggled })
