@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import { Link } from 'react-router-dom'
 
 import { toDate, differenceInMinutes } from 'date-fns/esm'
 
@@ -150,16 +151,24 @@ export default class Upload extends Component {
         <h1 className="title">
           {this.pageTitle}
         </h1>
-        {this.props.history.length > 1
-          ? <p className="is-pulled-right">
+        <div className="is-clearfix">
+          <p className="is-pulled-right">
+            {this.props.history.action === 'PUSH' &&
               <a className="button is-small is-info" onClick={this.goBack}>
                 <span className="icon">
                   <i className="fa fa-backward" />
                 </span>{' '}
                 <span>Back to Uploads</span>
-              </a>
-            </p>
-          : null}
+              </a>}
+            {this.props.history.action === 'POP' &&
+              <Link to="/uploads" className="button is-small is-info">
+                <span className="icon">
+                  <i className="fa fa-backward" />
+                </span>{' '}
+                <span>Back to Uploads</span>
+              </Link>}
+          </p>
+        </div>
 
         {this.state.loading && <Loading />}
         {this.state.upload &&
@@ -182,7 +191,10 @@ export default class Upload extends Component {
             interval={this.state.refreshingInterval}
           />}
         {this.state.upload &&
-          <DisplayUpload upload={this.state.upload} onCancel={this.cancelUpload} />}
+          <DisplayUpload
+            upload={this.state.upload}
+            onCancel={this.cancelUpload}
+          />}
       </div>
     )
   }
@@ -278,11 +290,11 @@ const DisplayUpload = ({ upload, onCancel }) => {
 
   return (
     <div>
-      { upload.cancelled_at &&
-      <div className="notification is-warning">
-        This upload was <b>cancelled</b> from reattempts <DisplayDate date={upload.cancelled_at} />.
-      </div>
-    }
+      {upload.cancelled_at &&
+        <div className="notification is-warning">
+          This upload was <b>cancelled</b> from reattempts{' '}
+          <DisplayDate date={upload.cancelled_at} />.
+        </div>}
       <h4 className="title is-4">Metadata</h4>
       <table className="table">
         <tbody>
@@ -492,17 +504,14 @@ class CancelReattemptForm extends Component {
             <p>Stop Reattempts?</p>
           </div>
           <div className="message-body">
-            <p>
-              Please confirm.
-            </p>
+            <p>Please confirm.</p>
             <button
               type="button"
               className="button is-danger"
               onClick={this.confirmCancel}
             >
               Do it
-            </button>
-            {' '}
+            </button>{' '}
             <button
               type="button"
               className="button"
