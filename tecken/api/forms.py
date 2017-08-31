@@ -154,6 +154,9 @@ class UploadsForm(forms.Form):
             rest = operators.sub('', block).strip()
             if rest.lower() in ('null', 'incomplete'):
                 date_obj = None
+            elif rest.lower() == 'cancelled':
+                # Exceptional exception
+                date_obj = 'cancelled'
             else:
                 try:
                     date_obj = dateutil.parser.parse(rest)

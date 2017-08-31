@@ -616,6 +616,22 @@ def test_uploads(client):
     data = response.json()
     assert not data['uploads']
 
+    # Filter by cancelled
+    response = client.get(url, {
+        'completed_at': 'Cancelled',
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert not data['uploads']
+    upload.cancelled_at = timezone.now()
+    upload.save()
+    response = client.get(url, {
+        'completed_at': 'Cancelled',
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data['uploads']
+
 
 @pytest.mark.django_db
 def test_upload(client):
