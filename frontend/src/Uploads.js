@@ -27,7 +27,8 @@ class Uploads extends Component {
       total: null,
       batchSize: null,
       apiUrl: null,
-      filter: {}
+      filter: {},
+      validationErrors: null
     }
   }
 
@@ -51,7 +52,7 @@ class Uploads extends Component {
     // If the current user can only see her uploads, change the
     // title accordingly.
     if (!store.hasPermission('upload.view_all_uploads')) {
-      this.setState({pageTitle: 'Your Uploads'}, () => {
+      this.setState({ pageTitle: 'Your Uploads' }, () => {
         document.title = this.state.pageTitle
       })
     }
@@ -92,8 +93,13 @@ class Uploads extends Component {
           this.setState({
             uploads: response.uploads,
             total: response.total,
-            batchSize: response.batch_size
+            batchSize: response.batch_size,
+            validationErrors: null
           })
+        })
+      } else if (r.status === 400) {
+        r.json().then(data => {
+          this.setState({ loading: false, validationErrors: data.errors })
         })
       } else {
         store.fetchError = r
@@ -124,6 +130,13 @@ class Uploads extends Component {
     )
   }
 
+  resetAndReload = event => {
+    event.preventDefault()
+    this.setState({ filter: {}, validationErrors: null }, () => {
+      this._fetchUploads()
+    })
+  }
+
   render() {
     return (
       <div>
@@ -152,18 +165,15 @@ class Uploads extends Component {
               </ul>
             </div>
           : <div className="tabs is-centered">
-            <ul>
-              <li className={!this.state.filter.user && 'is-active'}>
-                <Link to="/uploads">
-                  All Uploads
-                </Link>
-              </li>
-              <li className={false && 'is-active'}>
-                <Link to="/uploads/upload">Upload Now</Link>
-              </li>
-            </ul>
-          </div>
-        }
+              <ul>
+                <li className={!this.state.filter.user && 'is-active'}>
+                  <Link to="/uploads">All Uploads</Link>
+                </li>
+                <li className={false && 'is-active'}>
+                  <Link to="/uploads/upload">Upload Now</Link>
+                </li>
+              </ul>
+            </div>}
         <h1 className="title">
           {this.state.pageTitle}
         </h1>
@@ -176,6 +186,12 @@ class Uploads extends Component {
               batchSize={this.state.batchSize}
             />}
 
+        {this.state.validationErrors &&
+          <ShowValidationErrors
+            errors={this.state.validationErrors}
+            resetAndReload={this.resetAndReload}
+          />}
+
         {this.state.uploads &&
           <DisplayUploads
             uploads={this.state.uploads}
@@ -184,6 +200,7 @@ class Uploads extends Component {
             location={this.props.location}
             filter={this.state.filter}
             updateFilter={this.updateFilter}
+            resetAndReload={this.resetAndReload}
           />}
       </div>
     )
@@ -191,6 +208,24 @@ class Uploads extends Component {
 }
 
 export default Uploads
+
+const ShowValidationErrors = ({ errors, resetAndReload }) => {
+  return (
+    <div className="notification is-danger">
+      <button className="delete" onClick={resetAndReload} />
+      <h4>Filter validation errors</h4>
+      <ul>
+        {Object.keys(errors).map(key => {
+          return (
+            <li key={key}>
+              <b>{key}</b> - <code>{errors[key]}</code>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
 
 class DisplayUploads extends Component {
   componentDidMount() {
@@ -218,13 +253,9 @@ class DisplayUploads extends Component {
   }
 
   resetFilter = event => {
-    this.refs.user.value = ''
-    this.refs.size.value = ''
-    this.refs.created_at.value = ''
-    this.refs.completed_at.value = ''
-    this.submitForm(event)
-    this.props.updateFilter({ page: 1 })
+    this.props.resetAndReload(event)
   }
+
   render() {
     const { uploads } = this.props
 
@@ -322,10 +353,13 @@ class DisplayUploads extends Component {
                         to={upload.completed_at}
                         suffix="after"
                       />
-                    : <i>Incomplete!</i>}
-                  {' '}
-                  {!upload.completed_at && !upload.cancelled_at && ` (${upload.attempts} attempts)`}
-                  {!upload.completed_at && upload.cancelled_at && ` (manually cancelled)`}
+                    : <i>Incomplete!</i>}{' '}
+                  {!upload.completed_at &&
+                    !upload.cancelled_at &&
+                    ` (${upload.attempts} attempts)`}
+                  {!upload.completed_at &&
+                    upload.cancelled_at &&
+                    ` (manually cancelled)`}
                 </td>
               </tr>
             )}
