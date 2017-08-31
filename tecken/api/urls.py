@@ -67,4 +67,9 @@ urlpatterns = [
         views.edit_user,
         name='edit_user'
     ),
+    url(
+        r'_settings/$',
+        views.current_settings,
+        name='current_settings'
+    ),
 ]

@@ -17,10 +17,12 @@ const Home = observer(
       if (store.currentUser) {
         return <SignedInTiles user={store.currentUser} />
       }
-      return <AnonymousTiles
-        signIn={this.props.signIn}
-        authLoaded={store.signInUrl}
-       />
+      return (
+        <AnonymousTiles
+          signIn={this.props.signIn}
+          authLoaded={store.signInUrl}
+        />
+      )
     }
   }
 )
@@ -32,12 +34,17 @@ class SignedInTiles extends Component {
     super(props)
     this.state = {
       loading: true,
-      stats: null
+      loadingSettings: false,
+      stats: null,
+      settings: null
     }
   }
 
   componentDidMount() {
     this._fetchStats()
+    if (store.currentUser.is_superuser) {
+      this._fetchCurrentSettings()
+    }
   }
 
   _fetchStats = () => {
@@ -57,6 +64,32 @@ class SignedInTiles extends Component {
         store.fetchError = r
       }
     })
+  }
+
+  _fetchCurrentSettings = () => {
+    this.setState({ loadingSettings: true })
+    Fetch('/api/_settings/', { credentials: 'same-origin' }).then(r => {
+      this.setState({ loadingSettings: false })
+      if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null
+        }
+        return r.json().then(response => {
+          this.setState({
+            settings: response.settings
+          })
+        })
+      } else {
+        store.fetchError = r
+      }
+    })
+  }
+
+  formatSettingValue = value => {
+    if (typeof value === 'string') {
+      return value
+    }
+    return JSON.stringify(value)
   }
 
   render() {
@@ -106,7 +139,7 @@ class SignedInTiles extends Component {
           <div className="tile is-parent">
             <article className="tile is-child box">
               <p className="title">Authenticated</p>
-              <p className="subtitle">
+              <p>
                 You are signed in as <b>{user.email}</b>.
                 <br />
                 {user.is_superuser &&
@@ -160,6 +193,54 @@ class SignedInTiles extends Component {
             </article>
           </div>
         </div>
+
+        {(this.state.loadingSettings || this.state.settings) &&
+          <div className="tile is-ancestor">
+            <div className="tile is-parent">
+              <article className="tile is-child box">
+                <p className="title">Current Settings</p>
+                <p>
+                  Insight into the environment <b>only for superusers</b>.
+                </p>
+                {this.state.loadingSettings && <Loading />}
+                {this.state.settings &&
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Setting</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {this.state.settings.map(setting => {
+                        return (
+                          <tr key={setting.key}>
+                            <th>
+                              {setting.key}
+                            </th>
+                            <td>
+                              {this.formatSettingValue(setting.value)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>}
+                <p className="help">
+                  Note that these are only a handful of settings. They are the
+                  ones that are most likely to change from one environment to
+                  another. For other settings,{' '}
+                  <a
+                    href="https://github.com/mozilla-services/tecken/blob/master/tecken/settings.py"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    see the source code
+                  </a>.
+                </p>
+              </article>
+            </div>
+          </div>}
       </div>
     )
   }
@@ -310,14 +391,13 @@ const AnonymousTiles = ({ signIn, authLoaded }) =>
       <div className="tile is-parent">
         <article className="tile is-child box">
           <p className="title">Authentication</p>
-          {
-            !authLoaded ? <Loading/> :
-            <p className="has-text-centered">
-              <button onClick={signIn} className="button is-info is-large">
-                Sign In
-              </button>
-            </p>
-          }
+          {!authLoaded
+            ? <Loading />
+            : <p className="has-text-centered">
+                <button onClick={signIn} className="button is-info is-large">
+                  Sign In
+                </button>
+              </p>}
         </article>
       </div>
       <div className="tile is-parent is-8">
