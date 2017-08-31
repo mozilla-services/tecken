@@ -41,6 +41,23 @@ def api_permission_required(perm):
     return permission_required(perm, raise_exception=True)
 
 
+def api_superuser_required(view_func):
+    """Decorator that will return a 403 JSON response if the user
+    is *not* a superuser.
+    Use this decorator *after* others like api_login_required.
+    """
+    @wraps(view_func)
+    def inner(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            error_msg = (
+                'Must be superuser to access this view.'
+            )
+            return http.JsonResponse({'error': error_msg}, status=403)
+        return view_func(request, *args, **kwargs)
+
+    return inner
+
+
 def set_request_debug(view_func):
     """When you use this decorator, the request object gets changed.
     The request gets a new boolean attribute set to either True or False

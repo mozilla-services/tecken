@@ -3,7 +3,9 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import datetime
+import json
 import logging
+from urllib.parse import urlparse, urlunparse
 
 from django import http
 from django.conf import settings
@@ -21,6 +23,7 @@ from tecken.base.decorators import (
     api_permission_required,
     api_require_http_methods,
     api_require_POST,
+    api_superuser_required,
 )
 from . import forms
 
@@ -641,4 +644,61 @@ def stats(request):
     context = {
         'stats': numbers,
     }
+    return http.JsonResponse(context)
+
+
+@api_login_required
+@api_superuser_required
+def current_settings(request):
+    """return a JSON dict of a selection of settings to describe the
+    current system. These are only accessible to superusers and the settings
+    it includes is whitelisted and manually maintained here in this view.
+    """
+    context = {
+        'settings': []
+    }
+
+    def clean_url(value):
+        parsed = urlparse(value)
+        if '@' in parsed.netloc:
+            # There might be a password in the netloc part.
+            # It's extremely unlikely but just in case we ever forget
+            # make sure it's never "exposed".
+            parts = list(parsed)
+            parts[1] = 'user:xxxxxx@' + parts[1].split('@', 1)[1]
+            return urlunparse(parts)
+        return value
+
+    # Only include keys that can never be useful in security context.
+    keys = (
+        'ENABLE_AUTH0_BLOCKED_CHECK',
+        'ENABLE_TOKENS_AUTHENTICATION',
+        'ENABLE_DOWNLOAD_FROM_MICROSOFT',
+        'ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS',
+    )
+    for key in keys:
+        value = getattr(settings, key)
+        if 'URL' in key:
+            value = clean_url(value)
+        context['settings'].append({
+            'key': key,
+            'value': value,
+        })
+
+    # Now for some oddballs
+    context['settings'].append({
+        'key': 'UPLOAD_DEFAULT_URL',
+        'value': clean_url(settings.UPLOAD_DEFAULT_URL)
+    })
+    context['settings'].append({
+        'key': 'SYMBOL_URLS',
+        'value': json.dumps([clean_url(x) for x in settings.SYMBOL_URLS])
+    })
+    context['settings'].append({
+        'key': 'UPLOAD_URL_EXCEPTIONS',
+        'value': json.dumps({
+            k: clean_url(v) for k, v in settings.UPLOAD_URL_EXCEPTIONS.items()
+        })
+    })
+    context['settings'].sort(key=lambda x: x['key'])
     return http.JsonResponse(context)

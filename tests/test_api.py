@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import datetime
+import json
 
 import pytest
 
@@ -892,3 +893,34 @@ def test_stats(client):
     data = response.json()
     assert data['stats']['users']
     assert data['stats']['uploads']['all_uploads']
+
+
+@pytest.mark.django_db
+def test_current_settings(client, settings):
+    settings.SYMBOL_URLS = [
+        'https://awsamazon.com/default-bucket-name',
+        'https://username:password@awsamazon.com/other-bucket-name'
+    ]
+    url = reverse('api:current_settings')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user.is_superuser = True
+    user.save()
+    response = client.get(url)
+    assert response.status_code == 200
+    current_settings = {
+        x['key']: x['value'] for x in response.json()['settings']
+    }
+    assert current_settings['SYMBOL_URLS'] == json.dumps([
+        'https://awsamazon.com/default-bucket-name',
+        'https://user:xxxxxx@awsamazon.com/other-bucket-name',
+    ])
