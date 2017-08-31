@@ -328,7 +328,9 @@ def uploads(request):
         qs = qs.filter(**{orm_operator: value})
     for key in ('created_at', 'completed_at'):
         for operator, value in form.cleaned_data.get(key, []):
-            if value is None:
+            if value == 'cancelled':
+                qs = qs.filter(cancelled_at__isnull=False)
+            elif value is None:
                 orm_operator = f'{key}__isnull'
                 qs = qs.filter(**{orm_operator: True})
             elif operator == '=' and value.hour == 0 and value.minute == 0:
