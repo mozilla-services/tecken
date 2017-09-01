@@ -12,14 +12,13 @@ class Help extends Component {
         <h1 className="title">
           {this.pageTitle}
         </h1>
-        <h2>Symbols Download with Microsoft Visual C++</h2>
+        <h2>Usage as a symbol server for Microsoft Debuggers</h2>
         <p>
-          If you use Microsoft Visual C++ to debug, please see{' '}
+          To use this as a symbol server for Microsoft debuggers, see{' '}
           <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Using_the_Mozilla_symbol_server">
-            Using the Mozilla symbol server
+            this MDN article
           </a>{' '}
-          on MDN for instructions how on to configure Windbg to use Mozilla
-          Symbol Server.
+          for instructions on how to configure your debugger.
         </p>
         <h2>Permissions</h2>
         <p>
