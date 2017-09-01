@@ -388,7 +388,7 @@ class DisplayTokens extends Component {
                       </code>
                     )}
                   </td>
-                  <td style={{ maxWidth: 250 }}>
+                  <td style={{ maxWidth: 450 }}>
                     {token.notes}
                   </td>
                   <td>
