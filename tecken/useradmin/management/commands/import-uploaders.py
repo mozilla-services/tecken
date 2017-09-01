@@ -56,11 +56,12 @@ class Command(BaseCommand):
             # docker don't necessary share filesystem.
             users = json.load(sys.stdin)
 
-        from pprint import pprint
-        pprint(users)
-
+        self.stdout.write(self.style.SUCCESS(
+            f'Import {len(users)} users'
+        ))
         uploaders = Group.objects.get(name='Uploaders')
 
+        count_creations = 0
         for email in users:
             try:
                 user = User.objects.get(email=email)
@@ -78,7 +79,7 @@ class Command(BaseCommand):
                     email=email,
                 )
                 user.set_unusable_password()
-                self.stdout.write(self.style.WARNING(
+                self.stdout.write(self.style.SUCCESS(
                     f'User created ({user.email})'
                 ))
 
@@ -101,3 +102,8 @@ class Command(BaseCommand):
                     notes=token['notes'],
                     expires_at=token['expires']
                 )
+                count_creations += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Created {count_creations} API tokens'
+        ))
