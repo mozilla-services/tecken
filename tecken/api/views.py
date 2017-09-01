@@ -677,6 +677,7 @@ def current_settings(request):
         'ENABLE_TOKENS_AUTHENTICATION',
         'ENABLE_DOWNLOAD_FROM_MICROSOFT',
         'ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS',
+        'DOWNLOAD_FILE_EXTENSIONS_WHITELIST',
     )
     for key in keys:
         value = getattr(settings, key)

@@ -123,6 +123,22 @@ def test_client_with_debug(client, botomock, metricsmock):
         assert float(response['debug-time']) == 0.0
 
 
+def test_client_with_ignorable_file_extensions(client, botomock):
+    def mock_api_call(self, operation_name, api_params):
+        assert False, "This mock function shouldn't be called"
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        # Note! This is NOT in the settings.DOWNLOAD_FILE_EXTENSIONS_WHITELIST
+        # list.
+        'xul.xxx',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url)
+        assert response.status_code == 404
+
+
 def test_client_with_debug_with_cache(client, botomock, metricsmock):
     reload_downloader('https://s3.example.com/private/prefix/')
 
