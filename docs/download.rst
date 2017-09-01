@@ -119,6 +119,21 @@ This approach might change over time as we're able to confidently
 identify more and more patterns that we know we can ignore.
 
 
+File Extension Whitelist
+========================
+
+When someone requests to download a symbol, as mentioned above, we have some
+ways to immediately decide that it's a 404 Symbol Not Found without even
+bothering to ask the cache or S3.
+
+As part of that, there is also a whitelist of file extensions that are the
+only ones we should bother with. This list is maintained in
+``settings.DOWNLOAD_FILE_EXTENSIONS_WHITELIST`` (managed by the environment
+variable ``DJANGO_DOWNLOAD_FILE_EXTENSIONS_WHITELIST``) and this list is
+found in the source code (``settings.py``) and also visible on the home page
+if you're signed in as a superuser.
+
+
 Download With Debug
 ===================
 
