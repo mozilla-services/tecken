@@ -12,6 +12,14 @@ class Help extends Component {
         <h1 className="title">
           {this.pageTitle}
         </h1>
+        <h2>Usage as a symbol server for Microsoft Debuggers</h2>
+        <p>
+          To use this as a symbol server for Microsoft debuggers, see{' '}
+          <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Using_the_Mozilla_symbol_server">
+            this MDN article
+          </a>{' '}
+          for instructions on how to configure your debugger.
+        </p>
         <h2>Permissions</h2>
         <p>
           To gain permissions to do things you need to be promoted by a
