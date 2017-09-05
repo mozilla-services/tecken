@@ -8,6 +8,8 @@ Tecken - All things Mozilla Symbol Server
 
 Please use the documentation on: **https://tecken.readthedocs.io**
 
+The **production server** is: https://symbols.mozilla.org
+
 
 To Get Coding
 -------------
