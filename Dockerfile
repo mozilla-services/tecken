@@ -1,3 +1,8 @@
+FROM node:6 as frontend
+COPY . /app
+WORKDIR /app
+RUN bin/build_frontend.sh
+
 FROM python:3.6-slim
 MAINTAINER Peter Bengtsson <peterbe@mozilla.com>
 
@@ -33,27 +38,17 @@ RUN apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-
-# Install node from NodeSource
-#RUN curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
-#    echo 'deb https://deb.nodesource.com/node_4.x jessie main' > /etc/apt/sources.list.d/nodesource.list && \
-#    echo 'deb-src https://deb.nodesource.com/node_4.x jessie main' >> /etc/apt/sources.list.d/nodesource.list && \
-#    apt-get update && apt-get install -y nodejs
-
-# Create static and npm roots
-#RUN mkdir -p /opt/npm /opt/static && \
-#    chown -R 10001:10001 /opt
-
-
 # Install Python dependencies
 COPY requirements.txt /tmp/
 # Switch to /tmp to install dependencies outside home dir
 WORKDIR /tmp
 RUN pip install --no-cache-dir -r requirements.txt
 
-
 # Switch back to home directory
 WORKDIR /app
+
+# Copy static assets
+COPY --from=frontend /app/frontend/build /app/frontend
 
 COPY . /app
 

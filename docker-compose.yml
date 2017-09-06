@@ -8,18 +8,11 @@ services:
   redis-cache:
     image: redis:3.2
 
-  # This builds an image of the deploy base. Then we extend that with
-  # dev-related things to do our dev-y stuff.
-  deploy-base:
+  # This builds the tecken:dev container
+  dev:
     build:
       context: .
       dockerfile: Dockerfile
-    image: tecken:deploy_base
-
-  dev-base:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
     image: tecken:dev
 
   # ------------------------------------------------------------------
@@ -31,17 +24,21 @@ services:
   base:
     image: tecken:dev
     environment:
-      - DJANGO_CONFIGURATION
+      - DJANGO_CONFIGURATION=Localdev
     env_file:
       - .env
     volumes:
       - $PWD:/app
-    # command: "true"
+    command: "web-dev"
 
   # Web container is a prod-like fully-functioning container.
   web:
     extends:
       service: base
+    depends_on:
+      - db
+      - redis-store
+      - redis-cache
     ports:
       - "8000:8000"
     links:
@@ -119,6 +116,7 @@ services:
       - "35729:35729"
     volumes:
       - $PWD/frontend:/app
+    command: "yarn start | cat"
 
   minio:
     image: minio/minio
