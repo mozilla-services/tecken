@@ -395,6 +395,10 @@ class DisplayUploads extends Component {
                 uploads uploaded after this ISO date (in UTC).
               </li>
               <li>
+                <b>Uploaded:</b> <code>today</code> (or <code>yesterday</code>)
+                to filter all uploads uploaded after yesterday's UTC daybreak.
+              </li>
+              <li>
                 <b>Completed:</b> <code>incomplete</code> to filter all uploads
                 not yet completed.
               </li>

@@ -1,6 +1,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
+
+import datetime
 import re
 
 import dateutil
@@ -157,6 +159,11 @@ class UploadsForm(forms.Form):
             elif rest.lower() == 'cancelled':
                 # Exceptional exception
                 date_obj = 'cancelled'
+            elif rest.lower() == 'today':
+                date_obj = timezone.now().replace(hour=0, minute=0, second=0)
+            elif rest.lower() == 'yesterday':
+                date_obj = timezone.now().replace(hour=0, minute=0, second=0)
+                date_obj -= datetime.timedelta(days=1)
             else:
                 try:
                     date_obj = dateutil.parser.parse(rest)
