@@ -681,8 +681,6 @@ def current_settings(request):
     )
     for key in keys:
         value = getattr(settings, key)
-        if 'URL' in key:
-            value = clean_url(value)
         context['settings'].append({
             'key': key,
             'value': value,
