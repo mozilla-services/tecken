@@ -478,6 +478,24 @@ def test_uploadsform_dates():
     })
     assert not form.is_valid()
 
+    form = UploadsForm({
+        'created_at': 'Today'
+    })
+    assert form.is_valid()
+    operator, value = form.cleaned_data['created_at'][0]
+    assert operator == '='
+    now = timezone.now()
+    assert value.strftime('%Y%m%d') == now.strftime('%Y%m%d')
+
+    form = UploadsForm({
+        'created_at': 'yesterDAY'
+    })
+    assert form.is_valid()
+    operator, value = form.cleaned_data['created_at'][0]
+    assert operator == '='
+    yesterday = now - datetime.timedelta(days=1)
+    assert value.strftime('%Y%m%d') == yesterday.strftime('%Y%m%d')
+
 
 def test_uploadsform_size():
     form = UploadsForm({
