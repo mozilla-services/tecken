@@ -35,7 +35,7 @@ wait_for() {
 case $1 in
   web)
     ${CMD_PREFIX_PYTHON:-python} manage.py migrate --noinput
-    ${CMD_PREFIX} gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --workers ${GUNICORN_WORKERS} --worker-class="egg:meinheld#gunicorn_worker" --access-logfile -
+    ${CMD_PREFIX} gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --workers ${GUNICORN_WORKERS} --access-logfile -
     ;;
   web-dev)
     python manage.py migrate --noinput
