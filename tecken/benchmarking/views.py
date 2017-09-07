@@ -40,13 +40,17 @@ def caching_vs_boto(request):
             status=403,
         )
 
-    form = forms.CachingVsBotoForm(request.GET)
+    form = forms.CachingVsBotoForm(
+        request.GET,
+        all_measure=['boto', 'local', 'default'],
+    )
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
 
     # Benchmarking parameters.
     iterations = form.cleaned_data['iterations']
     symbol_path = form.cleaned_data['symbol_path']
+    measure = form.cleaned_data['measure']
 
     # Setting up for boto lookup.
     s3_key = f'{settings.SYMBOL_FILE_PREFIX}/{symbol_path}'
@@ -78,26 +82,27 @@ def caching_vs_boto(request):
 
     # Now run it 'iterations' times and measure.
     times = {
-        'boto': [],
-        'local': [],
-        'default': [],
+        key: [] for key in measure
     }
     for _ in range(iterations):
-        with metrics.timer('benchmarking_cachingvsboto_boto'):
-            t0 = time.time()
-            lookup_boto(s3_key)
-            t1 = time.time()
-            times['boto'].append(t1 - t0)
-        with metrics.timer('benchmarking_cachingvsboto_local'):
-            t0 = time.time()
-            caches['local'].get(cache_key)
-            t1 = time.time()
-            times['local'].append(t1 - t0)
-        with metrics.timer('benchmarking_cachingvsboto_default'):
-            t0 = time.time()
-            caches['default'].get(cache_key)
-            t1 = time.time()
-            times['default'].append(t1 - t0)
+        if 'boto' in measure:
+            with metrics.timer('benchmarking_cachingvsboto_boto'):
+                t0 = time.time()
+                lookup_boto(s3_key)
+                t1 = time.time()
+                times['boto'].append(t1 - t0)
+        if 'local' in measure:
+            with metrics.timer('benchmarking_cachingvsboto_local'):
+                t0 = time.time()
+                caches['local'].get(cache_key)
+                t1 = time.time()
+                times['local'].append(t1 - t0)
+        if 'default'in measure:
+            with metrics.timer('benchmarking_cachingvsboto_default'):
+                t0 = time.time()
+                caches['default'].get(cache_key)
+                t1 = time.time()
+                times['default'].append(t1 - t0)
 
     def summorize(numbers):
         return {
@@ -107,10 +112,9 @@ def caching_vs_boto(request):
             'median': statistics.median(numbers),
         }
     context['found_in_s3'] = found
+    context['measure'] = measure
     context['results'] = {
-        'boto': summorize(times['boto']),
-        'local': summorize(times['local']),
-        'default': summorize(times['default']),
+        key: summorize(times[key]) for key in measure
     }
 
     return http.JsonResponse(context)
