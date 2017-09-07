@@ -39,6 +39,16 @@ keeping track how it does things.
 
 [Tecken Performance](https://app.datadoghq.com/dash/339351/tecken-performance)
 
+New Relic
+---------
+
+This requires you have access to the 
+[Mozilla_25 New Relic account](https://rpm.newrelic.com/accounts/1402187/applications).
+
+[symbols-prod](https://rpm.newrelic.com/accounts/1402187/applications/62681492)
+
+[symbols-stage](https://rpm.newrelic.com/accounts/1402187/applications/52227224)
+
 
 Whatsdeployed
 -------------
