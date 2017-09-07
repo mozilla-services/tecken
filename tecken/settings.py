@@ -69,6 +69,7 @@ class Core(AWS, Configuration, Celery):
         'tecken.tokens',
         'tecken.api',
         'tecken.useradmin',
+        'tecken.benchmarking',
 
         # Third party apps
         'dockerflow.django',
@@ -185,6 +186,10 @@ class Core(AWS, Configuration, Celery):
     # But we only need to write it down once per symbol. There's a memoizing
     # guard and this defines how long it should cache that it memoized.
     MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS = values.IntegerValue(60 * 60 * 24)
+
+    # Whether or not benchmarking is enabled. It's only useful to have this
+    # enabled in environments dedicated for testing and load testing.
+    BENCHMARKING_ENABLED = values.BooleanValue(False)
 
 
 class Base(Core):
