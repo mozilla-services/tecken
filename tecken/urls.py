@@ -35,6 +35,10 @@ urlpatterns = [
         include('tecken.api.urls', namespace='api')
     ),
     url(
+        r'__benchmarking__/',
+        include('tecken.benchmarking.urls', namespace='benchmarking')
+    ),
+    url(
         r'',
         include('tecken.download.urls', namespace='download')
     ),

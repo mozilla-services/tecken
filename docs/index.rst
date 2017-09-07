@@ -39,6 +39,7 @@ Project docs:
    systemtests
    docker
    authentication
+   benchmarking
 
 Indices and tables
 ==================
