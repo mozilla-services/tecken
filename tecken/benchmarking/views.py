@@ -42,7 +42,7 @@ def caching_vs_boto(request):
 
     form = forms.CachingVsBotoForm(
         request.GET,
-        all_measure=['boto', 'local', 'default'],
+        all_measure=['boto', 'local', 'default', 'store'],
     )
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
@@ -77,8 +77,10 @@ def caching_vs_boto(request):
     cache_key = hashlib.md5(force_bytes(
         f'benchmarking:caching_vs_boto:{s3_key}'
     )).hexdigest()
-    caches['default'].set(cache_key, found, 60)
-    caches['local'].set(cache_key, found, 60)
+
+    for cache_config in ('default', 'local', 'store'):
+        if cache_config in measure:
+            caches[cache_config].set(cache_key, found, 60)
 
     # Now run it 'iterations' times and measure.
     times = {
@@ -91,18 +93,14 @@ def caching_vs_boto(request):
                 lookup_boto(s3_key)
                 t1 = time.time()
                 times['boto'].append(t1 - t0)
-        if 'local' in measure:
-            with metrics.timer('benchmarking_cachingvsboto_local'):
+        for cache_config in ('default', 'local', 'store'):
+            if cache_config not in measure:
+                continue
+            with metrics.timer(f'benchmarking_cachingvsboto_{cache_config}'):
                 t0 = time.time()
-                caches['local'].get(cache_key)
+                caches[cache_config].get(cache_key)
                 t1 = time.time()
-                times['local'].append(t1 - t0)
-        if 'default'in measure:
-            with metrics.timer('benchmarking_cachingvsboto_default'):
-                t0 = time.time()
-                caches['default'].get(cache_key)
-                t1 = time.time()
-                times['default'].append(t1 - t0)
+                times[cache_config].append(t1 - t0)
 
     def summorize(numbers):
         return {
