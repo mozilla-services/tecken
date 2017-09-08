@@ -522,6 +522,32 @@ def test_uploadsform_size():
 
 
 @pytest.mark.django_db
+def test_uploadsform_user():
+    form = UploadsForm({
+        'user': 'peterbe'
+    })
+    assert not form.is_valid()
+    # happens because of this...
+    assert not User.objects.filter(email__icontains='peterbe').exists()
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    form = UploadsForm({
+        'user': 'peterbe'
+    })
+    assert form.is_valid()
+    assert form.cleaned_data['user'][0] == '='
+    assert form.cleaned_data['user'][1] == user
+
+    # Negate
+    form = UploadsForm({
+        'user': '!peterbe'
+    })
+    assert form.is_valid()
+    assert form.cleaned_data['user'][0] == '!'
+    assert form.cleaned_data['user'][1] == user
+
+
+@pytest.mark.django_db
 def test_uploads(client):
     url = reverse('api:uploads')
     response = client.get(url)
@@ -586,10 +612,20 @@ def test_uploads(client):
     # The 'user' has to match exactly 1 user
     response = client.get(url, {'user': 'neverheardof'})
     assert response.status_code == 400
+    assert response.json()['errors']['user']
     User.objects.create(email='nother@example.com', username='nother')
     # Now this becomes ambiguous
     response = client.get(url, {'user': 'her@'})
     assert response.status_code == 400
+    assert response.json()['errors']['user']
+    # Be specific this time
+    response = client.get(url, {'user': 'her@example.com'})
+    assert response.status_code == 200
+    assert data['uploads'][0]['id'] == upload.id
+    # Anybody elses uploads
+    response = client.get(url, {'user': '! her@example.com'})
+    assert response.status_code == 200
+    assert not response.json()['uploads']  # expect it to be empty
 
     # Filter incorrectly
     response = client.get(url, {'size': '>= xxx'})
