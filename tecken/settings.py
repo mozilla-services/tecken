@@ -474,16 +474,16 @@ class Localdev(Base):
     DEBUG = values.BooleanValue(default=True)
     DEBUG_PROPAGATE_EXCEPTIONS = values.BooleanValue(default=True)
 
-    # When doing localdev, these defaults will suffice. The motocker
+    # When doing localdev, these defaults will suffice. The minio
     # one forces you to use/test boto3 and the old public symbols URL
     # forces you to use/test the symbol downloader based on requests.get().
     SYMBOL_URLS = values.ListValue([
-        'http://motocker:5000/testbucket',
+        'http://minio:9000/testbucket',
     ])
 
     # By default, upload all symbols to this when in local dev.
     UPLOAD_DEFAULT_URL = values.Value(
-        'http://motocker:5000/testbucket'
+        'http://minio:9000/testbucket'
     )
 
     # Run this much sooner in local development.

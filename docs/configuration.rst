@@ -95,11 +95,11 @@ AWS S3
 ======
 
 First of all, Tecken will never *create* S3 buckets for you. They are
-expected to already exist. This is one exception to this; if you do
-local development with Docker and ``motocker``, those configured buckets
-are automatically created when the server starts. This is to ease local
-development since ``motocker`` uses RAM to remember things like bucket
-creation.
+expected to already exist. There is one exception to this; if you do
+local development with Docker and ``minio``, those configured buckets
+are automatically created when the server starts. This is a convenience
+just for local development to avoid needing any complicated instructions
+to get up and running.
 
 S3 buckets needs to be specified in two distinct places. One for where
 Tecken can **read** symbols from and one for where Tecken can **write**.

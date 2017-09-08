@@ -281,7 +281,7 @@ exposed outside of docker onto your host.
 
 .. note:: If this fails to start, some exceptions might be hidden. If so,
           start a shell ``docker-compose run --user 0 web bash`` and run:
-          ``DJANGO_UPLOAD_DEFAULT_URL=http://motocker:5000/testbucket DJANGO_SYMBOL_URLS=http://motocker:5000/testbucket DJANGO_CONFIGURATION=Prodlike gunicorn tecken.wsgi:application -b 0.0.0.0:8000 --workers 4 --access-logfile -``
+          ``DJANGO_UPLOAD_DEFAULT_URL=http://minio:9000/testbucket DJANGO_SYMBOL_URLS=http://minio:9000/testbucket DJANGO_CONFIGURATION=Prodlike gunicorn tecken.wsgi:application -b 0.0.0.0:8000 --workers 4 --access-logfile -``
 
 That configuration **forces** you to run with ``DEBUG=False`` independent
 of what value you have set in ``.env`` for ``DEBUG``. Thus making it easy
@@ -342,21 +342,21 @@ services' output is streamed together to stdout in the foreground that
 this ``docker-compose up ...`` runs.
 
 All other things that these depend on are run in the background. Meaning
-you don't see, for example, what the ``motocker`` service does. It knows to
+you don't see, for example, what the ``minio`` service does. It knows to
 *start* because in ``docker-compose.yml`` ``web`` is **linked** to
-``motocker``.
+``minio``.
 
-If you instead want to run, for example, ``motocker`` in the foreground here's
+If you instead want to run, for example, ``minio`` in the foreground here's
 how:
 
-1. Comment out ``motocker`` from the ``links`` part of ``web`` in ``docker-compose.yml``
+1. Comment out ``minio`` from the ``links`` part of ``web`` in ``docker-compose.yml``
 
-2. In a terminal run ``docker-compose up motocker``.
+2. In a terminal run ``docker-compose up minio``.
 
 3. In another terminal run ``make run``
 
 Alternatively, just do step 1, from the list above, and then run:
-``docker-compose up motocker web worker frontend``.
+``docker-compose up minio web worker frontend``.
 
 
 All metrics keys
@@ -403,3 +403,17 @@ get a chance to be consumed by the worker.
 This is why ``docker-compose`` starts ``worker-purge`` instead of ``worker``
 which is the same thing except it's started with ``--purge`` and this should
 only ever be done on local docker development.
+
+
+Minio (S3 mock server)
+======================
+
+When doing local development we, by default, mock AWS S3 and instead use
+`minio`_. It's API compatible so it should reflect how AWS S3 works but
+with the advantage that you don't need an Internet connection and real
+S3 credentials just to test symbol uploads for example.
+
+When started with docker, it starts a web server on ``:9000`` that you can
+use to browse uploaded files. Go to ``http://localhost:9000``.
+
+.. _`minio`: https://minio.io/

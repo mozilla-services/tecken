@@ -51,7 +51,7 @@ services:
       - redis-store
       - redis-cache
       - memcached
-      - motocker
+      - minio
       - statsd
     command: web-dev
 
@@ -97,7 +97,7 @@ services:
     # https://hub.docker.com/r/hopsoft/graphite-statsd/
     image: hopsoft/graphite-statsd
     ports:
-      - "9000:80"
+      - "8080:80"
       - "2003-2004:2003-2004"
       - "2023-2024:2023-2024"
       - "8125:8125/udp"
@@ -125,10 +125,13 @@ services:
     volumes:
       - $PWD/frontend:/app
 
-  motocker:
-    image: picadoh/motocker
+  minio:
+    image: minio/minio
     environment:
-      - MOTO_SERVICE=s3
-      - MOTO_HOST=motocker
+      - MINIO_ACCESS_KEY=minio
+      - MINIO_SECRET_KEY=miniostorage
     ports:
-      - "5000:5000"
+      - "9000:9000"
+    volumes:
+      - $PWD/miniodata:/export
+    command: server /myexport
