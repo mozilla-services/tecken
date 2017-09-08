@@ -260,7 +260,10 @@ def test_symbolicate_json_bad_module_offset(clear_redis_store, requestsmock):
     ]
 
 
-def test_symbolicate_json_happy_path_with_debug(clear_redis_store, requestsmock):
+def test_symbolicate_json_happy_path_with_debug(
+    clear_redis_store,
+    requestsmock
+):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -334,7 +337,10 @@ def test_symbolicate_json_happy_path_with_debug(clear_redis_store, requestsmock)
     assert result['debug']['downloads']['time'] == 0.0
 
 
-def test_symbolicate_json_one_symbol_not_found(clear_redis_store, requestsmock):
+def test_symbolicate_json_one_symbol_not_found(
+    clear_redis_store,
+    requestsmock
+):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
