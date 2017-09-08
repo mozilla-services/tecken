@@ -154,7 +154,7 @@ def test_not_blocked_in_auth0(client, requestsmock, settings, metricsmock):
 
 
 @pytest.mark.django_db
-def test_blocked_in_auth0(client, requestsmock, settings, clear_redis):
+def test_blocked_in_auth0(client, requestsmock, settings, clear_redis_store):
     settings.ENABLE_AUTH0_BLOCKED_CHECK = True
 
     url = reverse('api:auth')

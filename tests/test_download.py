@@ -174,7 +174,7 @@ def test_client_with_debug_with_cache(client, botomock, metricsmock):
         assert len(mock_api_calls) == 1
 
 
-def test_client_404(client, botomock, clear_redis):
+def test_client_404(client, botomock, clear_redis_store):
     reload_downloader('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
@@ -195,7 +195,7 @@ def test_client_404(client, botomock, clear_redis):
         assert response.status_code == 404
 
 
-def test_client_404_logged(client, botomock, clear_redis):
+def test_client_404_logged(client, botomock, clear_redis_store):
     reload_downloader('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
@@ -311,7 +311,7 @@ def test_log_symbol_get_404_metrics(metricsmock):
     assert len(records) == 2  # changed
 
 
-def test_missing_symbols_csv(client, clear_redis):
+def test_missing_symbols_csv(client, clear_redis_store):
     # Log at least one line
     views.log_symbol_get_404(
         'xul.pdb',

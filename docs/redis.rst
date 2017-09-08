@@ -154,16 +154,16 @@ Unit Testing in Docker
 
 Since Redis is the actual cache backend used even in unit tests, its
 data is persistent between tests. To avoid confusion between unit tests
-use the ``clear_redis`` pytest fixture. For example:
+use the ``clear_redis_store`` pytest fixture. For example:
 
 .. code-block:: python
 
     from django.core.cache import cache
 
-    def test_storage1(clear_redis):
+    def test_storage1(clear_redis_store):
         assert not cache.get('foo')
         cache.set('foo', 'bar')
 
-    def test_storage2(clear_redis):
+    def test_storage2(clear_redis_store):
         assert not cache.get('foo')
         cache.set('foo', 'different')

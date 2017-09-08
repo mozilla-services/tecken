@@ -16,7 +16,7 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 from django.utils.encoding import force_bytes
 
-from tecken.base.decorators import local_cache_memoize
+from tecken.base.decorators import cache_memoize
 from tecken.s3 import S3Bucket
 
 
@@ -83,7 +83,7 @@ def make_symbol_cache_key(bucket_name, key):
 
 
 @metrics.timer_decorator('symboldownloader_exists')
-@local_cache_memoize(
+@cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     args_rewrite=lambda source, key: (source.name, key),
     hit_callable=lambda: metrics.incr(
@@ -106,7 +106,7 @@ def exists_in_source(source, key):
 
 
 @metrics.timer_decorator('symboldownloader_public_exists')
-@local_cache_memoize(
+@cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     hit_callable=lambda: metrics.incr(
         'symboldownloader_public_exists_cache_hit', 1

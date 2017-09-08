@@ -10,7 +10,7 @@ from django import http
 from django.conf import settings
 from django.utils.decorators import available_attrs
 from django.contrib.auth.decorators import permission_required
-from django.core.cache import caches
+from django.core.cache import cache
 from django.utils.encoding import force_text, force_bytes
 
 logger = logging.getLogger('tecken')
@@ -134,7 +134,7 @@ api_require_safe.__doc__ = (
 )
 
 
-def local_cache_memoize(
+def cache_memoize(
     timeout,
     prefix='',
     args_rewrite=None,
@@ -157,7 +157,7 @@ def local_cache_memoize(
 
     Usage::
 
-        @local_cache_memoize(
+        @cache_memoize(
             300,  # 5 min
             args_rewrite=lambda user: user.email,
             hit_callable=lambda: print("Cache hit!"),
@@ -170,7 +170,7 @@ def local_cache_memoize(
     Or, when you don't actually need the result, useful if you know it's not
     valuable to store the execution result::
 
-        @local_cache_memoize(
+        @cache_memoize(
             300,  # 5 min
             store_result=False,
         )
@@ -181,7 +181,7 @@ def local_cache_memoize(
     For example::
 
 
-        @local_cache_memoize(100)
+        @cache_memoize(100)
         def callmeonce(arg1):
             print(arg1)
 
@@ -200,7 +200,6 @@ def local_cache_memoize(
     def decorator(func):
         # The local cache is the memcached service that is expected to
         # run on the same server as the webapp.
-        local_cache = caches['local']
 
         def _make_cache_key(*args, **kwargs):
             cache_key = ':'.join(
@@ -208,19 +207,19 @@ def local_cache_memoize(
                 [force_text(f'{k}={v}') for k, v in kwargs.items()]
             )
             return hashlib.md5(force_bytes(
-                'local_cache_memoize' + prefix + cache_key
+                'cache_memoize' + prefix + cache_key
             )).hexdigest()
 
         @wraps(func)
         def inner(*args, **kwargs):
             cache_key = _make_cache_key(*args, **kwargs)
-            result = local_cache.get(cache_key)
+            result = cache.get(cache_key)
             if result is None:
                 result = func(*args, **kwargs)
                 if not store_result:
-                    local_cache.set(cache_key, True, timeout)
+                    cache.set(cache_key, True, timeout)
                 elif result is not None:
-                    local_cache.set(cache_key, result, timeout)
+                    cache.set(cache_key, result, timeout)
                 if hit_callable:
                     hit_callable()
             elif miss_callable:
@@ -229,7 +228,7 @@ def local_cache_memoize(
 
         def invalidate(*args, **kwargs):
             cache_key = _make_cache_key(*args, **kwargs)
-            local_cache.delete(cache_key)
+            cache.delete(cache_key)
 
         inner.invalidate = invalidate
         return inner
