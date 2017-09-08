@@ -403,3 +403,17 @@ get a chance to be consumed by the worker.
 This is why ``docker-compose`` starts ``worker-purge`` instead of ``worker``
 which is the same thing except it's started with ``--purge`` and this should
 only ever be done on local docker development.
+
+
+Minio (S3 mock server)
+======================
+
+When doing local development we, by default, mock AWS S3 and instead use
+`minio`_. It's API compatible so it should reflect how AWS S3 works but
+with the advantage that you don't need an Internet connection and real
+S3 credentials just to test symbol uploads for example.
+
+When started with docker, it starts a web server on ``:9000`` that you can
+use to browse uploaded files. Go to ``http://localhost:9000``.
+
+.. _`minio`: https://minio.io/
