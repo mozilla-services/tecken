@@ -17,22 +17,13 @@ pytest_plugins = ['blockade']
 
 
 @pytest.fixture
-def clear_redis():
-    caches['default'].clear()
+def clear_redis_store():
     caches['store'].clear()
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def clear_cache():
     caches['default'].clear()
-
-
-@pytest.fixture(autouse=True)
-def clear_local_cache():
-    """autouse=True fixtures (fixtures that get used in every test in
-    the module) are generally best avoided. However, this one is so
-    light and useful because it clears the global cache object."""
-    caches['local'].clear()
 
 
 @pytest.fixture

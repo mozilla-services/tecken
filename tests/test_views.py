@@ -20,7 +20,7 @@ from tecken.views import (
 
 
 @pytest.mark.django_db
-def test_client_task_tester(client, clear_redis):
+def test_client_task_tester(client, clear_redis_store):
     url = reverse('task_tester')
 
     def fake_task(key, value, expires):
@@ -50,7 +50,7 @@ def test_dashboard(client):
     assert 'documentation' in information
 
 
-def test_sample_task(clear_redis):
+def test_sample_task(clear_redis_store):
     sample_task('foo', 'bar', 1)
     cache.get('foo') == 'bar'
 

@@ -27,11 +27,11 @@ def test_set_request_debug():
     assert response.content == b'debug=False'
 
 
-def test_local_cache_memoize():
+def test_cache_memoize():
 
     calls_made = []
 
-    @decorators.local_cache_memoize(10)
+    @decorators.cache_memoize(10)
     def runmeonce(a, b, k='bla'):
         calls_made.append((a, b, k))
         return '{} {} {}'.format(a, b, k)  # sample implementation
@@ -54,12 +54,12 @@ def test_local_cache_memoize():
     assert len(calls_made) == 5
 
     # different prefixes
-    @decorators.local_cache_memoize(10, prefix='first')
+    @decorators.cache_memoize(10, prefix='first')
     def foo(value):
         calls_made.append(value)
         return 'ho'
 
-    @decorators.local_cache_memoize(10, prefix='second')
+    @decorators.cache_memoize(10, prefix='second')
     def bar(value):
         calls_made.append(value)
         return 'ho'
@@ -69,7 +69,7 @@ def test_local_cache_memoize():
     assert len(calls_made) == 7
 
     # Test when you don't care about the result
-    @decorators.local_cache_memoize(10, store_result=False, prefix='different')
+    @decorators.cache_memoize(10, store_result=False, prefix='different')
     def returnnothing(a, b, k='bla'):
         calls_made.append((a, b, k))
         # note it returns None

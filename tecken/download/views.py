@@ -12,14 +12,14 @@ import markus
 from django import http
 from django.conf import settings
 from django.utils import timezone
-from django.core.cache import cache, caches
+from django.core.cache import cache
 from django.utils.encoding import force_bytes
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
     set_request_debug,
     api_require_http_methods,
-    local_cache_memoize,
+    cache_memoize,
 )
 from tecken.download.tasks import download_microsoft_symbol
 
@@ -49,18 +49,17 @@ def _ignore_symbol(symbol, debugid, filename):
     return False
 
 
-# Note! The reason this can't use the local_cache_memoize decorator
+# Note! The reason this can't use the cache_memoize decorator
 # is because we need tight control of what the cache key becomes. That
 # way we can cache invalidate it later.
 def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
     """Only kick off the 'download_microsoft_symbol' background task
     if we haven't already done so recently."""
 
-    local_cache = caches['local']
     cache_key = hashlib.md5(force_bytes(
         f'microsoft-download:{symbol}:{debugid}'
     )).hexdigest()
-    if not local_cache.get(cache_key):
+    if not cache.get(cache_key):
         # Commence the background task to try to download from Microsoft
         download_microsoft_symbol.delay(
             symbol,
@@ -68,7 +67,7 @@ def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
             code_file=code_file,
             code_id=code_id,
         )
-        local_cache.set(
+        cache.set(
             cache_key,
             True,
             settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS
@@ -166,7 +165,7 @@ def download_symbol(request, symbol, debugid, filename):
     return response
 
 
-@local_cache_memoize(
+@cache_memoize(
     settings.MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS,
     # When you just want this to be a "guard" that protects it from
     # executing more than once.

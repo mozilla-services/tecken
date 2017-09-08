@@ -85,7 +85,7 @@ PUBLIC junk
 
 def test_symbolicate_json_happy_path_django_view(
     json_poster,
-    clear_redis,
+    clear_redis_store,
     requestsmock,
     metricsmock,
 ):
@@ -160,7 +160,7 @@ def test_symbolicate_json_happy_path_django_view(
     assert result_second == result
 
 
-def test_symbolicate_json_one_cache_lookup(clear_redis, requestsmock):
+def test_symbolicate_json_one_cache_lookup(clear_redis_store, requestsmock):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -198,7 +198,7 @@ def test_symbolicate_json_one_cache_lookup(clear_redis, requestsmock):
     assert result['debug']['cache_lookups']['count'] == 1
 
 
-def test_symbolicate_json_bad_module_indexes(clear_redis, requestsmock):
+def test_symbolicate_json_bad_module_indexes(clear_redis_store, requestsmock):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -229,7 +229,7 @@ def test_symbolicate_json_bad_module_indexes(clear_redis, requestsmock):
     ]
 
 
-def test_symbolicate_json_bad_module_offset(clear_redis, requestsmock):
+def test_symbolicate_json_bad_module_offset(clear_redis_store, requestsmock):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -260,7 +260,7 @@ def test_symbolicate_json_bad_module_offset(clear_redis, requestsmock):
     ]
 
 
-def test_symbolicate_json_happy_path_with_debug(clear_redis, requestsmock):
+def test_symbolicate_json_happy_path_with_debug(clear_redis_store, requestsmock):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -334,7 +334,7 @@ def test_symbolicate_json_happy_path_with_debug(clear_redis, requestsmock):
     assert result['debug']['downloads']['time'] == 0.0
 
 
-def test_symbolicate_json_one_symbol_not_found(clear_redis, requestsmock):
+def test_symbolicate_json_one_symbol_not_found(clear_redis_store, requestsmock):
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -368,7 +368,7 @@ def test_symbolicate_json_one_symbol_not_found(clear_redis, requestsmock):
 
 
 def test_symbolicate_json_one_symbol_not_found_with_debug(
-    clear_redis,
+    clear_redis_store,
     requestsmock,
 ):
     reload_downloader(
@@ -401,7 +401,7 @@ def test_symbolicate_json_one_symbol_not_found_with_debug(
 
 
 def test_symbolicate_json_one_symbol_empty(
-    clear_redis,
+    clear_redis_store,
     requestsmock,
 ):
     reload_downloader(
@@ -451,7 +451,7 @@ def test_symbolicate_json_one_symbol_empty(
 
 
 def test_symbolicate_json_one_symbol_500_error(
-    clear_redis,
+    clear_redis_store,
     requestsmock,
 ):
     reload_downloader(
@@ -481,7 +481,7 @@ def test_symbolicate_json_one_symbol_500_error(
 
 
 def test_symbolicate_json_one_symbol_sslerror(
-    clear_redis,
+    clear_redis_store,
     requestsmock,
 ):
     reload_downloader(
@@ -509,7 +509,7 @@ def test_symbolicate_json_one_symbol_sslerror(
 
 
 def test_symbolicate_json_one_symbol_readtimeout(
-    clear_redis,
+    clear_redis_store,
     requestsmock
 ):
     reload_downloader(
@@ -537,7 +537,7 @@ def test_symbolicate_json_one_symbol_readtimeout(
 
 
 def test_symbolicate_json_one_symbol_connectionerror(
-    clear_redis,
+    clear_redis_store,
     requestsmock
 ):
     reload_downloader(
