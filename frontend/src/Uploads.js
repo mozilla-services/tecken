@@ -383,6 +383,10 @@ class DisplayUploads extends PureComponent {
                 whose email contains this domain.
               </li>
               <li>
+                <b>User:</b> <code>!peterbe@example.com</code> to filter on any upload
+                whose email does NOT match that email.
+              </li>
+              <li>
                 <b>Size:</b> <code>&gt;1mb</code> to filter all uploads{' '}
                 <i>bigger</i> than one megabyte.
               </li>
