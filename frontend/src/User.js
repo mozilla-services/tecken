@@ -5,7 +5,7 @@ import { Loading } from './Common'
 import Fetch from './Fetch'
 import store from './Store'
 
-export default class User extends Component {
+export default class User extends PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'User Management'
@@ -83,7 +83,7 @@ export default class User extends Component {
   }
 }
 
-class EditUserForm extends Component {
+class EditUserForm extends PureComponent {
   state = {
     loading: false,
     validationErrors: null

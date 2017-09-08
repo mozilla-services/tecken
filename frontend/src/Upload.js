@@ -14,7 +14,7 @@ import './Upload.css'
 import Fetch from './Fetch'
 import store from './Store'
 
-export default class Upload extends Component {
+export default class Upload extends PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'Symbol Upload'
@@ -200,7 +200,7 @@ export default class Upload extends Component {
   }
 }
 
-class DisplayRefreshingInterval extends Component {
+class DisplayRefreshingInterval extends PureComponent {
   constructor(props) {
     super(props)
     this.state = { seconds: this._roundInterval(props.interval) }
@@ -481,7 +481,7 @@ const DisplayUpload = ({ upload, onCancel }) => {
   )
 }
 
-class CancelReattemptForm extends Component {
+class CancelReattemptForm extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {

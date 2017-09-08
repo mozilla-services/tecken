@@ -17,7 +17,7 @@ import './Uploads.css'
 
 import store from './Store'
 
-class Uploads extends Component {
+class Uploads extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {
@@ -227,7 +227,7 @@ const ShowValidationErrors = ({ errors, resetAndReload }) => {
   )
 }
 
-class DisplayUploads extends Component {
+class DisplayUploads extends PureComponent {
   componentDidMount() {
     // XXX perhaps this stuff should happen in a componentWillReceiveProps too
     const filter = this.props.filter

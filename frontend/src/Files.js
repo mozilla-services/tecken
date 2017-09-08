@@ -16,7 +16,7 @@ import './Files.css'
 
 import store from './Store'
 
-class Files extends Component {
+class Files extends PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'Files Uploaded'
@@ -177,7 +177,7 @@ class Files extends Component {
 
 export default Files
 
-class DisplayFiles extends Component {
+class DisplayFiles extends PureComponent {
   componentDidMount() {
     // XXX perhaps this stuff should happen in a componentWillReceiveProps too
     const filter = this.props.filter

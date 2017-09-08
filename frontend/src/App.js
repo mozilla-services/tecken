@@ -29,7 +29,7 @@ if (process.env.REACT_APP_SENTRY_PUBLIC_DSN) {
 }
 
 const App = observer(
-  class App extends Component {
+  class App extends PureComponent {
     constructor(props) {
       super(props)
       this.state = {
@@ -182,7 +182,7 @@ const App = observer(
 
 export default App
 
-class RedirectMaybe extends Component {
+class RedirectMaybe extends PureComponent {
   componentDidMount() {
     if (this.props.redirectTo) {
       // tell the store we've used it
@@ -198,7 +198,7 @@ class RedirectMaybe extends Component {
   }
 }
 
-class DisplayNotificationMessage extends Component {
+class DisplayNotificationMessage extends PureComponent {
   reset = event => {
     store.notificationMessage = null
   }

@@ -5,7 +5,7 @@ import './Nav.css'
 import store from './Store'
 
 const Nav = observer(
-  class Nav extends Component {
+  class Nav extends PureComponent {
     constructor(props) {
       super(props)
 

@@ -5,7 +5,7 @@ import { observer } from 'mobx-react'
 import store from './Store'
 
 const DisplayAPIRequests = observer(
-  class DisplayAPIRequests extends Component {
+  class DisplayAPIRequests extends PureComponent {
     reset = event => {
       store.apiRequests = []
       window.sessionStorage.setItem('hide-api-requests', true)
