@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 import queryString from 'query-string'
 
@@ -8,7 +8,7 @@ import { Loading } from './Common'
 import Fetch from './Fetch'
 import store from './Store'
 
-class Tokens extends Component {
+class Tokens extends PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'API Tokens'
@@ -160,7 +160,7 @@ class Tokens extends Component {
 
 export default Tokens
 
-class CreateTokenForm extends Component {
+class CreateTokenForm extends PureComponent {
   state = {
     loading: false,
     validationErrors: null
@@ -303,7 +303,7 @@ class CreateTokenForm extends Component {
   }
 }
 
-class DisplayTokens extends Component {
+class DisplayTokens extends PureComponent {
   onDelete = (event, id, expired) => {
     event.preventDefault()
     if (expired || window.confirm('Are you sure?')) {
@@ -411,7 +411,7 @@ class DisplayTokens extends Component {
   }
 }
 
-class DisplayKey extends Component {
+class DisplayKey extends PureComponent {
   state = { truncate: true }
   toggle = event => {
     this.setState({ truncate: !this.state.truncate })

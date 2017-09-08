@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 import { observer } from 'mobx-react'
 
@@ -8,7 +8,7 @@ import Fetch from './Fetch'
 import store from './Store'
 
 const Home = observer(
-  class Home extends Component {
+  class Home extends PureComponent {
     componentDidMount() {
       document.title = 'Mozilla Symbol Server'
     }
@@ -29,7 +29,7 @@ const Home = observer(
 
 export default Home
 
-class SignedInTiles extends Component {
+class SignedInTiles extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {

@@ -1,7 +1,7 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 
-class Help extends Component {
+class Help extends PureComponent {
   pageTitle = 'Help'
   componentDidMount() {
     document.title = 'Help'

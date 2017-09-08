@@ -1,11 +1,11 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { Loading, DisplayDate } from './Common'
 import Fetch from './Fetch'
 import store from './Store'
 
-class Users extends Component {
+class Users extends PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'User Management'
@@ -66,7 +66,7 @@ class Users extends Component {
 
 export default Users
 
-class DisplayUsers extends Component {
+class DisplayUsers extends PureComponent {
   state = {
     filter: {
       q: ''

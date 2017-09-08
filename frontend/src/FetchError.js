@@ -1,11 +1,11 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import store from './Store'
 
 /* Global component that is used to display that any fetch() failed.
    Kinda equivalent of how jQuery.ajaxError works except we don't
    monkeypatch fetch(). XXX maybe we should.
 */
-class FetchError extends Component {
+class FetchError extends PureComponent {
   resetFetchError = (event) => {
     store.fetchError = null
   }

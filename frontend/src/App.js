@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { Component, PureComponent } from 'react'
 import './App.css'
 import {
   BrowserRouter as Router,
@@ -182,7 +182,7 @@ const App = observer(
 
 export default App
 
-class RedirectMaybe extends Component {
+class RedirectMaybe extends PureComponent {
   componentDidMount() {
     if (this.props.redirectTo) {
       // tell the store we've used it
@@ -198,7 +198,7 @@ class RedirectMaybe extends Component {
   }
 }
 
-class DisplayNotificationMessage extends Component {
+class DisplayNotificationMessage extends PureComponent {
   reset = event => {
     store.notificationMessage = null
   }

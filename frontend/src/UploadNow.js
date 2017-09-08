@@ -1,10 +1,10 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { Loading, formatFileSize } from './Common'
 import store from './Store'
 
-export default class UploadNow extends Component {
+export default class UploadNow extends PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'Symbol Upload Now'
@@ -87,7 +87,7 @@ export default class UploadNow extends Component {
   }
 }
 
-class AboutCommandLineUpload extends Component {
+class AboutCommandLineUpload extends PureComponent {
   render() {
     return (
       <div>
@@ -111,7 +111,7 @@ class AboutCommandLineUpload extends Component {
   }
 }
 
-class UploadForm extends Component {
+class UploadForm extends PureComponent {
   constructor(props) {
     super(props)
     this.state = {
