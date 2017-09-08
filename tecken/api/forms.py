@@ -89,12 +89,16 @@ class UploadsForm(forms.Form):
 
     def clean_user(self):
         value = self.cleaned_data['user']
+        operator = '='  # default
+        if value.startswith('!'):
+            operator = '!'
+            value = value[1:].strip()
         if value:
             try:
-                return User.objects.get(email__iexact=value)
+                return [operator, User.objects.get(email__iexact=value)]
             except User.DoesNotExist:
                 try:
-                    return User.objects.get(email__icontains=value)
+                    return [operator, User.objects.get(email__icontains=value)]
                 except User.DoesNotExist:
                     raise forms.ValidationError('User not found')
                 except User.MultipleObjectsReturned:

@@ -311,7 +311,11 @@ def uploads(request):
     # 'view_all_uploads' permission.
     if context['can_view_all']:
         if form.cleaned_data['user']:
-            qs = qs.filter(user=form.cleaned_data['user'])
+            operator, user = form.cleaned_data['user']
+            if operator == '!':
+                qs = qs.exclude(user=user)
+            else:
+                qs = qs.filter(user=user)
     else:
         qs = qs.filter(user=request.user)
     orm_operators = {
