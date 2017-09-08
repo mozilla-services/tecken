@@ -96,7 +96,7 @@ def get_s3_client(endpoint_url=None, region_name=None):
         # By default, if you don't specify an endpoint_url
         # boto3 will automatically assume AWS's S3.
         # For local development we are running a local S3
-        # fake service with motocker. Then we need to
+        # fake service with minio. Then we need to
         # specify the endpoint_url.
         options['endpoint_url'] = endpoint_url
     if region_name:

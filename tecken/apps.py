@@ -60,7 +60,7 @@ class TeckenAppConfig(AppConfig):
                     "Parameter Group with maxmemory-policy=allkeys-lru"
                 )
 
-        # If you use motocker to functionally test S3, since it's
+        # If you use minio to functionally test S3, since it's
         # ephemeral the buckets you create disappear after a restart.
         # Make sure they exist. That's what we expect to happen with the
         # real production S3 buckets.
@@ -70,7 +70,7 @@ class TeckenAppConfig(AppConfig):
             list(settings.UPLOAD_URL_EXCEPTIONS.values())
         )
         for url in _all_possible_urls:
-            if not url or 'motocker' not in urlparse(url).netloc:
+            if not url or 'minio' not in urlparse(url).netloc:
                 continue
             bucket = S3Bucket(url)
             try:
@@ -80,7 +80,7 @@ class TeckenAppConfig(AppConfig):
                     bucket.s3_client.create_bucket(
                         Bucket=bucket.name
                     )
-                    logger.info(f'Created motocker bucket {bucket.name!r}')
+                    logger.info(f'Created minio bucket {bucket.name!r}')
                 else:
                     raise
 
