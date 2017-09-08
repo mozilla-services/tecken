@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { Component, PureComponent } from 'react'
 import './App.css'
 import {
   BrowserRouter as Router,
@@ -29,7 +29,7 @@ if (process.env.REACT_APP_SENTRY_PUBLIC_DSN) {
 }
 
 const App = observer(
-  class App extends PureComponent {
+  class App extends Component {
     constructor(props) {
       super(props)
       this.state = {

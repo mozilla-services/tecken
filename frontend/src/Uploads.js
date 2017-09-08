@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { format } from 'date-fns/esm'

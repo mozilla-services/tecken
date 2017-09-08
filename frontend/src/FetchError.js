@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import store from './Store'
 
 /* Global component that is used to display that any fetch() failed.
