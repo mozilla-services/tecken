@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import hashlib
 import time
 from io import BytesIO
 from gzip import GzipFile
@@ -14,7 +13,6 @@ import markus
 from botocore.exceptions import ClientError
 
 from django.conf import settings
-from django.utils.encoding import force_bytes
 
 from tecken.base.decorators import cache_memoize
 from tecken.s3 import S3Bucket
@@ -76,10 +74,6 @@ def set_time_took(method):
         return result
 
     return wrapper
-
-
-def make_symbol_cache_key(bucket_name, key):
-    return hashlib.md5(force_bytes(f'symbol:{bucket_name}:{key}')).hexdigest()
 
 
 @metrics.timer_decorator('symboldownloader_exists')
@@ -232,7 +226,7 @@ class SymbolDownloader:
             filename,
         )
 
-    def _get(self, symbol, debugid, filename):
+    def _get(self, symbol, debugid, filename, refresh_cache=False):
         """Return a dict if the symbol can be found. The dict will
         either be `{'url': ...}` or `{'buckey_name': ..., 'key': ...}`
         depending on if the symbol was found a public bucket or a
@@ -248,7 +242,9 @@ class SymbolDownloader:
                 # If it's a private bucket we use boto3.
 
                 key = self._make_key(prefix, symbol, debugid, filename)
-                if not exists_in_source(source, key):
+                if not exists_in_source(
+                    source, key, _refresh=refresh_cache
+                ):
                     continue
 
                 logger.debug(
@@ -276,7 +272,7 @@ class SymbolDownloader:
                 logger.debug(
                     f'Looking for symbol file by URL {file_url!r}'
                 )
-                if check_url_head(file_url):
+                if check_url_head(file_url, _refresh=refresh_cache):
                     return {'url': file_url, 'source': source}
 
     def _get_stream(self, symbol, debugid, filename):
@@ -404,16 +400,20 @@ class SymbolDownloader:
         raise SymbolNotFound(symbol, debugid, filename)
 
     @set_time_took
-    def has_symbol(self, symbol, debugid, filename):
+    def has_symbol(self, symbol, debugid, filename, refresh_cache=False):
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
-        return bool(self._get(symbol, debugid, filename))
+        return bool(self._get(
+            symbol, debugid, filename, refresh_cache=refresh_cache,
+        ))
 
     @set_time_took
-    def get_symbol_url(self, symbol, debugid, filename):
+    def get_symbol_url(self, symbol, debugid, filename, refresh_cache=False):
         """return the redirect URL or None. If we return None
         it means we can't find the object in any of the URLs provided."""
-        found = self._get(symbol, debugid, filename)
+        found = self._get(
+            symbol, debugid, filename, refresh_cache=refresh_cache
+        )
         if found:
             if 'url' in found:
                 return found['url']

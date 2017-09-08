@@ -90,14 +90,26 @@ def download_symbol(request, symbol, debugid, filename):
             response['Debug-Time'] = 0
         return response
 
+    refresh_cache = '_refresh' in request.GET
+
     if request.method == 'HEAD':
-        if downloader.has_symbol(symbol, debugid, filename):
+        if downloader.has_symbol(
+            symbol,
+            debugid,
+            filename,
+            refresh_cache=refresh_cache,
+        ):
             response = http.HttpResponse()
             if request._request_debug:
                 response['Debug-Time'] = downloader.time_took
             return response
     else:
-        url = downloader.get_symbol_url(symbol, debugid, filename)
+        url = downloader.get_symbol_url(
+            symbol,
+            debugid,
+            filename,
+            refresh_cache=refresh_cache,
+        )
         if url:
             # If doing local development, with Docker, you're most likely
             # running minio as a fake S3 client. It runs on its own
@@ -110,7 +122,7 @@ def download_symbol(request, symbol, debugid, filename):
                 'http://minio:9000' in url and
                 request.get_host() == 'localhost:8000'
             ):  # pragma: no cover
-                url = url.replace('minio:9000', 'localhost:5000')
+                url = url.replace('minio:9000', 'localhost:9000')
             response = http.HttpResponseRedirect(url)
             if request._request_debug:
                 response['Debug-Time'] = downloader.time_took
@@ -147,8 +159,6 @@ def download_symbol(request, symbol, debugid, filename):
                 code_file=request.GET.get('code_file'),
                 code_id=request.GET.get('code_id'),
             )
-
-            downloader.invalidate_cache(symbol, debugid, filename)
 
             # The querying of Microsoft's server is potentially slow.
             # That's why this call is down in a celery task.

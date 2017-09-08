@@ -174,6 +174,39 @@ def test_client_with_debug_with_cache(client, botomock, metricsmock):
         assert len(mock_api_calls) == 1
 
 
+def test_client_with_cache_refreshed(client, botomock, metricsmock):
+    reload_downloader('https://s3.example.com/private/prefix/')
+
+    mock_api_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_api_calls.append(api_params)
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }]
+        }
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url)
+        assert response.status_code == 302
+        assert len(mock_api_calls) == 1
+
+        response = client.get(url)
+        assert response.status_code == 302
+        assert len(mock_api_calls) == 1  # still 1
+
+        response = client.get(url, {'_refresh': 1})
+        assert response.status_code == 302
+        assert len(mock_api_calls) == 2
+
+
 def test_client_404(client, botomock, clear_redis_store):
     reload_downloader('https://s3.example.com/private/prefix/')
 
@@ -387,11 +420,9 @@ def test_get_microsoft_symbol_client(client, botomock, settings):
             assert response.status_code == 404
             assert response.content == b'Symbol Not Found Yet'
 
-            # Whenever a download_microsoft_symbol.delay() is is MAYBE
-            # called, the symboldownloader cache is invalidated on this
-            # key. So the second call to symboldownloader will actually
-            # reach out to S3 again.
-            assert len(mock_calls) == 2
+            # This basically checks that the SymbolDownloader cache is
+            # not invalidated between calls.
+            assert len(mock_calls) == 1
             # However, the act of triggering that
             # download_microsoft_symbol.delay() call is guarded by an
             # in-memory cache. So it shouldn't have called it more than

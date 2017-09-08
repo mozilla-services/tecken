@@ -22,6 +22,7 @@ from django.utils import timezone
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.utils import get_archive_members
 from tecken.s3 import get_s3_client
+from tecken.base.symboldownloader import SymbolDownloader
 from tecken.boto_extra import (
     reraise_clienterrors,
     reraise_endpointconnectionerrors
@@ -29,6 +30,8 @@ from tecken.boto_extra import (
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
+
+downloader = SymbolDownloader(settings.SYMBOL_URLS)
 
 
 @shared_task(autoretry_for=(
@@ -286,4 +289,24 @@ def upload_file_upload(s3_client, bucket_name, key_name, content, upload=None):
         **extras,
     )
     file_upload.completed_at = timezone.now()
+
+    # Take this opportunity to inform possible caches that the file,
+    # if before wasn't the case, is now stored in S3.
+    symbol, debugid, filename = _key_name_to_parts(key_name)
+    try:
+        downloader.invalidate_cache(
+            symbol, debugid, filename
+        )
+    except Exception as exception:  # pragma: no cover
+        if 1 or settings.DEBUG:
+            raise
+        logger.error(
+            f'Unable to invalidate symbol {symbol}/{debugid}/{filename}',
+            exc_info=True
+        )
+
     return file_upload
+
+
+def _key_name_to_parts(key_name):
+    return key_name.split(settings.SYMBOL_FILE_PREFIX + '/')[1].split('/')

@@ -22,7 +22,9 @@ from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
+from tecken.upload import tasks
 from tecken.upload.tasks import upload_inbox_upload
+from tecken.base.symboldownloader import SymbolDownloader
 from tecken.boto_extra import OwnEndpointConnectionError, OwnClientError
 from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
@@ -215,6 +217,145 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
     assert records[1][0] == INCR
     assert records[2][0] == TIMING
     assert records[3][0] == INCR
+
+
+@pytest.mark.django_db
+def test_upload_inbox_upload_task_with_cache_invalidation(
+    botomock,
+    fakeuser,
+    settings,
+    metricsmock
+):
+    settings.SYMBOL_URLS = ['https://s3.example.com/mybucket']
+    # settings.SYMBOL_FILE_PREFIX = 'v0'
+    downloader = SymbolDownloader(settings.SYMBOL_URLS)
+    tasks.downloader = downloader
+
+    upload = Upload.objects.create(
+        user=fakeuser,
+        filename='sample.zip',
+        bucket_name='mybucket',
+        inbox_key='inbox/sample.zip',
+        bucket_endpoint_url='http://s4.example.com',
+        bucket_region='eu-south-1',
+        size=123456,
+    )
+
+    # Create a file object that is not a file. That way it can be
+    # re-used and not closed leaving an empty file pointer.
+    zip_body = BytesIO()
+    with open(ZIP_FILE, 'rb') as f:
+        zip_body.write(f.read())
+    zip_body.seek(0)
+
+    # A mutable we use to help us distinguish between calls in the mock
+    lookups = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert api_params['Bucket'] == 'mybucket'  # always the same
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'inbox/sample.zip'
+        ):
+            return {
+                'ContentLength': 123456,
+            }
+
+        if (
+            operation_name == 'GetObject' and
+            api_params['Key'] == 'inbox/sample.zip'
+        ):
+            return {
+                'Body': zip_body,
+                'ContentLength': 123456,
+            }
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            # Pretend that we have this in S3 and its previous
+            # size was 1000.
+            return {'Contents': [
+                {
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
+                    'Size': 1000,
+                }
+            ]}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # print("LOOKUPS", lookups)
+            if not lookups:
+                # This is when the SymbolDownloader queries it.
+                result = {}
+            elif len(lookups) == 1:
+                # This is when the upload task queries it.
+                result = {}
+            else:
+                result = {
+                    'Contents': [
+                        {
+                            'Key': api_params['Prefix'],
+                            'Size': 100,
+                        }
+                    ]
+                }
+            lookups.append(api_params['Prefix'])
+            # Pretend we don't have this in S3 at all
+            return result
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            # ...pretend to actually upload it.
+            return {
+                # Should there be anything here?
+            }
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # ...pretend to actually upload it.
+            return {}
+
+        if operation_name == 'DeleteObject':
+            # pretend we delete the file
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call):
+
+        # First time.
+        assert not downloader.has_symbol(
+            'xpcshell.dbg', 'A7D6F1BB18CD4CB48', 'xpcshell.sym'
+        )
+
+        # Do the actual upload.
+        upload_inbox_upload(upload.pk)
+
+        # Second time.
+        # assert downloader.has_symbol(
+        assert downloader.has_symbol(
+            'xpcshell.dbg', 'A7D6F1BB18CD4CB48', 'xpcshell.sym'
+        )
+
+        # This is just basically to make sense of all the crazy mocking.
+        assert len(lookups) == 3
 
 
 @pytest.mark.django_db

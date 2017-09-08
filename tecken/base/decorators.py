@@ -180,7 +180,6 @@ def cache_memoize(
     Also, whatever you do where things get cached, you can undo that.
     For example::
 
-
         @cache_memoize(100)
         def callmeonce(arg1):
             print(arg1)
@@ -189,6 +188,18 @@ def cache_memoize(
         callmeonce('peter')  # nothing printed
         callmeonce.invalidate('peter')
         callmeonce('peter')  # will print 'peter'
+
+    Suppose you know for good reason you want to bypass the cache and
+    really let the decorator let you through you can set one extra
+    keyword argument called `_refresh`. For example::
+
+        @cache_memoize(100)
+        def callmeonce(arg1):
+            print(arg1)
+
+        callmeonce('peter')                 # will print 'peter'
+        callmeonce('peter')                 # nothing printed
+        callmeonce('peter', _refresh=True)  # will print 'peter'
 
     """
 
@@ -212,11 +223,18 @@ def cache_memoize(
 
         @wraps(func)
         def inner(*args, **kwargs):
+            refresh = kwargs.pop('_refresh', False)
             cache_key = _make_cache_key(*args, **kwargs)
-            result = cache.get(cache_key)
+            if refresh:
+                result = None
+            else:
+                result = cache.get(cache_key)
             if result is None:
                 result = func(*args, **kwargs)
                 if not store_result:
+                    # Then the result isn't valuable/important to store but
+                    # we want to store something. Just to remember that
+                    # it has be done.
                     cache.set(cache_key, True, timeout)
                 elif result is not None:
                     cache.set(cache_key, result, timeout)

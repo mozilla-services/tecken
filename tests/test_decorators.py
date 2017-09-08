@@ -76,3 +76,20 @@ def test_cache_memoize():
     returnnothing(1, 2)
     returnnothing(1, 2)
     assert len(calls_made) == 8
+
+
+def test_cache_memoize_refresh():
+
+    calls_made = []
+
+    @decorators.cache_memoize(10)
+    def runmeonce(a):
+        calls_made.append(a)
+        return a * 2
+
+    runmeonce(10)
+    assert len(calls_made) == 1
+    runmeonce(10)
+    assert len(calls_made) == 1
+    runmeonce(10, _refresh=True)
+    assert len(calls_made) == 2

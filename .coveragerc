@@ -8,6 +8,7 @@ omit =
     tests/*
     tecken/settings.py
     tecken/wsgi.py
+    tecken/benchmarking/*
     *migrations*
     *management*
     *management/commands*

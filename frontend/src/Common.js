@@ -63,7 +63,7 @@ export const formatFileSize = (bytes, decimals = 0) => {
 
 export const BooleanIcon = bool =>
   <span className="icon" style={{ color: bool ? 'green' : 'red' }}>
-    <i className={bool ? 'fa fa-thumbs-o-up' : 'fa fa-thumbs-o-down'} />
+    <i className={bool ? 'fa fa-check' : 'fa fa-close'} />
   </span>
 
 export const Pagination = ({
