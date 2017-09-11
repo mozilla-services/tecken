@@ -80,10 +80,10 @@ def set_time_took(method):
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     args_rewrite=lambda source, key: (source.name, key),
-    hit_callable=lambda: metrics.incr(
+    hit_callable=lambda *a, **k: metrics.incr(
         'symboldownloader_exists_cache_hit', 1
     ),
-    miss_callable=lambda: metrics.incr(
+    miss_callable=lambda *a, **k: metrics.incr(
         'symboldownloader_exists_cache_miss', 1
     ),
 )
@@ -102,10 +102,10 @@ def exists_in_source(source, key):
 @metrics.timer_decorator('symboldownloader_public_exists')
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-    hit_callable=lambda: metrics.incr(
+    hit_callable=lambda *a, **k: metrics.incr(
         'symboldownloader_public_exists_cache_hit', 1
     ),
-    miss_callable=lambda: metrics.incr(
+    miss_callable=lambda *a, **k: metrics.incr(
         'symboldownloader_public_exists_cache_miss', 1
     ),
 )
