@@ -402,10 +402,9 @@ class Base(Core):
 
     # We can cache quite aggressively here because the SymbolDownloader
     # has chance to invalidate certain keys.
-    # But we don't want to make it too long since when a symbols.zip file
-    # is uploaded it doesn't have the opportunity to invalidate those
-    # that are uploaded.
-    SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = values.IntegerValue(60 * 60)
+    # Also, any time a symbol archive file is upload, for each file within
+    # that we end up uploading to S3 we also cache invalidate.
+    SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = values.IntegerValue(60 * 60 * 6)
 
     # Whether to start a background task to search for symbols
     # on Microsoft's server is protected by an in-memory cache.

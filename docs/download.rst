@@ -165,3 +165,39 @@ route your request to the code that talks to S3. It can also come back
 as exactly ``Debug-Time: 0.0`` which means the symbol is in a blacklist of
 symbols that are immediately ``404 Not Found`` based on filename pattern
 matching.
+
+
+Download Without Caching
+========================
+
+Generally we can cache our work around S3 downloads quite aggressively since we
+tightly control the (only) input. Whenever a symbol archive file is uploaded,
+for every file within that we upload to S3 we also invalidate it from our
+cache. That means we can cache information about whether certain symbols
+exist in S3 or not quite long.
+
+However, if you are debugging something or if you manually remove a symbol
+from S3 that control is "lost". But there is a way to force the cache to
+be ignored. However, it only ignores looking in the cache. It will always
+update the cache.
+
+To do this append ``?_refresh`` to the URL. For example:
+
+.. code-block:: shell
+
+    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
+    ...302 Found...
+
+    # Now suppose you delete the file manually from S3 in the AWS Console.
+    # And without any delay do the curl again:
+    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
+    ...302 Found...
+    # Same old "broken", which is wrong.
+
+    # Avoid it by adding ?_refresh
+    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?_refresh
+    ...404 Symbol Not Found...
+
+    # Now our cache will be updated.
+    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
+    ...404 Symbol Not Found...
