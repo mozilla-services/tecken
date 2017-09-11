@@ -24,12 +24,8 @@ metrics = markus.get_metrics('tecken')
 
 def caching_vs_boto(request):
     """
-    This benchmarking function intends to measure how long it takes to
-
-    1. Do a boto3 query to ask if a key exists
-    2. Do a local memcache query to ask if a cache key exists
-    3. Do a central Redis query to ask if a cache key exists
-
+    Measure the time it takes to do lots of reads with our caches.
+    And contrast that with how long it takes to do boto queries.
     """
     if (
         not settings.BENCHMARKING_ENABLED and
@@ -42,7 +38,7 @@ def caching_vs_boto(request):
 
     form = forms.CachingVsBotoForm(
         request.GET,
-        all_measure=['boto', 'local', 'default', 'store'],
+        all_measure=['boto', 'default', 'store'],
     )
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
@@ -78,7 +74,9 @@ def caching_vs_boto(request):
         f'benchmarking:caching_vs_boto:{s3_key}'
     )).hexdigest()
 
-    for cache_config in ('default', 'local', 'store'):
+    cache_configs = ('default', 'store')
+
+    for cache_config in cache_configs:
         if cache_config in measure:
             caches[cache_config].set(cache_key, found, 60)
 
@@ -93,7 +91,7 @@ def caching_vs_boto(request):
                 lookup_boto(s3_key)
                 t1 = time.time()
                 times['boto'].append(t1 - t0)
-        for cache_config in ('default', 'local', 'store'):
+        for cache_config in cache_configs:
             if cache_config not in measure:
                 continue
             with metrics.timer(f'benchmarking_cachingvsboto_{cache_config}'):

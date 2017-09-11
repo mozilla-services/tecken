@@ -208,49 +208,6 @@ Expected version is **3.2** or higher.
 .. _`ElastiCache Redis Parameter Group`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.3-2-4
 
 
-Memcached
-=========
-
-In the section above, about **Redis cache**, that's the global cache.
-It's the place to store caching values exactly once for every Gunicorn worker
-for every potential web head. However, there is also a "local cache" that
-is ``memcached`` that is expected to be **one per web head**. The reasoning
-is that some caching tasks would be too slow to need a network for. The
-alternative is to use in-memory Python structures (e.g. a global ``dict``
-or `cachetools`_). The disadvantage with tools like that is that it's
-*per* Python process/worker. With 4 CPUs you have ``2x4+1=9`` Python processes
-so things that are cached in one Python process can't benefit the other 8
-processes. Not only is potential misses in something that's already been
-computed once, it'd also make each Python process a lot more memory consuming.
-
-
-Whereas there is exactly 1 Redis cache (and 1 Redis LRU cache) for the whole
-environment, there's expected to be the exact same number of memcached servers
-as there are web heads.
-
-The default connection location is ``memcached:11211`` which works well
-with ``docker-compose`` and it uses TCP. To override this, set, for example:
-
-.. code-block:: shell
-
-    DJANGO_MEMCACHED_LOCAL_URL=127.0.0.1:11211
-
-For a small performance boost, you can use a UNIX socket instead of a TCP port.
-It's slightly faster since it doesn't need the TCP overhead and doable because
-we know we'll always be doing the connection on the same machine. If
-``memcached`` is running on ``/var/run/memcached.sock`` change the environment
-variable to:
-
-.. code-block:: shell
-
-    DJANGO_MEMCACHED_LOCAL_URL=/var/run/memcached.sock
-
-For more information about TCP vs UNIX sockets, see the UPDATE on
-`this blog post`_.
-
-.. _`cachetools`: https://pypi.python.org/pypi/cachetools
-.. _`this blog post`: https://www.peterbe.com/plog/fastest-local-cache-backend-django
-
 StatsD
 ======
 

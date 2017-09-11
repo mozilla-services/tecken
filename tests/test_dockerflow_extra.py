@@ -74,7 +74,3 @@ def test_check_s3_urls_other_client_error(botomock, settings):
     with botomock(mock_api_call):
         with pytest.raises(ClientError):
             dockerflow_extra.check_s3_urls(None)
-
-
-def test_check_local_cache_connected():
-    assert not dockerflow_extra.check_local_cache_connected(None)

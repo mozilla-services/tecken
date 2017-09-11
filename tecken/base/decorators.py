@@ -209,8 +209,6 @@ def cache_memoize(
         args_rewrite = noop
 
     def decorator(func):
-        # The local cache is the memcached service that is expected to
-        # run on the same server as the webapp.
 
         def _make_cache_key(*args, **kwargs):
             cache_key = ':'.join(
