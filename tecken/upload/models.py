@@ -29,7 +29,9 @@ class Upload(models.Model):
     bucket_region = models.CharField(max_length=100, null=True)
     bucket_endpoint_url = models.CharField(max_length=100, null=True)
     # S3 key name to the temporary upload
-    inbox_key = models.CharField(max_length=300)
+    inbox_key = models.CharField(max_length=300, null=True)
+    # Filesystem full path where the inbox file lives
+    inbox_filepath = models.FilePathField(max_length=300, null=True)
     # When the archive contains keys we decide NOT to upload
     skipped_keys = ArrayField(models.CharField(max_length=300), null=True)
     # When certain files are immediately ignored
@@ -56,7 +58,10 @@ class Upload(models.Model):
         return (
             f'<{self.__class__.__name__} id={self.id} '
             f'filename={self.filename!r} '
-            f'bucket_name={self.bucket_name!r} inbox_key={self.inbox_key!r}>'
+            f'bucket_name={self.bucket_name!r} '
+            f'inbox_key={self.inbox_key!r} '
+            f'inbox_filepath={self.inbox_filepath!r} '
+            f'>'
         )
 
 

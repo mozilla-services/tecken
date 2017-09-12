@@ -74,11 +74,18 @@ def upload_inbox_upload(upload_id):
 
     # First download the file
     buf = BytesIO()
-    s3_client.download_fileobj(
-        upload.bucket_name,
-        upload.inbox_key,
-        buf,
-    )
+    if upload.inbox_filepath:
+        logger.debug(
+            'Upload task tries to read {upload.inbox_filepath}'
+        )
+        with open(upload.inbox_filepath, 'rb') as f:
+            buf.write(f.read())
+    else:
+        s3_client.download_fileobj(
+            upload.bucket_name,
+            upload.inbox_key,
+            buf,
+        )
 
     file_uploads_created = []
     previous_uploads = FileUpload.objects.filter(
@@ -146,16 +153,34 @@ def upload_inbox_upload(upload_id):
             upload.save()
 
     # Now we can delete the inbox file.
-    s3_client.delete_object(
-        Bucket=upload.bucket_name,
-        Key=upload.inbox_key,
-    )
+    if upload.inbox_filepath:
+        os.remove(upload.inbox_filepath)
+        _delete_empty_directories(
+            os.path.dirname(upload.inbox_filepath),
+            settings.UPLOAD_INBOX_DIRECTORY,
+        )
+    else:
+        s3_client.delete_object(
+            Bucket=upload.bucket_name,
+            Key=upload.inbox_key,
+        )
 
     upload.refresh_from_db()
     upload.completed_at = timezone.now()
     upload.skipped_keys = skipped_keys or None
     upload.ignored_keys = ignored_keys or None
     upload.save()
+
+
+def _delete_empty_directories(directory, max_parent):
+    """Given a directory, delete it if it's empty. Also, delete the parent
+    directory (recursively) if that's empty too."""
+    max_parent = os.path.abspath(max_parent)
+    if not os.listdir(directory):
+        os.rmdir(directory)
+        parent = os.path.abspath(os.path.join(directory, '..'))
+        if parent != max_parent:
+            _delete_empty_directories(parent, max_parent)
 
 
 def _ignore_member_file(filename):
