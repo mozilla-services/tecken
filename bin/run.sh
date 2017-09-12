@@ -6,6 +6,7 @@ set -eo pipefail
 : "${SLEEP:=1}"
 : "${TRIES:=60}"
 : "${GUNICORN_WORKERS:=4}"
+: "${GUNICORN_TIMEOUT:=60}"
 
 usage() {
   echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|superuser"
@@ -35,7 +36,7 @@ wait_for() {
 case $1 in
   web)
     ${CMD_PREFIX_PYTHON:-python} manage.py migrate --noinput
-    ${CMD_PREFIX} gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --workers ${GUNICORN_WORKERS} --access-logfile -
+    ${CMD_PREFIX} gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --timeout ${GUNICORN_TIMEOUT} --workers ${GUNICORN_WORKERS} --access-logfile -
     ;;
   web-dev)
     python manage.py migrate --noinput
