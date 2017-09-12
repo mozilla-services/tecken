@@ -178,6 +178,7 @@ def _delete_empty_directories(directory, max_parent):
     max_parent = os.path.abspath(max_parent)
     if not os.listdir(directory):
         os.rmdir(directory)
+        print("DELETED DIR", directory)
         parent = os.path.abspath(os.path.join(directory, '..'))
         if parent != max_parent:
             _delete_empty_directories(parent, max_parent)

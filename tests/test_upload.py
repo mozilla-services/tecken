@@ -382,7 +382,6 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
     fakeuser,
     settings,
     metricsmock,
-    temp_upload_inbox_directory,
 ):
     settings.SYMBOL_URLS = ['https://s3.example.com/mybucket']
     downloader = SymbolDownloader(settings.SYMBOL_URLS)
@@ -392,8 +391,6 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
         settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
     )
     shutil.copyfile(ZIP_FILE, inbox_filepath)
-    print("INBOX_FILEPATH", inbox_filepath)
-    assert 0
     upload = Upload.objects.create(
         user=fakeuser,
         filename='sample.zip',
@@ -440,7 +437,6 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
-            # print("LOOKUPS", lookups)
             if not lookups:
                 # This is when the SymbolDownloader queries it.
                 result = {}

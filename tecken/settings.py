@@ -580,8 +580,6 @@ class Test(Localdev):
         'https://s3.example.com/private/prefix/',
     ])
 
-    UPLOAD_INBOX_DIRECTORY = values.Value('./test-upload-inbox')
-
     AUTHENTICATION_BACKENDS = (
         'django.contrib.auth.backends.ModelBackend',
     )

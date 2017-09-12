@@ -3,7 +3,8 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
-import tempfile
+import os
+import shutil
 
 import pytest
 import mock
@@ -172,11 +173,20 @@ def fakeuser():
     )
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def temp_upload_inbox_directory():
-    before = settings.UPLOAD_INBOX_DIRECTORY
-    with tempfile.TemporaryDirectory(prefix='uploadinbox') as directory:
-        settings.UPLOAD_INBOX_DIRECTORY = directory
-        yield
-
-    settings.UPLOAD_INBOX_DIRECTORY = before
+    """Make sure there is a settings.UPLOAD_INBOX_DIRECTORY set and that
+    the directory exists. But make sure it's got the 'test-' prefix
+    in the name."""
+    original_upload_directory = settings.UPLOAD_INBOX_DIRECTORY
+    directory = os.path.dirname(original_upload_directory)
+    basename = os.path.basename(original_upload_directory)
+    if not basename.startswith('test-'):
+        basename = 'test-' + basename
+    upload_directory = os.path.join(directory, basename)
+    settings.UPLOAD_INBOX_DIRECTORY = upload_directory
+    if not os.path.isdir(upload_directory):
+        os.makedirs(upload_directory)
+    yield
+    if os.path.isdir(upload_directory):
+        shutil.rmtree(upload_directory)
