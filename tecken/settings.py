@@ -206,7 +206,6 @@ class Base(Core):
 
     REDIS_URL = values.Value('redis://redis-cache:6379/0')
     REDIS_STORE_URL = values.Value('redis://redis-store:6379/0')
-    MEMCACHED_LOCAL_URL = values.Value('memcached:11211')
 
     # Use redis as the Celery broker.
     @property
@@ -231,10 +230,6 @@ class Base(Core):
                     'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # noqa
                     'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',  # noqa
                 },
-            },
-            'local': {
-                'BACKEND': 'django.core.cache.backends.memcached.PyLibMCCache',
-                'LOCATION': self.MEMCACHED_LOCAL_URL,
             },
         }
 
@@ -396,7 +391,6 @@ class Base(Core):
         'dockerflow.django.checks.check_migrations_applied',
         'dockerflow.django.checks.check_redis_connected',
         'tecken.dockerflow_extra.check_redis_store_connected',
-        'tecken.dockerflow_extra.check_local_cache_connected',
         'tecken.dockerflow_extra.check_s3_urls',
     ]
 
@@ -600,10 +594,6 @@ class Test(Localdev):
         parent['default'] = {
             'BACKEND': 'tecken.cache_extra.RedisLocMemCache',
             'LOCATION': 'unique-snowflake',
-        }
-        parent['local'] = {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'uniquer-snowflake',
         }
         return parent
 

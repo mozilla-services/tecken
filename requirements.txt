@@ -385,5 +385,3 @@ virtualenv==15.1.0 \
 fakeredis==0.8.2 \
     --hash=sha256:726994132584655a80bb7669742373722a6fd841fceb372a06f89b0d89bc8a8a \
     --hash=sha256:39cd454c49b6e31233be41a8b111a6c00278434af3c4d49dd7cafb352454cc7e
-pylibmc==1.5.2 \
-    --hash=sha256:fc54e28a9f1b5b2ec0c030da29c7ad8a15c2755bd98aaa4142eaf419d5fabb33

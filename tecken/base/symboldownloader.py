@@ -190,7 +190,6 @@ class SymbolDownloader:
         # Because we can't know exactly which source (aka URL) was
         # used when the key was cached by exists_in_source() we have
         # to iterate over the source.
-        # cache = caches['local']
         for source in self.sources:
             prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
             if source.private:
