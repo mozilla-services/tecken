@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
+import tempfile
 
 import pytest
 import mock
@@ -10,6 +11,7 @@ import requests_mock
 import botocore
 from markus.testing import MetricsMock
 
+from django.conf import settings
 from django.core.cache import caches
 from django.contrib.auth.models import User
 
@@ -168,3 +170,13 @@ def fakeuser():
         username='peterbe',
         email='peterbe@example.com',
     )
+
+
+@pytest.fixture
+def temp_upload_inbox_directory():
+    before = settings.UPLOAD_INBOX_DIRECTORY
+    with tempfile.TemporaryDirectory(prefix='uploadinbox') as directory:
+        settings.UPLOAD_INBOX_DIRECTORY = directory
+        yield
+
+    settings.UPLOAD_INBOX_DIRECTORY = before

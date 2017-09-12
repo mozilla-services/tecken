@@ -381,10 +381,10 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
     botomock,
     fakeuser,
     settings,
-    metricsmock
+    metricsmock,
+    temp_upload_inbox_directory,
 ):
     settings.SYMBOL_URLS = ['https://s3.example.com/mybucket']
-    # settings.SYMBOL_FILE_PREFIX = 'v0'
     downloader = SymbolDownloader(settings.SYMBOL_URLS)
     tasks.downloader = downloader
 
@@ -392,6 +392,8 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
         settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
     )
     shutil.copyfile(ZIP_FILE, inbox_filepath)
+    print("INBOX_FILEPATH", inbox_filepath)
+    assert 0
     upload = Upload.objects.create(
         user=fakeuser,
         filename='sample.zip',
@@ -753,7 +755,7 @@ def test_upload_inbox_upload_task_one_uploaded_one_skipped(
     botomock,
     fakeuser,
     settings,
-    metricsmock
+    metricsmock,
 ):
     """Two incoming files. One was already there and the same size."""
 
