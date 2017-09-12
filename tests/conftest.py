@@ -5,6 +5,7 @@
 import json
 import os
 import shutil
+import tempfile
 
 import pytest
 import mock
@@ -179,11 +180,10 @@ def temp_upload_inbox_directory():
     the directory exists. But make sure it's got the 'test-' prefix
     in the name."""
     original_upload_directory = settings.UPLOAD_INBOX_DIRECTORY
-    directory = os.path.dirname(original_upload_directory)
     basename = os.path.basename(original_upload_directory)
     if not basename.startswith('test-'):
         basename = 'test-' + basename
-    upload_directory = os.path.join(directory, basename)
+    upload_directory = os.path.join(tempfile.gettempdir(), basename)
     settings.UPLOAD_INBOX_DIRECTORY = upload_directory
     if not os.path.isdir(upload_directory):
         os.makedirs(upload_directory)
