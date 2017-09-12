@@ -6,7 +6,7 @@ set -eo pipefail
 : "${SLEEP:=1}"
 : "${TRIES:=60}"
 : "${GUNICORN_WORKERS:=4}"
-: "${GUNICORN_TIMEOUT:=60}"
+: "${GUNICORN_TIMEOUT:=30}"
 
 usage() {
   echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|superuser"
