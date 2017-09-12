@@ -9,6 +9,7 @@ import io
 import fnmatch
 import hashlib
 import zipfile
+import time
 
 import requests
 from botocore.exceptions import ClientError
@@ -215,10 +216,23 @@ def upload_archive(request):
         )
         with metrics.timer('upload_to_inbox'):
             upload.seek(0)
+            size_human = filesizeformat(size)
+            logger.info(
+                f'About to upload {key} ({size_human}) into {bucket_info.name}'
+            )
+            t0 = time.time()
             bucket_info.s3_client.put_object(
                 Bucket=bucket_info.name,
                 Key=key,
                 Body=upload,
+            )
+            t1 = time.time()
+            upload_time = t1 - t0
+            upload_rate = size / upload_time
+            upload_rate_human = filesizeformat(upload_rate)
+            logger.info(
+                f'Took {upload_time:.3f} seconds to upload {size_human} '
+                f'({upload_rate_human}/second)'
             )
         logger.info(f'Upload object created with ID {upload_obj.id}')
 
