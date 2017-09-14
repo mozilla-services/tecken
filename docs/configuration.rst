@@ -143,6 +143,28 @@ In this case, if someone, who does the upload, has email ``me@example.com``
 all files within the uploaded ``.zip`` gets uploaded to a bucket called
 ``mozilla-symbols-private``.
 
+.. note:: This functionality with ``DJANGO_UPLOAD_BUCKET_EXCEPTIONS`` is a bit
+          clunky to say the least. It exists to get parity with symbol upload
+          when it was done in Socorro. In the future, this kind of
+          configuration is best moved to user land. That way superusers can
+          decided about these kinds of exceptions.
+
+EFS - Transient Filesystem for Uploads
+======================================
+
+By default, when a .zip file is uploaded, what the upload view function
+does is that it unpacks the zip in memory, does validation checks and
+if there are no reasons to reject it, it writes it to disk and logs it
+in the Django ORM. Then it sends that ORM written object's ID to the Celery
+workers who can then read where on the filesystem the zip file is.
+
+By default the path to where this is stored is ``./upload-inbox``. This
+won't work in a server configuration where individual servers (web heads,
+Celery workers) don't share disk. To override this set the environment
+variable ``DJANGO_UPLOAD_INBOX_DIRECTORY``.
+
+The recommended configuration is to use Amazon EFS (Elastic File System).
+
 
 PostgreSQL
 ==========

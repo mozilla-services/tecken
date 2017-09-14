@@ -10,6 +10,7 @@ import fnmatch
 import hashlib
 import zipfile
 import time
+import os
 
 import requests
 from botocore.exceptions import ClientError
@@ -164,9 +165,9 @@ def upload_archive(request):
     if error:
         return http.JsonResponse({'error': error.strip()}, status=400)
 
-    # Upload the archive file into the "inbox".
-    # This is a folder in the root of the bucket where the upload
-    # belongs.
+    # Even if we don't upload the "inbox file" into this bucket we need
+    # to make sure the bucket exists here even before the actual
+    # Celery job starts.
     bucket_info = get_bucket_info(request.user)
     try:
         bucket_info.s3_client.head_bucket(Bucket=bucket_info.name)
@@ -204,36 +205,75 @@ def upload_archive(request):
     # the inbox file. If the latter fails, the Upload object creation
     # should be cancelled too.
     with transaction.atomic():
-        upload_obj = Upload.objects.create(
-            user=request.user,
-            filename=name,
-            inbox_key=key,
-            bucket_name=bucket_info.name,
-            bucket_region=bucket_info.region,
-            bucket_endpoint_url=bucket_info.endpoint_url,
-            size=size,
-            download_url=url,
-        )
-        with metrics.timer('upload_to_inbox'):
-            upload.seek(0)
-            size_human = filesizeformat(size)
-            logger.info(
-                f'About to upload {key} ({size_human}) into {bucket_info.name}'
+        # There's a potential fork of functionality here.
+        # Either we use filesystem to store the inbox file,
+        # or we use S3.
+        # At some point we can probably simplify the code by picking
+        # one strategy that we know works.
+        if settings.UPLOAD_INBOX_DIRECTORY:
+            inbox_filepath = os.path.join(
+                settings.UPLOAD_INBOX_DIRECTORY, key
             )
-            t0 = time.time()
-            bucket_info.s3_client.put_object(
-                Bucket=bucket_info.name,
-                Key=key,
-                Body=upload,
+            inbox_filedir = os.path.dirname(inbox_filepath)
+            if not os.path.isdir(inbox_filedir):
+                os.makedirs(inbox_filedir)
+            upload_obj = Upload.objects.create(
+                user=request.user,
+                filename=name,
+                inbox_filepath=inbox_filepath,
+                bucket_name=bucket_info.name,
+                bucket_region=bucket_info.region,
+                bucket_endpoint_url=bucket_info.endpoint_url,
+                size=size,
+                download_url=url,
             )
-            t1 = time.time()
-            upload_time = t1 - t0
-            upload_rate = size / upload_time
-            upload_rate_human = filesizeformat(upload_rate)
-            logger.info(
-                f'Took {upload_time:.3f} seconds to upload {size_human} '
-                f'({upload_rate_human}/second)'
+            with metrics.timer('store_in_inbox_directory'):
+                upload.seek(0)
+                size_human = filesizeformat(size)
+                logger.info(
+                    f'About to store {inbox_filepath} ({size_human}) '
+                    f'into {settings.UPLOAD_INBOX_DIRECTORY}'
+                )
+                t0 = time.time()
+                with open(inbox_filepath, 'wb') as f:
+                    f.write(upload.read())
+                t1 = time.time()
+                store_time = t1 - t0
+                logger.info(
+                    f'Took {store_time:.3f} seconds to store {size_human}'
+                )
+        else:
+            upload_obj = Upload.objects.create(
+                user=request.user,
+                filename=name,
+                inbox_key=key,
+                bucket_name=bucket_info.name,
+                bucket_region=bucket_info.region,
+                bucket_endpoint_url=bucket_info.endpoint_url,
+                size=size,
+                download_url=url,
             )
+            with metrics.timer('upload_to_inbox'):
+                upload.seek(0)
+                size_human = filesizeformat(size)
+                logger.info(
+                    f'About to upload {key} ({size_human}) '
+                    f'into {bucket_info.name}'
+                )
+                t0 = time.time()
+                bucket_info.s3_client.put_object(
+                    Bucket=bucket_info.name,
+                    Key=key,
+                    Body=upload,
+                )
+                t1 = time.time()
+                upload_time = t1 - t0
+                upload_rate = size / upload_time
+                upload_rate_human = filesizeformat(upload_rate)
+                logger.info(
+                    f'Took {upload_time:.3f} seconds to upload {size_human} '
+                    f'({upload_rate_human}/second)'
+                )
         logger.info(f'Upload object created with ID {upload_obj.id}')
 
     upload_inbox_upload.delay(upload_obj.id)

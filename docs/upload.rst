@@ -9,14 +9,14 @@ History
 Symbol upload was originally done in Socorro as part of the
 `crash-stats.mozilla.com web app`_.
 
-.. note: As of June 2017, Socorro is still the point where symbol uploads happen.
+.. note: As of September 2017, Socorro is still the point where symbol uploads happen.
 
-The original way this worked is the same as Tecken except the following key
+The *original* way this worked is the same as Tecken except the following key
 differences:
 
 1. Tecken accepts the ``.zip`` upload from the client and responds with
    ``201 Created`` as soon as the upload has been stoved away (still as an archive)
-   in S3. A background message queue job starts uploading the individual files.
+   on disk. A background message queue job starts uploading the individual files.
 
 2. Every individual file within the ``.zip`` files are logged in the ORM.
 
@@ -27,7 +27,7 @@ differences:
 How It Works
 ============
 
-The upload has to be done with an API token (FIXME: Need to document this more).
+The upload has to be done with an API token.
 Not only is it important to secure the upload, we also remember *who* made
 every symbol upload. This way you can find out what email uploaded what
 file when. The user associated with that API token needs to have the permission
@@ -52,18 +52,20 @@ Or if you do it in Python ``requests``:
     >>> response.status_code
     201
 
+.. note:: Read on for how to upload by posting a URL to a file instead.
+
 Now, on the inside; what happens next
 -------------------------------------
 
-Once the ``.zip`` file is uploaded, it's immediately uploaded to S3. It's
-uploaded into S3 in a special folder called ``inbox/``. If that works,
+Once the ``.zip`` file is uploaded, it's immediately stored on disk. It's
+stored in a special folder called ``inbox/``. If that works,
 we write this down in the ORM by creating an ``Upload`` instance.
-This contains information about which bucket (see next section) it got
-uploaded to, the key name (aka. file path), and a host of additional metadata
+This contains information about which bucket (see next section) it is
+designated for, the key name (aka. file path), and a host of additional metadata
 such as date, who and size.
 
 When the ``.zip`` is uploaded into the "inbox" folder, the key name
-is determined by today's date, a md5 hash of the ``.zip`` file's content as a
+is determined by today's date, a MD5 hash of the ``.zip`` file's content as a
 string listing and the original file as it was called when uploaded.
 So an example key name to the inbox is ``inbox/2017-05-06/51dc30ddc473/myfile.zip``.
 

@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
+
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from django.core import checks
@@ -82,4 +84,40 @@ def check_s3_urls(app_configs, **kwargs):
     for url in settings.UPLOAD_URL_EXCEPTIONS.values():
         check_url(url, 'UPLOAD_URL_EXCEPTIONS')
 
+    return errors
+
+
+def check_upload_inbox_directory(app_configs, **kwargs):
+    """
+    If the settings.UPLOAD_INBOX_DIRECTORY is set, the directory needs to
+    exist and if it already exists, check that we can write to it.
+    """
+    errors = []
+    if settings.UPLOAD_INBOX_DIRECTORY:
+        directory = os.path.abspath(settings.UPLOAD_INBOX_DIRECTORY)
+        if not os.path.isdir(directory):
+            # Then the test is that we need to be able to create it!
+            try:
+                os.makedirs(directory)
+            except OSError as exception:  # pragma: no cover
+                msg = (
+                    f'Unable to create UPLOAD_INBOX_DIRECTORY directory '
+                    f'{directory} '
+                    f'({exception.__class__.__name__}: {exception})'
+                )
+                errors.append(checks.Error(msg, id='tecken.health.E004'))
+        else:
+            # Then the test is to see if we can create a file within it.
+            try:
+                fp = os.path.join(directory, 'testfile.txt')
+                with open(fp, 'w') as f:
+                    f.write('Works\n')
+                os.remove(fp)
+            except OSError as exception:  # pragma: no cover
+                msg = (
+                    f'Unable to create a test file in the '
+                    'UPLOAD_INBOX_DIRECTORY directory {directory} '
+                    f'({exception.__class__.__name__}: {exception})'
+                )
+                errors.append(checks.Error(msg, id='tecken.health.E005'))
     return errors

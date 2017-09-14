@@ -3,6 +3,9 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
+import os
+import shutil
+import tempfile
 
 import pytest
 import mock
@@ -10,6 +13,7 @@ import requests_mock
 import botocore
 from markus.testing import MetricsMock
 
+from django.conf import settings
 from django.core.cache import caches
 from django.contrib.auth.models import User
 
@@ -168,3 +172,21 @@ def fakeuser():
         username='peterbe',
         email='peterbe@example.com',
     )
+
+
+@pytest.fixture(autouse=True)
+def temp_upload_inbox_directory():
+    """Make sure there is a settings.UPLOAD_INBOX_DIRECTORY set and that
+    the directory exists. But make sure it's got the 'test-' prefix
+    in the name."""
+    original_upload_directory = settings.UPLOAD_INBOX_DIRECTORY
+    basename = os.path.basename(original_upload_directory)
+    if not basename.startswith('test-'):
+        basename = 'test-' + basename
+    upload_directory = os.path.join(tempfile.gettempdir(), basename)
+    settings.UPLOAD_INBOX_DIRECTORY = upload_directory
+    if not os.path.isdir(upload_directory):
+        os.makedirs(upload_directory)
+    yield
+    if os.path.isdir(upload_directory):
+        shutil.rmtree(upload_directory)

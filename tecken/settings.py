@@ -359,6 +359,12 @@ class Base(Core):
     # anybody uploading with an @example.com email address.
     UPLOAD_URL_EXCEPTIONS = values.DictValue({})
 
+    # When an upload comes in, we need to store it somewhere that it
+    # can be shared between the webapp and the Celery worker.
+    # In production-like environments this can't be a local filesystem
+    # path but needs to one that is shared across servers. E.g. EFS.
+    UPLOAD_INBOX_DIRECTORY = values.Value('./upload-inbox')
+
     # The default prefix for locating all symbols
     SYMBOL_FILE_PREFIX = values.Value('v1')
 
@@ -392,6 +398,7 @@ class Base(Core):
         'dockerflow.django.checks.check_redis_connected',
         'tecken.dockerflow_extra.check_redis_store_connected',
         'tecken.dockerflow_extra.check_s3_urls',
+        'tecken.dockerflow_extra.check_upload_inbox_directory',
     ]
 
     # We can cache quite aggressively here because the SymbolDownloader

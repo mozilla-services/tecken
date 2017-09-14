@@ -342,14 +342,18 @@ const DisplayUpload = ({ upload, onCancel }) => {
                 : <i>null</i>}
             </td>
           </tr>
-          {!upload.completed_at
-            ? <tr>
-                <th>Inbox Key</th>
-                <td>
-                  {upload.inbox_key}
-                </td>
-              </tr>
-            : null}
+          <tr>
+            <th>Inbox Key</th>
+            <td>
+              {upload.inbox_key ? upload.inbox_key : <i>null</i>}
+            </td>
+          </tr>
+          <tr>
+            <th>Inbox Filepath</th>
+            <td>
+              {upload.inbox_filepath ? upload.inbox_filepath : <i>null</i>}
+            </td>
+          </tr>
           <tr>
             <th>Uploaded</th>
             <td>
