@@ -5,6 +5,7 @@
 import gzip
 import os
 import logging
+import time
 from io import BytesIO
 
 import markus
@@ -75,11 +76,26 @@ def upload_inbox_upload(upload_id):
     # First download the file
     buf = BytesIO()
     if upload.inbox_filepath:
-        logger.debug(
+        logger.info(
             'Upload task tries to read {upload.inbox_filepath}'
         )
-        with open(upload.inbox_filepath, 'rb') as f:
-            buf.write(f.read())
+        while True:
+            attempts = 0
+            try:
+                with open(upload.inbox_filepath, 'rb') as f:
+                    buf.write(f.read())
+                break
+            except FileNotFoundError as exception:
+                attempts += 1
+                if attempts > 4:
+                    raise
+                logger.info(
+                    f'FileNotFoundError trying to read '
+                    f'{upload.inbox_filepath}. Going to try sleeping for '
+                    f'{attempts} seconds.'
+                )
+                time.sleep(attempts)
+
     else:
         s3_client.download_fileobj(
             upload.bucket_name,
