@@ -10,7 +10,8 @@ import {
   DisplayDateDifference,
   formatFileSize,
   Pagination,
-  TableSubTitle
+  TableSubTitle,
+  thousandFormat
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
@@ -92,6 +93,7 @@ class Uploads extends PureComponent {
         return r.json().then(response => {
           this.setState({
             uploads: response.uploads,
+            aggregates: response.aggregates,
             total: response.total,
             batchSize: response.batch_size,
             validationErrors: null
@@ -140,68 +142,73 @@ class Uploads extends PureComponent {
   render() {
     return (
       <div>
-        {store.hasPermission('upload.view_all_uploads')
-          ? <div className="tabs is-centered">
-              <ul>
-                <li className={!this.state.filter.user && 'is-active'}>
-                  <Link to="/uploads" onClick={this.filterOnAll}>
-                    All Uploads
-                  </Link>
-                </li>
-                <li className={this.state.filter.user && 'is-active'}>
-                  <Link
-                    to={`/uploads?user=${store.currentUser.email}`}
-                    onClick={this.filterOnYours}
-                  >
-                    Your Uploads
-                  </Link>
-                </li>
-                <li className={false && 'is-active'}>
-                  <Link to="/uploads/files">All Files</Link>
-                </li>
-                <li className={false && 'is-active'}>
-                  <Link to="/uploads/upload">Upload Now</Link>
-                </li>
-              </ul>
-            </div>
-          : <div className="tabs is-centered">
-              <ul>
-                <li className={!this.state.filter.user && 'is-active'}>
-                  <Link to="/uploads">All Uploads</Link>
-                </li>
-                <li className={false && 'is-active'}>
-                  <Link to="/uploads/upload">Upload Now</Link>
-                </li>
-              </ul>
-            </div>}
-        <h1 className="title">
-          {this.state.pageTitle}
-        </h1>
+        {store.hasPermission('upload.view_all_uploads') ? (
+          <div className="tabs is-centered">
+            <ul>
+              <li className={!this.state.filter.user && 'is-active'}>
+                <Link to="/uploads" onClick={this.filterOnAll}>
+                  All Uploads
+                </Link>
+              </li>
+              <li className={this.state.filter.user && 'is-active'}>
+                <Link
+                  to={`/uploads?user=${store.currentUser.email}`}
+                  onClick={this.filterOnYours}
+                >
+                  Your Uploads
+                </Link>
+              </li>
+              <li className={false && 'is-active'}>
+                <Link to="/uploads/files">All Files</Link>
+              </li>
+              <li className={false && 'is-active'}>
+                <Link to="/uploads/upload">Upload Now</Link>
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <div className="tabs is-centered">
+            <ul>
+              <li className={!this.state.filter.user && 'is-active'}>
+                <Link to="/uploads">All Uploads</Link>
+              </li>
+              <li className={false && 'is-active'}>
+                <Link to="/uploads/upload">Upload Now</Link>
+              </li>
+            </ul>
+          </div>
+        )}
+        <h1 className="title">{this.state.pageTitle}</h1>
 
-        {this.state.loading
-          ? <Loading />
-          : <TableSubTitle
-              total={this.state.total}
-              page={this.state.filter.page}
-              batchSize={this.state.batchSize}
-            />}
+        {this.state.loading ? (
+          <Loading />
+        ) : (
+          <TableSubTitle
+            total={this.state.total}
+            page={this.state.filter.page}
+            batchSize={this.state.batchSize}
+          />
+        )}
 
-        {this.state.validationErrors &&
+        {this.state.validationErrors && (
           <ShowValidationErrors
             errors={this.state.validationErrors}
             resetAndReload={this.resetAndReload}
-          />}
+          />
+        )}
 
-        {this.state.uploads &&
+        {this.state.uploads && (
           <DisplayUploads
             uploads={this.state.uploads}
+            aggregates={this.state.aggregates}
             total={this.state.total}
             batchSize={this.state.batchSize}
             location={this.props.location}
             filter={this.state.filter}
             updateFilter={this.updateFilter}
             resetAndReload={this.resetAndReload}
-          />}
+          />
+        )}
       </div>
     )
   }
@@ -257,7 +264,7 @@ class DisplayUploads extends PureComponent {
   }
 
   render() {
-    const { uploads } = this.props
+    const { uploads, aggregates } = this.props
 
     const todayStr = format(new Date(), 'YYYY-MM-DD')
     const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
@@ -323,7 +330,7 @@ class DisplayUploads extends PureComponent {
             </tr>
           </tfoot>
           <tbody>
-            {uploads.map(upload =>
+            {uploads.map(upload => (
               <tr key={upload.id}>
                 <td>
                   <Link
@@ -337,23 +344,21 @@ class DisplayUploads extends PureComponent {
                     )}
                   </Link>
                 </td>
-                <td>
-                  {upload.user.email}
-                </td>
-                <td>
-                  {formatFileSize(upload.size)}
-                </td>
+                <td>{upload.user.email}</td>
+                <td>{formatFileSize(upload.size)}</td>
                 <td>
                   <DisplayDate date={upload.created_at} />
                 </td>
                 <td>
-                  {upload.completed_at
-                    ? <DisplayDateDifference
-                        from={upload.created_at}
-                        to={upload.completed_at}
-                        suffix="after"
-                      />
-                    : <i>Incomplete!</i>}{' '}
+                  {upload.completed_at ? (
+                    <DisplayDateDifference
+                      from={upload.created_at}
+                      to={upload.completed_at}
+                      suffix="after"
+                    />
+                  ) : (
+                    <i>Incomplete!</i>
+                  )}{' '}
                   {!upload.completed_at &&
                     !upload.cancelled_at &&
                     ` (${upload.attempts} attempts)`}
@@ -362,7 +367,7 @@ class DisplayUploads extends PureComponent {
                     ` (manually cancelled)`}
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
 
@@ -374,6 +379,8 @@ class DisplayUploads extends PureComponent {
           currentPage={this.props.filter.page}
         />
 
+        <ShowAggregates aggregates={aggregates} />
+
         <article className="message" style={{ marginTop: 50 }}>
           <div className="message-body">
             <h4 className="title is-4">Examples of Filtering</h4>
@@ -383,8 +390,8 @@ class DisplayUploads extends PureComponent {
                 whose email contains this domain.
               </li>
               <li>
-                <b>User:</b> <code>!peterbe@example.com</code> to filter on any upload
-                whose email does NOT match that email.
+                <b>User:</b> <code>!peterbe@example.com</code> to filter on any
+                upload whose email does NOT match that email.
               </li>
               <li>
                 <b>Size:</b> <code>&gt;1mb</code> to filter all uploads{' '}
@@ -416,3 +423,67 @@ class DisplayUploads extends PureComponent {
 
 const DisplayFilesSummary = (files, skipped, ignored) =>
   `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`
+
+const ShowAggregates = ({ aggregates }) => {
+  return (
+    <nav className="level" style={{ marginTop: 60 }}>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Uploads</p>
+          <p className="title">
+            {aggregates.uploads.count
+              ? thousandFormat(aggregates.uploads.count)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Upload Sizes Sum</p>
+          <p className="title">
+            {aggregates.uploads.size.sum
+              ? formatFileSize(aggregates.uploads.size.sum)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Upload Sizes Avg</p>
+          <p className="title">
+            {aggregates.uploads.size.average
+              ? formatFileSize(aggregates.uploads.size.average)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p
+            className="heading"
+            title="Files with the uploads we know we can skip"
+          >
+            Sum Skipped Files
+          </p>
+          <p className="title">
+            {aggregates.uploads.skipped.sum
+              ? thousandFormat(aggregates.uploads.skipped.sum)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading" title="Files we definitely upload to S3">
+            Sum Uploaded Files
+          </p>
+          <p className="title">
+            {aggregates.files.count
+              ? thousandFormat(aggregates.files.count)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+    </nav>
+  )
+}

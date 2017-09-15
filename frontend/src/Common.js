@@ -11,14 +11,14 @@ import {
   formatDistanceStrict
 } from 'date-fns/esm'
 
-export const Loading = () =>
-<p className="has-text-centered">
-  <span className="icon is-large">
-    <FontAwesome name="cog" spin size="5x" />
-    <span className="sr-only">Loading...</span>
-  </span>
-</p>
-
+export const Loading = () => (
+  <p className="has-text-centered">
+    <span className="icon is-large">
+      <FontAwesome name="cog" spin size="5x" />
+      <span className="sr-only">Loading...</span>
+    </span>
+  </p>
+)
 
 export const DisplayDate = ({ date }) => {
   if (date === null) {
@@ -27,17 +27,9 @@ export const DisplayDate = ({ date }) => {
   const dateObj = toDate(date)
   const now = new Date()
   if (isBefore(dateObj, now)) {
-    return (
-      <span title={date}>
-        {formatDistance(date, now)} ago
-      </span>
-    )
+    return <span title={date}>{formatDistance(date, now)} ago</span>
   } else {
-    return (
-      <span title={date}>
-        in {formatDistance(date, now)}
-      </span>
-    )
+    return <span title={date}>in {formatDistance(date, now)}</span>
   }
 }
 
@@ -52,6 +44,10 @@ export const DisplayDateDifference = ({ from, to, suffix = '' }) => {
   )
 }
 
+export const thousandFormat = x => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
 export const formatFileSize = (bytes, decimals = 0) => {
   if (!bytes) return '0 bytes'
   var k = 1024
@@ -61,10 +57,11 @@ export const formatFileSize = (bytes, decimals = 0) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
-export const BooleanIcon = bool =>
+export const BooleanIcon = bool => (
   <span className="icon" style={{ color: bool ? 'green' : 'red' }}>
     <i className={bool ? 'fa fa-check' : 'fa fa-close'} />
   </span>
+)
 
 export const Pagination = ({
   location,
