@@ -239,9 +239,27 @@ def upload_archive(request):
                     f.write(upload.read())
                 t1 = time.time()
                 store_time = t1 - t0
+                store_rate = size / store_time
+                store_rate_human = filesizeformat(store_rate)
                 logger.info(
-                    f'Took {store_time:.3f} seconds to store {size_human}'
+                    f'Took {store_time:.3f} seconds to store {size_human} '
+                    f'({store_rate_human}/second)'
                 )
+                # Now let's make sure the file really is there before
+                # we carry on and trigger the Celery task.
+                # This is only really ever applicable on network mounted
+                # filesystems where consistency is important and writes
+                # to disk might be async.
+                attempts = 0
+                while not os.path.isfile(inbox_filepath):
+                    attempts += 1
+                    time.sleep(attempts)
+                    logger.info(
+                        f"{inbox_filepath} apparently doesn't exist yet. "
+                        f'Sleeping for {attempts} seconds to retry.'
+                    )
+                    if attempts > 4:
+                        break
         else:
             upload_obj = Upload.objects.create(
                 user=request.user,
