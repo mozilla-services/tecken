@@ -56,9 +56,9 @@ def upload_inbox_upload(upload_id):
         upload = Upload.objects.get(id=upload_id)
     except Upload.DoesNotExist:
         print(f"FAILED TO FIND {upload_id}")
-        recent_uploads = Upload.objects.all().order_by('-created')[:5]
+        recent_uploads = Upload.objects.all().order_by('-created_at')[:5]
         for up in recent_uploads:
-            print(f'\t{up.id}\t{up.created}')
+            print(f'\t{up.id}\t{up.created_at}')
         raise
 
     # Immediately persist that we are about to attempt to process this upload.
@@ -76,7 +76,7 @@ def upload_inbox_upload(upload_id):
     buf = BytesIO()
     if upload.inbox_filepath:
         logger.info(
-            'Upload task tries to read {upload.inbox_filepath}'
+            f'Upload task tries to read {upload.inbox_filepath}'
         )
         with open(upload.inbox_filepath, 'rb') as f:
             buf.write(f.read())
