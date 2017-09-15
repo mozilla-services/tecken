@@ -11,7 +11,8 @@ from django import http
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission, User, Group
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Q, Sum, Avg
+from django.db.models import Aggregate
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_protect
@@ -28,6 +29,14 @@ from tecken.base.decorators import (
 from . import forms
 
 logger = logging.getLogger('tecken')
+
+
+class SumCardinality(Aggregate):
+    template = 'SUM(CARDINALITY(%(expressions)s))'
+
+
+class AvgCardinality(Aggregate):
+    template = 'AVG(CARDINALITY(%(expressions)s))'
 
 
 def auth(request):
@@ -357,6 +366,28 @@ def uploads(request):
     page = pagination_form.cleaned_data['page']
     start = (page - 1) * batch_size
     end = start + batch_size
+
+    file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+    context['aggregates'] = {
+        'uploads': {
+            'count': qs.count(),
+            'size': {
+                'average': qs.aggregate(size=Avg('size'))['size'],
+                'sum': qs.aggregate(size=Sum('size'))['size']
+            },
+            'skipped': {
+                'sum': qs.aggregate(sum=SumCardinality('skipped_keys'))['sum'],
+            },
+        },
+        'files': {
+            'count': file_uploads_qs.count(),
+            # XXX These are currently not used
+            'size': {
+                'average': file_uploads_qs.aggregate(size=Avg('size'))['size'],
+                'sum': file_uploads_qs.aggregate(size=Sum('size'))['size'],
+            },
+        }
+    }
 
     rows = []
     for upload in qs.order_by('-created_at')[start:end]:
