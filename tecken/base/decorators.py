@@ -250,3 +250,22 @@ def cache_memoize(
         return inner
 
     return decorator
+
+
+def set_cors_headers(origin='*', methods='GET'):
+    """Decorator function that sets CORS headers on the response."""
+    if isinstance(methods, str):
+        methods = [methods]
+
+    def decorator(func):
+
+        @wraps(func)
+        def inner(*args, **kwargs):
+            response = func(*args, **kwargs)
+            response['Access-Control-Allow-Origin'] = origin
+            response['Access-Control-Allow-Methods'] = ','.join(methods)
+            return response
+
+        return inner
+
+    return decorator

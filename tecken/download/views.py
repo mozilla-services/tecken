@@ -20,6 +20,7 @@ from tecken.base.decorators import (
     set_request_debug,
     api_require_http_methods,
     cache_memoize,
+    set_cors_headers,
 )
 from tecken.download.tasks import download_microsoft_symbol
 
@@ -77,6 +78,7 @@ def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
 @metrics.timer_decorator('download_symbol')
 @set_request_debug
 @api_require_http_methods(['GET', 'HEAD'])
+@set_cors_headers(origin='*', methods='GET')
 def download_symbol(request, symbol, debugid, filename):
     # First there's an opportunity to do some basic pattern matching on
     # the symbol, debugid, and filename parameters to determine
