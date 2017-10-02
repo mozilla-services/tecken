@@ -75,6 +75,9 @@ def test_client_happy_path(client, botomock, metricsmock):
         assert response.status_code == 200
         assert response.content == b''
 
+        assert response['Access-Control-Allow-Origin'] == '*'
+        assert response['Access-Control-Allow-Methods'] == 'GET'
+
 
 def test_client_with_debug(client, botomock, metricsmock):
     reload_downloader('https://s3.example.com/private/prefix/')

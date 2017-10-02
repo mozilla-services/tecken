@@ -93,3 +93,24 @@ def test_cache_memoize_refresh():
     assert len(calls_made) == 1
     runmeonce(10, _refresh=True)
     assert len(calls_made) == 2
+
+
+def test_set_cors_headers():
+
+    # Happy patch
+    @decorators.set_cors_headers()
+    def view_function(request):
+        return http.HttpResponse('hello world')
+
+    request = RequestFactory().get('/')
+    response = view_function(request)
+    assert response['Access-Control-Allow-Origin'] == '*'
+    assert response['Access-Control-Allow-Methods'] == 'GET'
+
+    # Overrides
+    @decorators.set_cors_headers(origin='example.com', methods=['HEAD', 'GET'])
+    def view_function(request):
+        return http.HttpResponse('hello world')
+    response = view_function(request)
+    assert response['Access-Control-Allow-Origin'] == 'example.com'
+    assert response['Access-Control-Allow-Methods'] == 'HEAD,GET'
