@@ -23,7 +23,6 @@ from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
     api_require_http_methods,
-    api_require_POST,
     api_superuser_required,
 )
 from . import forms
@@ -33,10 +32,6 @@ logger = logging.getLogger('tecken')
 
 class SumCardinality(Aggregate):
     template = 'SUM(CARDINALITY(%(expressions)s))'
-
-
-class AvgCardinality(Aggregate):
-    template = 'AVG(CARDINALITY(%(expressions)s))'
 
 
 def auth(request):
@@ -341,9 +336,7 @@ def uploads(request):
         qs = qs.filter(**{orm_operator: value})
     for key in ('created_at', 'completed_at'):
         for operator, value in form.cleaned_data.get(key, []):
-            if value == 'cancelled':
-                qs = qs.filter(cancelled_at__isnull=False)
-            elif value is None:
+            if value is None:
                 orm_operator = f'{key}__isnull'
                 qs = qs.filter(**{orm_operator: True})
             elif operator == '=' and value.hour == 0 and value.minute == 0:
@@ -353,13 +346,18 @@ def uploads(request):
                     f'{key}__lt': value + datetime.timedelta(days=1),
                 })
             else:
+                if operator == '>':
+                    # Because we use microseconds in the ORM, but when
+                    # datetimes are passed back end forth in XHR, the
+                    # datetimes are converted with isoformat() which
+                    # drops microseconds. Therefore add 1 second to
+                    # avoid matching the latest date.
+                    value += datetime.timedelta(seconds=1)
                 orm_operator = '{}__{}'.format(
                     key,
                     orm_operators[operator]
                 )
                 qs = qs.filter(**{orm_operator: value})
-
-    qs = qs.select_related('user')
 
     batch_size = settings.API_UPLOADS_BATCH_SIZE
 
@@ -367,50 +365,56 @@ def uploads(request):
     start = (page - 1) * batch_size
     end = start + batch_size
 
-    file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+    aggregates_numbers = qs.aggregate(
+        count=Count('id'),
+        size_avg=Avg('size'),
+        size_sum=Sum('size'),
+        skipped_sum=SumCardinality('skipped_keys'),
+    )
     context['aggregates'] = {
         'uploads': {
-            'count': qs.count(),
+            'count': aggregates_numbers['count'],
             'size': {
-                'average': qs.aggregate(size=Avg('size'))['size'],
-                'sum': qs.aggregate(size=Sum('size'))['size']
+                'average': aggregates_numbers['size_avg'],
+                'sum': aggregates_numbers['size_sum'],
             },
             'skipped': {
-                'sum': qs.aggregate(sum=SumCardinality('skipped_keys'))['sum'],
+                'sum': aggregates_numbers['skipped_sum'],
             },
         },
-        'files': {
-            'count': file_uploads_qs.count(),
-            # XXX These are currently not used
-            'size': {
-                'average': file_uploads_qs.aggregate(size=Avg('size'))['size'],
-                'sum': file_uploads_qs.aggregate(size=Sum('size'))['size'],
-            },
-        }
+    }
+    file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+    context['aggregates']['files'] = {
+        'count': file_uploads_qs.count(),
     }
 
+    # Prepare a map of all user_id => user attributes
+    # This assumes that there are relatively few users who upload.
+    distinct_users_ids = [
+        x['user_id'] for x in
+        qs.values('user_id').distinct('user_id')
+    ]
+    if distinct_users_ids:
+        # Only bother if there is a any distinct users
+        user_map = {
+            user.id: {'email': user.email}
+            for user in User.objects.filter(id__in=distinct_users_ids)
+        }
     rows = []
     for upload in qs.order_by('-created_at')[start:end]:
         rows.append({
             'id': upload.id,
-            'user': {
-                'email': upload.user.email,
-            },
+            'user': user_map[upload.user_id],
             'filename': upload.filename,
             'size': upload.size,
             'bucket_name': upload.bucket_name,
             'bucket_region': upload.bucket_region,
             'bucket_endpoint_url': upload.bucket_endpoint_url,
-            'inbox_key': upload.inbox_key,
-            'inbox_filepath': upload.inbox_filepath,
             'skipped_keys': upload.skipped_keys or [],
             'ignored_keys': upload.ignored_keys or [],
             'download_url': upload.download_url,
             'completed_at': upload.completed_at,
             'created_at': upload.created_at,
-            'attempts': upload.attempts,
-            'cancelled_at': upload.cancelled_at,
-            'cancellable': _is_cancellable(upload),
         })
     # Make a FileUpload aggregate count on these uploads
     file_upload_counts = FileUpload.objects.filter(
@@ -424,18 +428,10 @@ def uploads(request):
         upload['files_count'] = file_upload_counts_map.get(upload['id'], 0)
 
     context['uploads'] = rows
-    context['total'] = qs.count()
+    context['total'] = context['aggregates']['uploads']['count']
     context['batch_size'] = batch_size
 
     return http.JsonResponse(context)
-
-
-def _is_cancellable(upload_obj):
-    return (
-        not upload_obj.cancelled_at and
-        not upload_obj.completed_at and
-        upload_obj.attempts < settings.UPLOAD_REATTEMPT_LIMIT_TIMES
-    )
 
 
 @api_login_required
@@ -462,17 +458,12 @@ def upload(request, id):
         'bucket_name': obj.bucket_name,
         'bucket_region': obj.bucket_region,
         'bucket_endpoint_url': obj.bucket_endpoint_url,
-        'inbox_key': obj.inbox_key,
-        'inbox_filepath': obj.inbox_filepath,
         'skipped_keys': obj.skipped_keys or [],
         'ignored_keys': obj.ignored_keys or [],
         'download_url': obj.download_url,
         'completed_at': obj.completed_at,
         'created_at': obj.created_at,
-        'attempts': obj.attempts,
         'file_uploads': [],
-        'cancelled_at': obj.cancelled_at,
-        'cancellable': _is_cancellable(obj),
     }
     file_uploads_qs = FileUpload.objects.filter(upload=obj)
     for file_upload in file_uploads_qs.order_by('created_at'):
@@ -487,29 +478,28 @@ def upload(request, id):
             'completed_at': file_upload.completed_at,
             'created_at': file_upload.created_at,
         })
+
+    aggregates = {
+        'files': {
+            'count': file_uploads_qs.count(),
+            'size': {
+                'average': file_uploads_qs.aggregate(size=Avg('size'))['size'],
+                'sum': file_uploads_qs.aggregate(size=Sum('size'))['size'],
+            },
+        },
+        'skipped': {
+            'count': len(upload_dict['skipped_keys']),
+        },
+        'ignored': {
+            'count': len(upload_dict['ignored_keys']),
+        }
+    }
+
     context = {
         'upload': upload_dict,
+        'aggregates': aggregates,
     }
     return http.JsonResponse(context)
-
-
-@api_login_required
-@api_require_POST
-def cancel_upload(request, id):
-    obj = get_object_or_404(Upload, id=id)
-    # You're only allowed to see this if it's yours or you have the
-    # 'view_all_uploads' permission.
-    if not (
-        obj.user == request.user or
-        request.user.has_perm('upload.view_all_uploads')
-    ):
-        return http.JsonResponse({
-            'error': 'Insufficient access to view this upload'
-        }, status=403)
-
-    obj.cancelled_at = timezone.now()
-    obj.save()
-    return http.JsonResponse({'ok': True})
 
 
 @api_login_required

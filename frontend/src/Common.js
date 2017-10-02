@@ -89,7 +89,7 @@ export const Pagination = ({
 
   const isOverflow = page => {
     // return true if doesn't make sense to go to this page
-    return page < 1 || (page - 1) * batchSize > total
+    return page < 1 || (page - 1) * batchSize >= total
   }
 
   return (
@@ -110,32 +110,6 @@ export const Pagination = ({
       >
         Next page
       </Link>
-      {/* <ul className="pagination-list">
-        <li>
-          <Link to={nextPageUrl(1)} className="pagination-link"
-             onClick={e => goTo(e, 1)}>
-            1
-          </Link>
-        </li>
-        <li>
-          <span className="pagination-ellipsis">&hellip;</span>
-        </li>
-        <li>
-          <a className="pagination-link">45</a>
-        </li>
-        <li>
-          <a className="pagination-link is-current">46</a>
-        </li>
-        <li>
-          <a className="pagination-link">47</a>
-        </li>
-        <li>
-          <span className="pagination-ellipsis">&hellip;</span>
-        </li>
-        <li>
-          <a className="pagination-link">86</a>
-        </li>
-      </ul> */}
     </nav>
   )
 }
@@ -151,4 +125,13 @@ export const TableSubTitle = ({ total, page, batchSize }) => {
       {total} Found (Page {page} of {totalPages})
     </h2>
   )
+}
+
+
+export const pluralize = (number, singular, plural) => {
+  if (number === 1) {
+    return `1 ${singular}`
+  } else {
+    return `${number} ${plural}`
+  }
 }

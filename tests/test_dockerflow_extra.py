@@ -2,9 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import shutil
-import os
-
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
@@ -77,13 +74,3 @@ def test_check_s3_urls_other_client_error(botomock, settings):
     with botomock(mock_api_call):
         with pytest.raises(ClientError):
             dockerflow_extra.check_s3_urls(None)
-
-
-def test_check_upload_inbox_directory(settings):
-    assert not dockerflow_extra.check_upload_inbox_directory(None)
-    # Just making sure its name starts with the word "test-"
-    assert os.path.basename(settings.UPLOAD_INBOX_DIRECTORY).startswith(
-        'test-'
-    )
-    shutil.rmtree(settings.UPLOAD_INBOX_DIRECTORY)
-    assert not dockerflow_extra.check_upload_inbox_directory(None)

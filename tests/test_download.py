@@ -510,11 +510,12 @@ def test_download_microsoft_symbol_task_happy_path(
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 4
+    assert len(records) == 5
     assert records[0][0] == TIMING
     assert records[1][0] == TIMING
-    assert records[2][0] == INCR
-    assert records[3][0] == TIMING
+    assert records[2][0] == TIMING
+    assert records[3][0] == INCR
+    assert records[4][0] == TIMING
 
 
 @pytest.mark.django_db

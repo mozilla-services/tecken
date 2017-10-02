@@ -29,8 +29,10 @@ class Upload(models.Model):
     bucket_region = models.CharField(max_length=100, null=True)
     bucket_endpoint_url = models.CharField(max_length=100, null=True)
     # S3 key name to the temporary upload
+    # XXX Deprecated and needs to be removed
     inbox_key = models.CharField(max_length=300, null=True)
     # Filesystem full path where the inbox file lives
+    # XXX Deprecated and needs to be removed
     inbox_filepath = models.FilePathField(max_length=300, null=True)
     # When the archive contains keys we decide NOT to upload
     skipped_keys = ArrayField(models.CharField(max_length=300), null=True)
@@ -43,9 +45,11 @@ class Upload(models.Model):
     # If the upload was by a download URL
     download_url = models.URLField(max_length=500, null=True)
     # One increment for every attempt of processing the upload.
+    # XXX Deprecated and needs to be removed
     attempts = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     # When cancelled it won't be able to reattempt
+    # XXX Deprecated and needs to be removed
     cancelled_at = models.DateTimeField(null=True)
 
     class Meta:

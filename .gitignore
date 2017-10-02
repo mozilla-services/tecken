@@ -25,3 +25,4 @@ hack.py
 all-metrics-keys.json
 test-upload-inbox/
 upload-inbox/
+miniodata/

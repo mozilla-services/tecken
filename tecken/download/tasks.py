@@ -23,7 +23,7 @@ from tecken.boto_extra import (
     reraise_endpointconnectionerrors
 )
 from tecken.base.utils import requests_retry_session
-from tecken.upload.tasks import upload_file_upload
+from tecken.upload.utils import upload_file_upload
 
 
 logger = logging.getLogger('tecken')

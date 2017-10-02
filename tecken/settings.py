@@ -398,7 +398,6 @@ class Base(Core):
         'dockerflow.django.checks.check_redis_connected',
         'tecken.dockerflow_extra.check_redis_store_connected',
         'tecken.dockerflow_extra.check_s3_urls',
-        'tecken.dockerflow_extra.check_upload_inbox_directory',
     ]
 
     # We can cache quite aggressively here because the SymbolDownloader
@@ -441,10 +440,6 @@ class Base(Core):
     # this in the cache so that it doesn't add it more than once. That
     # caching uses this same timeout.
     UPLOAD_REATTEMPT_LIMIT_SECONDS = values.IntegerValue(60 * 60 * 12)
-
-    # When we re-attempt those that have failed before, we only bother
-    # with those that have failed less than this number of times.
-    UPLOAD_REATTEMPT_LIMIT_TIMES = values.IntegerValue(10)
 
     # When you "upload by download", the URL's domain needs to be in this
     # whitelist. This is to double-check that we don't allow downloads from
