@@ -2,14 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
 import re
 import logging
 import io
 import fnmatch
-import hashlib
 import zipfile
-import time
 import os
 
 import requests
@@ -22,7 +19,6 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
-from django.core.cache import cache
 
 from tecken.base.utils import filesizeformat
 from tecken.base.decorators import (
@@ -33,9 +29,9 @@ from tecken.base.decorators import (
 from tecken.upload.utils import (
     get_archive_members,
     UnrecognizedArchiveFileExtension,
+    upload_file_upload,
 )
-from tecken.upload.models import Upload
-from tecken.upload.tasks import upload_inbox_upload
+from tecken.upload.models import Upload, FileUpload
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
 
@@ -165,12 +161,10 @@ def upload_archive(request):
     if error:
         return http.JsonResponse({'error': error.strip()}, status=400)
 
-    # Even if we don't upload the "inbox file" into this bucket we need
-    # to make sure the bucket exists here even before the actual
-    # Celery job starts.
     bucket_info = get_bucket_info(request.user)
+    client = bucket_info.s3_client
     try:
-        bucket_info.s3_client.head_bucket(Bucket=bucket_info.name)
+        client.head_bucket(Bucket=bucket_info.name)
     except ClientError as exception:
         if exception.response['Error']['Code'] == '404':
             # This warning message hopefully makes it easier to see what
@@ -187,141 +181,70 @@ def upload_archive(request):
             )
         else:  # pragma: no cover
             raise
-    # Turn the file listing into a string to turn it into a hash
-    content = '\n'.join(
-        '{}:{}'.format(x.name, x.size) for x in file_listing
+
+    def _ignore_member_file(filename):
+        """Return true if the given filename (could be a filepath), should
+        be completely ignored in the upload process.
+
+        At the moment the list is "whitelist based", meaning all files are
+        processed and uploaded to S3 unless it meets certain checks.
+        """
+        if filename.lower().endswith('-symbols.txt'):
+            return True
+        return False
+
+    # Always create the Upload object no matter what happens next.
+    # If all individual file uploads work out, we say this is complete.
+    upload_obj = Upload.objects.create(
+        user=request.user,
+        filename=name,
+        bucket_name=bucket_info.name,
+        bucket_region=bucket_info.region,
+        bucket_endpoint_url=bucket_info.endpoint_url,
+        size=size,
+        download_url=url,
     )
-    # The MD5 is just used to make the temporary S3 file unique in name
-    # if the client uploads with the same filename in quick succession.
-    content_hash = hashlib.md5(
-        content.encode('utf-8')
-    ).hexdigest()[:12]  # nosec
-    key = 'inbox/{date}/{content_hash}/{name}'.format(
-        date=timezone.now().strftime('%Y-%m-%d'),
-        content_hash=content_hash,
-        name=name,
-    )
-    # Bundle the creation of the upload object with the task of uploading
-    # the inbox file. If the latter fails, the Upload object creation
-    # should be cancelled too.
-    with transaction.atomic():
-        # There's a potential fork of functionality here.
-        # Either we use filesystem to store the inbox file,
-        # or we use S3.
-        # At some point we can probably simplify the code by picking
-        # one strategy that we know works.
-        if settings.UPLOAD_INBOX_DIRECTORY:
-            inbox_filepath = os.path.join(
-                settings.UPLOAD_INBOX_DIRECTORY, key
-            )
-            inbox_filedir = os.path.dirname(inbox_filepath)
-            if not os.path.isdir(inbox_filedir):
-                os.makedirs(inbox_filedir)
-            upload_obj = Upload.objects.create(
-                user=request.user,
-                filename=name,
-                inbox_filepath=inbox_filepath,
-                bucket_name=bucket_info.name,
-                bucket_region=bucket_info.region,
-                bucket_endpoint_url=bucket_info.endpoint_url,
-                size=size,
-                download_url=url,
-            )
-            with metrics.timer('store_in_inbox_directory'):
-                upload.seek(0)
-                size_human = filesizeformat(size)
-                logger.info(
-                    f'About to store {inbox_filepath} ({size_human}) '
-                    f'into {settings.UPLOAD_INBOX_DIRECTORY}'
-                )
-                t0 = time.time()
-                with open(inbox_filepath, 'wb') as f:
-                    f.write(upload.read())
-                t1 = time.time()
-                store_time = t1 - t0
-                store_rate = size / store_time
-                store_rate_human = filesizeformat(store_rate)
-                logger.info(
-                    f'Took {store_time:.3f} seconds to store {size_human} '
-                    f'({store_rate_human}/second)'
-                )
-                # Now let's make sure the file really is there before
-                # we carry on and trigger the Celery task.
-                # This is only really ever applicable on network mounted
-                # filesystems where consistency is important and writes
-                # to disk might be async.
-                attempts = 0
-                while not os.path.isfile(inbox_filepath):
-                    attempts += 1
-                    time.sleep(attempts)
-                    logger.info(
-                        f"{inbox_filepath} apparently doesn't exist yet. "
-                        f'Sleeping for {attempts} seconds to retry.'
-                    )
-                    if attempts > 4:
-                        break
+
+    ignored_keys = []
+    skipped_keys = []
+    file_uploads_created = []
+    for member in get_archive_members(upload, name):
+        if _ignore_member_file(member.name):
+            ignored_keys.append(member.name)
+            continue
+
+        key_name = os.path.join(
+            settings.SYMBOL_FILE_PREFIX, member.name
+        )
+
+        file_upload = upload_file_upload(
+            client,
+            bucket_info.name,
+            key_name,
+            member.extractor().read(),
+            upload=upload_obj,
+        )
+        # If upload_file_upload() returns None, it means it deemed it
+        # not necessary to upload this file.
+        if file_upload:
+            logger.info(f'Uploaded key {key_name}')
+            file_uploads_created.append(file_upload)
+            metrics.incr('upload_file_upload_upload', 1)
         else:
-            upload_obj = Upload.objects.create(
-                user=request.user,
-                filename=name,
-                inbox_key=key,
-                bucket_name=bucket_info.name,
-                bucket_region=bucket_info.region,
-                bucket_endpoint_url=bucket_info.endpoint_url,
-                size=size,
-                download_url=url,
-            )
-            with metrics.timer('upload_to_inbox'):
-                upload.seek(0)
-                size_human = filesizeformat(size)
-                logger.info(
-                    f'About to upload {key} ({size_human}) '
-                    f'into {bucket_info.name}'
-                )
-                t0 = time.time()
-                bucket_info.s3_client.put_object(
-                    Bucket=bucket_info.name,
-                    Key=key,
-                    Body=upload,
-                )
-                t1 = time.time()
-                upload_time = t1 - t0
-                upload_rate = size / upload_time
-                upload_rate_human = filesizeformat(upload_rate)
-                logger.info(
-                    f'Took {upload_time:.3f} seconds to upload {size_human} '
-                    f'({upload_rate_human}/second)'
-                )
-        logger.info(f'Upload object created with ID {upload_obj.id}')
+            logger.info(f'Skipped key {key_name}')
+            skipped_keys.append(key_name)
+            metrics.incr('upload_file_upload_skip', 1)
 
-    upload_inbox_upload.delay(upload_obj.id)
+    if file_uploads_created:
+        FileUpload.objects.bulk_create(file_uploads_created)
+        logger.info(f'Created {len(file_uploads_created)} FileUpload objects')
+    else:
+        logger.info(f'No file uploads created for {upload_obj!r}')
 
-    # Take the opportunity to also try to clear out old uploads that
-    # have gotten stuck and still hasn't moved for some reason.
-    # Note! This might be better to do with a cron job some day. But that
-    # requires a management command that can be run in production.
-    incomplete_uploads = Upload.objects.filter(
-        completed_at__isnull=True,
-        cancelled_at__isnull=True,
-        created_at__lt=(
-            timezone.now() - datetime.timedelta(
-                seconds=settings.UPLOAD_REATTEMPT_LIMIT_SECONDS
-            )
-        ),
-        attempts__lt=settings.UPLOAD_REATTEMPT_LIMIT_TIMES
-    )
-    for old_upload_obj in incomplete_uploads.order_by('created_at'):
-        cache_key = f'reattempt:{old_upload_obj.id}'
-        if not cache.get(cache_key):
-            logger.info(
-                f'Reattempting incomplete upload from {old_upload_obj!r}'
-            )
-            upload_inbox_upload.delay(old_upload_obj.id)
-            cache.set(
-                cache_key,
-                True,
-                settings.UPLOAD_REATTEMPT_LIMIT_SECONDS
-            )
+    upload_obj.completed_at = timezone.now()
+    upload_obj.skipped_keys = skipped_keys or None
+    upload_obj.ignored_keys = ignored_keys or None
+    upload_obj.save()
 
     return http.JsonResponse(
         {'upload': _serialize_upload(upload_obj)},

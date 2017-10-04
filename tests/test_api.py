@@ -10,7 +10,6 @@ import pytest
 from django.contrib.auth.models import User, Permission, Group
 from django.core.urlresolvers import reverse
 from django.utils import timezone
-from django.conf import settings
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -670,21 +669,50 @@ def test_uploads(client):
     data = response.json()
     assert not data['uploads']
 
-    # Filter by cancelled
+
+@pytest.mark.django_db
+def test_uploads_second_increment(client):
+    """If you query uploads with '?created_at=>SOMEDATE' that date
+    gets an extra second added to it. That's because the datetime objects
+    are stored in the ORM with microseconds but in JSON dumps (isoformat())
+    the date loses that accuracy and if you take the lates upload's
+    'created_at' and use the '>' operator it shouldn't be included."""
+    url = reverse('api:uploads')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    permission = Permission.objects.get(codename='view_all_uploads')
+    user.user_permissions.add(permission)
+    assert client.login(username='peterbe', password='secret')
+
+    Upload.objects.create(
+        user=User.objects.create(email='her@example.com'),
+        size=123456
+    )
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data['total'] == 1
+
+    last_created_at = data['uploads'][0]['created_at']
     response = client.get(url, {
-        'completed_at': 'Cancelled',
+        'created_at': f'>{last_created_at}'
     })
     assert response.status_code == 200
     data = response.json()
-    assert not data['uploads']
-    upload.cancelled_at = timezone.now()
-    upload.save()
+    assert data['total'] == 0
+
+    # But if you use '>=' operator it should be fine and it should be included.
     response = client.get(url, {
-        'completed_at': 'Cancelled',
+        'created_at': f'>={last_created_at}'
     })
     assert response.status_code == 200
     data = response.json()
-    assert data['uploads']
+    assert data['total'] == 1
 
 
 @pytest.mark.django_db
@@ -730,79 +758,6 @@ def test_upload(client):
     assert result['upload']['user']['email'] == upload.user.email
     first_file_upload, = result['upload']['file_uploads']
     assert first_file_upload['size'] == 1234
-
-    # Check if it's cancelled and if it's cancellable
-    assert result['upload']['cancellable']
-    assert not result['upload']['cancelled_at']
-
-    upload.attempts = settings.UPLOAD_REATTEMPT_LIMIT_TIMES
-    upload.save()
-    response = client.get(url)
-    assert response.status_code == 200
-    result = response.json()
-    assert not result['upload']['cancellable']
-
-    upload.attempts = 0
-    upload.cancelled_at = timezone.now()
-    upload.save()
-    response = client.get(url)
-    assert response.status_code == 200
-    result = response.json()
-    assert not result['upload']['cancellable']
-
-    upload.completed_at = timezone.now()
-    upload.save()
-    response = client.get(url)
-    assert response.status_code == 200
-    result = response.json()
-    assert not result['upload']['cancellable']
-
-
-@pytest.mark.django_db
-def test_cancel_upload(client):
-    url = reverse('api:cancel_upload', args=(9999999,))
-    response = client.get(url)
-    # Won't even let you in to find out that ID doesn't exist.
-    assert response.status_code == 403
-
-    # What if you're signed in
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
-    user.set_password('secret')
-    user.save()
-    assert client.login(username='peterbe', password='secret')
-
-    response = client.get(url)
-    assert response.status_code == 405
-    response = client.post(url)
-    # Won't even let you in to find out that ID doesn't exist.
-    assert response.status_code == 404
-
-    upload = Upload.objects.create(
-        user=User.objects.create(email='her@example.com'),
-        size=123456,
-        skipped_keys=['foo'],
-        ignored_keys=['bar'],
-    )
-    FileUpload.objects.create(
-        upload=upload,
-        size=1234,
-        key='foo.sym',
-    )
-    url = reverse('api:cancel_upload', args=(upload.id,))
-    response = client.post(url)
-    # You can't view it because you don't have access to it.
-    assert response.status_code == 403
-
-    permission = Permission.objects.get(codename='view_all_uploads')
-    user.user_permissions.add(permission)
-    response = client.get(url)
-    assert response.status_code == 405
-
-    response = client.post(url)
-    assert response.status_code == 200
-
-    upload.refresh_from_db()
-    assert upload.cancelled_at
 
 
 @pytest.mark.django_db

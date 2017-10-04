@@ -129,4 +129,4 @@ services:
       - "9000:9000"
     volumes:
       - $PWD/miniodata:/export
-    command: server /myexport
+    command: server /export

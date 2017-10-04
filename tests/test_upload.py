@@ -2,31 +2,25 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import datetime
 import gzip
 import os
-import re
-import shutil
 from io import BytesIO
 
 import pytest
-import mock
-from botocore.exceptions import ClientError, EndpointConnectionError
+from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError
 from markus import TIMING, INCR
 
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import F
-from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload import tasks
-from tecken.upload.tasks import upload_inbox_upload
+from tecken.upload import utils
+# from tecken.upload.tasks import upload_inbox_upload
 from tecken.base.symboldownloader import SymbolDownloader
-from tecken.boto_extra import OwnEndpointConnectionError, OwnClientError
+# from tecken.boto_extra import OwnEndpointConnectionError, OwnClientError
 from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.upload.utils import get_archive_members
@@ -66,32 +60,20 @@ def test_get_archive_members():
 
 
 @pytest.mark.django_db
-def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
+def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
-    # Fake an Upload object
-    inbox_filepath = os.path.join(
-        settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
-    )
-    shutil.copyfile(ZIP_FILE, inbox_filepath)
-    upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_filepath=inbox_filepath,
-        bucket_endpoint_url='http://s4.example.com',
-        bucket_region='eu-south-1',
-        size=123456,
-    )
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
 
     def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'mybucket'  # always the same
-        if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'ContentLength': 123456,
-            }
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
 
         if (
             operation_name == 'ListObjectsV2' and
@@ -159,29 +141,34 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
             # ...pretend to actually upload it.
             return {}
 
-        if operation_name == 'DeleteObject':
-            assert api_params['Key'] == 'inbox/sample.zip'
-            # pretend we delete the file
-            return {}
-
         raise NotImplementedError((operation_name, api_params))
 
-    with botomock(mock_api_call):
-        upload_inbox_upload(upload.pk)
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
 
-    assert not os.path.isfile(inbox_filepath)
-
-    # Reload the Upload object
-    upload.refresh_from_db()
-    assert upload.completed_at
-    assert upload.skipped_keys is None
-    assert upload.ignored_keys == ['build-symbols.txt']
-    assert upload.attempts == 1
+        upload, = Upload.objects.all()
+        assert upload.user == fakeuser
+        # assert upload.inbox_key is None
+        # assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
+        assert upload.filename == 'file.zip'
+        assert upload.completed_at
+        # based on `ls -l tests/sample.zip` knowledge
+        assert upload.size == 69812
+        assert upload.bucket_name == 'private'
+        assert upload.bucket_region is None
+        assert upload.bucket_endpoint_url == 'https://s3.example.com'
+        assert upload.skipped_keys is None
+        assert upload.ignored_keys == ['build-symbols.txt']
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name='mybucket',
+        bucket_name='private',
         key='v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
         compressed=False,
         update=True,
@@ -191,7 +178,7 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
 
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name='mybucket',
+        bucket_name='private',
         key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
         compressed=True,
         update=False,
@@ -203,63 +190,34 @@ def test_upload_inbox_upload_task(botomock, fakeuser, settings, metricsmock):
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 4
+    assert len(records) == 5
     assert records[0][0] == TIMING
     assert records[1][0] == INCR
     assert records[2][0] == TIMING
     assert records[3][0] == INCR
+    assert records[4][0] == TIMING
 
 
 @pytest.mark.django_db
-def test_upload_inbox_upload_task_with_inbox_key(
+def test_upload_archive_one_uploaded_one_skipped(
+    client,
     botomock,
     fakeuser,
-    settings,
     metricsmock
 ):
-    """This test is the same as test_upload_inbox_upload_task but this
-    time we use 'inbox_key' (ie. using S3 as the inbox file storage)
-    instead of 'inbox_filepath'.
 
-    This test can be deleted when we know that using disk as the conduit
-    really works."""
-
-    # Fake an Upload object
-    upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_key='inbox/sample.zip',
-        bucket_endpoint_url='http://s4.example.com',
-        bucket_region='eu-south-1',
-        size=123456,
-    )
-
-    # Create a file object that is not a file. That way it can be
-    # re-used and not closed leaving an empty file pointer.
-    zip_body = BytesIO()
-    with open(ZIP_FILE, 'rb') as f:
-        zip_body.write(f.read())
-    zip_body.seek(0)
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
 
     def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'mybucket'  # always the same
-        if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'ContentLength': 123456,
-            }
-
-        if (
-            operation_name == 'GetObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'Body': zip_body,
-                'ContentLength': 123456,
-            }
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
 
         if (
             operation_name == 'ListObjectsV2' and
@@ -267,14 +225,13 @@ def test_upload_inbox_upload_task_with_inbox_key(
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
-            # Pretend that we have this in S3 and its previous
-            # size was 1000.
             return {'Contents': [
                 {
                     'Key': (
                         'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
                     ),
-                    'Size': 1000,
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 69183,
                 }
             ]}
 
@@ -284,80 +241,48 @@ def test_upload_inbox_upload_task_with_inbox_key(
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
-            # Pretend we don't have this in S3 at all
+            # Not found at all
             return {}
 
-        if (
-            operation_name == 'PutObject' and
-            api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-            )
-        ):
-            assert 'ContentEncoding' not in api_params
-            assert 'ContentType' not in api_params
-            content = api_params['Body'].read()
-            assert isinstance(content, bytes)
-            # based on `unzip -l tests/sample.zip` knowledge
-            assert len(content) == 69183
-
-            # ...pretend to actually upload it.
-            return {
-                # Should there be anything here?
-            }
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
-            # Because .sym is in settings.COMPRESS_EXTENSIONS
-            assert api_params['ContentEncoding'] == 'gzip'
-            # Because .sym is in settings.MIME_OVERRIDES
-            assert api_params['ContentType'] == 'text/plain'
-            body = api_params['Body'].read()
-            assert isinstance(body, bytes)
-            # If you look at the fixture 'sample.zip', which is used in
-            # these tests you'll see that the file 'xpcshell.sym' is
-            # 1156 originally. But we asser that it's now *less* because
-            # it should have been gzipped.
-            assert len(body) < 1156
-            original_content = gzip.decompress(body)
-            assert len(original_content) == 1156
-
             # ...pretend to actually upload it.
-            return {}
-
-        if operation_name == 'DeleteObject':
-            assert api_params['Key'] == 'inbox/sample.zip'
-            # pretend we delete the file
             return {}
 
         raise NotImplementedError((operation_name, api_params))
 
-    with botomock(mock_api_call):
-        upload_inbox_upload(upload.pk)
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
 
-    # Reload the Upload object
-    upload.refresh_from_db()
-    assert upload.completed_at
-    assert upload.skipped_keys is None
-    assert upload.ignored_keys == ['build-symbols.txt']
-    assert upload.attempts == 1
+        upload, = Upload.objects.all()
+        assert upload.user == fakeuser
+        # assert upload.inbox_key is None
+        # assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
+        assert upload.filename == 'file.zip'
+        assert upload.completed_at
+        # based on `ls -l tests/sample.zip` knowledge
+        assert upload.size == 69812
+        assert upload.bucket_name == 'private'
+        assert upload.bucket_region is None
+        assert upload.bucket_endpoint_url == 'https://s3.example.com'
+        assert upload.skipped_keys == [
+            'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+        ]
+        assert upload.ignored_keys == ['build-symbols.txt']
 
-    assert FileUpload.objects.all().count() == 2
-    file_upload = FileUpload.objects.get(
+    assert FileUpload.objects.all().count() == 1
+    assert FileUpload.objects.get(
         upload=upload,
-        bucket_name='mybucket',
-        key='v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
-        compressed=False,
-        update=True,
-        size=69183,  # based on `unzip -l tests/sample.zip` knowledge
-    )
-    assert file_upload.completed_at
-
-    file_upload = FileUpload.objects.get(
-        upload=upload,
-        bucket_name='mybucket',
+        bucket_name='private',
         key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
         compressed=True,
         update=False,
@@ -367,52 +292,37 @@ def test_upload_inbox_upload_task_with_inbox_key(
         completed_at__isnull=False,
     )
 
-    # Check that markus caught timings of the individual file processing
-    records = metricsmock.get_records()
-    assert len(records) == 4
-    assert records[0][0] == TIMING
-    assert records[1][0] == INCR
-    assert records[2][0] == TIMING
-    assert records[3][0] == INCR
-
 
 @pytest.mark.django_db
-def test_upload_inbox_upload_task_with_cache_invalidation(
+def test_upload_archive_with_cache_invalidation(
+    client,
     botomock,
     fakeuser,
-    settings,
     metricsmock,
+    settings
 ):
-    settings.SYMBOL_URLS = ['https://s3.example.com/mybucket']
-    downloader = SymbolDownloader(settings.SYMBOL_URLS)
-    tasks.downloader = downloader
 
-    inbox_filepath = os.path.join(
-        settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
-    )
-    shutil.copyfile(ZIP_FILE, inbox_filepath)
-    upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_filepath=inbox_filepath,
-        bucket_endpoint_url='http://s4.example.com',
-        bucket_region='eu-south-1',
-        size=123456,
-    )
+    settings.SYMBOL_URLS = ['https://s3.example.com/mybucket']
+    settings.UPLOAD_DEFAULT_URL = 'https://s3.example.com/mybucket'
+    downloader = SymbolDownloader(settings.SYMBOL_URLS)
+    utils.downloader = downloader
+
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
 
     # A mutable we use to help us distinguish between calls in the mock
     lookups = []
 
     def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'mybucket'  # always the same
-        if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'ContentLength': 123456,
-            }
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        print(operation_name, api_params)
+        assert api_params['Bucket'] == 'mybucket'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
 
         if (
             operation_name == 'ListObjectsV2' and
@@ -475,24 +385,22 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
             # ...pretend to actually upload it.
             return {}
 
-        if operation_name == 'DeleteObject':
-            # pretend we delete the file
-            return {}
-
         raise NotImplementedError((operation_name, api_params))
 
-    with botomock(mock_api_call):
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
 
-        # First time.
         assert not downloader.has_symbol(
             'xpcshell.dbg', 'A7D6F1BB18CD4CB48', 'xpcshell.sym'
         )
 
-        # Do the actual upload.
-        upload_inbox_upload(upload.pk)
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
 
         # Second time.
-        # assert downloader.has_symbol(
         assert downloader.has_symbol(
             'xpcshell.dbg', 'A7D6F1BB18CD4CB48', 'xpcshell.sym'
         )
@@ -500,46 +408,27 @@ def test_upload_inbox_upload_task_with_cache_invalidation(
         # This is just basically to make sense of all the crazy mocking.
         assert len(lookups) == 3
 
-    assert not os.path.isfile(inbox_filepath)
-
 
 @pytest.mark.django_db
-def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
+def test_upload_archive_both_skipped(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock
+):
 
-    # Fake an Upload object
-    inbox_filepath = os.path.join(
-        settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
-    )
-    shutil.copyfile(ZIP_FILE, inbox_filepath)
-    upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_filepath=inbox_filepath,
-        bucket_endpoint_url='http://s4.example.com',
-        bucket_region='eu-south-1',
-        size=123456,
-    )
-
-    calls = []
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
 
     def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'mybucket'  # always the same
-        call_key = (operation_name, tuple(api_params.items()))
-        first_time = call_key not in calls
-        second_time = calls.count(call_key) == 1
-        calls.append(call_key)
-
-        endpoint_error = EndpointConnectionError(
-            endpoint_url='http://example.com'
-        )
-        if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'ContentLength': 123456,
-            }
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
 
         if (
             operation_name == 'ListObjectsV2' and
@@ -547,6 +436,114 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
+            return {'Contents': [
+                {
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 69183,
+                }
+            ]}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            return {'Contents': [
+                {
+                    'Key': (
+                        'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                    ),
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 488,
+                }
+            ]}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        upload, = Upload.objects.all()
+        assert upload.user == fakeuser
+        # assert upload.inbox_key is None
+        # assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
+        assert upload.filename == 'file.zip'
+        assert upload.completed_at
+        # based on `ls -l tests/sample.zip` knowledge
+        assert upload.size == 69812
+        assert upload.bucket_name == 'private'
+        assert upload.bucket_region is None
+        assert upload.bucket_endpoint_url == 'https://s3.example.com'
+        assert upload.skipped_keys == [
+            'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
+            'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
+        ]
+        assert upload.ignored_keys == ['build-symbols.txt']
+
+    assert not FileUpload.objects.all().exists()
+
+
+@pytest.mark.django_db
+def test_upload_archive_by_url(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    settings,
+    requestsmock
+):
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/symbols.zip',
+        }
+    )
+    requestsmock.head(
+        'https://whitelisted.example.com/bad.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://bad.example.com/symbols.zip',
+        }
+    )
+
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
+        'whitelisted.example.com',
+        'download.example.com',
+    ]
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            # Pretend that we have this in S3 and its previous
+            # size was 1000.
             return {'Contents': [
                 {
                     'Key': (
@@ -562,16 +559,7 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
-            # Give it grief on the HeadObject op the first time
-            if first_time:
-                raise endpoint_error
-            elif second_time:
-                parsed_response = {
-                    'Error': {'Code': '500', 'Message': 'Server Error'},
-                }
-                raise ClientError(parsed_response, operation_name)
-
-            # Pretend we don't have this in S3
+            # Pretend we don't have this in S3 at all
             return {}
 
         if (
@@ -614,478 +602,180 @@ def test_upload_inbox_upload_task_retried(botomock, fakeuser, settings):
             # ...pretend to actually upload it.
             return {}
 
-        if operation_name == 'DeleteObject':
-            assert api_params['Key'] == 'inbox/sample.zip'
-            # pretend we delete the file
-            return {}
-
         raise NotImplementedError((operation_name, api_params))
 
-    with botomock(mock_api_call):
-        try:
-            upload_inbox_upload(upload.pk)
-            assert False, "Should have failed"
-        except OwnEndpointConnectionError:
-            # That should have made some FileUpload objects for this
-            # Upload object.
-            qs = FileUpload.objects.filter(upload=upload)
-            assert qs.count() == 1
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            data={'url': 'http://example.com/symbols.zip'},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        assert response.json()['error'] == 'Insecure URL'
 
-            # Simulate what Celery does, which is to simply run this
-            # again after a little pause.
-            try:
-                upload_inbox_upload(upload.pk)
-                assert False, "Should have failed the second time too"
+        response = client.post(
+            url,
+            data={'url': 'https://notwhitelisted.example.com/symbols.zip'},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        assert response.json()['error'] == (
+            "Not an allowed domain ('notwhitelisted.example.com') to "
+            "download from"
+        )
 
-            except OwnClientError as exception:
-                # That should have made some FileUpload objects for this
-                # Upload object.
-                qs = FileUpload.objects.filter(upload=upload)
-                assert qs.count() == 1
+        # More tricky, a URL that when redirecting, redirects
+        # somewhere "bad".
+        response = client.post(
+            url,
+            data={'url': 'https://whitelisted.example.com/bad.zip'},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        assert response.json()['error'] == (
+            "Not an allowed domain ('bad.example.com') to "
+            "download from"
+        )
 
-                # Simulate what Celery does, which is to simply run this
-                # again after a little pause.
-                upload_inbox_upload(upload.pk)
-
-                assert qs.count() == 2
-                # also, all of them should be completed
-                assert qs.filter(completed_at__isnull=False).count() == 2
-
-    # Reload the Upload object
-    upload.refresh_from_db()
-    assert upload.completed_at
-    assert upload.skipped_keys is None
-
-    assert not os.path.isfile(inbox_filepath)
-
-
-@pytest.mark.django_db
-def test_upload_inbox_upload_task_nothing(
-    botomock,
-    fakeuser,
-    settings,
-    metricsmock
-):
-    """What happens if you try to upload a .zip and every file within
-    is exactly already uploaded."""
-
-    # Fake an Upload object
-    inbox_filepath = os.path.join(
-        settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
-    )
-    shutil.copyfile(ZIP_FILE, inbox_filepath)
-    upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_filepath=inbox_filepath,
-        size=123456,
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'mybucket'  # always the same
-        if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'ContentLength': 123456,
+        # Lastly, the happy path
+        zip_file_content = f.read()
+        requestsmock.head(
+            'https://download.example.com/symbols.zip',
+            content=b'',
+            status_code=200,
+            headers={
+                'Content-Length': str(len(zip_file_content)),
             }
+        )
+        requestsmock.get(
+            'https://download.example.com/symbols.zip',
+            content=zip_file_content,
+            status_code=200,
+        )
+        response = client.post(
+            url,
+            data={'url': 'https://whitelisted.example.com/symbols.zip'},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+        assert response.json()['upload']['download_url'] == (
+            'https://download.example.com/symbols.zip'
+        )
 
-        if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-            )
-        ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 69183,
-                }
-            ]}
+        upload, = Upload.objects.all()
+        assert upload.download_url
+        assert upload.user == fakeuser
+        assert upload.filename == 'symbols.zip'
+        assert upload.completed_at
 
-        if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
-            )
-        ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 488,
-                }
-            ]}
+    assert FileUpload.objects.filter(upload=upload).count() == 2
 
-        if operation_name == 'DeleteObject':
-            assert api_params['Key'] == 'inbox/sample.zip'
-            # pretend we delete the file
-            return {}
-
-        raise NotImplementedError((operation_name, api_params))
-
-    with botomock(mock_api_call):
-        upload_inbox_upload(upload.pk)
-
-    # Reload the Upload object
-    upload.refresh_from_db()
-    assert upload.completed_at
-    assert len(upload.skipped_keys) == 2
-    assert metricsmock.has_record(
-        INCR, 'tecken.upload_file_upload_skip', 1, None
-    )
-    assert not FileUpload.objects.all().exists()
-
-    assert not os.path.isfile(inbox_filepath)
-
-
-@pytest.mark.django_db
-def test_upload_inbox_upload_task_one_uploaded_one_skipped(
-    botomock,
-    fakeuser,
-    settings,
-    metricsmock,
-):
-    """Two incoming files. One was already there and the same size."""
-
-    inbox_filepath = os.path.join(
-        settings.UPLOAD_INBOX_DIRECTORY, 'sample.zip'
-    )
-    shutil.copyfile(ZIP_FILE, inbox_filepath)
-    # Fake an Upload object
-    upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_filepath=inbox_filepath,
-        size=123456,
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'mybucket'  # always the same
-        if (
-            operation_name == 'HeadObject' and
-            api_params['Key'] == 'inbox/sample.zip'
-        ):
-            return {
-                'ContentLength': 123456,
-            }
-
-        if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-            )
-        ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 69183,
-                }
-            ]}
-
-        if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
-            )
-        ):
-            # Not found at all
-            return {}
-
-        if (
-            operation_name == 'PutObject' and
-            api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
-            )
-        ):
-            # ...pretend to actually upload it.
-            return {}
-
-        if operation_name == 'DeleteObject':
-            assert api_params['Key'] == 'inbox/sample.zip'
-            # pretend we delete the file
-            return {}
-
-        raise NotImplementedError((operation_name, api_params))
-
-    with botomock(mock_api_call):
-        upload_inbox_upload(upload.pk)
-
-    # Reload the Upload object
-    upload.refresh_from_db()
-    assert upload.completed_at
-    assert len(upload.skipped_keys) == 1
-    assert metricsmock.has_record(
-        INCR, 'tecken.upload_file_upload_skip', 1, None
-    )
-    assert metricsmock.has_record(
-        INCR, 'tecken.upload_file_upload_upload', 1, None
-    )
-    assert FileUpload.objects.all().count() == 1
-
-    assert not os.path.isfile(inbox_filepath)
+    # Check that markus caught timings of the individual file processing
+    records = metricsmock.get_records()
+    assert len(records) == 8
+    assert records[0][0] == TIMING
+    assert records[1][0] == TIMING
+    assert records[2][0] == TIMING
+    assert records[3][0] == TIMING
+    assert records[4][0] == INCR
+    assert records[5][0] == TIMING
+    assert records[6][0] == INCR
+    assert records[7][0] == TIMING
 
 
 @pytest.mark.django_db
 def test_upload_client_bad_request(fakeuser, client, settings):
 
-    def fake_task(*args):
-        raise AssertionError('It should never come to actually running this')
+    url = reverse('upload:upload_archive')
+    response = client.get(url)
+    assert response.status_code == 405
+    error_msg = 'Method Not Allowed (GET): /upload/'
+    assert response.json()['error'] == error_msg
 
-    _mock_function = 'tecken.upload.views.upload_inbox_upload.delay'
-    with mock.patch(_mock_function, new=fake_task):
+    response = client.post(url)
+    assert response.status_code == 403
+    error_msg = 'This requires an Auth-Token to authenticate the request'
+    assert response.json()['error'] == error_msg
 
-        url = reverse('upload:upload_archive')
-        response = client.get(url)
-        assert response.status_code == 405
-        error_msg = 'Method Not Allowed (GET): /upload/'
-        assert response.json()['error'] == error_msg
+    token = Token.objects.create(user=fakeuser)
+    response = client.post(url, HTTP_AUTH_TOKEN=token.key)
+    # will also fail because of lack of permission
+    assert response.status_code == 403
+    assert response.json()['error'] == 'Forbidden'
 
-        response = client.post(url)
-        assert response.status_code == 403
-        error_msg = 'This requires an Auth-Token to authenticate the request'
-        assert response.json()['error'] == error_msg
+    # so let's fix that
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
 
-        token = Token.objects.create(user=fakeuser)
-        response = client.post(url, HTTP_AUTH_TOKEN=token.key)
-        # will also fail because of lack of permission
-        assert response.status_code == 403
-        assert response.json()['error'] == 'Forbidden'
+    response = client.post(url, HTTP_AUTH_TOKEN=token.key)
+    assert response.status_code == 400
+    error_msg = 'Must be multipart form data with at least one file'
+    assert response.json()['error'] == error_msg
 
-        # so let's fix that
-        permission, = Permission.objects.filter(codename='upload_symbols')
-        token.permissions.add(permission)
+    # Upload an empty file
+    empty_fileobject = BytesIO()
+    response = client.post(
+        url,
+        {'myfile.zip': empty_fileobject},
+        HTTP_AUTH_TOKEN=token.key,
+    )
+    assert response.status_code == 400
+    assert response.json()['error'] == 'File size 0'
 
-        response = client.post(url, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 400
-        error_msg = 'Must be multipart form data with at least one file'
-        assert response.json()['error'] == error_msg
-
-        # Upload an empty file
-        empty_fileobject = BytesIO()
+    # Unrecognized file extension
+    with open(ZIP_FILE, 'rb') as f:
         response = client.post(
             url,
-            {'myfile.zip': empty_fileobject},
+            {'myfile.rar': f},
             HTTP_AUTH_TOKEN=token.key,
         )
         assert response.status_code == 400
-        assert response.json()['error'] == 'File size 0'
-
-        # Unrecognized file extension
-        with open(ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                {'myfile.rar': f},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            assert response.json()['error'] == (
-                'Unrecognized archive file extension ".rar"'
-            )
-
-        settings.DISALLOWED_SYMBOLS_SNIPPETS = ('xpcshell.sym',)
-
-        with open(ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                {'file.zip': f},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            error_msg = (
-                "Content of archive file contains the snippet "
-                "'xpcshell.sym' which is not allowed"
-            )
-            assert response.json()['error'] == error_msg
-
-        # Undo that setting override
-        settings.DISALLOWED_SYMBOLS_SNIPPETS = ('nothing',)
-
-        # Now upload a file that doesn't have the right filename patterns
-        with open(INVALID_ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                {'file.zip': f},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            error_msg = (
-                'Unrecognized file pattern. Should only be '
-                '<module>/<hex>/<file> or <name>-symbols.txt and nothing else.'
-            )
-            assert response.json()['error'] == error_msg
-
-        # Now upload a file that isn't a zip file
-        with open(ACTUALLY_NOT_ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                {'file.zip': f},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            error_msg = 'File is not a zip file'
-            assert response.json()['error'] == error_msg
-
-
-@pytest.mark.django_db
-def test_upload_client_happy_path(botomock, fakeuser, client):
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename='upload_symbols')
-    token.permissions.add(permission)
-    url = reverse('upload:upload_archive')
-
-    # The key name for the inbox file upload contains today's date
-    # and a MD5 hash of its content based on using 'ZIP_FILE'
-    expected_inbox_key_name_regex = re.compile(
-        r'inbox/\d{4}-\d{2}-\d{2}/[a-f0-9]{12}/(\w+)\.zip'
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        # This comes for the setting UPLOAD_DEFAULT_URL specifically
-        # for tests.
-        assert api_params['Bucket'] == 'private'
-        if operation_name == 'HeadBucket':
-            # yep, bucket exists
-            return {}
-
-        if (
-            operation_name == 'PutObject' and
-            expected_inbox_key_name_regex.findall(api_params['Key'])
-        ):
-            content = api_params['Body'].read()
-            assert isinstance(content, bytes)
-            # based on `ls -l tests/sample.zip` knowledge
-            assert len(content) == 69812
-
-            # ...pretend to actually upload it.
-            return {
-                # Should there be anything here?
-            }
-
-        raise NotImplementedError((operation_name, api_params))
-
-    task_arguments = []
-
-    def fake_task(upload_id):
-        task_arguments.append(upload_id)
-
-    _mock_function = 'tecken.upload.views.upload_inbox_upload.delay'
-    with mock.patch(_mock_function, new=fake_task):
-        with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                {'file.zip': f},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 201
-
-            assert task_arguments
-            upload = Upload.objects.get(id=task_arguments[0])
-            assert upload.user == fakeuser
-            assert upload.inbox_key is None
-            assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
-            assert upload.filename == 'file.zip'
-            assert not upload.completed_at
-            # based on `ls -l tests/sample.zip` knowledge
-            assert upload.size == 69812
-
-
-@pytest.mark.django_db
-def test_upload_client_reattempt(botomock, fakeuser, client, clear_cache):
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename='upload_symbols')
-    token.permissions.add(permission)
-    url = reverse('upload:upload_archive')
-
-    # The key name for the inbox file upload contains today's date
-    # and a MD5 hash of its content based on using 'ZIP_FILE'
-    expected_inbox_key_name_regex = re.compile(
-        r'inbox/\d{4}-\d{2}-\d{2}/[a-f0-9]{12}/(\w+)\.zip'
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        # This comes for the setting UPLOAD_DEFAULT_URL specifically
-        # for tests.
-        assert api_params['Bucket'] == 'private'
-        if operation_name == 'HeadBucket':
-            # yep, bucket exists
-            return {}
-
-        if (
-            operation_name == 'PutObject' and
-            expected_inbox_key_name_regex.findall(api_params['Key'])
-        ):
-            content = api_params['Body'].read()
-            assert isinstance(content, bytes)
-            # based on `ls -l tests/sample.zip` knowledge
-            assert len(content) == 69812
-
-            # ...pretend to actually upload it.
-            return {
-                # Should there be anything here?
-            }
-
-        raise NotImplementedError((operation_name, api_params))
-
-    task_arguments = []
-
-    # Pretend this upload is old and stuck
-    old_upload = Upload.objects.create(
-        user=fakeuser,
-        filename='sample.zip',
-        bucket_name='mybucket',
-        inbox_key='inbox/01/sample.zip',
-        bucket_endpoint_url='http://s4.example.com',
-        bucket_region='eu-south-1',
-        size=123456,
-        attempts=1,
-    )
-    # Have to manually edit because 'created_at' is auto_now_add=True
-    old_upload.created_at = (
-        timezone.now() - datetime.timedelta(days=1)
-    )
-    old_upload.save()
-
-    def fake_task(upload_id):
-        task_arguments.append(upload_id)
-        # pretend we successfully process it
-        Upload.objects.filter(id=upload_id).update(
-            attempts=F('attempts') + 1,
-            completed_at=timezone.now()
+        assert response.json()['error'] == (
+            'Unrecognized archive file extension ".rar"'
         )
 
-    _mock_function = 'tecken.upload.views.upload_inbox_upload.delay'
-    with mock.patch(_mock_function, new=fake_task):
-        with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                {'file.zip': f},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 201
+    settings.DISALLOWED_SYMBOLS_SNIPPETS = ('xpcshell.sym',)
 
-            assert len(task_arguments) == 2
-            upload = Upload.objects.get(id=task_arguments[0])
-            assert upload.inbox_key is None
-            assert upload.inbox_filepath
-            assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
-            assert upload.completed_at
-            assert upload.attempts == 1
+    with open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        error_msg = (
+            "Content of archive file contains the snippet "
+            "'xpcshell.sym' which is not allowed"
+        )
+        assert response.json()['error'] == error_msg
 
-            old_upload.refresh_from_db()
-            assert old_upload.completed_at
-            assert old_upload.attempts == 2
+    # Undo that setting override
+    settings.DISALLOWED_SYMBOLS_SNIPPETS = ('nothing',)
+
+    # Now upload a file that doesn't have the right filename patterns
+    with open(INVALID_ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        error_msg = (
+            'Unrecognized file pattern. Should only be '
+            '<module>/<hex>/<file> or <name>-symbols.txt and nothing else.'
+        )
+        assert response.json()['error'] == error_msg
+
+    # Now upload a file that isn't a zip file
+    with open(ACTUALLY_NOT_ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        error_msg = 'File is not a zip file'
+        assert response.json()['error'] == error_msg
 
 
 @pytest.mark.django_db
@@ -1168,150 +858,7 @@ def test_get_bucket_info_exceptions(settings):
     assert bucket_info.name == 'excepty'
 
 
-@pytest.mark.django_db
-def test_upload_client_by_download_url(
-    botomock,
-    fakeuser,
-    client,
-    settings,
-    requestsmock,
-):
-
-    requestsmock.head(
-        'https://whitelisted.example.com/symbols.zip',
-        text='Found',
-        status_code=302,
-        headers={
-            'Location': 'https://download.example.com/symbols.zip',
-        }
-    )
-    requestsmock.head(
-        'https://whitelisted.example.com/bad.zip',
-        text='Found',
-        status_code=302,
-        headers={
-            'Location': 'https://bad.example.com/symbols.zip',
-        }
-    )
-
-    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
-        'whitelisted.example.com',
-        'download.example.com',
-    ]
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename='upload_symbols')
-    token.permissions.add(permission)
-    url = reverse('upload:upload_archive')
-
-    # The key name for the inbox file upload contains today's date
-    # and a MD5 hash of its content based on using 'ZIP_FILE'
-    expected_inbox_key_name_regex = re.compile(
-        r'inbox/\d{4}-\d{2}-\d{2}/[a-f0-9]{12}/(\w+)\.zip'
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        # This comes for the setting UPLOAD_DEFAULT_URL specifically
-        # for tests.
-        assert api_params['Bucket'] == 'private'
-        if operation_name == 'HeadBucket':
-            # yep, bucket exists
-            return {}
-
-        if (
-            operation_name == 'PutObject' and
-            expected_inbox_key_name_regex.findall(api_params['Key'])
-        ):
-            content = api_params['Body'].read()
-            assert isinstance(content, bytes)
-            # based on `ls -l tests/sample.zip` knowledge
-            assert len(content) == 69812
-
-            # ...pretend to actually upload it.
-            return {
-                # Should there be anything here?
-            }
-
-        raise NotImplementedError((operation_name, api_params))
-
-    task_arguments = []
-
-    def fake_task(upload_id):
-        task_arguments.append(upload_id)
-
-    _mock_function = 'tecken.upload.views.upload_inbox_upload.delay'
-    with mock.patch(_mock_function, new=fake_task):
-        with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
-            response = client.post(
-                url,
-                data={'url': 'http://example.com/symbols.zip'},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            assert response.json()['error'] == 'Insecure URL'
-
-            response = client.post(
-                url,
-                data={'url': 'https://notwhitelisted.example.com/symbols.zip'},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            assert response.json()['error'] == (
-                "Not an allowed domain ('notwhitelisted.example.com') to "
-                "download from"
-            )
-
-            # More tricky, a URL that when redirecting, redirects
-            # somewhere "bad".
-            response = client.post(
-                url,
-                data={'url': 'https://whitelisted.example.com/bad.zip'},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 400
-            assert response.json()['error'] == (
-                "Not an allowed domain ('bad.example.com') to "
-                "download from"
-            )
-
-            # Lastly, the happy path
-            zip_file_content = f.read()
-            requestsmock.head(
-                'https://download.example.com/symbols.zip',
-                content=b'',
-                status_code=200,
-                headers={
-                    'Content-Length': str(len(zip_file_content)),
-                }
-            )
-            requestsmock.get(
-                'https://download.example.com/symbols.zip',
-                content=zip_file_content,
-                status_code=200,
-            )
-            response = client.post(
-                url,
-                data={'url': 'https://whitelisted.example.com/symbols.zip'},
-                HTTP_AUTH_TOKEN=token.key,
-            )
-            assert response.status_code == 201
-            assert response.json()['upload']['download_url'] == (
-                'https://download.example.com/symbols.zip'
-            )
-            upload = Upload.objects.get(id=task_arguments[0])
-            assert upload.user == fakeuser
-            assert upload.download_url == (
-                'https://download.example.com/symbols.zip'
-            )
-            assert upload.inbox_key is None
-            assert upload.inbox_filepath
-            assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
-            assert upload.filename == 'symbols.zip'
-            assert not upload.completed_at
-            # based on `ls -l tests/sample.zip` knowledge
-            assert upload.size == 69812
-
-
-def test_upload_by_download_form_happy_path(requestsmock, settings):
+def test_UploadByDownloadForm_happy_path(requestsmock, settings):
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ['whitelisted.example.com']
 
     requestsmock.head(
@@ -1334,7 +881,7 @@ def test_upload_by_download_form_happy_path(requestsmock, settings):
     assert form.cleaned_data['upload']['size'] == 1234
 
 
-def test_upload_by_download_form_connectionerrors(requestsmock, settings):
+def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
         'whitelisted.example.com',
         'download.example.com',

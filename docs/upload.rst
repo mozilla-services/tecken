@@ -13,12 +13,7 @@ Symbol upload was originally done in Socorro as part of the
 
 The *original* way this worked is the same as Tecken except the following key
 differences:
-
-1. Tecken accepts the ``.zip`` upload from the client and responds with
-   ``201 Created`` as soon as the upload has been stoved away (still as an archive)
-   on disk. A background message queue job starts uploading the individual files.
-
-2. Every individual file within the ``.zip`` files are logged in the ORM.
+Every individual file within the ``.zip`` files are logged in the ORM.
 
 
 .. _`crash-stats.mozilla.com web app`: https://github.com/mozilla-services/socorro/tree/master/webapp-django/crashstats/symbols
@@ -57,35 +52,17 @@ Or if you do it in Python ``requests``:
 Now, on the inside; what happens next
 -------------------------------------
 
-Once the ``.zip`` file is uploaded, it's immediately stored on disk. It's
-stored in a special folder called ``inbox/``. If that works,
-we write this down in the ORM by creating an ``Upload`` instance.
-This contains information about which bucket (see next section) it is
-designated for, the key name (aka. file path), and a host of additional metadata
-such as date, who and size.
+Once the ``.zip`` file is uploaded, it's processed. The first part of the
+processing is validation. See section below on "Checks and Validation".
 
-When the ``.zip`` is uploaded into the "inbox" folder, the key name
-is determined by today's date, a MD5 hash of the ``.zip`` file's content as a
-string listing and the original file as it was called when uploaded.
-So an example key name to the inbox is ``inbox/2017-05-06/51dc30ddc473/myfile.zip``.
+Once validation passes, it proceeds to iterate over the files within.
+For each file, it queries S3 if the file already exists by the exact same
+name and exact same size. If indeed it exists (same name and same size) it
+notes it as "skipped" and just logs that filename.
+If it does not exist, it proceeds to upload it to S3.
 
-That ``Upload`` instance's ID is then sent to a
-message queue task. What that task does is that it then downloads the ``.zip``
-from the inbox, unpacks it into memory, then iterates over the files within
-and uploads each and every one to S3. It might seen counter productive to first
-upload, then download it again but the message queue tasks run as completely
-separate processes so they can't share memory. And S3 is preferred instead of
-relying on disk.
-
-The path of the uploaded files exactly match their path in the
-``.zip`` file. E.g. If you upload a zip file with a file within called
-``symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym`` it will be
-put into S3 as
-``{settings.UPLOAD_FILE_PREFIX}/symbol.pdb/B33F4A641F154EC4A87E31CCF30F95441/symbol.sym``.
-
-Once every file has been successfully uploaded, the message queue task
-logs it all as individual ``FileUpload`` ORM objects. One for each file, all
-foreign keyed to the ``Upload`` object.
+Once the upload processing is complete it creates one ``Upload`` object
+and one ``FileUpload`` object for every file that is uploaded to S3.
 
 Upload by download URL
 ======================
@@ -187,43 +164,3 @@ hard to quickly look at its content in a browser.
 Both the gzip and the mimetype overrides can be changed by setting the
 ``DJANGO_COMPRESS_EXTENSIONS`` and ``DJANGO_MIME_OVERRIDES`` environment
 variables. See ``settings.py`` for the current defaults.
-
-
-Reattempting
-============
-
-Level 1
--------
-
-The background task that attempts to unpack the ``.zip`` file and one-by-one
-upload each file within has some **automatic reattempting**. This is done
-by us listing the exact kind of operational exception classes that could
-happen. This is done in the decorator for
-``tecken.upload.tasks.upload_inbox_upload``. `Documentation here`_
-
-The defaults from Celery are used for number of attempts (3) and
-number of seconds between retries (180).
-
-Any other exception that might be raised within the task will immediately
-stop the task and it will not be reattempted.
-
-.. _`Documentation here`: http://docs.celeryproject.org/en/latest/userguide/tasks.html?highlight=autoretry_for#automatic-retry-for-known-exceptions
-
-Level 2
--------
-
-When a ``.zip`` file is uploaded, we immediately try to process it. But, God
-forbid, if something horrible goes wrong, the background working task
-might never succeed to fully process it. Even with automatic retries.
-
-Possible causes are that AWS S3 is having serious outage. Or our background
-task failed to execute due to lost connection to the PostgreSQL database.
-Or also quite possible because of a bug in our own code.
-
-These uploads are reattempted when a new upload is coming in. Also, when we
-do that we use the cache to guard from adding it repeatedly.
-
-Level 3
--------
-
-Also known as "Manual intervention". This we don't have yet.

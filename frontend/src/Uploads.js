@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 
 import { format } from 'date-fns/esm'
@@ -11,30 +11,40 @@ import {
   formatFileSize,
   Pagination,
   TableSubTitle,
-  thousandFormat
+  thousandFormat,
+  pluralize
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
 
 import store from './Store'
 
-class Uploads extends PureComponent {
+class Uploads extends React.PureComponent {
   constructor(props) {
     super(props)
     this.state = {
       pageTitle: 'Uploads',
-      loading: true, // undone by componentDidMount
+      loading: true,
+      refreshing: false,
       uploads: null,
       total: null,
       batchSize: null,
       apiUrl: null,
       filter: {},
-      validationErrors: null
+      validationErrors: null,
+      latestUpload: null,
+      newUploadsCount: 0
     }
+
+    this.newCountLoopInterval = 10 * 1000
   }
 
   componentWillMount() {
     store.resetApiRequests()
+  }
+
+  componentWillUnmount() {
+    this.dismounted = true
   }
 
   componentDidMount() {
@@ -57,12 +67,18 @@ class Uploads extends PureComponent {
         document.title = this.state.pageTitle
       })
     }
+
+    window.setTimeout(() => {
+      this._fetchUploadsNewCountLoop()
+    }, this.newCountLoopInterval)
   }
 
   _fetchUploads = () => {
     // delay the loading animation in case it loads really fast
     this.setLoadingTimer = window.setTimeout(() => {
-      this.setState({ loading: true })
+      if (!this.dismounted) {
+        this.setState({ loading: true })
+      }
     }, 500)
     let url = '/api/uploads/'
     let qs = ''
@@ -74,7 +90,7 @@ class Uploads extends PureComponent {
     }
     this.props.history.push({ search: qs })
 
-    Fetch(url, { credentials: 'same-origin' }).then(r => {
+    return Fetch(url, { credentials: 'same-origin' }).then(r => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer)
       }
@@ -83,30 +99,103 @@ class Uploads extends PureComponent {
           '/',
           `You have to be signed in to view "${this.pageTitle}"`
         )
-        return
+        // Even though we exit early, always return a promise
+        return Promise.resolve()
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false, refreshing: false })
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null
         }
         return r.json().then(response => {
-          this.setState({
-            uploads: response.uploads,
-            aggregates: response.aggregates,
-            total: response.total,
-            batchSize: response.batch_size,
-            validationErrors: null
-          })
+          this.setState(
+            {
+              uploads: response.uploads,
+              aggregates: response.aggregates,
+              total: response.total,
+              batchSize: response.batch_size,
+              validationErrors: null,
+              latestUpload: this._getLatestUpload(response.uploads)
+            },
+            () => {
+              if (this.state.newUploadsCount) {
+                document.title = this.state.pageTitle
+                this.setState({ newUploadsCount: 0 })
+              }
+            }
+          )
         })
       } else if (r.status === 400) {
-        r.json().then(data => {
-          this.setState({ loading: false, validationErrors: data.errors })
+        return r.json().then(data => {
+          this.setState({
+            loading: false,
+            refreshing: false,
+            validationErrors: data.errors
+          })
         })
       } else {
         store.fetchError = r
+        // Always return a promise
+        return Promise.resolve()
       }
     })
+  }
+
+  _refreshUploads = () => {
+    this.setState({ refreshing: true })
+    this._fetchUploads().then(() => {
+      // document.title = this.state.pageTitle
+      // this.setState({ newUploadsCount: 0 })
+      // console.log('_fetchUploads THEN finished');
+    })
+  }
+
+  // This is called every time _fetchUploads() finishes successfully.
+  _getLatestUpload = uploads => {
+    // Of all 'uploads', look for the one with the highest
+    // created_at and if it's more than this.state.latestUpload, update.
+    let latestUpload = this.state.latestUpload
+    uploads.forEach(upload => {
+      const createdAt = upload.created_at
+      if (latestUpload === null || createdAt > latestUpload) {
+        latestUpload = createdAt
+      }
+    })
+    return latestUpload
+  }
+
+  _fetchUploadsNewCountLoop = () => {
+    if (!this.dismounted) {
+      let url = '/api/uploads/'
+      // Clone the filter first
+      const filter = Object.assign({}, this.state.filter)
+      // Then force the filter on created_at
+      filter.created_at = `>${this.state.latestUpload}`
+      url += '?' + queryString.stringify(filter)
+      if (this.previousLatestUpload) {
+        // assert that this time it's >= the previous one
+        if (this.state.latestUpload < this.previousLatestUpload) {
+          throw new Error('Bad state! Previous latestUpload has regressed')
+        }
+      }
+      this.previousLatestUpload = this.state.latestUpload
+      // Not going to obsess over fetch errors
+      Fetch(url, { credentials: 'same-origin' }).then(r => {
+        if (r.status === 200) {
+          r.json().then(response => {
+            if (response.total) {
+              document.title = `${this.state.pageTitle} (${response.total})`
+              this.setState({ newUploadsCount: response.total })
+            }
+            window.setTimeout(() => {
+              this._fetchUploadsNewCountLoop()
+            }, this.newCountLoopInterval)
+          })
+        } else {
+          console.warn(`Unable to continue loop because of status ${r.status}`)
+        }
+      })
+    }
   }
 
   filterOnAll = event => {
@@ -178,6 +267,12 @@ class Uploads extends PureComponent {
             </ul>
           </div>
         )}
+
+        <ShowNewUploadsCount
+          count={this.state.newUploadsCount}
+          refreshing={this.state.refreshing}
+          refresh={this._refreshUploads}
+        />
         <h1 className="title">{this.state.pageTitle}</h1>
 
         {this.state.loading ? (
@@ -216,6 +311,49 @@ class Uploads extends PureComponent {
 
 export default Uploads
 
+class ShowNewUploadsCount extends React.PureComponent {
+  refresh = event => {
+    event.preventDefault()
+    this.props.refresh()
+  }
+  render() {
+    if (!this.props.count) {
+      return null
+    }
+    return (
+      <p className="is-pulled-right">
+        {this.props.refreshing ? (
+          <a className="button is-small is-info" disabled>
+            <span className="icon">
+              <i className="fa fa-refresh fa-spin fa-3x fa-fw" />
+            </span>{' '}
+            <span>
+              {pluralize(
+                this.props.count,
+                'new upload available',
+                'new uploads available'
+              )}
+            </span>
+          </a>
+        ) : (
+          <a className="button is-small is-info" onClick={this.refresh}>
+            <span className="icon">
+              <i className="fa fa-refresh" />
+            </span>{' '}
+            <span>
+              {pluralize(
+                this.props.count,
+                'new upload available',
+                'new uploads available'
+              )}
+            </span>
+          </a>
+        )}
+      </p>
+    )
+  }
+}
+
 const ShowValidationErrors = ({ errors, resetAndReload }) => {
   return (
     <div className="notification is-danger">
@@ -234,7 +372,7 @@ const ShowValidationErrors = ({ errors, resetAndReload }) => {
   )
 }
 
-class DisplayUploads extends PureComponent {
+class DisplayUploads extends React.PureComponent {
   componentDidMount() {
     // XXX perhaps this stuff should happen in a componentWillReceiveProps too
     const filter = this.props.filter
@@ -260,6 +398,10 @@ class DisplayUploads extends PureComponent {
   }
 
   resetFilter = event => {
+    this.refs.user.value = ''
+    this.refs.size.value = ''
+    this.refs.created_at.value = ''
+    this.refs.completed_at.value = ''
     this.props.resetAndReload(event)
   }
 
@@ -358,13 +500,7 @@ class DisplayUploads extends PureComponent {
                     />
                   ) : (
                     <i>Incomplete!</i>
-                  )}{' '}
-                  {!upload.completed_at &&
-                    !upload.cancelled_at &&
-                    ` (${upload.attempts} attempts)`}
-                  {!upload.completed_at &&
-                    upload.cancelled_at &&
-                    ` (manually cancelled)`}
+                  )}
                 </td>
               </tr>
             ))}

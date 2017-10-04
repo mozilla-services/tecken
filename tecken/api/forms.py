@@ -160,9 +160,6 @@ class UploadsForm(forms.Form):
             rest = operators.sub('', block).strip()
             if rest.lower() in ('null', 'incomplete'):
                 date_obj = None
-            elif rest.lower() == 'cancelled':
-                # Exceptional exception
-                date_obj = 'cancelled'
             elif rest.lower() == 'today':
                 date_obj = timezone.now().replace(hour=0, minute=0, second=0)
             elif rest.lower() == 'yesterday':
