@@ -8,7 +8,9 @@ import {
   toDate,
   isBefore,
   formatDistance,
-  formatDistanceStrict
+  formatDistanceStrict,
+  differenceInSeconds,
+  differenceInMilliseconds
 } from 'date-fns/esm'
 
 export const Loading = () => (
@@ -36,6 +38,18 @@ export const DisplayDate = ({ date }) => {
 export const DisplayDateDifference = ({ from, to, suffix = '' }) => {
   const fromObj = toDate(from)
   const toObj = toDate(to)
+  const secDiff = differenceInSeconds(toObj, fromObj)
+  if (secDiff === 0) {
+    const msecDiff = differenceInMilliseconds(toObj, fromObj)
+    if (msecDiff > 0) {
+      return (
+        <span title={`From ${fromObj} to ${toObj}`}>
+          {msecDiff} ms
+          {suffix && ` ${suffix}`}
+        </span>
+      )
+    }
+  }
   return (
     <span title={`From ${fromObj} to ${toObj}`}>
       {formatDistanceStrict(fromObj, toObj)}
@@ -126,7 +140,6 @@ export const TableSubTitle = ({ total, page, batchSize }) => {
     </h2>
   )
 }
-
 
 export const pluralize = (number, singular, plural) => {
   if (number === 1) {

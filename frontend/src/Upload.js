@@ -9,7 +9,7 @@ import {
   formatFileSize,
   DisplayDateDifference,
   BooleanIcon,
-  thousandFormat,
+  thousandFormat
 } from './Common'
 import './Upload.css'
 import Fetch from './Fetch'
@@ -24,6 +24,8 @@ export default class Upload extends React.PureComponent {
       upload: null,
       refreshingInterval: null
     }
+
+    this.initialRefreshingInterval = 4
   }
   componentWillMount() {
     store.resetApiRequests()
@@ -87,7 +89,7 @@ export default class Upload extends React.PureComponent {
   keepRefreshing = () => {
     let refreshingInterval = this.state.refreshingInterval
     if (!refreshingInterval) {
-      refreshingInterval = 2 // start with every 2 seconds
+      refreshingInterval = this.initialRefreshingInterval
     } else {
       refreshingInterval *= 1.5
     }
@@ -110,7 +112,7 @@ export default class Upload extends React.PureComponent {
     event.preventDefault()
     this.setState({
       loading: true,
-      refreshingInterval: 2 // reset this if it was manually clicked
+      refreshingInterval: this.initialRefreshingInterval
     })
     this._fetchUpload(this.state.upload.id)
   }
@@ -118,7 +120,7 @@ export default class Upload extends React.PureComponent {
   recentAndIncompleteUpload = () => {
     if (!this.state.upload.completed_at) {
       const dateObj = toDate(this.state.upload.created_at)
-      return differenceInMinutes(new Date(), dateObj) < 30
+      return differenceInMinutes(new Date(), dateObj) < 3
     }
     return false
   }
@@ -126,53 +128,56 @@ export default class Upload extends React.PureComponent {
   render() {
     return (
       <div>
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
+        <h1 className="title">{this.pageTitle}</h1>
         <div className="is-clearfix">
           <p className="is-pulled-right">
-            {this.props.history.action === 'PUSH' &&
+            {this.props.history.action === 'PUSH' && (
               <a className="button is-small is-info" onClick={this.goBack}>
                 <span className="icon">
                   <i className="fa fa-backward" />
                 </span>{' '}
                 <span>Back to Uploads</span>
-              </a>}
-            {this.props.history.action === 'POP' &&
+              </a>
+            )}
+            {this.props.history.action === 'POP' && (
               <Link to="/uploads" className="button is-small is-info">
                 <span className="icon">
                   <i className="fa fa-backward" />
                 </span>{' '}
                 <span>Back to Uploads</span>
-              </Link>}
+              </Link>
+            )}
           </p>
         </div>
 
         {this.state.loading && <Loading />}
         {this.state.upload &&
           !this.state.loading &&
-          this.recentAndIncompleteUpload() &&
-          <p className="is-pulled-right">
-            <a
-              className="button is-small is-primary"
-              onClick={this.refreshUpload}
-            >
-              <span className="icon">
-                <i className="fa fa-refresh" />
-              </span>{' '}
-              <span>Refresh</span>
-            </a>
-          </p>}
+          this.recentAndIncompleteUpload() && (
+            <p className="is-pulled-right">
+              <a
+                className="button is-small is-primary"
+                onClick={this.refreshUpload}
+              >
+                <span className="icon">
+                  <i className="fa fa-refresh" />
+                </span>{' '}
+                <span>Refresh</span>
+              </a>
+            </p>
+          )}
         {this.state.upload &&
-          this.state.refreshingInterval &&
-          <DisplayRefreshingInterval
-            interval={this.state.refreshingInterval}
-          />}
-        {this.state.upload &&
+          this.state.refreshingInterval && (
+            <DisplayRefreshingInterval
+              interval={this.state.refreshingInterval}
+            />
+          )}
+        {this.state.upload && (
           <DisplayUpload
             upload={this.state.upload}
             aggregates={this.state.aggregates}
-          />}
+          />
+        )}
       </div>
     )
   }
@@ -217,9 +222,7 @@ class DisplayRefreshingInterval extends React.PureComponent {
     return (
       <div className="tags has-addons">
         <span className="tag">Refreshing in</span>
-        <span className="tag is-primary">
-          {prettyTime}
-        </span>
+        <span className="tag is-primary">{prettyTime}</span>
       </div>
     )
   }
@@ -229,30 +232,22 @@ class DisplayRefreshingInterval extends React.PureComponent {
    The reason we do this is because an upload consists of a pure array
    of skipped keys, a pure array of ignored keys and an array of
    file upload objects.
-   Here we're trying to put them together in alphabetical sort order.
 */
-const mergeAndSort = (uploads, skipped, ignored) => {
+const mergeAllKeys = (uploads, skipped, ignored) => {
   const all = []
-  skipped.forEach(key => {
-    all.push({ key: key, skipped: true })
-  })
   ignored.forEach(key => {
     all.push({ key: key, ignored: true })
+  })
+  skipped.forEach(key => {
+    all.push({ key: key, skipped: true })
   })
   uploads.forEach(upload => {
     all.push(upload)
   })
-  all.sort((a, b) => {
-    if (a.key < b.key) return -1
-    if (a.key > b.key) return 1
-    return 0
-  })
   return all
 }
 
-
 const DisplayUpload = ({ upload, aggregates, onCancel }) => {
-
   return (
     <div>
       <h4 className="title is-4">Metadata</h4>
@@ -260,46 +255,36 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
         <tbody>
           <tr>
             <th>User</th>
-            <td>
-              {upload.user.email}
-            </td>
+            <td>{upload.user.email}</td>
           </tr>
           <tr>
             <th>Size</th>
-            <td>
-              {formatFileSize(upload.size)}
-            </td>
+            <td>{formatFileSize(upload.size)}</td>
           </tr>
           <tr>
             <th>Filename</th>
-            <td>
-              {upload.filename}
-            </td>
+            <td>{upload.filename}</td>
           </tr>
           <tr>
             <th>Download URL</th>
-            <td>
-              {upload.download_url ? upload.download_url : <i>null</i>}
-            </td>
+            <td>{upload.download_url ? upload.download_url : <i>null</i>}</td>
           </tr>
           <tr>
             <th>Bucket Name</th>
-            <td>
-              {upload.bucket_name}
-            </td>
+            <td>{upload.bucket_name}</td>
           </tr>
           <tr>
             <th>Bucket Region</th>
-            <td>
-              {upload.bucket_region ? upload.bucket_region : <i>null</i>}
-            </td>
+            <td>{upload.bucket_region ? upload.bucket_region : <i>null</i>}</td>
           </tr>
           <tr>
             <th>Bucket Endpoint URL</th>
             <td>
-              {upload.bucket_endpoint_url
-                ? upload.bucket_endpoint_url
-                : <i>null</i>}
+              {upload.bucket_endpoint_url ? (
+                upload.bucket_endpoint_url
+              ) : (
+                <i>null</i>
+              )}
             </td>
           </tr>
           <tr>
@@ -313,18 +298,21 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
               Completed
             </th>
             <td>
-              {upload.completed_at
-                ? <DisplayDate date={upload.completed_at} />
-                : <i>Incomplete!</i>}
-              {upload.completed_at
-                ? <small>
-                    {' '}(took{' '}
-                    <DisplayDateDifference
-                      from={upload.created_at}
-                      to={upload.completed_at}
-                    />)
-                  </small>
-                : null}
+              {upload.completed_at ? (
+                <DisplayDate date={upload.completed_at} />
+              ) : (
+                <i>Incomplete!</i>
+              )}
+              {upload.completed_at ? (
+                <small>
+                  {' '}
+                  (took{' '}
+                  <DisplayDateDifference
+                    from={upload.created_at}
+                    to={upload.completed_at}
+                  />)
+                </small>
+              ) : null}
             </td>
           </tr>
         </tbody>
@@ -348,11 +336,11 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
             >
               Compressed
             </th>
-            <th>Completed</th>
+            <th>Time to complete</th>
           </tr>
         </thead>
         <tbody>
-          {mergeAndSort(
+          {mergeAllKeys(
             upload.file_uploads,
             upload.skipped_keys,
             upload.ignored_keys
@@ -360,43 +348,38 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
             if (file.skipped || file.ignored) {
               return (
                 <tr key={file.key}>
-                  <td>
-                    {file.key}
-                  </td>
+                  <td>{file.key}</td>
                   <td colSpan={6}>
                     <b>{file.skipped ? 'Skipped' : 'Ignored'}</b>{' '}
-                    {file.skipped
-                      ? <small>
-                          Not uploaded because existing file has the same size
-                        </small>
-                      : <small>
-                          File OK in the archive but deliberately not uploaded
-                        </small>}
+                    {file.skipped ? (
+                      <small>
+                        Not uploaded because existing file has the same size
+                      </small>
+                    ) : (
+                      <small>
+                        File OK in the archive but deliberately not uploaded
+                      </small>
+                    )}
                   </td>
                 </tr>
               )
             }
             return (
               <tr key={file.key}>
+                <td>{file.key}</td>
+                <td>{formatFileSize(file.size)}</td>
+                <td>{file.bucket_name}</td>
+                <td>{BooleanIcon(file.update)}</td>
+                <td>{BooleanIcon(file.compressed)}</td>
                 <td>
-                  {file.key}
-                </td>
-                <td>
-                  {formatFileSize(file.size)}
-                </td>
-                <td>
-                  {file.bucket_name}
-                </td>
-                <td>
-                  {BooleanIcon(file.update)}
-                </td>
-                <td>
-                  {BooleanIcon(file.compressed)}
-                </td>
-                <td>
-                  {file.completed_at
-                    ? <DisplayDate date={file.completed_at} />
-                    : <i>Incomplete!</i>}
+                  {file.completed_at ? (
+                    <DisplayDateDifference
+                       from={file.created_at}
+                       to={file.completed_at}
+                    />
+                  ) : (
+                    <i>Incomplete!</i>
+                  )}
                 </td>
               </tr>
             )
@@ -406,7 +389,6 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
 
       {/* <h4 className="title is-4">Files Summary</h4> */}
       <ShowAggregates aggregates={aggregates} />
-
     </div>
   )
 }
@@ -417,17 +399,13 @@ const ShowAggregates = ({ aggregates }) => {
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Files Uploaded</p>
-          <p className="title">
-            {thousandFormat(aggregates.files.count)}
-          </p>
+          <p className="title">{thousandFormat(aggregates.files.count)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Files Sizes Sum</p>
-          <p className="title">
-            {formatFileSize(aggregates.files.size.sum)}
-          </p>
+          <p className="title">{formatFileSize(aggregates.files.size.sum)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">
@@ -448,22 +426,15 @@ const ShowAggregates = ({ aggregates }) => {
           >
             Skipped Files
           </p>
-          <p className="title">
-            {thousandFormat(aggregates.skipped.count)}
-          </p>
+          <p className="title">{thousandFormat(aggregates.skipped.count)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">
         <div>
-          <p
-            className="heading"
-            title="Files we can safely ignore"
-          >
+          <p className="heading" title="Files we can safely ignore">
             Ignored Files
           </p>
-          <p className="title">
-            {thousandFormat(aggregates.ignored.count)}
-          </p>
+          <p className="title">{thousandFormat(aggregates.ignored.count)}</p>
         </div>
       </div>
     </nav>

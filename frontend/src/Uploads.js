@@ -143,11 +143,7 @@ class Uploads extends React.PureComponent {
 
   _refreshUploads = () => {
     this.setState({ refreshing: true })
-    this._fetchUploads().then(() => {
-      // document.title = this.state.pageTitle
-      // this.setState({ newUploadsCount: 0 })
-      // console.log('_fetchUploads THEN finished');
-    })
+    this._fetchUploads()
   }
 
   // This is called every time _fetchUploads() finishes successfully.
@@ -184,7 +180,7 @@ class Uploads extends React.PureComponent {
         if (r.status === 200) {
           r.json().then(response => {
             if (response.total) {
-              document.title = `${this.state.pageTitle} (${response.total})`
+              document.title = `(${response.total} new) ${this.state.pageTitle}`
               this.setState({ newUploadsCount: response.total })
             }
             window.setTimeout(() => {
@@ -546,8 +542,8 @@ class DisplayUploads extends React.PureComponent {
                 to filter all uploads uploaded after yesterday's UTC daybreak.
               </li>
               <li>
-                <b>Completed:</b> <code>incomplete</code> to filter all uploads
-                not yet completed.
+                <b>Completed:</b> <code>incomplete</code> to filter all
+                incomplete uploads.
               </li>
             </ul>
           </div>
