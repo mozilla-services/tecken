@@ -116,7 +116,14 @@ def key_existing_size(client, bucket, key):
             return obj['Size']
 
 
-def upload_file_upload(s3_client, bucket_name, key_name, content, upload=None):
+def upload_file_upload(
+    s3_client,
+    bucket_name,
+    key_name,
+    content,
+    upload=None,
+    microsoft_download=False,
+):
     # E.g. 'foo.sym' becomes 'sym' and 'noextension' becomes ''
     key_extension = os.path.splitext(key_name)[1].lower()[1:]
     compress = key_extension in settings.COMPRESS_EXTENSIONS
@@ -157,13 +164,14 @@ def upload_file_upload(s3_client, bucket_name, key_name, content, upload=None):
             )
             return
 
-    file_upload = FileUpload(
+    file_upload = FileUpload.objects.create(
         upload=upload,
         bucket_name=bucket_name,
         key=key_name,
         update=size_in_s3 is not None,
         compressed=compress,
         size=size,
+        microsoft_download=microsoft_download,
     )
 
     content_type = settings.MIME_OVERRIDES.get(key_extension)
@@ -194,7 +202,9 @@ def upload_file_upload(s3_client, bucket_name, key_name, content, upload=None):
             Body=file_buffer,
             **extras,
         )
-    file_upload.completed_at = timezone.now()
+    FileUpload.objects.filter(id=file_upload.id).update(
+        completed_at=timezone.now(),
+    )
 
     # Take this opportunity to inform possible caches that the file,
     # if before wasn't the case, is now stored in S3.

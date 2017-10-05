@@ -9,7 +9,6 @@ from io import BytesIO
 import pytest
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError
-from markus import TIMING, INCR
 
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission
@@ -190,12 +189,14 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 5
-    assert records[0][0] == TIMING
-    assert records[1][0] == INCR
-    assert records[2][0] == TIMING
-    assert records[3][0] == INCR
-    assert records[4][0] == TIMING
+    assert len(records) == 7
+    assert records[0][1] == 'tecken.upload_file_exists'
+    assert records[1][1] == 'tecken.upload_file_upload'
+    assert records[2][1] == 'tecken.upload_file_upload_upload'
+    assert records[3][1] == 'tecken.upload_file_exists'
+    assert records[4][1] == 'tecken.upload_file_upload'
+    assert records[5][1] == 'tecken.upload_file_upload_upload'
+    assert records[6][1] == 'tecken.upload_archive'
 
 
 @pytest.mark.django_db
@@ -290,6 +291,94 @@ def test_upload_archive_one_uploaded_one_skipped(
         # it's been compressed.
         size__lt=1156,
         completed_at__isnull=False,
+    )
+
+
+@pytest.mark.django_db
+def test_upload_archive_one_uploaded_one_errored(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock
+):
+
+    class AnyUnrecognizedError(Exception):
+        """Doesn't matter much what the exception is. What matters is that
+        it happens during a boto call."""
+
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            return {'Contents': [
+                {
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 69183,
+                }
+            ]}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # Not found at all
+            return {}
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            raise AnyUnrecognizedError('stop!')
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        with pytest.raises(AnyUnrecognizedError):
+            client.post(
+                url,
+                {'file.zip': f},
+                HTTP_AUTH_TOKEN=token.key,
+            )
+
+        upload, = Upload.objects.all()
+        assert upload.user == fakeuser
+        assert not upload.completed_at
+        # # based on `ls -l tests/sample.zip` knowledge
+        # assert upload.size == 69812
+        # assert upload.bucket_name == 'private'
+        # assert upload.bucket_region is None
+        # assert upload.bucket_endpoint_url == 'https://s3.example.com'
+        # assert upload.skipped_keys == [
+        #     'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+        # ]
+        # assert upload.ignored_keys == ['build-symbols.txt']
+
+    assert FileUpload.objects.all().count() == 1
+    assert FileUpload.objects.get(
+        upload=upload,
+        key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
     )
 
 
@@ -669,18 +758,6 @@ def test_upload_archive_by_url(
         assert upload.completed_at
 
     assert FileUpload.objects.filter(upload=upload).count() == 2
-
-    # Check that markus caught timings of the individual file processing
-    records = metricsmock.get_records()
-    assert len(records) == 8
-    assert records[0][0] == TIMING
-    assert records[1][0] == TIMING
-    assert records[2][0] == TIMING
-    assert records[3][0] == TIMING
-    assert records[4][0] == INCR
-    assert records[5][0] == TIMING
-    assert records[6][0] == INCR
-    assert records[7][0] == TIMING
 
 
 @pytest.mark.django_db
