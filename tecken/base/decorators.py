@@ -136,7 +136,7 @@ api_require_safe.__doc__ = (
 
 def cache_memoize(
     timeout,
-    prefix='',
+    prefix=None,
     args_rewrite=None,
     hit_callable=None,
     miss_callable=None,
@@ -146,7 +146,7 @@ def cache_memoize(
     "local cache" to store the result.
 
     :arg int time: Number of seconds to store the result if not None
-    :arg string prefix: If you want to assure you don't clash with other keys.
+    :arg string prefix: If None becomes the function name.
     :arg function args_rewrite: Callable that rewrites the args first useful
     if your function needs nontrivial types but you know a simple way to
     re-represent them for the sake of the cache key.
@@ -216,7 +216,7 @@ def cache_memoize(
                 [force_text(f'{k}={v}') for k, v in kwargs.items()]
             )
             return hashlib.md5(force_bytes(
-                'cache_memoize' + prefix + cache_key
+                'cache_memoize' + (prefix or func.__name__) + cache_key
             )).hexdigest()
 
         @wraps(func)

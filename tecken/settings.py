@@ -191,6 +191,10 @@ class Core(AWS, Configuration, Celery):
     # enabled in environments dedicated for testing and load testing.
     BENCHMARKING_ENABLED = values.BooleanValue(False)
 
+    # When we ask S3 for the size (if it exists) of a symbol already in S3
+    # this can be cached. This value determines how long we do that caching.
+    MEMOIZE_KEY_EXISTING_SIZE_SECONDS = values.IntegerValue(60 * 60 * 24)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""

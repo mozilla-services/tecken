@@ -16,6 +16,7 @@ from django.utils import timezone
 
 from tecken.upload.models import FileUpload
 from tecken.base.symboldownloader import SymbolDownloader
+from tecken.base.decorators import cache_memoize
 
 
 logger = logging.getLogger('tecken')
@@ -99,6 +100,21 @@ def get_archive_members(file_object, file_name):
         raise UnrecognizedArchiveFileExtension(os.path.splitext(file_name)[1])
 
 
+def _key_existing_size_miss(client, bucket, key):
+    logger.debug(f'key_existing_size cache miss on {bucket}:{key}')
+
+
+def _key_existing_size_hit(client, bucket, key):
+    logger.debug(f'key_existing_size cache hit on {bucket}:{key}')
+
+
+@cache_memoize(
+    settings.MEMOIZE_KEY_EXISTING_SIZE_SECONDS,
+    prefix='key_existing_size',
+    args_rewrite=lambda client, bucket, key: (f'{bucket}:{key}',),
+    miss_callable=_key_existing_size_miss,
+    hit_callable=_key_existing_size_hit,
+)
 @metrics.timer_decorator('upload_file_exists')
 def key_existing_size(client, bucket, key):
     """return the key's size if it exist, else None.
@@ -114,6 +130,9 @@ def key_existing_size(client, bucket, key):
     for obj in response.get('Contents', []):
         if obj['Key'] == key:
             return obj['Size']
+
+    # Because returning None causes problems for the cache decorator
+    return 0
 
 
 def upload_file_upload(
@@ -153,7 +172,8 @@ def upload_file_upload(
 
     # Did we already have this exact file uploaded?
     size_in_s3 = key_existing_size(s3_client, bucket_name, key_name)
-    if size_in_s3 is not None:
+    # If 'size_in_s3' is 0 it means the file does NOT exist
+    if size_in_s3 > 0:
         # Only upload if the size is different.
         # So set this to None if it's already there and same size.
         if size_in_s3 == size:
@@ -168,7 +188,7 @@ def upload_file_upload(
         upload=upload,
         bucket_name=bucket_name,
         key=key_name,
-        update=size_in_s3 is not None,
+        update=size_in_s3 > 0,
         compressed=compress,
         size=size,
         microsoft_download=microsoft_download,
@@ -202,6 +222,10 @@ def upload_file_upload(
             Body=file_buffer,
             **extras,
         )
+    # If we managed to upload a file there, different or not,
+    # cache invalidate the key_existing_size() lookup.
+    key_existing_size.invalidate(s3_client, bucket_name, key_name)
+
     FileUpload.objects.filter(id=file_upload.id).update(
         completed_at=timezone.now(),
     )
