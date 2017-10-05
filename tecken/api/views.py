@@ -625,32 +625,36 @@ def stats(request):
 
     all_uploads = request.user.has_perm('upload.can_view_all')
     upload_qs = Upload.objects.all()
+    files_qs = FileUpload.objects.all()
     if not all_uploads:
         upload_qs = upload_qs.filter(user=request.user)
+        files_qs = files_qs.filter(upload__user=request.user)
 
-    # Gather some numbers about uploads
-    def count_and_size(start, end):
-        qs = upload_qs.filter(created_at__gte=start, created_at__lt=end)
+    def count_and_size(qs, start, end):
+        sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
         return {
-            'count': qs.count(),
-            'total_size': qs.aggregate(size=Sum('size'))['size'],
+            'count': sub_qs.count(),
+            'total_size': sub_qs.aggregate(size=Sum('size'))['size'],
         }
 
     today = timezone.now()
     start_today = today.replace(hour=0, minute=0, second=0)
-    uploads_today = count_and_size(start_today, today)
     start_yesterday = start_today - datetime.timedelta(days=1)
-    uploads_yesterday = count_and_size(start_yesterday, start_today)
     start_this_month = today.replace(day=1)
-    uploads_this_month = count_and_size(start_this_month, today)
     start_this_year = start_this_month.replace(month=1)
-    uploads_this_year = count_and_size(start_this_year, today)
+
     numbers['uploads'] = {
         'all_uploads': all_uploads,
-        'today': uploads_today,
-        'yesterday': uploads_yesterday,
-        'this_month': uploads_this_month,
-        'this_year': uploads_this_year,
+        'today': count_and_size(upload_qs, start_today, today),
+        'yesterday': count_and_size(upload_qs, start_yesterday, start_today),
+        'this_month': count_and_size(upload_qs, start_this_month, today),
+        'this_year': count_and_size(upload_qs, start_this_year, today),
+    }
+    numbers['files'] = {
+        'today': count_and_size(files_qs, start_today, today),
+        'yesterday': count_and_size(files_qs, start_yesterday, start_today),
+        'this_month': count_and_size(files_qs, start_this_month, today),
+        'this_year': count_and_size(files_qs, start_this_year, today),
     }
 
     # Gather some numbers about tokens

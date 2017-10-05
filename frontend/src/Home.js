@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { observer } from 'mobx-react'
 
 import './Home.css'
-import { formatFileSize, Loading } from './Common'
+import { formatFileSize, Loading, thousandFormat } from './Common'
 import Fetch from './Fetch'
 import store from './Store'
 
@@ -103,36 +103,43 @@ class SignedInTiles extends PureComponent {
               user.is_superuser ? 'tile is-parent' : 'tile is-parent is-8'
             }
           >
-            {store.hasPermission('upload.upload_symbols')
-              ? <AboutUploadsTile loading={loading} stats={stats} />
-              : <AboutUploadsPermissionTile />}
+            {store.hasPermission('upload.upload_symbols') ? (
+              <AboutUploadsTile loading={loading} stats={stats} />
+            ) : (
+              <AboutUploadsPermissionTile />
+            )}
           </div>
           <div className="tile is-parent">
-            {store.hasPermission('tokens.manage_tokens')
-              ? <AboutTokensTile loading={loading} stats={stats} />
-              : <AboutTokensPermissionTile />}
+            {store.hasPermission('tokens.manage_tokens') ? (
+              <AboutTokensTile loading={loading} stats={stats} />
+            ) : (
+              <AboutTokensPermissionTile />
+            )}
           </div>
-          {user.is_superuser &&
+          {user.is_superuser && (
             <div className="tile is-parent">
               <article className="tile is-child box">
                 <p className="title">Users</p>
-                {loading || !stats
-                  ? <Loading />
-                  : <p>
-                      There <b>{stats.users.total} users</b> in total of which{' '}
-                      <b>{stats.users.superusers}</b>{' '}
-                      {stats.users.superusers === 1
-                        ? 'is superuser'
-                        : 'are superusers'},
-                      <b>{stats.users.not_active}</b> are inactive.
-                    </p>}
+                {loading || !stats ? (
+                  <Loading />
+                ) : (
+                  <p>
+                    There <b>{stats.users.total} users</b> in total of which{' '}
+                    <b>{stats.users.superusers}</b>{' '}
+                    {stats.users.superusers === 1
+                      ? 'is superuser'
+                      : 'are superusers'},
+                    <b>{stats.users.not_active}</b> are inactive.
+                  </p>
+                )}
                 <p>
                   <Link to="/users">
                     Go to <b>User Management</b>
                   </Link>
                 </p>
               </article>
-            </div>}
+            </div>
+          )}
         </div>
 
         <div className="tile is-ancestor">
@@ -142,17 +149,20 @@ class SignedInTiles extends PureComponent {
               <p>
                 You are signed in as <b>{user.email}</b>.
                 <br />
-                {user.is_superuser &&
+                {user.is_superuser && (
                   <span>
                     You are a <b>superuser</b>.
-                  </span>}
+                  </span>
+                )}
               </p>
               <p style={{ marginTop: 20 }}>
                 You have the following permissions:
               </p>
-              {user.permissions && user.permissions.length
-                ? <ListYourPermissions permissions={user.permissions} />
-                : <AboutPermissions />}
+              {user.permissions && user.permissions.length ? (
+                <ListYourPermissions permissions={user.permissions} />
+              ) : (
+                <AboutPermissions />
+              )}
             </article>
           </div>
           <div className="tile is-parent is-8">
@@ -194,70 +204,67 @@ class SignedInTiles extends PureComponent {
           </div>
         </div>
 
-        {(this.state.loadingSettings || this.state.settings) &&
-          <div className="tile is-ancestor">
-            <div className="tile is-parent">
-              <article className="tile is-child box">
-                <p className="title">Current Settings</p>
-                <p>
-                  Insight into the environment <b>only for superusers</b>.
-                </p>
-                {this.state.loadingSettings && <Loading />}
-                {this.state.settings &&
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Setting</th>
-                        <th>Value</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {this.state.settings.map(setting => {
-                        return (
-                          <tr key={setting.key}>
-                            <th>
-                              {setting.key}
-                            </th>
-                            <td>
-                              {this.formatSettingValue(setting.value)}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>}
-                <p className="help">
-                  Note that these are only a handful of settings. They are the
-                  ones that are most likely to change from one environment to
-                  another. For other settings,{' '}
-                  <a
-                    href="https://github.com/mozilla-services/tecken/blob/master/tecken/settings.py"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    see the source code
-                  </a>.
-                </p>
-              </article>
+        {(this.state.loadingSettings || this.state.settings) && (
+            <div className="tile is-ancestor">
+              <div className="tile is-parent">
+                <article className="tile is-child box">
+                  <p className="title">Current Settings</p>
+                  <p>
+                    Insight into the environment <b>only for superusers</b>.
+                  </p>
+                  {this.state.loadingSettings && <Loading />}
+                  {this.state.settings && (
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Setting</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {this.state.settings.map(setting => {
+                          return (
+                            <tr key={setting.key}>
+                              <th>{setting.key}</th>
+                              <td>{this.formatSettingValue(setting.value)}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                  <p className="help">
+                    Note that these are only a handful of settings. They are the
+                    ones that are most likely to change from one environment to
+                    another. For other settings,{' '}
+                    <a
+                      href="https://github.com/mozilla-services/tecken/blob/master/tecken/settings.py"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      see the source code
+                    </a>.
+                  </p>
+                </article>
+              </div>
             </div>
-          </div>}
+          )}
       </div>
     )
   }
 }
 
-const ListYourPermissions = ({ permissions }) =>
+const ListYourPermissions = ({ permissions }) => (
   <ul>
-    {permissions.map(perm =>
+    {permissions.map(perm => (
       <li key={perm.id}>
-        <b>
-          {perm.name}
-        </b>
+        <b>{perm.name}</b>
       </li>
-    )}
+    ))}
   </ul>
+)
 
-const AboutPermissions = () =>
+const AboutPermissions = () => (
   <p>
     <i>None!</i>{' '}
     <a
@@ -269,101 +276,122 @@ const AboutPermissions = () =>
     <br />
     <small>Don't forget to mention the email you used to sign in.</small>
   </p>
+)
 
-const AboutUploadsPermissionTile = () =>
+const AboutUploadsPermissionTile = () => (
   <article className="tile is-child box">
     <p className="title">Uploaded Symbols</p>
     <p>
       <i>You currently don't have permission to upload symbols.</i>
     </p>
   </article>
+)
 
-const AboutUploadsTile = ({ loading, stats }) =>
+const AboutUploadsTile = ({ loading, stats }) => (
   <article className="tile is-child box">
     <p className="title">
       {loading || (stats && stats.uploads.all_uploads)
         ? 'Uploaded Symbols'
         : 'Your Uploaded Symbols'}
     </p>
-    {loading || !stats
-      ? <Loading />
-      : <table className="table">
-          <thead>
-            <tr>
-              <th />
-              <th>Count</th>
-              <th>Total Size</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <th>Today</th>
-              <td>
-                {stats.uploads.today.count}
-              </td>
-              <td>
-                {formatFileSize(stats.uploads.today.total_size)}
-              </td>
-            </tr>
-            <tr>
-              <th>Yesterday</th>
-              <td>
-                {stats.uploads.yesterday.count}
-              </td>
-              <td>
-                {formatFileSize(stats.uploads.yesterday.total_size)}
-              </td>
-            </tr>
-            <tr>
-              <th>This Month</th>
-              <td>
-                {stats.uploads.this_month.count}
-              </td>
-              <td>
-                {formatFileSize(stats.uploads.this_month.total_size)}
-              </td>
-            </tr>
-            <tr>
-              <th>This Year</th>
-              <td>
-                {stats.uploads.this_year.count}
-              </td>
-              <td>
-                {formatFileSize(stats.uploads.this_year.total_size)}
-              </td>
-            </tr>
-          </tbody>
-        </table>}
+    {loading || !stats ? (
+      <Loading />
+    ) : (
+      <table className="table">
+        <thead>
+          <tr>
+            <th />
+            <th>Uploads</th>
+            <th>Files</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Today</th>
+            <UploadsCell
+              count={stats.uploads.today.count}
+              bytes={stats.uploads.today.total_size}
+            />
+            <UploadsCell
+              count={stats.files.today.count}
+              bytes={stats.files.today.total_size}
+            />
+          </tr>
+          <tr>
+            <th>Yesterday</th>
+            <UploadsCell
+              count={stats.uploads.yesterday.count}
+              bytes={stats.uploads.yesterday.total_size}
+            />
+            <UploadsCell
+              count={stats.files.yesterday.count}
+              bytes={stats.files.yesterday.total_size}
+            />
+          </tr>
+          <tr>
+            <th>This Month</th>
+            <UploadsCell
+              count={stats.uploads.this_month.count}
+              bytes={stats.uploads.this_month.total_size}
+            />
+            <UploadsCell
+              count={stats.files.this_month.count}
+              bytes={stats.files.this_month.total_size}
+            />
+          </tr>
+          <tr>
+            <th>This Year</th>
+            <UploadsCell
+              count={stats.uploads.this_year.count}
+              bytes={stats.uploads.this_year.total_size}
+            />
+            <UploadsCell
+              count={stats.files.this_year.count}
+              bytes={stats.files.this_year.total_size}
+            />
+          </tr>
+        </tbody>
+      </table>
+    )}
     <Link to="/uploads">
       Go to <b>Uploads</b>
     </Link>
   </article>
+)
 
-const AboutTokensPermissionTile = () =>
+const UploadsCell = ({ count, bytes }) => {
+  return <td title={formatFileSize(bytes)}>{thousandFormat(count)}</td>
+}
+
+const AboutTokensPermissionTile = () => (
   <article className="tile is-child box">
     <p className="title">API Tokens</p>
     <p>
       <i>You currently don't have permission to create API Tokens.</i>
     </p>
   </article>
+)
 
-const AboutTokensTile = ({ loading, stats }) =>
+const AboutTokensTile = ({ loading, stats }) => (
   <article className="tile is-child box">
     <p className="title">API Tokens</p>
-    {loading || !stats
-      ? <Loading />
-      : <p>
-          You have <b>{stats.tokens.total} API Tokens</b> of which{' '}
-          <b>{stats.tokens.expired}</b> have expired.
-        </p>}
+    {loading || !stats ? (
+      <Loading />
+    ) : (
+      <p>
+        You have <b>{stats.tokens.total} API Tokens</b> of which{' '}
+        <b>{stats.tokens.expired}</b> have expired.
+      </p>
+    )}
     <p>
       <Link to="/tokens">
         Go to <b>API Tokens</b>
       </Link>
     </p>
   </article>
+)
 
-const AnonymousTiles = ({ signIn, authLoaded }) =>
+const AnonymousTiles = ({ signIn, authLoaded }) => (
   <div>
     <div className="tile is-ancestor">
       <div className="tile is-parent is-12">
@@ -391,13 +419,15 @@ const AnonymousTiles = ({ signIn, authLoaded }) =>
       <div className="tile is-parent">
         <article className="tile is-child box">
           <p className="title">Authentication</p>
-          {!authLoaded
-            ? <Loading />
-            : <p className="has-text-centered">
-                <button onClick={signIn} className="button is-info is-large">
-                  Sign In
-                </button>
-              </p>}
+          {!authLoaded ? (
+            <Loading />
+          ) : (
+            <p className="has-text-centered">
+              <button onClick={signIn} className="button is-info is-large">
+                Sign In
+              </button>
+            </p>
+          )}
         </article>
       </div>
       <div className="tile is-parent is-8">
@@ -439,3 +469,4 @@ const AnonymousTiles = ({ signIn, authLoaded }) =>
       </div>
     </div>
   </div>
+)
