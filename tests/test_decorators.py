@@ -78,6 +78,52 @@ def test_cache_memoize():
     assert len(calls_made) == 8
 
 
+def test_cache_memoize_hit_miss_callables():
+
+    hits = []
+    misses = []
+    calls_made = []
+
+    def hit_callable(arg):
+        hits.append(arg)
+
+    def miss_callable(arg):
+        misses.append(arg)
+
+    @decorators.cache_memoize(
+        10,
+        hit_callable=hit_callable,
+        miss_callable=miss_callable,
+    )
+    def runmeonce(arg):
+        calls_made.append(arg)
+        return arg * 2
+
+    result = runmeonce(100)
+    assert result == 200
+    assert len(calls_made) == 1
+    assert len(hits) == 0
+    assert len(misses) == 1
+
+    result = runmeonce(100)
+    assert result == 200
+    assert len(calls_made) == 1
+    assert len(hits) == 1
+    assert len(misses) == 1
+
+    result = runmeonce(100)
+    assert result == 200
+    assert len(calls_made) == 1
+    assert len(hits) == 2
+    assert len(misses) == 1
+
+    result = runmeonce(200)
+    assert result == 400
+    assert len(calls_made) == 2
+    assert len(hits) == 2
+    assert len(misses) == 2
+
+
 def test_cache_memoize_refresh():
 
     calls_made = []

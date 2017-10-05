@@ -236,10 +236,10 @@ def cache_memoize(
                     cache.set(cache_key, True, timeout)
                 elif result is not None:
                     cache.set(cache_key, result, timeout)
-                if hit_callable:
-                    hit_callable(*args, **kwargs)
-            elif miss_callable:
-                miss_callable(*args, **kwargs)
+                if miss_callable:
+                    miss_callable(*args, **kwargs)
+            elif hit_callable:
+                hit_callable(*args, **kwargs)
             return result
 
         def invalidate(*args, **kwargs):
