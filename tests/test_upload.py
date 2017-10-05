@@ -17,12 +17,10 @@ from django.core.exceptions import ImproperlyConfigured
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload import utils
-# from tecken.upload.tasks import upload_inbox_upload
 from tecken.base.symboldownloader import SymbolDownloader
-# from tecken.boto_extra import OwnEndpointConnectionError, OwnClientError
 from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
-from tecken.upload.utils import get_archive_members
+from tecken.upload.utils import get_archive_members, key_existing_size
 
 
 _here = os.path.dirname(__file__)
@@ -31,6 +29,11 @@ TGZ_FILE = os.path.join(_here, 'sample.tgz')
 TARGZ_FILE = os.path.join(_here, 'sample.tar.gz')
 INVALID_ZIP_FILE = os.path.join(_here, 'invalid.zip')
 ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, 'notazipdespiteitsname.zip')
+
+
+class FakeUser:
+    def __init__(self, email):
+        self.email = email
 
 
 def test_get_archive_members():
@@ -294,6 +297,202 @@ def test_upload_archive_one_uploaded_one_skipped(
     )
 
 
+def test_key_existing_size_caching(botomock, metricsmock):
+
+    user = FakeUser('peterbe@example.com')
+    bucket_info = get_bucket_info(user)
+
+    sizes_returned = []
+    lookups = []
+
+    def mock_api_call(self, operation_name, api_params):
+        lookups.append((operation_name, api_params))
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'filename'
+        ):
+            size = 1234
+            if sizes_returned:
+                size = 6789
+            result = {'Contents': [
+                {
+                    'Key': (
+                        'filename'
+                    ),
+                    'Size': size,
+                }
+            ]}
+            sizes_returned.append(size)
+            return result
+
+        raise NotImplementedError
+
+    s3_client = bucket_info.s3_client
+    with botomock(mock_api_call):
+        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        assert size == 1234
+        assert len(lookups) == 1
+
+        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        assert size == 1234
+        assert len(lookups) == 1
+
+        key_existing_size.invalidate(s3_client, 'mybucket', 'filename')
+        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        assert size == 6789
+        assert len(lookups) == 2
+
+
+def test_key_existing_size_caching_not_found(botomock, metricsmock):
+
+    user = FakeUser('peterbe@example.com')
+    bucket_info = get_bucket_info(user)
+
+    # sizes_returned = []
+    lookups = []
+
+    def mock_api_call(self, operation_name, api_params):
+        lookups.append((operation_name, api_params))
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == 'filename'
+        ):
+            return {}
+
+        raise NotImplementedError
+
+    s3_client = bucket_info.s3_client
+    with botomock(mock_api_call):
+        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        assert size is 0
+        assert len(lookups) == 1
+
+        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        assert size is 0
+        assert len(lookups) == 1
+
+        key_existing_size.invalidate(s3_client, 'mybucket', 'filename')
+        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        assert size is 0
+        assert len(lookups) == 2
+
+
+@pytest.mark.django_db
+def test_upload_archive_key_lookup_cached(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock
+):
+
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    lookups = []
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            return {'Contents': [
+                {
+                    'Key': (
+                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                    ),
+                    # based on `unzip -l tests/sample.zip` knowledge
+                    'Size': 69183,
+                }
+            ]}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # Saying the size is 100 will cause the code to think the
+            # symbol file *is different* so it'll proceed to upload it.
+            size = 100
+            if lookups:
+                # If this is the second time, return the right size.
+                size = 488
+            result = {
+                'Contents': [
+                    {
+                        'Key': api_params['Prefix'],
+                        'Size': size,
+                    }
+                ]
+            }
+            lookups.append(size)
+            return result
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # ...pretend to actually upload it.
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 1
+        assert FileUpload.objects.all().count() == 1
+
+    # Upload the same file again. This time some of the S3 ListObjectsV2
+    # operations should benefit from a cache.
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 2
+        assert FileUpload.objects.all().count() == 1
+        assert len(lookups) == 2
+
+    # Upload the same file again. This time some of the S3 ListObjectsV2
+    # operations should benefit from a cache.
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 3
+        assert FileUpload.objects.all().count() == 1
+        # This time it doesn't need to look up the size a third time
+        assert len(lookups) == 2
+
+
 @pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_errored(
     client,
@@ -407,7 +606,6 @@ def test_upload_archive_with_cache_invalidation(
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        print(operation_name, api_params)
         assert api_params['Bucket'] == 'mybucket'
         if operation_name == 'HeadBucket':
             # yep, bucket exists
@@ -887,10 +1085,6 @@ def test_upload_client_unrecognized_bucket(botomock, fakeuser, client):
 
 def test_get_bucket_info(settings):
 
-    class FakeUser:
-        def __init__(self, email):
-            self.email = email
-
     user = FakeUser('peterbe@example.com')
 
     settings.UPLOAD_DEFAULT_URL = 'https://s3.amazonaws.com/some-bucket'
@@ -915,10 +1109,6 @@ def test_get_bucket_info(settings):
 
 
 def test_get_bucket_info_exceptions(settings):
-
-    class FakeUser:
-        def __init__(self, email):
-            self.email = email
 
     settings.UPLOAD_DEFAULT_URL = 'https://s3.amazonaws.com/buck'
     settings.UPLOAD_URL_EXCEPTIONS = {

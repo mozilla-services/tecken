@@ -141,6 +141,50 @@ def test_cache_memoize_refresh():
     assert len(calls_made) == 2
 
 
+def test_cache_memoize_different_functions_same_arguments():
+
+    calls_made_1 = []
+    calls_made_2 = []
+
+    @decorators.cache_memoize(10)
+    def function_1(a):
+        calls_made_1.append(a)
+        return a * 2
+
+    @decorators.cache_memoize(10)
+    def function_2(a):
+        calls_made_2.append(a)
+        return a * 3
+
+    assert function_1(100) == 200
+    assert len(calls_made_1) == 1
+
+    assert function_1(100) == 200
+    assert len(calls_made_1) == 1
+
+    # Same arguments but to different function
+    assert function_2(100) == 300
+    assert len(calls_made_1) == 1
+    assert len(calls_made_2) == 1
+
+    assert function_2(100) == 300
+    assert len(calls_made_1) == 1
+    assert len(calls_made_2) == 1
+
+    assert function_2(1000) == 3000
+    assert len(calls_made_1) == 1
+    assert len(calls_made_2) == 2
+
+    # If you set the prefix, you can cross wire functions.
+    # Note sure why you'd ever want to do this though
+
+    @decorators.cache_memoize(10, prefix=function_2.__name__)
+    def function_3(a):
+        raise Exception
+
+    assert function_3(100) == 300
+
+
 def test_set_cors_headers():
 
     # Happy patch
