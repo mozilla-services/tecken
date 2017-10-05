@@ -73,8 +73,6 @@ class FileUpload(models.Model):
     """
     Each Upload is a .zip file containing other files. Each of those
     files are uploaded individually to the same bucket.
-
-    NOTE! Generally these objects are created in bulk.
     """
     upload = models.ForeignKey(Upload, null=True)
     bucket_name = models.CharField(max_length=100)

@@ -323,7 +323,6 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
           <tr>
             <th>Key</th>
             <th>Size</th>
-            <th>Bucket Name</th>
             <th
               className="bool-row"
               title="True if the file overwrote an existing one with the same name"
@@ -368,14 +367,13 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
               <tr key={file.key}>
                 <td>{file.key}</td>
                 <td>{formatFileSize(file.size)}</td>
-                <td>{file.bucket_name}</td>
                 <td>{BooleanIcon(file.update)}</td>
                 <td>{BooleanIcon(file.compressed)}</td>
                 <td>
                   {file.completed_at ? (
                     <DisplayDateDifference
-                       from={file.created_at}
-                       to={file.completed_at}
+                      from={file.created_at}
+                      to={file.completed_at}
                     />
                   ) : (
                     <i>Incomplete!</i>
