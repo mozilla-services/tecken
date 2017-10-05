@@ -99,6 +99,7 @@ def get_archive_members(file_object, file_name):
         raise UnrecognizedArchiveFileExtension(os.path.splitext(file_name)[1])
 
 
+@metrics.timer_decorator('upload_file_exists')
 def key_existing_size(client, bucket, key):
     """return the key's size if it exist, else None.
 
