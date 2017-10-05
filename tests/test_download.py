@@ -11,7 +11,7 @@ from io import StringIO
 
 import pytest
 import mock
-from markus import TIMING, INCR
+from markus import INCR
 
 from django.utils import timezone
 from django.core.urlresolvers import reverse
@@ -510,12 +510,13 @@ def test_download_microsoft_symbol_task_happy_path(
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 5
-    assert records[0][0] == TIMING
-    assert records[1][0] == TIMING
-    assert records[2][0] == TIMING
-    assert records[3][0] == INCR
-    assert records[4][0] == TIMING
+    assert len(records) == 6
+    assert records[0][1] == 'tecken.cabextract'
+    assert records[1][1] == 'tecken.dump_syms'
+    assert records[2][1] == 'tecken.upload_file_exists'
+    assert records[3][1] == 'tecken.upload_file_upload'
+    assert records[4][1] == 'tecken.microsoft_download_file_upload_upload'
+    assert records[5][1] == 'tecken.upload_microsoft_symbol'
 
 
 @pytest.mark.django_db

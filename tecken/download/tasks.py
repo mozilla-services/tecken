@@ -135,11 +135,8 @@ def upload_microsoft_symbol(symbol, debugid, content):
         bucket_name,
         key_name,
         content,
+        microsoft_download=True,
     )
-    if file_upload:
-        file_upload.microsoft_download = True
-        # Remember, upload_file_upload() doesn't save. Just creates instances.
-        file_upload.save()
 
     # The _create_file_upload() function might return None
     # which means it decided there is no need to make an upload

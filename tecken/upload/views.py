@@ -15,7 +15,6 @@ import markus
 
 from django import http
 from django.conf import settings
-from django.db import transaction
 from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
@@ -31,7 +30,7 @@ from tecken.upload.utils import (
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
 )
-from tecken.upload.models import Upload, FileUpload
+from tecken.upload.models import Upload
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
 
@@ -105,7 +104,6 @@ def get_bucket_info(user):
 @csrf_exempt
 @api_login_required
 @api_permission_required('upload.upload_symbols')
-@transaction.atomic
 def upload_archive(request):
     for name in request.FILES:
         upload = request.FILES[name]
@@ -236,15 +234,15 @@ def upload_archive(request):
             metrics.incr('upload_file_upload_skip', 1)
 
     if file_uploads_created:
-        FileUpload.objects.bulk_create(file_uploads_created)
         logger.info(f'Created {len(file_uploads_created)} FileUpload objects')
     else:
         logger.info(f'No file uploads created for {upload_obj!r}')
 
-    upload_obj.completed_at = timezone.now()
-    upload_obj.skipped_keys = skipped_keys or None
-    upload_obj.ignored_keys = ignored_keys or None
-    upload_obj.save()
+    Upload.objects.filter(id=upload_obj.id).update(
+        completed_at=timezone.now(),
+        skipped_keys=skipped_keys or None,
+        ignored_keys=ignored_keys or None,
+    )
 
     return http.JsonResponse(
         {'upload': _serialize_upload(upload_obj)},
