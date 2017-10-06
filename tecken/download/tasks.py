@@ -23,7 +23,11 @@ from tecken.boto_extra import (
     reraise_endpointconnectionerrors
 )
 from tecken.base.utils import requests_retry_session
-from tecken.upload.utils import upload_file_upload
+from tecken.upload.utils import (
+    upload_file_upload,
+    key_existing_size,
+    get_prepared_file_buffer,
+)
 
 
 logger = logging.getLogger('tecken')
@@ -129,12 +133,35 @@ def upload_microsoft_symbol(symbol, debugid, content):
     s3_client = bucket_info.s3_client
     bucket_name = bucket_info.name
 
+    size_in_s3 = key_existing_size(s3_client, bucket_name, key_name)
+    if size_in_s3:
+        # Oh, it already exists in S3. But is it different size?
+        file_buffer, size, compressed = get_prepared_file_buffer(
+            content,
+            key_name
+        )
+        if size_in_s3 == size:
+            # Exact key name and size already exists in S3
+            logger.info(f'Skipped key {key_name}')
+            metrics.incr('microsoft_download_file_upload_skip', 1)
+            return
+        update = True
+    else:
+        file_buffer, size, compressed = get_prepared_file_buffer(
+            content,
+            key_name
+        )
+        update = False
+
     # The upload_file_upload creates an instance but doesn't save it
     file_upload = upload_file_upload(
         s3_client,
         bucket_name,
         key_name,
-        content,
+        file_buffer,
+        size,
+        compressed=compressed,
+        update=update,
         microsoft_download=True,
     )
 

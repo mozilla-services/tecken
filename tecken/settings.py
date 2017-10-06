@@ -195,6 +195,15 @@ class Core(AWS, Configuration, Celery):
     # this can be cached. This value determines how long we do that caching.
     MEMOIZE_KEY_EXISTING_SIZE_SECONDS = values.IntegerValue(60 * 60 * 24)
 
+    # This is the number passed to
+    # concurrent.futures.ThreadPoolExecutor(max_workers)
+    # The number should match how many concurrent connections boto3 uses
+    # in its connectionpool. The default PoolManager (in vendored urllib3)
+    # that botocore uses is 10. So if we keep this number here to 10 or
+    # less we won't run the rist of saturating that pool and having
+    # discard connections to create new ones.
+    EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS = values.IntegerValue(10)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
