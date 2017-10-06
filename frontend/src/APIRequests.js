@@ -1,11 +1,11 @@
-import React, { PureComponent } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { observer } from 'mobx-react'
 
 import store from './Store'
 
 const DisplayAPIRequests = observer(
-  class DisplayAPIRequests extends PureComponent {
+  class DisplayAPIRequests extends React.Component {
     reset = event => {
       store.apiRequests = []
       window.sessionStorage.setItem('hide-api-requests', true)

@@ -1,4 +1,4 @@
-import React, { PureComponent } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 
 import queryString from 'query-string'
@@ -16,7 +16,7 @@ import './Files.css'
 
 import store from './Store'
 
-class Files extends PureComponent {
+class Files extends React.PureComponent {
   constructor(props) {
     super(props)
     this.pageTitle = 'Files Uploaded'
@@ -123,45 +123,45 @@ class Files extends PureComponent {
   render() {
     return (
       <div>
-        {store.hasPermission('upload.view_all_uploads')
-          ? <div className="tabs is-centered">
-              <ul>
-                <li className={!this.state.filter.download && 'is-active'}>
-                  <Link to="/uploads/files" onClick={this.filterOnAll}>
-                    All Files
-                  </Link>
-                </li>
-                <li
-                  className={
-                    this.state.filter.download === 'microsoft' && 'is-active'
-                  }
+        {store.hasPermission('upload.view_all_uploads') ? (
+          <div className="tabs is-centered">
+            <ul>
+              <li className={!this.state.filter.download ? 'is-active' : ''}>
+                <Link to="/uploads/files" onClick={this.filterOnAll}>
+                  All Files
+                </Link>
+              </li>
+              <li
+                className={
+                  this.state.filter.download === 'microsoft' ? 'is-active' : ''
+                }
+              >
+                <Link
+                  to="/uploads/files?download=microsoft"
+                  onClick={this.filterOnMicrosoftDownloads}
                 >
-                  <Link
-                    to="/uploads/files?download=microsoft"
-                    onClick={this.filterOnMicrosoftDownloads}
-                  >
-                    Microsoft Download Files
-                  </Link>
-                </li>
-                <li className={false && 'is-active'}>
-                  <Link to="/uploads">All Uploads</Link>
-                </li>
-              </ul>
-            </div>
-          : null}
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
+                  Microsoft Download Files
+                </Link>
+              </li>
+              <li>
+                <Link to="/uploads">All Uploads</Link>
+              </li>
+            </ul>
+          </div>
+        ) : null}
+        <h1 className="title">{this.pageTitle}</h1>
 
-        {this.state.loading
-          ? <Loading />
-          : <TableSubTitle
-              total={this.state.total}
-              page={this.state.filter.page}
-              batchSize={this.state.batchSize}
-            />}
+        {this.state.loading ? (
+          <Loading />
+        ) : (
+          <TableSubTitle
+            total={this.state.total}
+            page={this.state.filter.page}
+            batchSize={this.state.batchSize}
+          />
+        )}
 
-        {this.state.files &&
+        {this.state.files && (
           <DisplayFiles
             files={this.state.files}
             total={this.state.total}
@@ -169,7 +169,8 @@ class Files extends PureComponent {
             location={this.props.location}
             filter={this.state.filter}
             updateFilter={this.updateFilter}
-          />}
+          />
+        )}
       </div>
     )
   }
@@ -177,7 +178,7 @@ class Files extends PureComponent {
 
 export default Files
 
-class DisplayFiles extends PureComponent {
+class DisplayFiles extends React.PureComponent {
   componentDidMount() {
     // XXX perhaps this stuff should happen in a componentWillReceiveProps too
     const filter = this.props.filter
@@ -261,30 +262,26 @@ class DisplayFiles extends PureComponent {
             </tr>
           </tfoot>
           <tbody>
-            {files.map(file =>
+            {files.map(file => (
               <tr key={file.id}>
-                <td>
-                  {file.key}
-                </td>
-                <td>
-                  {formatFileSize(file.size)}
-                </td>
-                <td>
-                  {file.bucket_name}
-                </td>
+                <td>{file.key}</td>
+                <td>{formatFileSize(file.size)}</td>
+                <td>{file.bucket_name}</td>
                 <td>
                   <table className="table metadata-table">
                     <tbody>
                       <tr>
                         <th>Upload</th>
                         <td colSpan={6}>
-                          {file.upload
-                            ? <Link to={`/uploads/upload/${file.upload.id}`}>
-                                <DisplayDate date={file.upload.created_at} />
-                                {' by '}
-                                {file.upload.user.email}
-                              </Link>
-                            : <i>n/a</i>}
+                          {file.upload ? (
+                            <Link to={`/uploads/upload/${file.upload.id}`}>
+                              <DisplayDate date={file.upload.created_at} />
+                              {' by '}
+                              {file.upload.user.email}
+                            </Link>
+                          ) : (
+                            <i>n/a</i>
+                          )}
                         </td>
                       </tr>
                       <tr>
@@ -295,27 +292,21 @@ class DisplayFiles extends PureComponent {
                       </tr>
                       <tr>
                         <th title="Did it replace an existing file">Update</th>
-                        <td>
-                          {BooleanIcon(file.update)}
-                        </td>
+                        <td>{BooleanIcon(file.update)}</td>
                         <th title="Was it gzip compressed before upload">
                           Compressed
                         </th>
-                        <td>
-                          {BooleanIcon(file.compressed)}
-                        </td>
+                        <td>{BooleanIcon(file.compressed)}</td>
                         <th title="Was it uploaded by the Microsoft Download job">
                           Microsoft
                         </th>
-                        <td>
-                          {BooleanIcon(file.microsoft_download)}
-                        </td>
+                        <td>{BooleanIcon(file.microsoft_download)}</td>
                       </tr>
                     </tbody>
                   </table>
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
 

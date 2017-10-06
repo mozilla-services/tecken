@@ -345,12 +345,12 @@ class DisplayTokens extends PureComponent {
                 Active ({totals.active})
               </Link>
             </li>
-            <li className={filter.state === 'all' && 'is-active'}>
+            <li className={filter.state === 'all' ? 'is-active' : ''}>
               <Link to="/tokens" onClick={this.filterOnAll}>
                 All ({totals.all})
               </Link>
             </li>
-            <li className={filter.state === 'expired' && 'is-active'}>
+            <li className={filter.state === 'expired' ? 'is-active' : ''}>
               <Link to="/tokens?state=expired"
                 onClick={this.filterOnExpired}
               >

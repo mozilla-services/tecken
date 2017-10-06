@@ -50,9 +50,9 @@ the ``yarn`` installed in the Docker frontend container. For example:
 .. code-block:: shell
 
     $ docker run -it tecken_frontend bash
-    > yarn outdated           # will display which packages can be upgraded today
-    > yarn upgrade date-fns   # example of upgrading an existing package
-    > yarn add new-hotness    # adds a new package
+    > yarn outdated                   # will display which packages can be upgraded today
+    > yarn upgrade date-fns --latest  # example of upgrading an existing package
+    > yarn add new-hotness            # adds a new package
 
 When you're done, you have to rebuild the frontend Docker container:
 
