@@ -7,6 +7,7 @@ import zipfile
 import gzip
 import tarfile
 import logging
+import concurrent.futures
 from io import BytesIO
 
 import markus
@@ -135,66 +136,84 @@ def key_existing_size(client, bucket, key):
     return 0
 
 
+def key_existing_sizes(client, bucket, keys):
+    """return a dictionary where every key points to a size.
+    So, if 'keys' is ['v1/foo.pdb', 'v1/bar.sym']
+    return something like {'v1/foo.pdb': 123456, 'v1/bar.sym': 0}
+
+    If the value is 0, the file does not exist in this S3 bucket.
+    """
+    sizes = {}
+    max_workers = settings.EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS
+    pool_class = concurrent.futures.ThreadPoolExecutor
+    with pool_class(max_workers=max_workers) as executor:
+        future_to_key = {
+            executor.submit(key_existing_size, client, bucket, key): key
+            for key in keys
+        }
+        for future in concurrent.futures.as_completed(future_to_key):
+            key = future_to_key[future]
+            sizes[key] = future.result()
+    return sizes
+
+
+def should_compressed_key(key_name):
+    """Return true if, based on this key name, the content should be
+    gzip compressed."""
+    key_extension = os.path.splitext(key_name)[1].lower()[1:]
+    return key_extension in settings.COMPRESS_EXTENSIONS
+
+
+def get_key_content_type(key_name):
+    """Return a specific mime type this kind of key name should use, or None"""
+    key_extension = os.path.splitext(key_name)[1].lower()[1:]
+    return settings.MIME_OVERRIDES.get(key_extension)
+
+
+def get_prepared_file_buffer(payload, key_name):
+    """Given a bytes string, return a tuple of
+    (BytesIO object, size, compressed).
+    If the payload needs to be compressed (based on the key name),
+    the payload is gzipped. Otherwise left as is.
+    """
+    file_buffer = BytesIO()
+    if should_compressed_key(key_name):
+        with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
+            f.write(payload)
+        file_buffer.seek(0, os.SEEK_END)
+        size = file_buffer.tell()
+        file_buffer.seek(0)
+        return file_buffer, size, True
+    else:
+        file_buffer.write(payload)
+        file_buffer.seek(0, os.SEEK_END)
+        size = file_buffer.tell()
+        file_buffer.seek(0)
+        return file_buffer, size, False
+
+
 def upload_file_upload(
     s3_client,
     bucket_name,
     key_name,
-    content,
+    file_buffer,
+    size,
+    compressed=False,
     upload=None,
+    update=False,
     microsoft_download=False,
 ):
-    # E.g. 'foo.sym' becomes 'sym' and 'noextension' becomes ''
-    key_extension = os.path.splitext(key_name)[1].lower()[1:]
-    compress = key_extension in settings.COMPRESS_EXTENSIONS
-
-    # Assume we're not setting a custom encoding
-    content_encoding = None
-    # Read the member into memory
-    file_buffer = BytesIO()
-    # If the file needs to be compressed, we need to do that now
-    # already. Otherwise we won't be able to compare this file's size
-    # with what was previously uploaded.
-    if compress:
-        content_encoding = 'gzip'
-        file_buffer = BytesIO()
-        # We need to read in the whole file, and compress it to a new
-        # bytes object.
-        with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
-            f.write(content)
-    else:
-        file_buffer.write(content)
-
-    # Extract the size from the file object independent of how it
-    # was created; be that by GzipFile or just member.extractor().read().
-    file_buffer.seek(0, os.SEEK_END)
-    size = file_buffer.tell()
-    file_buffer.seek(0)
-
-    # Did we already have this exact file uploaded?
-    size_in_s3 = key_existing_size(s3_client, bucket_name, key_name)
-    # If 'size_in_s3' is 0 it means the file does NOT exist
-    if size_in_s3 > 0:
-        # Only upload if the size is different.
-        # So set this to None if it's already there and same size.
-        if size_in_s3 == size:
-            # Moving on.
-            logger.debug(
-                f'{key_name!r} ({bucket_name}) has not changed '
-                'size. Skipping.'
-            )
-            return
-
     file_upload = FileUpload.objects.create(
         upload=upload,
         bucket_name=bucket_name,
         key=key_name,
-        update=size_in_s3 > 0,
-        compressed=compress,
+        update=update,
+        compressed=compressed,
         size=size,
         microsoft_download=microsoft_download,
     )
 
-    content_type = settings.MIME_OVERRIDES.get(key_extension)
+    content_type = get_key_content_type(key_name)
 
     # boto3 will raise a botocore.exceptions.ParamValidationError
     # error if you try to do something like:
@@ -208,8 +227,8 @@ def upload_file_upload(
     extras = {}
     if content_type:
         extras['ContentType'] = content_type
-    if content_encoding:
-        extras['ContentEncoding'] = content_encoding
+    if compressed:
+        extras['ContentEncoding'] = 'gzip'
 
     logger.debug('Uploading file {!r} into {!r}'.format(
         key_name,
@@ -222,13 +241,21 @@ def upload_file_upload(
             Body=file_buffer,
             **extras,
         )
-    # If we managed to upload a file there, different or not,
-    # cache invalidate the key_existing_size() lookup.
-    key_existing_size.invalidate(s3_client, bucket_name, key_name)
-
     FileUpload.objects.filter(id=file_upload.id).update(
         completed_at=timezone.now(),
     )
+
+    # If we managed to upload a file there, different or not,
+    # cache invalidate the key_existing_size() lookup.
+    try:
+        key_existing_size.invalidate(s3_client, bucket_name, key_name)
+    except Exception as exception:  # pragma: no cover
+        if settings.DEBUG:
+            raise
+        logger.error(
+            f'Unable to invalidate key size {key_name}',
+            exc_info=True
+        )
 
     # Take this opportunity to inform possible caches that the file,
     # if before wasn't the case, is now stored in S3.

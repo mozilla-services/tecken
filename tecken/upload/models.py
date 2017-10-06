@@ -62,9 +62,7 @@ class Upload(models.Model):
         return (
             f'<{self.__class__.__name__} id={self.id} '
             f'filename={self.filename!r} '
-            f'bucket_name={self.bucket_name!r} '
-            f'inbox_key={self.inbox_key!r} '
-            f'inbox_filepath={self.inbox_filepath!r} '
+            f'bucket_name={self.bucket_name!r}'
             f'>'
         )
 

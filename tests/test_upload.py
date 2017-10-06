@@ -20,7 +20,14 @@ from tecken.upload import utils
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
-from tecken.upload.utils import get_archive_members, key_existing_size
+from tecken.upload.utils import (
+    get_archive_members,
+    key_existing_sizes,
+    key_existing_size,
+    should_compressed_key,
+    get_key_content_type,
+    get_prepared_file_buffer,
+)
 
 
 _here = os.path.dirname(__file__)
@@ -59,6 +66,44 @@ def test_get_archive_members():
         for file_listing in file_listings:
             assert file_listing.name
             assert file_listing.size
+
+
+def test_should_compressed_key(settings):
+    settings.COMPRESS_EXTENSIONS = ['bar']
+    assert should_compressed_key('foo.bar')
+    assert should_compressed_key('foo.BAR')
+    assert not should_compressed_key('foo.exe')
+
+
+def test_get_key_content_type(settings):
+    settings.MIME_OVERRIDES = {
+        'html': 'text/html',
+    }
+    assert get_key_content_type('foo.bar') is None
+    assert get_key_content_type('foo.html') == 'text/html'
+    assert get_key_content_type('foo.HTML') == 'text/html'
+
+
+def test_get_prepared_file_buffer(settings):
+    settings.COMPRESS_EXTENSIONS = ['bar']
+    content = b'symbols symbols symbols symbols\n'
+    file_buffer, size, compressed = get_prepared_file_buffer(
+        content,
+        'foo.bar'
+    )
+    assert compressed
+    assert file_buffer.read()
+    # It's hard to make this test without hardcoding it like this.
+    assert size == 32
+
+    file_buffer, size, compressed = get_prepared_file_buffer(
+        content,
+        'foo.exe'
+    )
+    assert not compressed
+    assert file_buffer.read() == content
+    # It's hard to make this test without hardcoding it like this.
+    assert size == len(content)
 
 
 @pytest.mark.django_db
@@ -192,11 +237,12 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
+    metricsmock.print_records()
     assert len(records) == 7
     assert records[0][1] == 'tecken.upload_file_exists'
-    assert records[1][1] == 'tecken.upload_file_upload'
-    assert records[2][1] == 'tecken.upload_file_upload_upload'
-    assert records[3][1] == 'tecken.upload_file_exists'
+    assert records[1][1] == 'tecken.upload_file_exists'
+    assert records[2][1] == 'tecken.upload_file_upload'
+    assert records[3][1] == 'tecken.upload_file_upload_upload'
     assert records[4][1] == 'tecken.upload_file_upload'
     assert records[5][1] == 'tecken.upload_file_upload_upload'
     assert records[6][1] == 'tecken.upload_archive'
@@ -377,6 +423,56 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
         size = key_existing_size(s3_client, 'mybucket', 'filename')
         assert size is 0
         assert len(lookups) == 2
+
+
+def test_key_existing_sizes(botomock, metricsmock):
+    def mock_api_call(self, operation_name, api_params):
+        print((operation_name, api_params))
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/foo.pdb'
+            )
+        ):
+            # Pretend that we have this in S3 and its previous
+            # size was 1234.
+            return {'Contents': [
+                {
+                    'Key': (
+                        'v0/foo.pdb'
+                    ),
+                    'Size': 1234,
+                }
+            ]}
+
+        if (
+            operation_name == 'ListObjectsV2' and
+            api_params['Prefix'] == (
+                'v0/bar.sym'
+            )
+        ):
+            # Pretend we don't have this in S3 at all
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call):
+        user = FakeUser('peterbe@example.com')
+        bucket_info = get_bucket_info(user)
+        s3_client = bucket_info.s3_client
+        sizes = key_existing_sizes(
+            s3_client,
+            bucket_info.name,
+            ['v0/foo.pdb', 'v0/bar.sym']
+        )
+        assert len(sizes) == 2
+        assert sizes['v0/foo.pdb'] == 1234
+        assert sizes['v0/bar.sym'] == 0
 
 
 @pytest.mark.django_db

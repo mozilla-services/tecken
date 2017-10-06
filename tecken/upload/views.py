@@ -29,6 +29,8 @@ from tecken.upload.utils import (
     get_archive_members,
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
+    key_existing_sizes,
+    get_prepared_file_buffer,
 )
 from tecken.upload.models import Upload
 from tecken.upload.forms import UploadByDownloadForm
@@ -191,6 +193,71 @@ def upload_archive(request):
             return True
         return False
 
+    # Before proceeding to the upload part, extract a list of all keys
+    # we might upload. Then use the smart utils.key_existing_sizes()
+    # function to get a list of all their sizes in S3. Based on that result
+    # we can determine which ones to bother uploading.
+    all_keys = []
+    ignored_keys = []
+    skipped_keys = []
+    for member in get_archive_members(upload, name):
+        if _ignore_member_file(member.name):
+            ignored_keys.append(member.name)
+            continue
+        key_name = os.path.join(
+            settings.SYMBOL_FILE_PREFIX, member.name
+        )
+        all_keys.append(key_name)
+    key_sizes = key_existing_sizes(client, bucket_info.name, all_keys)
+
+    # Now that we have this dict, loop over all the files again and
+    # compare the sizes with what's in S3.
+    keep_keys = {}  # key --> bytes payload dict
+    for member in get_archive_members(upload, name):
+        if _ignore_member_file(member.name):
+            continue
+        key_name = os.path.join(
+            settings.SYMBOL_FILE_PREFIX, member.name
+        )
+        # Let's see, should keep this file or not.
+        if key_sizes[key_name]:
+            # It apparently, already, exists in S3. Compare this file's
+            # size with what's in S3.
+            # Note, the size in S3 is potentially the compressed size,
+            # so if this file should be compressed to we have to
+            # "pre-compress" it here too.
+            file_buffer, file_size, compressed = get_prepared_file_buffer(
+                member.extractor().read(),
+                key_name
+            )
+            if key_sizes[key_name] == file_size:
+                skipped_keys.append(key_name)
+                logger.info(f'Skipped key {key_name}')
+                metrics.incr('upload_file_upload_skip', 1)
+                continue
+
+            keep_keys[key_name] = (
+                file_buffer,
+                file_size,
+                compressed,
+                # True here in the tuple, because this is an *update* of
+                # an existing key.
+                True,
+            )
+        else:
+            # Definitely a new file
+            file_buffer, file_size, compressed = get_prepared_file_buffer(
+                member.extractor().read(),
+                key_name
+            )
+            keep_keys[key_name] = (
+                file_buffer,
+                file_size,
+                compressed,
+                # False here because it's a new file. Not an update.
+                False,
+            )
+
     # Always create the Upload object no matter what happens next.
     # If all individual file uploads work out, we say this is complete.
     upload_obj = Upload.objects.create(
@@ -201,47 +268,32 @@ def upload_archive(request):
         bucket_endpoint_url=bucket_info.endpoint_url,
         size=size,
         download_url=url,
+        skipped_keys=skipped_keys or None,
+        ignored_keys=ignored_keys or None,
     )
 
-    ignored_keys = []
-    skipped_keys = []
-    file_uploads_created = []
-    for member in get_archive_members(upload, name):
-        if _ignore_member_file(member.name):
-            ignored_keys.append(member.name)
-            continue
-
-        key_name = os.path.join(
-            settings.SYMBOL_FILE_PREFIX, member.name
-        )
-
-        file_upload = upload_file_upload(
+    for key_name in keep_keys:
+        file_buffer, file_size, compressed, update = keep_keys[key_name]
+        upload_file_upload(
             client,
             bucket_info.name,
             key_name,
-            member.extractor().read(),
+            file_buffer,
+            file_size,
+            compressed=compressed,
+            update=update,
             upload=upload_obj,
         )
-        # If upload_file_upload() returns None, it means it deemed it
-        # not necessary to upload this file.
-        if file_upload:
-            logger.info(f'Uploaded key {key_name}')
-            file_uploads_created.append(file_upload)
-            metrics.incr('upload_file_upload_upload', 1)
-        else:
-            logger.info(f'Skipped key {key_name}')
-            skipped_keys.append(key_name)
-            metrics.incr('upload_file_upload_skip', 1)
+        logger.info(f'Uploaded key {key_name}')
+        metrics.incr('upload_file_upload_upload', 1)
 
-    if file_uploads_created:
-        logger.info(f'Created {len(file_uploads_created)} FileUpload objects')
+    if keep_keys:
+        logger.info(f'Created {len(keep_keys)} FileUpload objects')
     else:
         logger.info(f'No file uploads created for {upload_obj!r}')
 
     Upload.objects.filter(id=upload_obj.id).update(
         completed_at=timezone.now(),
-        skipped_keys=skipped_keys or None,
-        ignored_keys=ignored_keys or None,
     )
 
     return http.JsonResponse(

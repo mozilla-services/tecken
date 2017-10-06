@@ -21,7 +21,7 @@ yarn-debug.log*
 yarn-error.log*
 .docker-build
 .python_history
-hack.py
+hack.*py
 all-metrics-keys.json
 test-upload-inbox/
 upload-inbox/
