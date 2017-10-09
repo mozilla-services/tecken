@@ -231,24 +231,6 @@ class DisplayRefreshingInterval extends React.PureComponent {
   }
 }
 
-/* Return a new array where every item is an object.
-   The reason we do this is because an upload consists of a pure array
-   of skipped keys, a pure array of ignored keys and an array of
-   file upload objects.
-*/
-const mergeAllKeys = (uploads, skipped, ignored) => {
-  const all = []
-  ignored.forEach(key => {
-    all.push({ key: key, ignored: true })
-  })
-  skipped.forEach(key => {
-    all.push({ key: key, skipped: true })
-  })
-  uploads.forEach(upload => {
-    all.push(upload)
-  })
-  return all
-}
 
 const DisplayUpload = ({ upload, onCancel }) => {
   return (
@@ -321,32 +303,153 @@ const DisplayUpload = ({ upload, onCancel }) => {
         </tbody>
       </table>
       <h4 className="title is-4">Files</h4>
+      <ShowUploadFiles upload={upload} />
+
+      {/* <h4 className="title is-4">Files Summary</h4> */}
+      <ShowAggregates upload={upload} />
+      <ShowUploadTimes upload={upload} />
+    </div>
+  )
+}
+
+/* Return a new array where every item is an object.
+   The reason we do this is because an upload consists of a pure array
+   of skipped keys, a pure array of ignored keys and an array of
+   file upload objects.
+*/
+const mergeAllKeys = (uploads, skipped, ignored) => {
+  const all = []
+  ignored.forEach(key => {
+    all.push({ key: key, ignored: true })
+  })
+  skipped.forEach(key => {
+    all.push({ key: key, skipped: true })
+  })
+  uploads.forEach(upload => {
+    all.push(upload)
+  })
+  return all
+}
+
+class ShowUploadFiles extends React.PureComponent {
+  constructor(props) {
+    super(props)
+    this.state = {
+      sortBy: null,
+      reverse: false
+    }
+  }
+
+  _sortByKey = (key, defaultReverse = false) => {
+    if (this.state.sortBy === key) {
+      this.setState({ reverse: !this.state.reverse })
+    } else {
+      this.setState({ sortBy: key, reverse: defaultReverse })
+    }
+  }
+
+  sortByKey = event => {
+    event.preventDefault()
+    this._sortByKey('key')
+  }
+
+  sortBySize = event => {
+    event.preventDefault()
+    this._sortByKey('size', true)
+  }
+
+  sortByUpdate = event => {
+    event.preventDefault()
+    this._sortByKey('update')
+  }
+
+  sortByCompressed = event => {
+    event.preventDefault()
+    this._sortByKey('compressed')
+  }
+
+  sortByTime = event => {
+    event.preventDefault()
+    this._sortByKey('time', true)
+  }
+
+  sortKeys = keys => {
+    if (!this.state.sortBy) {
+      return keys
+    }
+    const sortBy = this.state.sortBy
+    const reverse = this.state.reverse ? -1 : 1
+
+    const cmp = (a, b) => {
+      if (a > b) {
+        return 1 * reverse
+      } else if (a < b) {
+        return -1 * reverse
+      }
+    }
+    keys.sort((a, b) => {
+      if (sortBy === 'key') {
+        return cmp(a.key.toLowerCase(), b.key.toLowerCase())
+      } else if (sortBy === 'time') {
+        return cmp(a._time || 0, b._time || 0)
+      }
+      return cmp(a[sortBy] || 0, b[sortBy] || 0)
+    })
+    return keys
+  }
+
+  _addTime = files => {
+    return files.map(file => {
+      if (file.completed_at) {
+        file._time = differenceInMilliseconds(
+          toDate(file.completed_at),
+          toDate(file.created_at)
+        )
+      }
+      return file
+    })
+  }
+
+  render() {
+    const { upload } = this.props
+    const allKeys = this.sortKeys(
+      mergeAllKeys(
+        this._addTime(upload.file_uploads),
+        upload.skipped_keys,
+        upload.ignored_keys
+      )
+    )
+    return (
       <table className="table files-table">
         <thead>
           <tr>
-            <th>Key</th>
-            <th>Size</th>
+            <th className="sortable" onClick={this.sortByKey}>
+              Key
+            </th>
+            <th className="sortable" onClick={this.sortBySize}>
+              Size
+            </th>
             <th
-              className="bool-row"
+              className="bool-row sortable"
               title="True if the file overwrote an existing one with the same name"
+              onClick={this.sortByUpdate}
             >
               Update
             </th>
             <th
               className="bool-row"
               title="True if the file was first gzipped before uploading"
+              onClick={this.sortByCompressed}
             >
               Compressed
             </th>
-            <th>Time to complete</th>
+            <th className="sortable" onClick={this.sortByTime}>
+              Time to complete
+            </th>
           </tr>
         </thead>
         <tbody>
-          {mergeAllKeys(
-            upload.file_uploads,
-            upload.skipped_keys,
-            upload.ignored_keys
-          ).map(file => {
+          {allKeys.map(file => {
             if (file.skipped || file.ignored) {
               return (
                 <tr key={file.key}>
@@ -387,12 +490,8 @@ const DisplayUpload = ({ upload, onCancel }) => {
           })}
         </tbody>
       </table>
-
-      {/* <h4 className="title is-4">Files Summary</h4> */}
-      <ShowAggregates upload={upload} />
-      <ShowUploadTimes upload={upload} files={upload.file_uploads} />
-    </div>
-  )
+    )
+  }
 }
 
 const ShowAggregates = ({ upload }) => {
@@ -447,7 +546,7 @@ const ShowAggregates = ({ upload }) => {
   )
 }
 
-const ShowUploadTimes = ({ upload, files }) => {
+const ShowUploadTimes = ({ upload }) => {
   if (!upload.completed_at) {
     return null
   }
@@ -456,7 +555,7 @@ const ShowUploadTimes = ({ upload, files }) => {
   const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart)
   const uploadTimes = []
   let longestFileUpload = null
-  files.forEach(file => {
+  upload.file_uploads.forEach(file => {
     if (file.completed_at) {
       const start = toDate(file.created_at)
       const end = toDate(file.completed_at)

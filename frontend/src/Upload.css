@@ -12,3 +12,7 @@ table.files-table td {
 }
 
 dl dt { font-weight: bold; }
+
+th.sortable {
+  cursor: pointer;
+}
