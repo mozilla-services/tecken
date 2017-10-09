@@ -697,25 +697,8 @@ def upload(request, id):
             'created_at': file_upload.created_at,
         })
 
-    aggregates = {
-        'files': {
-            'count': file_uploads_qs.count(),
-            'size': {
-                'average': file_uploads_qs.aggregate(size=Avg('size'))['size'],
-                'sum': file_uploads_qs.aggregate(size=Sum('size'))['size'],
-            },
-        },
-        'skipped': {
-            'count': len(upload_dict['skipped_keys']),
-        },
-        'ignored': {
-            'count': len(upload_dict['ignored_keys']),
-        }
-    }
-
     context = {
         'upload': upload_dict,
-        'aggregates': aggregates,
     }
     return http.JsonResponse(context)
 

@@ -73,7 +73,6 @@ export default class Upload extends React.PureComponent {
           this.setState(
             {
               upload: response.upload,
-              aggregates: response.aggregates,
               loading: false
             },
             () => {
@@ -180,7 +179,6 @@ export default class Upload extends React.PureComponent {
         {this.state.upload && (
           <DisplayUpload
             upload={this.state.upload}
-            aggregates={this.state.aggregates}
           />
         )}
       </div>
@@ -252,7 +250,7 @@ const mergeAllKeys = (uploads, skipped, ignored) => {
   return all
 }
 
-const DisplayUpload = ({ upload, aggregates, onCancel }) => {
+const DisplayUpload = ({ upload, onCancel }) => {
   return (
     <div>
       <h4 className="title is-4">Metadata</h4>
@@ -391,34 +389,38 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
       </table>
 
       {/* <h4 className="title is-4">Files Summary</h4> */}
-      <ShowAggregates aggregates={aggregates} />
+      <ShowAggregates upload={upload} />
       <ShowUploadTimes upload={upload} files={upload.file_uploads} />
     </div>
   )
 }
 
-const ShowAggregates = ({ aggregates }) => {
+const ShowAggregates = ({ upload }) => {
+  const fileSizes = upload.file_uploads.map(u => u.size)
+  const filesSizeSum = fileSizes.reduce((a, b) => a + b, 0)
+  let filesSizeAvg = null
+  if (fileSizes.length) {
+    filesSizeAvg = filesSizeSum / fileSizes.length
+  }
   return (
     <nav className="level" style={{ marginTop: 60 }}>
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Files Uploaded</p>
-          <p className="title">{thousandFormat(aggregates.files.count)}</p>
+          <p className="title">{thousandFormat(upload.file_uploads.length)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Files Sizes Sum</p>
-          <p className="title">{formatFileSize(aggregates.files.size.sum)}</p>
+          <p className="title">{formatFileSize(filesSizeSum)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Files Sizes Avg</p>
           <p className="title">
-            {aggregates.files.size.average
-              ? formatFileSize(aggregates.files.size.average)
-              : 'n/a'}
+            {filesSizeAvg ? formatFileSize(filesSizeAvg) : 'n/a'}
           </p>
         </div>
       </div>
@@ -430,7 +432,7 @@ const ShowAggregates = ({ aggregates }) => {
           >
             Skipped Files
           </p>
-          <p className="title">{thousandFormat(aggregates.skipped.count)}</p>
+          <p className="title">{thousandFormat(upload.skipped_keys.length)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">
@@ -438,7 +440,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="heading" title="Files we can safely ignore">
             Ignored Files
           </p>
-          <p className="title">{thousandFormat(aggregates.ignored.count)}</p>
+          <p className="title">{thousandFormat(upload.ignored_keys.length)}</p>
         </div>
       </div>
     </nav>
