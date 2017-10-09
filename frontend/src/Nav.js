@@ -1,11 +1,11 @@
-import React, { PureComponent } from 'react'
+import React from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { observer } from 'mobx-react'
 import './Nav.css'
 import store from './Store'
 
 const Nav = observer(
-  class Nav extends PureComponent {
+  class Nav extends React.Component {
     constructor(props) {
       super(props)
 

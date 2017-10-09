@@ -230,12 +230,12 @@ class Uploads extends React.PureComponent {
         {store.hasPermission('upload.view_all_uploads') ? (
           <div className="tabs is-centered">
             <ul>
-              <li className={!this.state.filter.user && 'is-active'}>
+              <li className={!this.state.filter.user ? 'is-active' : ''}>
                 <Link to="/uploads" onClick={this.filterOnAll}>
                   All Uploads
                 </Link>
               </li>
-              <li className={this.state.filter.user && 'is-active'}>
+              <li className={this.state.filter.user ? 'is-active' : ''}>
                 <Link
                   to={`/uploads?user=${store.currentUser.email}`}
                   onClick={this.filterOnYours}
@@ -243,10 +243,10 @@ class Uploads extends React.PureComponent {
                   Your Uploads
                 </Link>
               </li>
-              <li className={false && 'is-active'}>
+              <li>
                 <Link to="/uploads/files">All Files</Link>
               </li>
-              <li className={false && 'is-active'}>
+              <li>
                 <Link to="/uploads/upload">Upload Now</Link>
               </li>
             </ul>
@@ -254,10 +254,10 @@ class Uploads extends React.PureComponent {
         ) : (
           <div className="tabs is-centered">
             <ul>
-              <li className={!this.state.filter.user && 'is-active'}>
+              <li className={!this.state.filter.user ? 'is-active' : ''}>
                 <Link to="/uploads">All Uploads</Link>
               </li>
-              <li className={false && 'is-active'}>
+              <li>
                 <Link to="/uploads/upload">Upload Now</Link>
               </li>
             </ul>
