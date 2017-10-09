@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
+from tecken.api.views import filter_uploads
 from tecken.api.forms import UploadsForm
 
 
@@ -949,3 +950,181 @@ def test_current_settings(client, settings):
         'https://awsamazon.com/default-bucket-name',
         'https://user:xxxxxx@awsamazon.com/other-bucket-name',
     ])
+
+
+@pytest.mark.django_db
+def test_filter_uploads_by_size():
+    """Test the utility function filter_uploads()"""
+    user1 = User.objects.create(email='test@example.com')
+    Upload.objects.create(
+        user=user1,
+        filename='symbols1.zip',
+        size=1234
+    )
+    form = UploadsForm({})
+    assert form.is_valid()
+    qs = Upload.objects.all()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 1
+
+    form = UploadsForm({'size': '>1234'})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 0
+
+    form = UploadsForm({'size': '>=1234'})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 1
+
+    form = UploadsForm({'size': '>1Kb'})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 1
+
+
+@pytest.mark.django_db
+def test_filter_uploads_by_user():
+    """Test the utility function filter_uploads()"""
+    user1 = User.objects.create(username='test1')
+    Upload.objects.create(
+        user=user1,
+        filename='symbols1.zip',
+        size=1234
+    )
+    user2 = User.objects.create(username='test2')
+    Upload.objects.create(
+        user=user2,
+        filename='symbols2.zip',
+        size=123456789
+    )
+    qs = Upload.objects.all()
+    form = UploadsForm({})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        False,
+        user1,
+        form
+    ).count() == 1
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 2
+
+    user3 = User.objects.create(username='test3')
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 2
+    assert filter_uploads(
+        qs,
+        False,
+        user3,
+        form
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_filter_uploads_by_completed_at():
+    """Test the utility function filter_uploads()"""
+    user1 = User.objects.create(username='test1')
+    Upload.objects.create(
+        user=user1,
+        filename='symbols1.zip',
+        size=1234,
+    )
+    Upload.objects.create(
+        user=user1,
+        filename='symbols2.zip',
+        size=1234,
+        completed_at=timezone.now()
+    )
+    qs = Upload.objects.all()
+
+    form = UploadsForm({'completed_at': 'Incomplete'})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 1
+
+    form = UploadsForm({'completed_at': 'today'})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 1
+
+    form = UploadsForm({'completed_at': '<2017-10-09'})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 0
+
+    today = timezone.now()
+    form = UploadsForm({'completed_at': today.strftime('%Y-%m-%d')})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 1
+
+    form = UploadsForm({'completed_at': '>' + today.isoformat()})
+    assert form.is_valid()
+    assert filter_uploads(
+        qs,
+        True,
+        user1,
+        form
+    ).count() == 0
+
+
+@pytest.mark.django_db
+def test_uploads_datasets(client):
+    url = reverse('api:uploads_datasets')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    assert response.status_code == 200
+    assert len(response.json()['datasets']) == 3
+
+    # XXX this test clearly doesn't test much of the actual data
+    # gathering in those datasets. However, it works!
+    # We could extend this by creating more Upload and File objects
+    # and re-run and look at the data. Doesn't feel super user at the moment.

@@ -71,6 +71,18 @@ export const formatFileSize = (bytes, decimals = 0) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
+export const formatSeconds = seconds => {
+  if (seconds < 1) {
+    // milliseconds
+    return (seconds * 1000).toFixed(1) + 'ms'
+  } else if (seconds > 3000) {
+    return (seconds / 60).toFixed(1) + 'm'
+  } else {
+    const minutes = Math.ceil(seconds / 60)
+    seconds = Math.round(seconds % 60)
+    return `${minutes}m${seconds}s`
+  }
+}
 export const BooleanIcon = bool => (
   <span className="icon" style={{ color: bool ? 'green' : 'red' }}>
     <i className={bool ? 'fa fa-check' : 'fa fa-close'} />
