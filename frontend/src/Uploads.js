@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-
+import Chart from 'chart.js'
 import { format } from 'date-fns/esm'
 
 import queryString from 'query-string'
@@ -9,6 +9,7 @@ import {
   DisplayDate,
   DisplayDateDifference,
   formatFileSize,
+  formatSeconds,
   Pagination,
   TableSubTitle,
   thousandFormat,
@@ -513,45 +514,55 @@ class DisplayUploads extends React.PureComponent {
 
         <ShowAggregates aggregates={aggregates} />
 
-        <article className="message" style={{ marginTop: 50 }}>
-          <div className="message-body">
-            <h4 className="title is-4">Examples of Filtering</h4>
-            <ul>
-              <li>
-                <b>User:</b> <code>@mozilla.com</code> to filter on any upload
-                whose email contains this domain.
-              </li>
-              <li>
-                <b>User:</b> <code>!peterbe@example.com</code> to filter on any
-                upload whose email does NOT match that email.
-              </li>
-              <li>
-                <b>Size:</b> <code>&gt;1mb</code> to filter all uploads{' '}
-                <i>bigger</i> than one megabyte.
-              </li>
-              <li>
-                <b>Uploaded:</b> <code>{todayStr}</code> to filter all uploads
-                uploaded any time during this day (in UTC).
-              </li>
-              <li>
-                <b>Uploaded:</b> <code>&gt;={todayFullStr}</code> to filter all
-                uploads uploaded after this ISO date (in UTC).
-              </li>
-              <li>
-                <b>Uploaded:</b> <code>today</code> (or <code>yesterday</code>)
-                to filter all uploads uploaded after yesterday's UTC daybreak.
-              </li>
-              <li>
-                <b>Completed:</b> <code>incomplete</code> to filter all
-                incomplete uploads.
-              </li>
-            </ul>
-          </div>
-        </article>
+        <ExamplesOfFiltering todayStr={todayStr} todayFullStr={todayFullStr} />
+
+        <ShowGraphs filter={this.props.filter} />
       </form>
     )
   }
 }
+
+const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
+  <article className="message" style={{ marginTop: 50 }}>
+    <div className="message-header">
+      <p>Examples of Filtering</p>
+      {/* <button className="delete" aria-label="delete" /> */}
+      {/* <button className="button is-small">open</button> */}
+    </div>
+    <div className="message-body">
+      <ul>
+        <li>
+          <b>User:</b> <code>@mozilla.com</code> to filter on any upload whose
+          email contains this domain.
+        </li>
+        <li>
+          <b>User:</b> <code>!peterbe@example.com</code> to filter on any upload
+          whose email does NOT match that email.
+        </li>
+        <li>
+          <b>Size:</b> <code>&gt;1mb</code> to filter all uploads <i>bigger</i>{' '}
+          than one megabyte.
+        </li>
+        <li>
+          <b>Uploaded:</b> <code>{todayStr}</code> to filter all uploads
+          uploaded any time during this day (in UTC).
+        </li>
+        <li>
+          <b>Uploaded:</b> <code>&gt;={todayFullStr}</code> to filter all
+          uploads uploaded after this ISO date (in UTC).
+        </li>
+        <li>
+          <b>Uploaded:</b> <code>today</code> (or <code>yesterday</code>) to
+          filter all uploads uploaded after yesterday's UTC daybreak.
+        </li>
+        <li>
+          <b>Completed:</b> <code>incomplete</code> to filter all incomplete
+          uploads.
+        </li>
+      </ul>
+    </div>
+  </article>
+)
 
 const DisplayFilesSummary = (files, skipped, ignored) =>
   `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`
@@ -618,4 +629,150 @@ const ShowAggregates = ({ aggregates }) => {
       </div>
     </nav>
   )
+}
+
+class ShowGraphs extends React.PureComponent {
+  constructor(props) {
+    super(props)
+    this.state = {
+      datasets: [],
+      loading: false,
+      loadError: null
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    const filterAsQueryString = queryString.stringify(nextProps.filter)
+    // Use this as a cache to prevent fetching when the filter hasn't
+    // actually changed.
+    if (this.filterAsQueryString !== filterAsQueryString) {
+      this.filterAsQueryString = filterAsQueryString
+      this._loadDataset(nextProps.filter)
+    }
+  }
+
+  _loadDataset = filter => {
+    let url = '/api/uploads/datasets/'
+    url += '?' + queryString.stringify(filter)
+    this.setState({ loading: true })
+    return Fetch(url, { credentials: 'same-origin' })
+      .then(r => {
+        if (r.status === 200) {
+          r.json().then(response => {
+            if (this.state.loadError) {
+              this.setState({ loadError: null })
+            }
+            this.setState({ loading: false, datasets: response.datasets })
+          })
+        } else {
+          this.setState({
+            loading: false,
+            loadError: `${r.status} from server.`
+          })
+        }
+      })
+      .catch(error => {
+        this.setState({ loadError: error })
+      })
+  }
+
+  load = event => {
+    event.preventDefault()
+    this._loadDataset(this.props.filter)
+  }
+
+  render() {
+    if (this.state.loadError) {
+      return (
+        <article className="message is-danger">
+          <div className="message-header">
+            <p>
+              <strong>Load Error</strong>
+            </p>
+          </div>
+          <div className="message-body">
+            <p>{this.state.loadError}</p>
+            <button onClick={this.load} className="button">
+              Reload Charts
+            </button>
+          </div>
+        </article>
+      )
+    }
+    if (!this.state.datasets.length) {
+      return (
+        <button onClick={this.load} className="button">
+          Load Charts
+        </button>
+      )
+    }
+
+    return (
+      <div className="container">
+        {this.state.loading && <Loading />}
+        {this.state.datasets.map(dataset => {
+          return <ShowGraph key={dataset.id} dataset={dataset} />
+        })}
+        <p>
+          <button onClick={this.load} className="button">
+            Reload Charts
+          </button>
+        </p>
+      </div>
+    )
+  }
+}
+
+class ShowGraph extends React.Component {
+  componentDidMount() {
+    this._renderGraphs(this.props.dataset)
+  }
+
+  componentDidUpdate() {
+    this._renderGraphs(this.props.dataset)
+  }
+
+  _renderGraphs = dataset => {
+    const ctx = document.getElementById(dataset.id).getContext('2d')
+    const options = dataset.options
+    options.tooltips = {
+      callbacks: {
+        label: (item, data) => {
+          if (dataset.value_type === 'bytes') {
+            return formatFileSize(item.yLabel)
+          } else if (dataset.value_type === 'seconds') {
+            return formatSeconds(item.yLabel)
+          } else {
+            return item.yLabel
+          }
+        }
+      }
+    }
+    options.scales.yAxes = [
+      {
+        ticks: {
+          callback: (value, index, values) => {
+            if (dataset.value_type === 'bytes') {
+              return formatFileSize(value)
+            } else if (dataset.value_type === 'seconds') {
+              return formatSeconds(value)
+            }
+            return value
+          }
+        }
+      }
+    ]
+    if (this.chart) {
+      this.chart.destroy()
+    }
+    this.chart = new Chart(ctx, {
+      type: dataset.type,
+      data: dataset.data,
+      options: dataset.options
+    })
+  }
+
+  render() {
+    return <canvas id={this.props.dataset.id} />
+  }
 }

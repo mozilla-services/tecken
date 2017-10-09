@@ -11,7 +11,7 @@ from django import http
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission, User, Group
-from django.db.models import Count, Q, Sum, Avg
+from django.db.models import Count, Q, Sum, Avg, F
 from django.db.models import Aggregate
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -285,8 +285,6 @@ def edit_user(request, id):
     context['groups'] = [
         _serialize_group(x) for x in Group.objects.all()
     ]
-    # print([x for x in dir(request) if x])
-    # print([x for x in dir(request) if 'csrf' in x])
     from django.middleware.csrf import get_token
     context['csrf_token'] = get_token(request)
     return http.JsonResponse(context)
@@ -311,53 +309,7 @@ def uploads(request):
         )
 
     qs = Upload.objects.all()
-    # Force the filtering to *your* symbols unless you have the
-    # 'view_all_uploads' permission.
-    if context['can_view_all']:
-        if form.cleaned_data['user']:
-            operator, user = form.cleaned_data['user']
-            if operator == '!':
-                qs = qs.exclude(user=user)
-            else:
-                qs = qs.filter(user=user)
-    else:
-        qs = qs.filter(user=request.user)
-    orm_operators = {
-        '<=': 'lte',
-        '>=': 'gte',
-        '=': 'exact',
-        '<': 'lt',
-        '>': 'gt',
-    }
-    for operator, value in form.cleaned_data['size']:
-        orm_operator = 'size__{}'.format(
-            orm_operators[operator]
-        )
-        qs = qs.filter(**{orm_operator: value})
-    for key in ('created_at', 'completed_at'):
-        for operator, value in form.cleaned_data.get(key, []):
-            if value is None:
-                orm_operator = f'{key}__isnull'
-                qs = qs.filter(**{orm_operator: True})
-            elif operator == '=' and value.hour == 0 and value.minute == 0:
-                # When querying on a specific day, make it a little easier
-                qs = qs.filter(**{
-                    f'{key}__gte': value,
-                    f'{key}__lt': value + datetime.timedelta(days=1),
-                })
-            else:
-                if operator == '>':
-                    # Because we use microseconds in the ORM, but when
-                    # datetimes are passed back end forth in XHR, the
-                    # datetimes are converted with isoformat() which
-                    # drops microseconds. Therefore add 1 second to
-                    # avoid matching the latest date.
-                    value += datetime.timedelta(seconds=1)
-                orm_operator = '{}__{}'.format(
-                    key,
-                    orm_operators[operator]
-                )
-                qs = qs.filter(**{orm_operator: value})
+    qs = filter_uploads(qs, context['can_view_all'], request.user, form)
 
     batch_size = settings.API_UPLOADS_BATCH_SIZE
 
@@ -432,6 +384,272 @@ def uploads(request):
     context['batch_size'] = batch_size
 
     return http.JsonResponse(context)
+
+
+def filter_uploads(qs, can_view_all, user, form):
+    # Force the filtering to *your* symbols unless you have the
+    # 'view_all_uploads' permission.
+    if can_view_all:
+        if form.cleaned_data['user']:
+            operator, user = form.cleaned_data['user']
+            if operator == '!':
+                qs = qs.exclude(user=user)
+            else:
+                qs = qs.filter(user=user)
+    else:
+        qs = qs.filter(user=user)
+    orm_operators = {
+        '<=': 'lte',
+        '>=': 'gte',
+        '=': 'exact',
+        '<': 'lt',
+        '>': 'gt',
+    }
+    for operator, value in form.cleaned_data['size']:
+        orm_operator = 'size__{}'.format(
+            orm_operators[operator]
+        )
+        qs = qs.filter(**{orm_operator: value})
+    for key in ('created_at', 'completed_at'):
+        for operator, value in form.cleaned_data.get(key, []):
+            if value is None:
+                orm_operator = f'{key}__isnull'
+                qs = qs.filter(**{orm_operator: True})
+            elif operator == '=' and value.hour == 0 and value.minute == 0:
+                # When querying on a specific day, make it a little easier
+                qs = qs.filter(**{
+                    f'{key}__gte': value,
+                    f'{key}__lt': value + datetime.timedelta(days=1),
+                })
+            else:
+                if operator == '>':
+                    # Because we use microseconds in the ORM, but when
+                    # datetimes are passed back end forth in XHR, the
+                    # datetimes are converted with isoformat() which
+                    # drops microseconds. Therefore add 1 second to
+                    # avoid matching the latest date.
+                    value += datetime.timedelta(seconds=1)
+                orm_operator = '{}__{}'.format(
+                    key,
+                    orm_operators[operator]
+                )
+                qs = qs.filter(**{orm_operator: value})
+
+    return qs
+
+
+@api_login_required
+def uploads_datasets(request):
+    can_view_all = request.user.has_perm('upload.view_all_uploads')
+
+    form = forms.UploadsForm(request.GET)
+    if not form.is_valid():
+        return http.JsonResponse({'errors': form.errors}, status=400)
+
+    qs = Upload.objects.all()
+    qs = filter_uploads(qs, can_view_all, request.user, form)
+
+    limit = int(request.GET.get('limit', 20))
+    datasets = []
+    # A dataset for all upload sizes
+    datasets.append(_upload_sizes_dataset(qs, limit))
+    # A dataset for all upload times
+    datasets.append(_upload_times_dataset(qs, limit))
+    # Counts of files, skipped per upload
+    datasets.append(_upload_counts_dataset(qs, limit))
+
+    context = {
+        'datasets': datasets,
+    }
+    return http.JsonResponse(context)
+
+
+def _upload_sizes_dataset(qs, limit):
+    data = []
+    data_upload_sizes = []
+    data_file_sizes = []
+    labels = []
+    for upload in qs.order_by('-created_at')[:limit]:
+        labels.append(upload.created_at.strftime('%d/%b'))
+        data_upload_sizes.append(upload.size)
+        files = FileUpload.objects.filter(upload=upload).aggregate(
+            sum_size=Sum('size')
+        )
+        data_file_sizes.append(files['sum_size'] or 0)
+    labels.reverse()
+    data_upload_sizes.reverse()
+    data_file_sizes.reverse()
+    data = {
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Uploads Received',
+                'data': data_upload_sizes,
+                'backgroundColor': 'rgba(255, 99, 132, 0.5)',
+            },
+            {
+                'label': 'Files Uploaded',
+                'data': data_file_sizes,
+                'backgroundColor': 'rgba(54, 162, 235, 0.5)',
+            },
+        ]
+    }
+    return {
+        'id': 'upload-sizes',
+        'data': data,
+        'type': 'bar',
+        'value_type': 'bytes',
+        'options': {
+            'title': {
+                'display': True,
+                'text': (
+                    f'Upload Sizes Compared to Files Uploaded (last {limit})'
+                ),
+            },
+            'tooltips': {
+                'mode': 'index',
+                'intersect': False
+            },
+            'responsive': True,
+            'scales': {
+                'xAxes': [{
+                    'display': False,
+                }],
+                'yAxes': [{
+                    'display': True,
+                }]
+            }
+        },
+    }
+
+
+def _upload_times_dataset(qs, limit):
+    data = []
+    data_upload_times = []
+    data_file_times = []
+    labels = []
+    qs = qs.filter(completed_at__isnull=False)
+    for upload in qs.order_by('-created_at')[:limit]:
+        labels.append(upload.created_at.strftime('%d/%b'))
+        diff = upload.completed_at - upload.created_at
+        data_upload_times.append(diff.total_seconds())
+        diffs = FileUpload.objects.filter(
+            upload=upload,
+            completed_at__isnull=False,
+        ).aggregate(
+            diff=Sum(F('completed_at') - F('created_at')),
+        )['diff']
+        data_file_times.append(diffs and diffs.total_seconds() or 0.0)
+    labels.reverse()
+    data_upload_times.reverse()
+    data_file_times.reverse()
+    data = {
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Uploads Received',
+                'data': data_upload_times,
+                'backgroundColor': 'rgba(255, 99, 132, 0.5)',
+            },
+            {
+                'label': 'Files Uploaded',
+                'data': data_file_times,
+                'backgroundColor': 'rgba(54, 162, 235, 0.5)',
+            },
+        ]
+    }
+    return {
+        'id': 'upload-times',
+        'value_type': 'seconds',
+        'data': data,
+        'type': 'bar',
+        'options': {
+            'title': {
+                'display': True,
+                'text': (
+                    f'Upload Processing Times Compared to Files '
+                    f'Uploaded (last {limit})'
+                ),
+            },
+            'tooltips': {
+                'mode': 'index',
+                'intersect': False
+            },
+            'responsive': True,
+            'scales': {
+                'xAxes': [{
+                    'display': False,
+                }],
+                'yAxes': [{
+                    'display': True,
+                }]
+            }
+        },
+    }
+
+
+def _upload_counts_dataset(qs, limit):
+    data = []
+    data_file_counts = []
+    data_skipped_counts = []
+    labels = []
+    qs = qs.filter(completed_at__isnull=False)
+    for upload in qs.order_by('-created_at')[:limit]:
+        labels.append(upload.created_at.strftime('%d/%b'))
+
+        files = FileUpload.objects.filter(
+            upload=upload,
+            completed_at__isnull=False,
+        )
+        data_file_counts.append(files.count())
+        data_skipped_counts.append(
+            upload.skipped_keys and len(upload.skipped_keys) or 0
+        )
+    labels.reverse()
+    data_file_counts.reverse()
+    data_skipped_counts.reverse()
+    data = {
+        'labels': labels,
+        'datasets': [
+            {
+                'label': 'Files Uploaded',
+                'data': data_file_counts,
+                'backgroundColor': 'rgba(255, 99, 132, 0.5)',
+            },
+            {
+                'label': 'Files Skipped',
+                'data': data_skipped_counts,
+                'backgroundColor': 'rgba(54, 162, 235, 0.5)',
+            },
+        ]
+    }
+    return {
+        'id': 'upload-file-counts',
+        'value_type': 'count',
+        'data': data,
+        'type': 'bar',
+        'options': {
+            'title': {
+                'display': True,
+                'text': (
+                    f'Files Uploaded and Files Skipped (last {limit})'
+                ),
+            },
+            'tooltips': {
+                'mode': 'index',
+                'intersect': False
+            },
+            'responsive': True,
+            'scales': {
+                'xAxes': [{
+                    'display': False,
+                }],
+                'yAxes': [{
+                    'display': True,
+                }]
+            }
+        },
+    }
 
 
 @api_login_required
