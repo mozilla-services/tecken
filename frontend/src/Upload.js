@@ -306,7 +306,8 @@ const DisplayUpload = ({ upload, onCancel }) => {
       <ShowUploadFiles upload={upload} />
 
       {/* <h4 className="title is-4">Files Summary</h4> */}
-      <ShowAggregates aggregates={aggregates} />
+      <ShowAggregates upload={upload} />
+      <ShowUploadTimes upload={upload} />
     </div>
   )
 }
@@ -545,7 +546,7 @@ const ShowAggregates = ({ upload }) => {
   )
 }
 
-const ShowUploadTimes = ({ upload, files }) => {
+const ShowUploadTimes = ({ upload }) => {
   if (!upload.completed_at) {
     return null
   }
@@ -554,7 +555,7 @@ const ShowUploadTimes = ({ upload, files }) => {
   const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart)
   const uploadTimes = []
   let longestFileUpload = null
-  files.forEach(file => {
+  upload.file_uploads.forEach(file => {
     if (file.completed_at) {
       const start = toDate(file.created_at)
       const end = toDate(file.completed_at)
