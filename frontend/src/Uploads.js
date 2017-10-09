@@ -61,14 +61,6 @@ class Uploads extends React.PureComponent {
       this._fetchUploads()
     }
 
-    // If the current user can only see her uploads, change the
-    // title accordingly.
-    if (!store.hasPermission('upload.view_all_uploads')) {
-      this.setState({ pageTitle: 'Your Uploads' }, () => {
-        document.title = this.state.pageTitle
-      })
-    }
-
     window.setTimeout(() => {
       this._fetchUploadsNewCountLoop()
     }, this.newCountLoopInterval)
@@ -112,6 +104,7 @@ class Uploads extends React.PureComponent {
           this.setState(
             {
               uploads: response.uploads,
+              canViewAll: response.can_view_all,
               aggregates: response.aggregates,
               total: response.total,
               batchSize: response.batch_size,
@@ -225,18 +218,25 @@ class Uploads extends React.PureComponent {
     })
   }
 
+  _filterOnYourUploads = () => {
+    if (this.state.filter.user && store.currentUser) {
+      return this.state.filter.user === store.currentUser.email
+    }
+    return false
+  }
+
   render() {
     return (
       <div>
         {store.hasPermission('upload.view_all_uploads') ? (
           <div className="tabs is-centered">
             <ul>
-              <li className={!this.state.filter.user ? 'is-active' : ''}>
+              <li className={!this._filterOnYourUploads() ? 'is-active' : ''}>
                 <Link to="/uploads" onClick={this.filterOnAll}>
                   All Uploads
                 </Link>
               </li>
-              <li className={this.state.filter.user ? 'is-active' : ''}>
+              <li className={this._filterOnYourUploads() ? 'is-active' : ''}>
                 <Link
                   to={`/uploads?user=${store.currentUser.email}`}
                   onClick={this.filterOnYours}
@@ -292,6 +292,7 @@ class Uploads extends React.PureComponent {
         {this.state.uploads && (
           <DisplayUploads
             uploads={this.state.uploads}
+            canViewAll={this.state.canViewAll}
             aggregates={this.state.aggregates}
             total={this.state.total}
             batchSize={this.state.batchSize}
@@ -371,9 +372,17 @@ const ShowValidationErrors = ({ errors, resetAndReload }) => {
 
 class DisplayUploads extends React.PureComponent {
   componentDidMount() {
-    // XXX perhaps this stuff should happen in a componentWillReceiveProps too
-    const filter = this.props.filter
-    this.refs.user.value = filter.user || ''
+    this._updateFilterInputs(this.props.filter, this.props.canViewAll)
+  }
+
+  componentWillReceiveProps(nextProps) {
+    this._updateFilterInputs(nextProps.filter, nextProps.canViewAll)
+  }
+
+  _updateFilterInputs = (filter, canViewAll) => {
+    if (canViewAll) {
+      this.refs.user.value = filter.user || ''
+    }
     this.refs.size.value = filter.size || ''
     this.refs.created_at.value = filter.created_at || ''
     this.refs.completed_at.value = filter.completed_at || ''
@@ -381,7 +390,10 @@ class DisplayUploads extends React.PureComponent {
 
   submitForm = event => {
     event.preventDefault()
-    const user = this.refs.user.value.trim()
+    let user = ''
+    if (this.props.canViewAll) {
+      user = this.refs.user.value.trim()
+    }
     const size = this.refs.size.value.trim()
     const created_at = this.refs.created_at.value.trim()
     const completed_at = this.refs.completed_at.value.trim()
@@ -395,7 +407,9 @@ class DisplayUploads extends React.PureComponent {
   }
 
   resetFilter = event => {
-    this.refs.user.value = ''
+    if (this.props.canViewAll) {
+      this.refs.user.value = ''
+    }
     this.refs.size.value = ''
     this.refs.created_at.value = ''
     this.refs.completed_at.value = ''
@@ -434,12 +448,14 @@ class DisplayUploads extends React.PureComponent {
                 </button>
               </td>
               <td>
-                <input
-                  type="text"
-                  className="input"
-                  ref="user"
-                  placeholder="filter..."
-                />
+                {this.props.canViewAll && (
+                  <input
+                    type="text"
+                    className="input"
+                    ref="user"
+                    placeholder="filter..."
+                  />
+                )}
               </td>
               <td>
                 <input
@@ -637,11 +653,15 @@ class ShowGraphs extends React.PureComponent {
     this.state = {
       datasets: [],
       loading: false,
-      loadError: null
+      loadError: null,
+      enabled: false
     }
   }
 
   componentWillReceiveProps(nextProps) {
+    if (!this.state.enabled) {
+      return
+    }
     const filterAsQueryString = queryString.stringify(nextProps.filter)
     // Use this as a cache to prevent fetching when the filter hasn't
     // actually changed.
@@ -678,6 +698,7 @@ class ShowGraphs extends React.PureComponent {
 
   load = event => {
     event.preventDefault()
+    this.setState({ enabled: true })
     this._loadDataset(this.props.filter)
   }
 
