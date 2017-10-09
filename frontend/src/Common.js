@@ -74,7 +74,7 @@ export const formatFileSize = (bytes, decimals = 0) => {
 export const formatSeconds = seconds => {
   if (seconds < 1) {
     // milliseconds
-    return (seconds * 1000).toFixed(1) + 'ms'
+    return (seconds * 1000).toFixed(0) + 'ms'
   } else if (seconds > 3000) {
     return (seconds / 60).toFixed(1) + 'm'
   } else {

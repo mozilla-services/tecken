@@ -1,12 +1,17 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-import { toDate, differenceInMinutes } from 'date-fns/esm'
+import {
+  toDate,
+  differenceInMinutes,
+  differenceInMilliseconds
+} from 'date-fns/esm'
 
 import {
   Loading,
   DisplayDate,
   formatFileSize,
+  formatSeconds,
   DisplayDateDifference,
   BooleanIcon,
   thousandFormat
@@ -387,6 +392,7 @@ const DisplayUpload = ({ upload, aggregates, onCancel }) => {
 
       {/* <h4 className="title is-4">Files Summary</h4> */}
       <ShowAggregates aggregates={aggregates} />
+      <ShowUploadTimes upload={upload} files={upload.file_uploads} />
     </div>
   )
 }
@@ -433,6 +439,74 @@ const ShowAggregates = ({ aggregates }) => {
             Ignored Files
           </p>
           <p className="title">{thousandFormat(aggregates.ignored.count)}</p>
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+const ShowUploadTimes = ({ upload, files }) => {
+  if (!upload.completed_at) {
+    return null
+  }
+  const uploadStart = toDate(upload.created_at)
+  const uploadEnd = toDate(upload.completed_at)
+  const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart)
+  const uploadTimes = []
+  let longestFileUpload = null
+  files.forEach(file => {
+    if (file.completed_at) {
+      const start = toDate(file.created_at)
+      const end = toDate(file.completed_at)
+      const diff = differenceInMilliseconds(end, start)
+      if (longestFileUpload === null || longestFileUpload < diff) {
+        longestFileUpload = diff
+      }
+      uploadTimes.push(diff)
+    }
+  })
+  if (!uploadTimes.length) {
+    return null
+  }
+
+  const filesSum = uploadTimes.reduce((a, b) => a + b, 0)
+  const filesAvg = filesSum / uploadTimes.length
+  uploadTimes.sort((a, b) => a - b)
+  const filesMedian =
+    (uploadTimes[(uploadTimes.length - 1) >> 1] +
+      uploadTimes[uploadTimes.length >> 1]) /
+    2
+
+  return (
+    <nav className="level" style={{ marginTop: 60 }}>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Total Completion Time</p>
+          <p className="title">{formatSeconds(uploadTime / 1000)}</p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Sum File Upload Time</p>
+          <p className="title">{formatSeconds(filesSum / 1000)}</p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Average File Upload Time</p>
+          <p className="title">{formatSeconds(filesAvg / 1000)}</p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Median File Upload Time</p>
+          <p className="title">{formatSeconds(filesMedian / 1000)}</p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Longest File Upload Time</p>
+          <p className="title">{formatSeconds(longestFileUpload / 1000)}</p>
         </div>
       </div>
     </nav>

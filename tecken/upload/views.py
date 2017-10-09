@@ -8,6 +8,7 @@ import io
 import fnmatch
 import zipfile
 import os
+import concurrent.futures
 
 import requests
 from botocore.exceptions import ClientError
@@ -272,23 +273,37 @@ def upload_archive(request):
         ignored_keys=ignored_keys or None,
     )
 
-    for key_name in keep_keys:
-        file_buffer, file_size, compressed, update = keep_keys[key_name]
-        upload_file_upload(
-            client,
-            bucket_info.name,
-            key_name,
-            file_buffer,
-            file_size,
-            compressed=compressed,
-            update=update,
-            upload=upload_obj,
-        )
-        logger.info(f'Uploaded key {key_name}')
-        metrics.incr('upload_file_upload_upload', 1)
+    thread_pool = concurrent.futures.ThreadPoolExecutor(
+        max_workers=settings.UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS
+    )
+    file_uploads_created = []
+    with thread_pool as executor:
+        future_to_key = {}
+        for key_name in keep_keys:
+            file_buffer, file_size, compressed, update = keep_keys[key_name]
+            # We can't do a fire-and-forget, even if we don't need the
+            # FileUpload instance that upload_file_upload() creates and
+            # returns.
+            future_to_key[
+                executor.submit(
+                    upload_file_upload,
+                    client,
+                    bucket_info.name,
+                    key_name,
+                    file_buffer,
+                    file_size,
+                    compressed=compressed,
+                    update=update,
+                    upload=upload_obj,
+                )
+            ] = key_name
+        # If we don't wait for the completed result of each future
+        # any errors that are raised within won't bubble up.
+        for future in concurrent.futures.as_completed(future_to_key):
+            file_uploads_created.append(future.result())
 
     if keep_keys:
-        logger.info(f'Created {len(keep_keys)} FileUpload objects')
+        logger.info(f'Created {len(file_uploads_created)} FileUpload objects')
     else:
         logger.info(f'No file uploads created for {upload_obj!r}')
 

@@ -204,6 +204,11 @@ class Core(AWS, Configuration, Celery):
     # discard connections to create new ones.
     EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS = values.IntegerValue(10)
 
+    # The number of, max, workers to passed to
+    # concurrent.futures.ThreadPoolExecutor(max_workers) when uploading
+    # multiple files to S3.
+    UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS = values.IntegerValue(10)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
@@ -625,6 +630,9 @@ class Test(Localdev):
         #     'class': 'tecken.markus_extra.LogAllMetricsKeys',
         # },
     ]
+
+    EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS = 1
+    UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS = 1
 
 
 class Dev(Base):

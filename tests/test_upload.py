@@ -106,7 +106,7 @@ def test_get_prepared_file_buffer(settings):
     assert size == len(content)
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)  # needed because of concurrency
 def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     token = Token.objects.create(user=fakeuser)
@@ -237,7 +237,6 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    metricsmock.print_records()
     assert len(records) == 7
     assert records[0][1] == 'tecken.upload_file_exists'
     assert records[1][1] == 'tecken.upload_file_exists'
@@ -248,7 +247,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
     assert records[6][1] == 'tecken.upload_archive'
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_one_uploaded_one_skipped(
     client,
     botomock,
@@ -427,7 +426,6 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
 
 def test_key_existing_sizes(botomock, metricsmock):
     def mock_api_call(self, operation_name, api_params):
-        print((operation_name, api_params))
         assert api_params['Bucket'] == 'private'
         if operation_name == 'HeadBucket':
             # yep, bucket exists
@@ -475,7 +473,7 @@ def test_key_existing_sizes(botomock, metricsmock):
         assert sizes['v0/bar.sym'] == 0
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_key_lookup_cached(
     client,
     botomock,
@@ -589,7 +587,7 @@ def test_upload_archive_key_lookup_cached(
         assert len(lookups) == 2
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_one_uploaded_one_errored(
     client,
     botomock,
@@ -660,15 +658,6 @@ def test_upload_archive_one_uploaded_one_errored(
         upload, = Upload.objects.all()
         assert upload.user == fakeuser
         assert not upload.completed_at
-        # # based on `ls -l tests/sample.zip` knowledge
-        # assert upload.size == 69812
-        # assert upload.bucket_name == 'private'
-        # assert upload.bucket_region is None
-        # assert upload.bucket_endpoint_url == 'https://s3.example.com'
-        # assert upload.skipped_keys == [
-        #     'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-        # ]
-        # assert upload.ignored_keys == ['build-symbols.txt']
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
@@ -677,7 +666,7 @@ def test_upload_archive_one_uploaded_one_errored(
     )
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_with_cache_invalidation(
     client,
     botomock,
@@ -792,7 +781,7 @@ def test_upload_archive_with_cache_invalidation(
         assert len(lookups) == 3
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_both_skipped(
     client,
     botomock,
@@ -875,7 +864,7 @@ def test_upload_archive_both_skipped(
     assert not FileUpload.objects.all().exists()
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_by_url(
     client,
     botomock,
