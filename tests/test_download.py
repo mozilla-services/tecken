@@ -433,7 +433,7 @@ def test_get_microsoft_symbol_client(client, botomock, settings):
             assert len(task_arguments) == 1
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_download_microsoft_symbol_task_happy_path(
     botomock,
     metricsmock,
@@ -510,13 +510,14 @@ def test_download_microsoft_symbol_task_happy_path(
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 6
+    assert len(records) == 7
     assert records[0][1] == 'tecken.cabextract'
     assert records[1][1] == 'tecken.dump_syms'
     assert records[2][1] == 'tecken.upload_file_exists'
     assert records[3][1] == 'tecken.upload_file_upload'
-    assert records[4][1] == 'tecken.microsoft_download_file_upload_upload'
-    assert records[5][1] == 'tecken.upload_microsoft_symbol'
+    assert records[4][1] == 'tecken.upload_file_upload_upload'
+    assert records[5][1] == 'tecken.microsoft_download_file_upload_upload'
+    assert records[6][1] == 'tecken.upload_microsoft_symbol'
 
 
 @pytest.mark.django_db

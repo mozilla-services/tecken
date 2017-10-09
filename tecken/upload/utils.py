@@ -244,6 +244,8 @@ def upload_file_upload(
     FileUpload.objects.filter(id=file_upload.id).update(
         completed_at=timezone.now(),
     )
+    logger.info(f'Uploaded key {key_name}')
+    metrics.incr('upload_file_upload_upload', 1)
 
     # If we managed to upload a file there, different or not,
     # cache invalidate the key_existing_size() lookup.
