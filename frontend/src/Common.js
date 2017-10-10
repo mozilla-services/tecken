@@ -150,7 +150,7 @@ export const TableSubTitle = ({ total, page, batchSize }) => {
   const totalPages = Math.ceil(total / batchSize)
   return (
     <h2 className="subtitle">
-      {total} Found (Page {page} of {totalPages})
+      {thousandFormat(total)} Found (Page {thousandFormat(page)} of {thousandFormat(totalPages)})
     </h2>
   )
 }

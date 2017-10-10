@@ -48,7 +48,7 @@ urlpatterns = [
         name='uploads_datasets'
     ),
     url(
-        r'uploads/files$',
+        r'uploads/files/$',
         views.upload_files,
         name='upload_files'
     ),

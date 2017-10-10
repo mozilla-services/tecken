@@ -446,7 +446,7 @@ class Base(Core):
     # How many uploads to display per page when paginating through
     # past uploads.
     API_UPLOADS_BATCH_SIZE = 20
-    API_FILES_BATCH_SIZE = 10
+    API_FILES_BATCH_SIZE = 40
 
     # Every time we do a symbol upload, we also take a look to see if there
     # are incomplete uploads that could have failed due to some unlucky
@@ -558,7 +558,7 @@ class Localdev(Base):
     # Set these to smaller numbers for the sake of more easily testing
     # pagination in local development.
     API_UPLOADS_BATCH_SIZE = 10
-    API_FILES_BATCH_SIZE = 5
+    API_FILES_BATCH_SIZE = 20
 
 
 class Test(Localdev):

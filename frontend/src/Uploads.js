@@ -14,7 +14,7 @@ import {
   TableSubTitle,
   thousandFormat,
   pluralize,
-  DisplayFilesSummary,
+  DisplayFilesSummary
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
@@ -246,7 +246,7 @@ class Uploads extends React.PureComponent {
                 </Link>
               </li>
               <li>
-                <Link to="/uploads/files">All Files</Link>
+                <Link to="/uploads/files/">All Files</Link>
               </li>
               <li>
                 <Link to="/uploads/upload">Upload Now</Link>
@@ -257,7 +257,7 @@ class Uploads extends React.PureComponent {
           <div className="tabs is-centered">
             <ul>
               <li className={!this.state.filter.user ? 'is-active' : ''}>
-                <Link to="/uploads">All Uploads</Link>
+                <Link to="/uploads/">All Uploads</Link>
               </li>
               <li>
                 <Link to="/uploads/upload">Upload Now</Link>
@@ -464,7 +464,7 @@ class DisplayUploads extends React.PureComponent {
                   className="input"
                   ref="size"
                   placeholder="filter..."
-                  style={{ width: 200 }}
+                  style={{ width: 140 }}
                 />
               </td>
               <td>

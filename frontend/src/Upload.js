@@ -426,7 +426,7 @@ class ShowUploadFiles extends React.PureComponent {
     return (
       <div>
         <h4 className="title is-4">Files</h4>
-        <table className="table files-table">
+        <table className="table is-fullwidth files-table">
           <thead>
             <tr>
               <th className="sortable" onClick={this.sortByKey}>
@@ -459,7 +459,7 @@ class ShowUploadFiles extends React.PureComponent {
               if (file.skipped || file.ignored) {
                 return (
                   <tr key={file.key}>
-                    <td>{file.key}</td>
+                    <td className="file-key">{file.key}</td>
                     <td colSpan={6}>
                       <b>{file.skipped ? 'Skipped' : 'Ignored'}</b>{' '}
                       {file.skipped ? (
@@ -477,7 +477,7 @@ class ShowUploadFiles extends React.PureComponent {
               }
               return (
                 <tr key={file.key}>
-                  <td>{file.key}</td>
+                  <td className="file-key">{file.key}</td>
                   <td>{formatFileSize(file.size)}</td>
                   <td>{BooleanIcon(file.update)}</td>
                   <td>{BooleanIcon(file.compressed)}</td>
@@ -627,9 +627,7 @@ const ShowRelatedUploads = ({ upload }) => {
   }
   return (
     <div style={{ marginTop: 100 }}>
-      <h4 className="title is-4">
-        Related Uploads ({upload.related.length})
-      </h4>
+      <h4 className="title is-4">Related Uploads ({upload.related.length})</h4>
       <table className="table">
         <thead>
           <tr>
