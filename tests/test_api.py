@@ -757,8 +757,57 @@ def test_upload(client):
     result = response.json()
     assert result['upload']['id'] == upload.id
     assert result['upload']['user']['email'] == upload.user.email
+    assert result['upload']['related'] == []
     first_file_upload, = result['upload']['file_uploads']
     assert first_file_upload['size'] == 1234
+
+
+@pytest.mark.django_db
+def test_upload_related(client):
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    permission = Permission.objects.get(codename='view_all_uploads')
+    user.user_permissions.add(permission)
+    assert client.login(username='peterbe', password='secret')
+
+    upload = Upload.objects.create(
+        user=User.objects.create(email='her@example.com'),
+        size=123456,
+        skipped_keys=['foo'],
+        ignored_keys=['bar'],
+        filename='symbols.zip',
+    )
+    FileUpload.objects.create(
+        upload=upload,
+        size=1234,
+        key='foo.sym',
+    )
+
+    upload2 = Upload.objects.create(
+        user=upload.user,
+        size=upload.size,
+        filename=upload.filename,
+    )
+
+    url = reverse('api:upload', args=(upload.id,))
+    response = client.get(url)
+    assert response.status_code == 200
+    result = response.json()
+    assert result['upload']['related'][0]['id'] == upload2.id
+
+    upload3 = Upload.objects.create(
+        user=upload.user,
+        size=upload.size,
+        filename='different.zip',
+        content_hash='deadbeef123'
+    )
+    upload.content_hash = upload3.content_hash
+    upload.save()
+    response = client.get(url)
+    assert response.status_code == 200
+    result = response.json()
+    assert result['upload']['related'][0]['id'] == upload3.id
 
 
 @pytest.mark.django_db

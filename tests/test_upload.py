@@ -200,12 +200,13 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
         upload, = Upload.objects.all()
         assert upload.user == fakeuser
-        # assert upload.inbox_key is None
-        # assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
         assert upload.filename == 'file.zip'
         assert upload.completed_at
-        # based on `ls -l tests/sample.zip` knowledge
+        # Based on `ls -l tests/sample.zip` knowledge
         assert upload.size == 69812
+        # This is predictable and shouldn't change unless the fixture
+        # file used changes.
+        assert upload.content_hash == '93f312c283de3df1210dd764426f6c'
         assert upload.bucket_name == 'private'
         assert upload.bucket_region is None
         assert upload.bucket_endpoint_url == 'https://s3.example.com'

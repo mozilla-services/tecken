@@ -160,3 +160,6 @@ export const pluralize = (number, singular, plural) => {
     return `${number} ${plural}`
   }
 }
+
+export const DisplayFilesSummary = (files, skipped, ignored) =>
+  `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`

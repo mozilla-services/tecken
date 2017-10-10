@@ -14,7 +14,8 @@ import {
   formatSeconds,
   DisplayDateDifference,
   BooleanIcon,
-  thousandFormat
+  thousandFormat,
+  DisplayFilesSummary
 } from './Common'
 import './Upload.css'
 import Fetch from './Fetch'
@@ -43,7 +44,15 @@ export default class Upload extends React.PureComponent {
   componentDidMount() {
     document.title = this.pageTitle
     this.setState({ loading: true })
+    this._upload_id = this.props.match.params.id
     this._fetchUpload(this.props.match.params.id)
+  }
+
+  componentDidUpdate() {
+    if (this._upload_id !== this.props.match.params.id) {
+      this._upload_id = this.props.match.params.id
+      this._fetchUpload(this.props.match.params.id)
+    }
   }
 
   goBack = event => {
@@ -176,11 +185,7 @@ export default class Upload extends React.PureComponent {
               interval={this.state.refreshingInterval}
             />
           )}
-        {this.state.upload && (
-          <DisplayUpload
-            upload={this.state.upload}
-          />
-        )}
+        {this.state.upload && <DisplayUpload upload={this.state.upload} />}
       </div>
     )
   }
@@ -231,8 +236,7 @@ class DisplayRefreshingInterval extends React.PureComponent {
   }
 }
 
-
-const DisplayUpload = ({ upload, onCancel }) => {
+const DisplayUpload = ({ upload }) => {
   return (
     <div>
       <h4 className="title is-4">Metadata</h4>
@@ -302,12 +306,12 @@ const DisplayUpload = ({ upload, onCancel }) => {
           </tr>
         </tbody>
       </table>
-      <h4 className="title is-4">Files</h4>
       <ShowUploadFiles upload={upload} />
 
       {/* <h4 className="title is-4">Files Summary</h4> */}
       <ShowAggregates upload={upload} />
       <ShowUploadTimes upload={upload} />
+      <ShowRelatedUploads upload={upload} />
     </div>
   )
 }
@@ -420,76 +424,79 @@ class ShowUploadFiles extends React.PureComponent {
       )
     )
     return (
-      <table className="table files-table">
-        <thead>
-          <tr>
-            <th className="sortable" onClick={this.sortByKey}>
-              Key
-            </th>
-            <th className="sortable" onClick={this.sortBySize}>
-              Size
-            </th>
-            <th
-              className="bool-row sortable"
-              title="True if the file overwrote an existing one with the same name"
-              onClick={this.sortByUpdate}
-            >
-              Update
-            </th>
-            <th
-              className="bool-row"
-              title="True if the file was first gzipped before uploading"
-              onClick={this.sortByCompressed}
-            >
-              Compressed
-            </th>
-            <th className="sortable" onClick={this.sortByTime}>
-              Time to complete
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {allKeys.map(file => {
-            if (file.skipped || file.ignored) {
+      <div>
+        <h4 className="title is-4">Files</h4>
+        <table className="table files-table">
+          <thead>
+            <tr>
+              <th className="sortable" onClick={this.sortByKey}>
+                Key
+              </th>
+              <th className="sortable" onClick={this.sortBySize}>
+                Size
+              </th>
+              <th
+                className="bool-row sortable"
+                title="True if the file overwrote an existing one with the same name"
+                onClick={this.sortByUpdate}
+              >
+                Update
+              </th>
+              <th
+                className="bool-row"
+                title="True if the file was first gzipped before uploading"
+                onClick={this.sortByCompressed}
+              >
+                Compressed
+              </th>
+              <th className="sortable" onClick={this.sortByTime}>
+                Time to complete
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {allKeys.map(file => {
+              if (file.skipped || file.ignored) {
+                return (
+                  <tr key={file.key}>
+                    <td>{file.key}</td>
+                    <td colSpan={6}>
+                      <b>{file.skipped ? 'Skipped' : 'Ignored'}</b>{' '}
+                      {file.skipped ? (
+                        <small>
+                          Not uploaded because existing file has the same size
+                        </small>
+                      ) : (
+                        <small>
+                          File OK in the archive but deliberately not uploaded
+                        </small>
+                      )}
+                    </td>
+                  </tr>
+                )
+              }
               return (
                 <tr key={file.key}>
                   <td>{file.key}</td>
-                  <td colSpan={6}>
-                    <b>{file.skipped ? 'Skipped' : 'Ignored'}</b>{' '}
-                    {file.skipped ? (
-                      <small>
-                        Not uploaded because existing file has the same size
-                      </small>
+                  <td>{formatFileSize(file.size)}</td>
+                  <td>{BooleanIcon(file.update)}</td>
+                  <td>{BooleanIcon(file.compressed)}</td>
+                  <td>
+                    {file.completed_at ? (
+                      <DisplayDateDifference
+                        from={file.created_at}
+                        to={file.completed_at}
+                      />
                     ) : (
-                      <small>
-                        File OK in the archive but deliberately not uploaded
-                      </small>
+                      <i>Incomplete!</i>
                     )}
                   </td>
                 </tr>
               )
-            }
-            return (
-              <tr key={file.key}>
-                <td>{file.key}</td>
-                <td>{formatFileSize(file.size)}</td>
-                <td>{BooleanIcon(file.update)}</td>
-                <td>{BooleanIcon(file.compressed)}</td>
-                <td>
-                  {file.completed_at ? (
-                    <DisplayDateDifference
-                      from={file.created_at}
-                      to={file.completed_at}
-                    />
-                  ) : (
-                    <i>Incomplete!</i>
-                  )}
-                </td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            })}
+          </tbody>
+        </table>
+      </div>
     )
   }
 }
@@ -611,5 +618,66 @@ const ShowUploadTimes = ({ upload }) => {
         </div>
       </div>
     </nav>
+  )
+}
+
+const ShowRelatedUploads = ({ upload }) => {
+  if (!upload.related.length) {
+    return null
+  }
+  return (
+    <div style={{ marginTop: 100 }}>
+      <h4 className="title is-4">
+        Related Uploads ({upload.related.length})
+      </h4>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Files</th>
+            <th>Uploaded</th>
+            <th>Completed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {upload.related.map(upload => (
+            <ShowUploadRow key={upload.id} upload={upload} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const ShowUploadRow = ({ upload }) => {
+  return (
+    <tr>
+      <td>
+        <Link
+          to={`/uploads/upload/${upload.id}`}
+          title="Click to see detailed information about this upload"
+          onClick={event => window.scroll(0, 0)}
+        >
+          {DisplayFilesSummary(
+            upload.file_uploads.length,
+            upload.skipped_keys.length,
+            upload.ignored_keys.length
+          )}
+        </Link>
+      </td>
+      <td>
+        <DisplayDate date={upload.created_at} />
+      </td>
+      <td>
+        {upload.completed_at ? (
+          <DisplayDateDifference
+            from={upload.created_at}
+            to={upload.completed_at}
+            suffix="after"
+          />
+        ) : (
+          <i>Incomplete!</i>
+        )}
+      </td>
+    </tr>
   )
 }

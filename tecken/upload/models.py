@@ -36,6 +36,7 @@ class Upload(models.Model):
     # have been successfully uploaded, this is complete.
     completed_at = models.DateTimeField(null=True)
     size = models.PositiveIntegerField()
+    content_hash = models.CharField(null=True, max_length=32)
     # If the upload was by a download URL
     download_url = models.URLField(max_length=500, null=True)
     # One increment for every attempt of processing the upload.
