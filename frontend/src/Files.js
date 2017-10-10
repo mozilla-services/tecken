@@ -8,7 +8,10 @@ import {
   formatFileSize,
   Pagination,
   BooleanIcon,
-  TableSubTitle
+  TableSubTitle,
+  thousandFormat,
+  formatSeconds,
+  DisplayDateDifference
 } from './Common'
 import Fetch from './Fetch'
 import './Upload.css' // they have enough in common
@@ -19,7 +22,7 @@ import store from './Store'
 class Files extends React.PureComponent {
   constructor(props) {
     super(props)
-    this.pageTitle = 'Files Uploaded'
+    this.pageTitle = 'All Files'
     this.state = {
       loading: true, // undone by componentDidMount
       files: null,
@@ -82,6 +85,7 @@ class Files extends React.PureComponent {
         return r.json().then(response => {
           this.setState({
             files: response.files,
+            aggregates: response.aggregates,
             total: response.total,
             batchSize: response.batch_size
           })
@@ -164,6 +168,7 @@ class Files extends React.PureComponent {
         {this.state.files && (
           <DisplayFiles
             files={this.state.files}
+            aggregates={this.state.aggregates}
             total={this.state.total}
             batchSize={this.state.batchSize}
             location={this.props.location}
@@ -184,6 +189,7 @@ class DisplayFiles extends React.PureComponent {
     const filter = this.props.filter
     this.refs.key.value = filter.key || ''
     this.refs.size.value = filter.size || ''
+    this.refs.created_at.value = filter.created_at || ''
     this.refs.bucketName.value = filter.bucket_name || ''
   }
 
@@ -191,11 +197,13 @@ class DisplayFiles extends React.PureComponent {
     event.preventDefault()
     const key = this.refs.key.value.trim()
     const size = this.refs.size.value.trim()
+    const created_at = this.refs.created_at.value.trim()
     const bucketName = this.refs.bucketName.value.trim()
     this.props.updateFilter({
       page: 1,
       key,
       size,
+      created_at,
       bucket_name: bucketName
     })
   }
@@ -204,20 +212,34 @@ class DisplayFiles extends React.PureComponent {
     this.refs.key.value = ''
     this.refs.size.value = ''
     this.refs.bucketName.value = ''
+    this.refs.created_at.value = ''
     this.submitForm(event)
   }
   render() {
-    const { files } = this.props
+    const { files, aggregates } = this.props
 
     return (
       <form onSubmit={this.submitForm}>
-        <table className="table files-table">
+        <table className="table is-fullwidth is-narrow files-table">
           <thead>
             <tr>
               <th>Key</th>
               <th>Size</th>
-              <th>Bucket Name</th>
-              <th>Metadata</th>
+              <th>Bucket</th>
+              <th>Uploaded</th>
+              <th
+                className="bool-row is-clipped"
+                title="True if the file overwrote an existing one with the same name"
+              >
+                Update
+              </th>
+              <th
+                className="bool-row is-clipped"
+                title="True if the file was first gzipped before uploading"
+              >
+                Compressed
+              </th>
+              <th>Time to complete</th>
             </tr>
           </thead>
           <tfoot>
@@ -236,7 +258,7 @@ class DisplayFiles extends React.PureComponent {
                   className="input"
                   ref="size"
                   placeholder="filter..."
-                  style={{ width: 200 }}
+                  style={{ width: 140 }}
                 />
               </td>
               <td>
@@ -245,9 +267,19 @@ class DisplayFiles extends React.PureComponent {
                   className="input"
                   ref="bucketName"
                   placeholder="filter..."
+                  style={{ width: 140 }}
                 />
               </td>
               <td>
+                <input
+                  type="text"
+                  className="input"
+                  ref="created_at"
+                  placeholder="filter..."
+                  style={{ width: 140 }}
+                />
+              </td>
+              <td colSpan={3} style={{ minWidth: 230 }}>
                 <button type="submit" className="button is-primary">
                   Filter Files
                 </button>{' '}
@@ -264,46 +296,32 @@ class DisplayFiles extends React.PureComponent {
           <tbody>
             {files.map(file => (
               <tr key={file.id}>
-                <td>{file.key}</td>
+                <td className="file-key">{file.key}</td>
                 <td>{formatFileSize(file.size)}</td>
                 <td>{file.bucket_name}</td>
                 <td>
-                  <table className="table metadata-table">
-                    <tbody>
-                      <tr>
-                        <th>Upload</th>
-                        <td colSpan={6}>
-                          {file.upload ? (
-                            <Link to={`/uploads/upload/${file.upload.id}`}>
-                              <DisplayDate date={file.upload.created_at} />
-                              {' by '}
-                              {file.upload.user.email}
-                            </Link>
-                          ) : (
-                            <i>n/a</i>
-                          )}
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>Date</th>
-                        <td colSpan={6}>
-                          <DisplayDate date={file.completed_at} />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th title="Did it replace an existing file">Update</th>
-                        <td>{BooleanIcon(file.update)}</td>
-                        <th title="Was it gzip compressed before upload">
-                          Compressed
-                        </th>
-                        <td>{BooleanIcon(file.compressed)}</td>
-                        <th title="Was it uploaded by the Microsoft Download job">
-                          Microsoft
-                        </th>
-                        <td>{BooleanIcon(file.microsoft_download)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  {file.upload ? (
+                    <Link
+                      to={`/uploads/upload/${file.upload.id}`}
+                      title={`Uploaded by ${file.upload.user.email}`}
+                    >
+                      <DisplayDate date={file.created_at} />
+                    </Link>
+                  ) : (
+                    <DisplayDate date={file.created_at} />
+                  )}
+                </td>
+                <td>{BooleanIcon(file.update)}</td>
+                <td>{BooleanIcon(file.compressed)}</td>
+                <td>
+                  {file.completed_at ? (
+                    <DisplayDateDifference
+                      from={file.created_at}
+                      to={file.completed_at}
+                    />
+                  ) : (
+                    <i>Incomplete!</i>
+                  )}
                 </td>
               </tr>
             ))}
@@ -318,34 +336,64 @@ class DisplayFiles extends React.PureComponent {
           currentPage={this.props.filter.page}
         />
 
-        {/* <article className="message" style={{ marginTop: 50 }}>
-          <div className="message-body">
-            <h4 className="title is-4">Examples of Filtering</h4>
-            <ul>
-              <li>
-                <b>User:</b> <code>@mozilla.com</code> to filter on any upload
-                whose email contains this domain.
-              </li>
-              <li>
-                <b>Size:</b> <code>&gt;1mb</code> to filter all uploads{' '}
-                <i>bigger</i> than one megabyte.
-              </li>
-              <li>
-                <b>Uploaded:</b> <code>{todayStr}</code> to filter all uploads
-                uploaded any time during this day (in UTC).
-              </li>
-              <li>
-                <b>Uploaded:</b> <code>&gt;={todayFullStr}</code> to filter all
-                uploads uploaded after this ISO date (in UTC).
-              </li>
-              <li>
-                <b>Completed:</b> <code>incomplete</code> to filter all uploads
-                not yet completed.
-              </li>
-            </ul>
-          </div>
-        </article> */}
+        <ShowAggregates aggregates={aggregates} />
       </form>
     )
   }
+}
+
+const ShowAggregates = ({ aggregates }) => {
+  return (
+    <nav className="level" style={{ marginTop: 60 }}>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">Files</p>
+          <p className="title">
+            {aggregates.files.count
+              ? thousandFormat(aggregates.files.count)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div title="Files that got started upload to S3 but never finished for some reason">
+          <p className="heading">Incomplete Files</p>
+          <p className="title">{thousandFormat(aggregates.files.incomplete)}</p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">File Sizes Sum</p>
+          <p className="title">
+            {aggregates.files.size.sum
+              ? formatFileSize(aggregates.files.size.sum)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div className="level-item has-text-centered">
+        <div>
+          <p className="heading">File Sizes Avg</p>
+          <p className="title">
+            {aggregates.files.size.average
+              ? formatFileSize(aggregates.files.size.average)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+      <div
+        className="level-item has-text-centered"
+        title="Average time to complete upload to S3 of completed files"
+      >
+        <div>
+          <p className="heading">Upload Time Avg</p>
+          <p className="title">
+            {aggregates.files.time.average
+              ? formatSeconds(aggregates.files.time.average)
+              : 'n/a'}
+          </p>
+        </div>
+      </div>
+    </nav>
+  )
 }

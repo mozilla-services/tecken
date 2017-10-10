@@ -778,13 +778,45 @@ def upload_files(request):
     if form.cleaned_data['download']:
         if form.cleaned_data['download'] == 'microsoft':
             qs = qs.filter(microsoft_download=True)
-    if form.cleaned_data.get('bucket_name'):
-        qs = qs.filter(bucket_name__in=form.cleaned_data.get('bucket_name'))
+    include_bucket_names = []
+    for operator, bucket_name in form.cleaned_data['bucket_name']:
+        if operator == '!':
+            qs = qs.exclude(bucket_name=bucket_name)
+        else:
+            include_bucket_names.append(bucket_name)
+    if include_bucket_names:
+        qs = qs.filter(bucket_name__in=include_bucket_names)
 
     files = []
     batch_size = settings.API_FILES_BATCH_SIZE
     start = (page - 1) * batch_size
     end = start + batch_size
+
+    aggregates_numbers = qs.aggregate(
+        count=Count('id'),
+        size_avg=Avg('size'),
+        size_sum=Sum('size'),
+    )
+    time_avg = qs.filter(
+        completed_at__isnull=False
+    ).aggregate(
+        time_avg=Avg(F('completed_at') - F('created_at')),
+    )['time_avg']
+    if time_avg is not None:
+        time_avg = time_avg.total_seconds()
+    aggregates = {
+        'files': {
+            'count': aggregates_numbers['count'],
+            'incomplete': qs.filter(completed_at__isnull=True).count(),
+            'size': {
+                'average': aggregates_numbers['size_avg'],
+                'sum': aggregates_numbers['size_sum'],
+            },
+            'time': {
+                'average': time_avg,
+            }
+        }
+    }
 
     upload_ids = set()
     for file_upload in qs.order_by('-created_at')[start:end]:
@@ -829,9 +861,11 @@ def upload_files(request):
     for file_upload in files:
         file_upload['upload'] = hydrate_upload(file_upload['upload'])
 
-    total = qs.count()
+    total = aggregates['files']['count']
+
     context = {
         'files': files,
+        'aggregates': aggregates,
         'total': total,
         'batch_size': batch_size,
     }

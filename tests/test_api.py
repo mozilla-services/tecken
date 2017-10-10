@@ -876,6 +876,11 @@ def test_upload_files(client, settings):
             assert file_upload['upload']['created_at']
         else:
             assert file_upload['upload'] is None
+    # Check that there are some aggregates
+    aggregates = data['aggregates']
+    assert aggregates['files']['count'] == 2
+    assert aggregates['files']['incomplete'] == 2
+    assert aggregates['files']['size']['sum'] == 1234 + 100
 
     # Filter by created_at and completed_at
     response = client.get(url, {
@@ -938,6 +943,13 @@ def test_upload_files(client, settings):
     assert response.status_code == 200
     data = response.json()
     assert [x['id'] for x in data['files']] == [file_upload1.id]
+    # By negated bucket name
+    response = client.get(url, {
+        'bucket_name': f'!{file_upload1.bucket_name}',
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert [x['id'] for x in data['files']] == [file_upload2.id]
 
 
 @pytest.mark.django_db

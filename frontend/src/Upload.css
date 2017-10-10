@@ -10,6 +10,9 @@ table.files-table th,
 table.files-table td {
   font-size: 90%;
 }
+table.files-table td.file-key {
+  font-size: 80%;
+}
 
 dl dt { font-weight: bold; }
 

@@ -206,4 +206,13 @@ class FileUploadsForm(UploadsForm):
         values = self.cleaned_data['bucket_name']
         if not values:
             return []
-        return [x.strip() for x in values.split(',') if x.strip()]
+        cleaned = []
+        for value in values.split(','):
+            if value.strip():
+                if value.startswith('!'):
+                    operator = '!'
+                    value = value[1:].strip()
+                else:
+                    operator = '='
+                cleaned.append((operator, value))
+        return cleaned
