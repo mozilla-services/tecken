@@ -237,14 +237,15 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 7
+    assert len(records) == 8
     assert records[0][1] == 'tecken.upload_file_exists'
     assert records[1][1] == 'tecken.upload_file_exists'
-    assert records[2][1] == 'tecken.upload_file_upload'
-    assert records[3][1] == 'tecken.upload_file_upload_upload'
-    assert records[4][1] == 'tecken.upload_file_upload'
-    assert records[5][1] == 'tecken.upload_file_upload_upload'
-    assert records[6][1] == 'tecken.upload_archive'
+    assert records[2][1] == 'tecken.upload_file_exists_combined'
+    assert records[3][1] == 'tecken.upload_file_upload'
+    assert records[4][1] == 'tecken.upload_file_upload_upload'
+    assert records[5][1] == 'tecken.upload_file_upload'
+    assert records[6][1] == 'tecken.upload_file_upload_upload'
+    assert records[7][1] == 'tecken.upload_archive'
 
 
 @pytest.mark.django_db(transaction=True)

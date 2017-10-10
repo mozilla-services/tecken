@@ -136,6 +136,7 @@ def key_existing_size(client, bucket, key):
     return 0
 
 
+@metrics.timer_decorator('upload_file_exists_combined')
 def key_existing_sizes(client, bucket, keys):
     """return a dictionary where every key points to a size.
     So, if 'keys' is ['v1/foo.pdb', 'v1/bar.sym']
