@@ -77,8 +77,10 @@ export const formatSeconds = seconds => {
     return (seconds * 1000).toFixed(0) + 'ms'
   } else if (seconds > 3000) {
     return (seconds / 60).toFixed(1) + 'm'
+  } else if (seconds < 60) {
+    return seconds.toFixed(1) + 's'
   } else {
-    const minutes = Math.ceil(seconds / 60)
+    const minutes = Math.floor(seconds / 60)
     seconds = Math.round(seconds % 60)
     return `${minutes}m${seconds}s`
   }
