@@ -7,6 +7,7 @@ import logging
 import io
 import fnmatch
 import zipfile
+import hashlib
 import os
 import concurrent.futures
 
@@ -259,6 +260,17 @@ def upload_archive(request):
                 False,
             )
 
+    # Make a hash string that represents every file listing in the archive.
+    # Do this by making a string first out of all files listed.
+    content = '\n'.join(
+        '{}:{}'.format(x.name, x.size) for x in file_listing
+    )
+    # The MD5 is just used to make the temporary S3 file unique in name
+    # if the client uploads with the same filename in quick succession.
+    content_hash = hashlib.md5(
+        content.encode('utf-8')
+    ).hexdigest()[:30]  # nosec
+
     # Always create the Upload object no matter what happens next.
     # If all individual file uploads work out, we say this is complete.
     upload_obj = Upload.objects.create(
@@ -269,6 +281,7 @@ def upload_archive(request):
         bucket_endpoint_url=bucket_info.endpoint_url,
         size=size,
         download_url=url,
+        content_hash=content_hash,
         skipped_keys=skipped_keys or None,
         ignored_keys=ignored_keys or None,
     )

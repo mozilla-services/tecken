@@ -13,7 +13,8 @@ import {
   Pagination,
   TableSubTitle,
   thousandFormat,
-  pluralize
+  pluralize,
+  DisplayFilesSummary,
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
@@ -579,9 +580,6 @@ const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
     </div>
   </article>
 )
-
-const DisplayFilesSummary = (files, skipped, ignored) =>
-  `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`
 
 const ShowAggregates = ({ aggregates }) => {
   return (

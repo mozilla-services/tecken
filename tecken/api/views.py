@@ -665,37 +665,59 @@ def upload(request, id):
             'error': 'Insufficient access to view this upload'
         }, status=403)
 
-    upload_dict = {
-        'id': obj.id,
-        'filename': obj.filename,
-        'user': {
-            'id': obj.user.id,
-            'email': obj.user.email,
-        },
-        'size': obj.size,
-        'bucket_name': obj.bucket_name,
-        'bucket_region': obj.bucket_region,
-        'bucket_endpoint_url': obj.bucket_endpoint_url,
-        'skipped_keys': obj.skipped_keys or [],
-        'ignored_keys': obj.ignored_keys or [],
-        'download_url': obj.download_url,
-        'completed_at': obj.completed_at,
-        'created_at': obj.created_at,
-        'file_uploads': [],
-    }
-    file_uploads_qs = FileUpload.objects.filter(upload=obj)
-    for file_upload in file_uploads_qs.order_by('created_at'):
-        upload_dict['file_uploads'].append({
-            'id': file_upload.id,
-            'bucket_name': file_upload.bucket_name,
-            'key': file_upload.key,
-            'update': file_upload.update,
-            'compressed': file_upload.compressed,
-            'size': file_upload.size,
-            'microsoft_download': file_upload.microsoft_download,
-            'completed_at': file_upload.completed_at,
-            'created_at': file_upload.created_at,
-        })
+    def make_upload_dict(upload_obj):
+        file_uploads_qs = FileUpload.objects.filter(upload=upload_obj)
+        file_uploads = []
+        for file_upload in file_uploads_qs.order_by('created_at'):
+            file_uploads.append({
+                'id': file_upload.id,
+                'bucket_name': file_upload.bucket_name,
+                'key': file_upload.key,
+                'update': file_upload.update,
+                'compressed': file_upload.compressed,
+                'size': file_upload.size,
+                'microsoft_download': file_upload.microsoft_download,
+                'completed_at': file_upload.completed_at,
+                'created_at': file_upload.created_at,
+            })
+        return {
+            'id': upload_obj.id,
+            'filename': upload_obj.filename,
+            'user': {
+                'id': upload_obj.user.id,
+                'email': upload_obj.user.email,
+            },
+            'size': upload_obj.size,
+            'bucket_name': upload_obj.bucket_name,
+            'bucket_region': upload_obj.bucket_region,
+            'bucket_endpoint_url': upload_obj.bucket_endpoint_url,
+            'skipped_keys': upload_obj.skipped_keys or [],
+            'ignored_keys': upload_obj.ignored_keys or [],
+            'download_url': upload_obj.download_url,
+            'completed_at': upload_obj.completed_at,
+            'created_at': upload_obj.created_at,
+            'file_uploads': file_uploads,
+        }
+    upload_dict = make_upload_dict(obj)
+
+    related_qs = Upload.objects.exclude(id=obj.id).filter(
+        size=obj.size,
+        user=obj.user,
+    )
+    if obj.content_hash:
+        related_qs = related_qs.filter(
+            content_hash=obj.content_hash,
+        )
+    else:
+        # The `content_hash` attribute is a new field as of Oct 10 2017.
+        # So if the upload doesn't have that, use the filename which is
+        # less than ideal.
+        related_qs = related_qs.filter(
+            filename=obj.filename
+        )
+    upload_dict['related'] = []
+    for related_upload in related_qs.order_by('-created_at'):
+        upload_dict['related'].append(make_upload_dict(related_upload))
 
     context = {
         'upload': upload_dict,
