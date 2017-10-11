@@ -165,3 +165,22 @@ export const pluralize = (number, singular, plural) => {
 
 export const DisplayFilesSummary = (files, skipped, ignored) =>
   `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`
+
+
+export const ShowValidationErrors = ({ errors, resetAndReload }) => {
+  return (
+    <div className="notification is-danger">
+      <button className="delete" onClick={resetAndReload} />
+      <h4>Filter validation errors</h4>
+      <ul>
+        {Object.keys(errors).map(key => {
+          return (
+            <li key={key}>
+              <b>{key}</b> - <code>{errors[key]}</code>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}

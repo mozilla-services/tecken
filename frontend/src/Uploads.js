@@ -14,7 +14,8 @@ import {
   TableSubTitle,
   thousandFormat,
   pluralize,
-  DisplayFilesSummary
+  DisplayFilesSummary,
+  ShowValidationErrors
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
@@ -353,23 +354,6 @@ class ShowNewUploadsCount extends React.PureComponent {
   }
 }
 
-const ShowValidationErrors = ({ errors, resetAndReload }) => {
-  return (
-    <div className="notification is-danger">
-      <button className="delete" onClick={resetAndReload} />
-      <h4>Filter validation errors</h4>
-      <ul>
-        {Object.keys(errors).map(key => {
-          return (
-            <li key={key}>
-              <b>{key}</b> - <code>{errors[key]}</code>
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
 
 class DisplayUploads extends React.PureComponent {
   componentDidMount() {
