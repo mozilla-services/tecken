@@ -19,7 +19,11 @@ from django.core.cache import cache
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
-from tecken.download.tasks import download_microsoft_symbol, DumpSymsError
+from tecken.download.models import MissingSymbol
+from tecken.download.tasks import (
+    download_microsoft_symbol,
+    DumpSymsError,
+)
 from tecken.upload.models import FileUpload
 
 
@@ -427,8 +431,8 @@ def test_get_microsoft_symbol_client(client, botomock, settings):
             # not invalidated between calls.
             assert len(mock_calls) == 1
             # However, the act of triggering that
-            # download_microsoft_symbol.delay() call is guarded by an
-            # in-memory cache. So it shouldn't have called it more than
+            # download_microsoft_symbol.delay() call is guarded by a
+            # cache. So it shouldn't have called it more than
             # once.
             assert len(task_arguments) == 1
 
@@ -664,3 +668,93 @@ def test_download_microsoft_symbol_task_dump_syms_failing(
     with botomock(mock_api_call):
         with pytest.raises(DumpSymsError):
             download_microsoft_symbol(symbol, debugid)
+
+
+@pytest.mark.django_db
+def test_store_missing_symbol_happy_path(metricsmock):
+    views.store_missing_symbol('foo.pdb', 'ABCDEF12345', 'foo.sym')
+    missing_symbol = MissingSymbol.objects.get(
+        symbol='foo.pdb',
+        debugid='ABCDEF12345',
+        filename='foo.sym',
+        code_file__isnull=True,
+        code_id__isnull=True,
+    )
+    assert missing_symbol.hash
+    assert missing_symbol.count == 1
+    first_modified_at = missing_symbol.modified_at
+
+    # Repeat and it should increment
+    views.store_missing_symbol('foo.pdb', 'ABCDEF12345', 'foo.sym')
+    missing_symbol.refresh_from_db()
+    assert missing_symbol.count == 2
+    assert missing_symbol.modified_at > first_modified_at
+
+    records = metricsmock.get_records()
+    assert len(records) == 2
+    assert records[0][1] == 'tecken.download_store_missing_symbol'
+    assert records[1][1] == 'tecken.download_store_missing_symbol'
+
+    # This time with a code_file and code_id
+    views.store_missing_symbol(
+        'foo.pdb', 'ABCDEF12345', 'foo.sym',
+        code_file='libsystem_pthread.dylib',
+        code_id='id'
+    )
+    second_missing_symbol = MissingSymbol.objects.get(
+        symbol='foo.pdb',
+        debugid='ABCDEF12345',
+        filename='foo.sym',
+        code_file='libsystem_pthread.dylib',
+        code_id='id',
+    )
+    assert second_missing_symbol.hash != missing_symbol.hash
+    assert second_missing_symbol.count == 1
+
+
+@pytest.mark.django_db
+def test_store_missing_symbol_skips(metricsmock):
+    # If either symbol, debugid or filename are too long nothing is stored
+    views.store_missing_symbol('x' * 200, 'ABCDEF12345', 'foo.sym')
+    views.store_missing_symbol('foo.pdb', 'x' * 200, 'foo.sym')
+    views.store_missing_symbol('foo.pdb', 'ABCDEF12345', 'x' * 200)
+    assert not MissingSymbol.objects.all().exists()
+
+
+@pytest.mark.django_db
+def test_store_missing_symbol_client(client, botomock, settings):
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    reload_downloader('https://s3.example.com/private/prefix/')
+
+    mock_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_calls.append(api_params['Prefix'])
+        return {}
+
+    url = reverse('download:download_symbol', args=(
+        'foo.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'foo.ex_',
+    ))
+
+    with botomock(mock_api_call):
+        response = client.get(url, {'code_file': 'something'})
+        assert response.status_code == 404
+        assert response.content == b'Symbol Not Found'
+        assert MissingSymbol.objects.all().count() == 1
+
+        # Pretend we're excessively eager
+        response = client.get(url, {'code_file': 'something'})
+        assert response.status_code == 404
+        assert response.content == b'Symbol Not Found'
+
+        # This basically checks that the SymbolDownloader cache is
+        # not invalidated between calls.
+        assert len(mock_calls) == 1
+        # However, the act of triggering that
+        # store_missing_symbol() call is guarded by a
+        # cache. So it shouldn't have called it more than
+        # once.
+        assert MissingSymbol.objects.filter(count=1).count() == 1

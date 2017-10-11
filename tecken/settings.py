@@ -209,6 +209,11 @@ class Core(AWS, Configuration, Celery):
     # multiple files to S3.
     UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS = values.IntegerValue(10)
 
+    # Whether to store the missing symbols in Postgres or not.
+    # If you disable this, at the time of writing, missing symbols
+    # will be stored in the Redis default cache.
+    ENABLE_STORE_MISSING_SYMBOLS = values.BooleanValue(True)
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
@@ -572,6 +577,10 @@ class Test(Localdev):
     # This feature flag is always off when testing except the tests
     # that enable it on and deliberately test Microsoft download.
     ENABLE_DOWNLOAD_FROM_MICROSOFT = False
+
+    # This feature flag is always off when testing except the tests
+    # that enable it deliberately.
+    ENABLE_STORE_MISSING_SYMBOLS = False
 
     # Disable the Auth0 in all tests. THere are some specific tests
     # that switch it back on to test the Auth0 blocked middleware.
