@@ -14,6 +14,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 from django.utils.encoding import force_bytes
+from django.db import connection
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
@@ -22,6 +23,7 @@ from tecken.base.decorators import (
     cache_memoize,
     set_cors_headers,
 )
+from tecken.download.models import MissingSymbol
 from tecken.download.tasks import download_microsoft_symbol
 
 
@@ -211,30 +213,96 @@ def log_symbol_get_404(
     relevant only to this URL. Hence 'code_file' and 'code_id' which
     are both optional.
     """
-    # In case they are None or something else falsy but not an empty string
-    code_file = code_file and code_file.strip() or ''
-    code_id = code_id and code_id.strip() or ''
+    if settings.ENABLE_STORE_MISSING_SYMBOLS:
+        store_missing_symbol(
+            symbol,
+            debugid,
+            filename,
+            code_file=code_file,
+            code_id=code_id,
+        )
+    else:
+        # The old way... This might not be kept.
 
-    key = 'missingsymbols:{}:'.format(timezone.now().strftime('%Y-%m-%d'))
-    key += '|'.join((
+        # In case they are None or something else falsy but not an empty string
+        code_file = code_file and code_file.strip() or ''
+        code_id = code_id and code_id.strip() or ''
+
+        key = 'missingsymbols:{}:'.format(timezone.now().strftime('%Y-%m-%d'))
+        key += '|'.join((
+            symbol,
+            debugid,
+            filename,
+            code_file,
+            code_id,
+        ))
+        try:
+            cache.incr(key, 1)
+        except ValueError:
+            # Can't increment if it's never been stored.
+            # The first purpose of storing missing symbols is to be able to
+            # export a CSV file that lists all missing symbols YESTERDAY.
+            # That report needs to contain everything from midnight yesterday
+            # until midnight today.
+            # So the CSV file is exported at 11PM on a Sunday it needs to
+            # include ALL missing symbols from 0AM to 0PM on the Saturday.
+            # That's why the expiration time here is the last TWO DAYS.
+            cache.set(key, 1, 60 * 60 * 24 * 2)
+
+
+@metrics.timer_decorator('download_store_missing_symbol')
+def store_missing_symbol(
+    symbol,
+    debugid,
+    filename,
+    code_file=None,
+    code_id=None,
+):
+    # Ignore it if it's clearly some junk or too weird.
+    if len(symbol) > 150:
+        logger.info(
+            f'Ignoring log missing symbol (symbol ${len(symbol)} chars)'
+        )
+        return
+    if len(debugid) > 150:
+        logger.info(
+            f'Ignoring log missing symbol (debugid ${len(debugid)} chars)'
+        )
+        return
+    if len(filename) > 150:
+        logger.info(
+            f'Ignoring log missing symbol (filename ${len(filename)} chars)'
+        )
+        return
+    hash_ = MissingSymbol.make_md5_hash(
         symbol,
         debugid,
         filename,
         code_file,
         code_id,
-    ))
-    try:
-        cache.incr(key, 1)
-    except ValueError:
-        # Can't increment if it's never been stored.
-        # The first purpose of storing missing symbols is to be able to
-        # export a CSV file that lists all missing symbols YESTERDAY.
-        # That report needs to contain everything from midnight yesterday
-        # until midnight today.
-        # So the CSV file is exported at 11PM on a Sunday it needs to
-        # include ALL missing symbols from 0AM to 0PM on the Saturday.
-        # That's why the expiration time here is the last TWO DAYS.
-        cache.set(key, 1, 60 * 60 * 24 * 2)
+    )
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO download_missingsymbol (
+                hash, symbol, debugid, filename, code_file, code_id,
+                count, created_at, modified_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s,
+                1, CLOCK_TIMESTAMP(), CLOCK_TIMESTAMP()
+              )
+            ON CONFLICT (hash)
+            DO UPDATE SET
+                count = download_missingsymbol.count + 1,
+                modified_at = CLOCK_TIMESTAMP()
+            WHERE download_missingsymbol.hash = %s
+            """,
+            [
+                hash_, symbol, debugid, filename,
+                code_file or None, code_id or None,
+                hash_
+            ]
+        )
 
 
 def missing_symbols_csv(request):
