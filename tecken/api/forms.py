@@ -81,7 +81,41 @@ class PaginationForm(forms.Form):
         return value
 
 
-class UploadsForm(forms.Form):
+class BaseFilteringForm(forms.Form):
+
+    def _clean_dates(self, values):
+        """return a list of either a datetime, date or None.
+        Each one can have an operator."""
+        if not values:
+            return []
+        dates = []
+        operators = re.compile('<=|>=|<|>|=')
+        for block in [x.strip() for x in values.split(',') if x.strip()]:
+            if operators.findall(block):
+                operator, = operators.findall(block)
+            else:
+                operator = '='
+            rest = operators.sub('', block).strip()
+            if rest.lower() in ('null', 'incomplete'):
+                date_obj = None
+            elif rest.lower() == 'today':
+                date_obj = timezone.now().replace(hour=0, minute=0, second=0)
+            elif rest.lower() == 'yesterday':
+                date_obj = timezone.now().replace(hour=0, minute=0, second=0)
+                date_obj -= datetime.timedelta(days=1)
+            else:
+                try:
+                    date_obj = dateutil.parser.parse(rest)
+                except ValueError:
+                    raise forms.ValidationError(f'Unable to parse {rest!r}')
+                if timezone.is_naive(date_obj):
+                    date_obj = timezone.make_aware(date_obj)
+            dates.append((operator, date_obj))
+
+        return dates
+
+
+class UploadsForm(BaseFilteringForm):
     user = forms.CharField(required=False)
     size = forms.CharField(required=False)
     created_at = forms.CharField(required=False)
@@ -145,37 +179,6 @@ class UploadsForm(forms.Form):
     def clean_completed_at(self):
         return self._clean_dates(self.cleaned_data['completed_at'])
 
-    def _clean_dates(self, values):
-        """return a list of either a datetime, date or None.
-        Each one can have an operator."""
-        if not values:
-            return []
-        dates = []
-        operators = re.compile('<=|>=|<|>|=')
-        for block in [x.strip() for x in values.split(',') if x.strip()]:
-            if operators.findall(block):
-                operator, = operators.findall(block)
-            else:
-                operator = '='
-            rest = operators.sub('', block).strip()
-            if rest.lower() in ('null', 'incomplete'):
-                date_obj = None
-            elif rest.lower() == 'today':
-                date_obj = timezone.now().replace(hour=0, minute=0, second=0)
-            elif rest.lower() == 'yesterday':
-                date_obj = timezone.now().replace(hour=0, minute=0, second=0)
-                date_obj -= datetime.timedelta(days=1)
-            else:
-                try:
-                    date_obj = dateutil.parser.parse(rest)
-                except ValueError:
-                    raise forms.ValidationError(f'Unable to parse {rest!r}')
-                if timezone.is_naive(date_obj):
-                    date_obj = timezone.make_aware(date_obj)
-            dates.append((operator, date_obj))
-
-        return dates
-
 
 class FileUploadsForm(UploadsForm):
     size = forms.CharField(required=False)
@@ -216,3 +219,35 @@ class FileUploadsForm(UploadsForm):
                     operator = '='
                 cleaned.append((operator, value))
         return cleaned
+
+
+class DownloadsForm(BaseFilteringForm):
+    symbol = forms.CharField(required=False)
+    debugid = forms.CharField(required=False)
+    filename = forms.CharField(required=False)
+    code_file = forms.CharField(required=False)
+    code_id = forms.CharField(required=False)
+    modified_at = forms.CharField(required=False)
+    count = forms.CharField(required=False)
+
+    def clean_modified_at(self):
+        return self._clean_dates(self.cleaned_data['modified_at'])
+
+    def clean_count(self):
+        values = self.cleaned_data['count']
+        if not values:
+            return []
+        operators = re.compile('<=|>=|<|>|=')
+        counts = []
+        for block in [x.strip() for x in values.split(',') if x.strip()]:
+            if operators.findall(values):
+                operator, = operators.findall(block)
+            else:
+                operator = '='
+            rest = operators.sub('', block)
+            try:
+                rest = int(rest)
+            except ValueError:
+                raise forms.ValidationError(f'{rest!r} is not a number')
+            counts.append((operator, rest))
+        return counts

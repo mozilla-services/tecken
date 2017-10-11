@@ -19,6 +19,7 @@ from django.views.decorators.csrf import csrf_protect
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
+from tecken.download.models import MissingSymbol
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
@@ -32,6 +33,43 @@ logger = logging.getLogger('tecken')
 
 class SumCardinality(Aggregate):
     template = 'SUM(CARDINALITY(%(expressions)s))'
+
+
+ORM_OPERATORS = {
+    '<=': 'lte',
+    '>=': 'gte',
+    '=': 'exact',
+    '<': 'lt',
+    '>': 'gt',
+}
+
+
+def _filter_form_dates(qs, form, keys):
+    for key in keys:
+        for operator, value in form.cleaned_data.get(key, []):
+            if value is None:
+                orm_operator = f'{key}__isnull'
+                qs = qs.filter(**{orm_operator: True})
+            elif operator == '=' and value.hour == 0 and value.minute == 0:
+                # When querying on a specific day, make it a little easier
+                qs = qs.filter(**{
+                    f'{key}__gte': value,
+                    f'{key}__lt': value + datetime.timedelta(days=1),
+                })
+            else:
+                if operator == '>':
+                    # Because we use microseconds in the ORM, but when
+                    # datetimes are passed back end forth in XHR, the
+                    # datetimes are converted with isoformat() which
+                    # drops microseconds. Therefore add 1 second to
+                    # avoid matching the latest date.
+                    value += datetime.timedelta(seconds=1)
+                orm_operator = '{}__{}'.format(
+                    key,
+                    ORM_OPERATORS[operator]
+                )
+                qs = qs.filter(**{orm_operator: value})
+    return qs
 
 
 def auth(request):
@@ -398,43 +436,12 @@ def filter_uploads(qs, can_view_all, user, form):
                 qs = qs.filter(user=user)
     else:
         qs = qs.filter(user=user)
-    orm_operators = {
-        '<=': 'lte',
-        '>=': 'gte',
-        '=': 'exact',
-        '<': 'lt',
-        '>': 'gt',
-    }
     for operator, value in form.cleaned_data['size']:
         orm_operator = 'size__{}'.format(
-            orm_operators[operator]
+            ORM_OPERATORS[operator]
         )
         qs = qs.filter(**{orm_operator: value})
-    for key in ('created_at', 'completed_at'):
-        for operator, value in form.cleaned_data.get(key, []):
-            if value is None:
-                orm_operator = f'{key}__isnull'
-                qs = qs.filter(**{orm_operator: True})
-            elif operator == '=' and value.hour == 0 and value.minute == 0:
-                # When querying on a specific day, make it a little easier
-                qs = qs.filter(**{
-                    f'{key}__gte': value,
-                    f'{key}__lt': value + datetime.timedelta(days=1),
-                })
-            else:
-                if operator == '>':
-                    # Because we use microseconds in the ORM, but when
-                    # datetimes are passed back end forth in XHR, the
-                    # datetimes are converted with isoformat() which
-                    # drops microseconds. Therefore add 1 second to
-                    # avoid matching the latest date.
-                    value += datetime.timedelta(seconds=1)
-                orm_operator = '{}__{}'.format(
-                    key,
-                    orm_operators[operator]
-                )
-                qs = qs.filter(**{orm_operator: value})
-
+    qs = _filter_form_dates(qs, form, ('created_at', 'completed_at'))
     return qs
 
 
@@ -741,35 +748,12 @@ def upload_files(request):
         return http.JsonResponse({'errors': form.errors}, status=400)
 
     qs = FileUpload.objects.all()
-    orm_operators = {
-        '<=': 'lte',
-        '>=': 'gte',
-        '=': 'exact',
-        '<': 'lt',
-        '>': 'gt',
-    }
     for operator, value in form.cleaned_data['size']:
         orm_operator = 'size__{}'.format(
-            orm_operators[operator]
+            ORM_OPERATORS[operator]
         )
         qs = qs.filter(**{orm_operator: value})
-    for key in ('created_at', 'completed_at'):
-        for operator, value in form.cleaned_data.get(key, []):
-            if value is None:
-                orm_operator = f'{key}__isnull'
-                qs = qs.filter(**{orm_operator: True})
-            elif operator == '=' and value.hour == 0 and value.minute == 0:
-                # When querying on a specific day, make it a little easier
-                qs = qs.filter(**{
-                    f'{key}__gte': value,
-                    f'{key}__lt': value + datetime.timedelta(days=1),
-                })
-            else:
-                orm_operator = '{}__{}'.format(
-                    key,
-                    orm_operators[operator]
-                )
-                qs = qs.filter(**{orm_operator: value})
+    qs = _filter_form_dates(qs, form, ('created_at', 'completed_at'))
     if form.cleaned_data.get('key'):
         key_q = Q(key__icontains=form.cleaned_data['key'][0])
         for other in form.cleaned_data['key'][1:]:
@@ -991,3 +975,72 @@ def current_settings(request):
     })
     context['settings'].sort(key=lambda x: x['key'])
     return http.JsonResponse(context)
+
+
+def downloads_missing(request):
+    context = {
+    }
+    form = forms.DownloadsForm(request.GET)
+    if not form.is_valid():
+        return http.JsonResponse({'errors': form.errors}, status=400)
+
+    pagination_form = forms.PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse(
+            {'errors': pagination_form.errors},
+            status=400
+        )
+
+    qs = MissingSymbol.objects.all()
+    qs = filter_missing_symbols(qs, form)
+
+    batch_size = settings.API_DOWNLOADS_MISSING_BATCH_SIZE
+    context['batch_size'] = batch_size
+
+    page = pagination_form.cleaned_data['page']
+    start = (page - 1) * batch_size
+    end = start + batch_size
+
+    context['aggregates'] = {
+        'missing': {
+            'total': qs.count(),
+        },
+    }
+    today = timezone.now()
+    for days in (1, 5, 10, 30):
+        count = qs.filter(
+            modified_at__gte=today - datetime.timedelta(days=days)
+        ).count()
+        context['aggregates']['missing'][f'last_{days}_days'] = count
+
+    context['total'] = context['aggregates']['missing']['total']
+
+    rows = []
+    for missing in qs.order_by('-modified_at')[start:end]:
+        rows.append({
+            'id': missing.id,
+            'symbol': missing.symbol,
+            'debugid': missing.debugid,
+            'filename': missing.filename,
+            'code_file': missing.code_file,
+            'code_id': missing.code_id,
+            'count': missing.count,
+            'modified_at': missing.modified_at,
+            'created_at': missing.created_at,
+        })
+    context['missing'] = rows
+
+    return http.JsonResponse(context)
+
+
+def filter_missing_symbols(qs, form):
+    qs = _filter_form_dates(qs, form, ('created_at', 'modified_at'))
+    for operator, value in form.cleaned_data['count']:
+        orm_operator = 'count__{}'.format(
+            ORM_OPERATORS[operator]
+        )
+        qs = qs.filter(**{orm_operator: value})
+    for key in ('symbol', 'debugid', 'filename'):
+        if form.cleaned_data[key]:
+            qs = qs.filter(**{f'{key}__contains': form.cleaned_data[key]})
+    return qs

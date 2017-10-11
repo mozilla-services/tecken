@@ -66,6 +66,14 @@ const Nav = observer(
               >
                 Home
               </NavLink>
+              <NavLink
+                to="/downloads"
+                exact
+                className="navbar-item"
+                activeClassName="is-active"
+              >
+                Downloads
+              </NavLink>
               {store.currentUser && store.currentUser.is_superuser
                 ? <NavLink
                     to="/users"

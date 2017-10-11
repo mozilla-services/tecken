@@ -72,4 +72,9 @@ urlpatterns = [
         views.current_settings,
         name='current_settings'
     ),
+    url(
+        r'downloads/missing/$',
+        views.downloads_missing,
+        name='downloads_missing'
+    ),
 ]

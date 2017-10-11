@@ -13,12 +13,18 @@ const Fetch = (...props) => {
       privateEndpoint = true
     }
   }
-  const method = props.length && props[1].method ? props[1].method : 'GET'
+  const method = props.length > 1 && props[1].method ? props[1].method : 'GET'
+  let requiresAuth = false
+  if (props.length > 1) {
+    if (props[1].credentials) {
+      requiresAuth = true
+    }
+  }
   const alreadyThere = !!store.apiRequests.find(r => {
     return r.url === url && r.method === method
   })
   if (!privateEndpoint && !alreadyThere) {
-    store.apiRequests.unshift({ url, method })
+    store.apiRequests.unshift({ url, method, requiresAuth })
   }
 
   return fetch(...props)
