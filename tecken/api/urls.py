@@ -33,7 +33,7 @@ urlpatterns = [
         name='tokens'
     ),
     url(
-        r'tokens/(?P<id>\d+)$',
+        r'tokens/token/(?P<id>\d+)$',
         views.delete_token,
         name='delete_token'
     ),
@@ -63,7 +63,7 @@ urlpatterns = [
         name='users'
     ),
     url(
-        r'_users/(?P<id>\d+)$',
+        r'_users/user/(?P<id>\d+)$',
         views.edit_user,
         name='edit_user'
     ),
