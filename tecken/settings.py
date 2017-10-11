@@ -298,7 +298,7 @@ class Base(Core):
             },
             'loggers': {
                 'django.db.backends': {
-                    'level': 'INFO',
+                    'level': 'ERROR',
                     'handlers': ['console'],
                     'propagate': False,
                 },
