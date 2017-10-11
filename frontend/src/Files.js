@@ -11,7 +11,8 @@ import {
   TableSubTitle,
   thousandFormat,
   formatSeconds,
-  DisplayDateDifference
+  DisplayDateDifference,
+  filterToQueryString
 } from './Common'
 import Fetch from './Fetch'
 import './Upload.css' // they have enough in common
@@ -57,12 +58,9 @@ class Files extends React.PureComponent {
       this.setState({ loading: true })
     }, 500)
     let url = '/api/uploads/files'
-    let qs = ''
-    if (Object.keys(this.state.filter).length) {
-      qs = '?' + queryString.stringify(this.state.filter)
-    }
+    const qs = filterToQueryString(this.state.filter)
     if (qs) {
-      url += qs
+      url += '?' + qs
     }
     this.props.history.push({ search: qs })
 
@@ -281,14 +279,14 @@ class DisplayFiles extends React.PureComponent {
               </td>
               <td colSpan={3} style={{ minWidth: 230 }}>
                 <button type="submit" className="button is-primary">
-                  Filter Files
+                  Filter
                 </button>{' '}
                 <button
                   type="button"
                   onClick={this.resetFilter}
                   className="button"
                 >
-                  Reset Filter
+                  Reset
                 </button>
               </td>
             </tr>

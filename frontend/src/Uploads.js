@@ -15,7 +15,8 @@ import {
   thousandFormat,
   pluralize,
   DisplayFilesSummary,
-  ShowValidationErrors
+  ShowValidationErrors,
+  filterToQueryString
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
@@ -76,12 +77,9 @@ class Uploads extends React.PureComponent {
       }
     }, 500)
     let url = '/api/uploads/'
-    let qs = ''
-    if (Object.keys(this.state.filter).length) {
-      qs = '?' + queryString.stringify(this.state.filter)
-    }
+    const qs = filterToQueryString(this.state.filter)
     if (qs) {
-      url += qs
+      url += '?' + qs
     }
     this.props.history.push({ search: qs })
 
@@ -354,7 +352,6 @@ class ShowNewUploadsCount extends React.PureComponent {
   }
 }
 
-
 class DisplayUploads extends React.PureComponent {
   componentDidMount() {
     this._updateFilterInputs(this.props.filter, this.props.canViewAll)
@@ -408,7 +405,7 @@ class DisplayUploads extends React.PureComponent {
     const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
     return (
       <form onSubmit={this.submitForm}>
-        <table className="table">
+        <table className="table is-fullwidth">
           <thead>
             <tr>
               <th>Files</th>
