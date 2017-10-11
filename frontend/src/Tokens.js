@@ -89,7 +89,7 @@ class Tokens extends PureComponent {
   }
 
   deleteToken = id => {
-    Fetch(`/api/tokens/${id}`, {
+    Fetch(`/api/tokens/token/${id}`, {
       method: 'DELETE',
       credentials: 'same-origin'
     }).then(r => {
