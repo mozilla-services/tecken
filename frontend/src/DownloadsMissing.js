@@ -10,7 +10,8 @@ import {
   TableSubTitle,
   DisplayDate,
   thousandFormat,
-  ShowValidationErrors
+  ShowValidationErrors,
+  filterToQueryString
 } from './Common'
 
 class DownloadsMissing extends React.PureComponent {
@@ -25,7 +26,7 @@ class DownloadsMissing extends React.PureComponent {
       batchSize: null,
       apiUrl: null,
       filter: {},
-      validationErrors: null,
+      validationErrors: null
     }
   }
 
@@ -53,19 +54,9 @@ class DownloadsMissing extends React.PureComponent {
       }
     }, 500)
     let url = '/api/downloads/missing/'
-    let qs = ''
-    const filterCopy = {}
-    const filter = this.state.filter
-    Object.keys(filter).forEach(key => {
-      if (filter[key]) {
-        filterCopy[key] = filter[key]
-      }
-    })
-    if (Object.keys(filterCopy).length) {
-      qs = '?' + queryString.stringify(filterCopy)
-    }
+    const qs = filterToQueryString(this.state.filter)
     if (qs) {
-      url += qs
+      url += '?' + qs
     }
     this.props.history.push({ search: qs })
 
@@ -79,15 +70,13 @@ class DownloadsMissing extends React.PureComponent {
           store.fetchError = null
         }
         return r.json().then(response => {
-          this.setState(
-            {
-              missing: response.missing,
-              aggregates: response.aggregates,
-              total: response.total,
-              batchSize: response.batch_size,
-              validationErrors: null,
-            }
-          )
+          this.setState({
+            missing: response.missing,
+            aggregates: response.aggregates,
+            total: response.total,
+            batchSize: response.batch_size,
+            validationErrors: null
+          })
         })
       } else if (r.status === 400) {
         return r.json().then(data => {
@@ -121,65 +110,68 @@ class DownloadsMissing extends React.PureComponent {
     })
   }
 
-
   notImplementedError = event => {
     event.preventDefault()
-    alert("This feature is not finished yet")
+    alert('This feature is not finished yet')
   }
 
   render() {
-    return <div>
-      <div className="tabs is-centered">
-        <ul>
-          <li className="is-active">
-            <Link to="/downloads/missing">Downloads Missing</Link>
-          </li>
-          <li>
-            <Link to="/downloads/microsoft" onClick={this.notImplementedError}>Microsoft Downloads</Link>
-          </li>
-        </ul>
+    return (
+      <div>
+        <div className="tabs is-centered">
+          <ul>
+            <li className="is-active">
+              <Link to="/downloads/missing">Downloads Missing</Link>
+            </li>
+            <li>
+              <Link
+                to="/downloads/microsoft"
+                onClick={this.notImplementedError}
+              >
+                Microsoft Downloads
+              </Link>
+            </li>
+          </ul>
+        </div>
+        <h1 className="title">{this.state.pageTitle}</h1>
+
+        {this.state.loading ? (
+          <Loading />
+        ) : (
+          <TableSubTitle
+            total={this.state.total}
+            page={this.state.filter.page}
+            batchSize={this.state.batchSize}
+          />
+        )}
+
+        {this.state.validationErrors && (
+          <ShowValidationErrors
+            errors={this.state.validationErrors}
+            resetAndReload={this.resetAndReload}
+          />
+        )}
+
+        {this.state.missing && (
+          <DisplayMissingSymbols
+            missing={this.state.missing}
+            aggregates={this.state.aggregates}
+            total={this.state.total}
+            batchSize={this.state.batchSize}
+            location={this.props.location}
+            filter={this.state.filter}
+            updateFilter={this.updateFilter}
+            resetAndReload={this.resetAndReload}
+          />
+        )}
       </div>
-      <h1 className="title">{this.state.pageTitle}</h1>
-
-      {this.state.loading ? (
-        <Loading />
-      ) : (
-        <TableSubTitle
-          total={this.state.total}
-          page={this.state.filter.page}
-          batchSize={this.state.batchSize}
-        />
-      )}
-
-      {this.state.validationErrors && (
-        <ShowValidationErrors
-          errors={this.state.validationErrors}
-          resetAndReload={this.resetAndReload}
-        />
-      )}
-
-      {this.state.missing && (
-        <DisplayMissingSymbols
-          missing={this.state.missing}
-          aggregates={this.state.aggregates}
-          total={this.state.total}
-          batchSize={this.state.batchSize}
-          location={this.props.location}
-          filter={this.state.filter}
-          updateFilter={this.updateFilter}
-          resetAndReload={this.resetAndReload}
-        />
-      )}
-
-    </div>
+    )
   }
 }
 
 export default DownloadsMissing
 
-
 class DisplayMissingSymbols extends React.PureComponent {
-
   componentDidMount() {
     this._updateFilterInputs(this.props.filter)
   }
@@ -188,7 +180,7 @@ class DisplayMissingSymbols extends React.PureComponent {
     this._updateFilterInputs(nextProps.filter)
   }
 
-  _updateFilterInputs = (filter) => {
+  _updateFilterInputs = filter => {
     this.refs.modified_at.value = filter.modified_at || ''
     this.refs.count.value = filter.count || ''
     this.refs.symbol.value = filter.symbol || ''
@@ -230,7 +222,9 @@ class DisplayMissingSymbols extends React.PureComponent {
         <table className="table files-table is-fullwidth">
           <thead>
             <tr>
-              <th>Symbol/DebugID/Filename<br/>CodeFile/CodeID</th>
+              <th>
+                Symbol/DebugID/Filename<br />CodeFile/CodeID
+              </th>
               <th title="A missing symbol is only counted once per every 24 hours">
                 Count
               </th>
@@ -246,23 +240,21 @@ class DisplayMissingSymbols extends React.PureComponent {
                   className="input"
                   ref="symbol"
                   placeholder="symbol..."
-                  style={{width: '30%'}}
-                />
-                {' '}
+                  style={{ width: '30%' }}
+                />{' '}
                 <input
                   type="text"
                   className="input"
                   ref="debugid"
                   placeholder="debugid..."
-                  style={{width: '30%'}}
-                />
-                {' '}
+                  style={{ width: '30%' }}
+                />{' '}
                 <input
                   type="text"
                   className="input"
                   ref="filename"
                   placeholder="filename..."
-                  style={{width: '30%'}}
+                  style={{ width: '30%' }}
                 />
               </td>
               <td>
@@ -271,7 +263,7 @@ class DisplayMissingSymbols extends React.PureComponent {
                   className="input"
                   ref="count"
                   placeholder="filter..."
-                  style={{width: 100}}
+                  style={{ width: 100 }}
                 />
               </td>
               <td>
@@ -291,7 +283,7 @@ class DisplayMissingSymbols extends React.PureComponent {
                   onClick={this.resetFilter}
                   className="button"
                 >
-                  Reset Filter
+                  Reset
                 </button>
               </td>
             </tr>
@@ -300,7 +292,8 @@ class DisplayMissingSymbols extends React.PureComponent {
             {missing.map(missing => (
               <tr key={missing.id}>
                 <td className="file-key">
-                  {missing.symbol}/{missing.debugid}/{missing.filename}<br/>
+                  {missing.symbol}/{missing.debugid}/{missing.filename}
+                  <br />
                   {missing.code_file}/{missing.code_id}
                 </td>
                 <td>{missing.count}</td>
@@ -326,7 +319,6 @@ class DisplayMissingSymbols extends React.PureComponent {
         <ShowAggregates aggregates={aggregates} />
       </form>
     )
-
   }
 }
 
@@ -336,9 +328,7 @@ const ShowAggregates = ({ aggregates }) => {
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Total</p>
-          <p className="title">
-            {thousandFormat(aggregates.missing.total)}
-          </p>
+          <p className="title">{thousandFormat(aggregates.missing.total)}</p>
         </div>
       </div>
       <div className="level-item has-text-centered">

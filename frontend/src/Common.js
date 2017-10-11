@@ -150,7 +150,8 @@ export const TableSubTitle = ({ total, page, batchSize }) => {
   const totalPages = Math.ceil(total / batchSize)
   return (
     <h2 className="subtitle">
-      {thousandFormat(total)} Found (Page {thousandFormat(page)} of {thousandFormat(totalPages)})
+      {thousandFormat(total)} Found (Page {thousandFormat(page)} of{' '}
+      {thousandFormat(totalPages)})
     </h2>
   )
 }
@@ -165,7 +166,6 @@ export const pluralize = (number, singular, plural) => {
 
 export const DisplayFilesSummary = (files, skipped, ignored) =>
   `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`
-
 
 export const ShowValidationErrors = ({ errors, resetAndReload }) => {
   return (
@@ -183,4 +183,18 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
       </ul>
     </div>
   )
+}
+
+export const filterToQueryString = filterObj => {
+  let qs = ''
+  const copy = {}
+  Object.keys(filterObj).forEach(key => {
+    if (filterObj[key]) {
+      copy[key] = filterObj[key]
+    }
+  })
+  if (Object.keys(copy).length) {
+    qs = queryString.stringify(copy)
+  }
+  return qs
 }
