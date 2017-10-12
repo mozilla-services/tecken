@@ -149,22 +149,24 @@ all files within the uploaded ``.zip`` gets uploaded to a bucket called
           configuration is best moved to user land. That way superusers can
           decided about these kinds of exceptions.
 
-EFS - Transient Filesystem for Uploads
-======================================
 
-By default, when a .zip file is uploaded, what the upload view function
-does is that it unpacks the zip in memory, does validation checks and
-if there are no reasons to reject it, it writes it to disk and logs it
-in the Django ORM. Then it sends that ORM written object's ID to the Celery
-workers who can then read where on the filesystem the zip file is.
+Upload By Download
+------------------
 
-By default the path to where this is stored is ``./upload-inbox``. This
-won't work in a server configuration where individual servers (web heads,
-Celery workers) don't share disk. To override this set the environment
-variable ``DJANGO_UPLOAD_INBOX_DIRECTORY``.
+To upload symbols, clients can either HTTP POST a .zip file, or the client
+can HTTP POST a form field called ``url``. Tecken will then download the
+file from there and proceed as normal (as if the same file had been
+part of the upload).
 
-The recommended configuration is to use Amazon EFS (Elastic File System).
+The environment variable to control this is
+``DJANGO_ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS``. It's default is::
 
+    queue.taskcluster.net, public-artifacts.taskcluster.net
+
+Note that, if you decide to add another domain, if requests to that domain
+trigger redirects to *another* domain you have to add that domain too.
+For example, if you have a ``mybigsymbolzips.example.com`` that redirects to
+``cloudfront.amazonaws.net`` you need to add both.
 
 PostgreSQL
 ==========
