@@ -22,11 +22,9 @@ from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.upload.utils import (
     get_archive_members,
-    key_existing_sizes,
     key_existing_size,
     should_compressed_key,
     get_key_content_type,
-    get_prepared_file_buffer,
 )
 
 
@@ -84,28 +82,6 @@ def test_get_key_content_type(settings):
     assert get_key_content_type('foo.HTML') == 'text/html'
 
 
-def test_get_prepared_file_buffer(settings):
-    settings.COMPRESS_EXTENSIONS = ['bar']
-    content = b'symbols symbols symbols symbols\n'
-    file_buffer, size, compressed = get_prepared_file_buffer(
-        content,
-        'foo.bar'
-    )
-    assert compressed
-    assert file_buffer.read()
-    # It's hard to make this test without hardcoding it like this.
-    assert size == 32
-
-    file_buffer, size, compressed = get_prepared_file_buffer(
-        content,
-        'foo.exe'
-    )
-    assert not compressed
-    assert file_buffer.read() == content
-    # It's hard to make this test without hardcoding it like this.
-    assert size == len(content)
-
-
 @pytest.mark.django_db(transaction=True)  # needed because of concurrency
 def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
@@ -156,7 +132,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         ):
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
-            content = api_params['Body'].read()
+            content = api_params['Body']
             assert isinstance(content, bytes)
             # based on `unzip -l tests/sample.zip` knowledge
             assert len(content) == 69183
@@ -238,15 +214,17 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 8
+    assert len(records) == 10
     assert records[0][1] == 'tecken.upload_file_exists'
     assert records[1][1] == 'tecken.upload_file_exists'
-    assert records[2][1] == 'tecken.upload_file_exists_combined'
-    assert records[3][1] == 'tecken.upload_file_upload'
-    assert records[4][1] == 'tecken.upload_file_upload_upload'
-    assert records[5][1] == 'tecken.upload_file_upload'
-    assert records[6][1] == 'tecken.upload_file_upload_upload'
-    assert records[7][1] == 'tecken.upload_archive'
+    assert records[2][1] == 'tecken.upload_gzip_payload'
+    assert records[3][1] == 'tecken.upload_put_object'
+    assert records[4][1] == 'tecken.upload_put_object'
+    assert records[5][1] == 'tecken.upload_file_upload_upload'
+    assert records[6][1] == 'tecken.upload_file_upload'
+    assert records[7][1] == 'tecken.upload_file_upload_upload'
+    assert records[8][1] == 'tecken.upload_file_upload'
+    assert records[9][1] == 'tecken.upload_archive'
 
 
 @pytest.mark.django_db(transaction=True)
@@ -424,55 +402,6 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
         size = key_existing_size(s3_client, 'mybucket', 'filename')
         assert size is 0
         assert len(lookups) == 2
-
-
-def test_key_existing_sizes(botomock, metricsmock):
-    def mock_api_call(self, operation_name, api_params):
-        assert api_params['Bucket'] == 'private'
-        if operation_name == 'HeadBucket':
-            # yep, bucket exists
-            return {}
-
-        if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
-                'v0/foo.pdb'
-            )
-        ):
-            # Pretend that we have this in S3 and its previous
-            # size was 1234.
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/foo.pdb'
-                    ),
-                    'Size': 1234,
-                }
-            ]}
-
-        if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
-                'v0/bar.sym'
-            )
-        ):
-            # Pretend we don't have this in S3 at all
-            return {}
-
-        raise NotImplementedError((operation_name, api_params))
-
-    with botomock(mock_api_call):
-        user = FakeUser('peterbe@example.com')
-        bucket_info = get_bucket_info(user)
-        s3_client = bucket_info.s3_client
-        sizes = key_existing_sizes(
-            s3_client,
-            bucket_info.name,
-            ['v0/foo.pdb', 'v0/bar.sym']
-        )
-        assert len(sizes) == 2
-        assert sizes['v0/foo.pdb'] == 1234
-        assert sizes['v0/bar.sym'] == 0
 
 
 @pytest.mark.django_db(transaction=True)
@@ -857,10 +786,11 @@ def test_upload_archive_both_skipped(
         assert upload.bucket_name == 'private'
         assert upload.bucket_region is None
         assert upload.bucket_endpoint_url == 'https://s3.example.com'
-        assert upload.skipped_keys == [
+        # Order isn't predictable so compare using sets.
+        assert set(upload.skipped_keys) == set([
             'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
             'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
-        ]
+        ])
         assert upload.ignored_keys == ['build-symbols.txt']
 
     assert not FileUpload.objects.all().exists()
@@ -944,7 +874,7 @@ def test_upload_archive_by_url(
         ):
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
-            content = api_params['Body'].read()
+            content = api_params['Body']
             assert isinstance(content, bytes)
             # based on `unzip -l tests/sample.zip` knowledge
             assert len(content) == 69183

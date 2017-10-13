@@ -422,13 +422,14 @@ use to browse uploaded files. Go to ``http://localhost:9000``.
 How to Memory Profile Python
 ============================
 
-The trick is to install https://pypi.python.org/pypi/memory_profiler and
-then start Gunicorn with it. First start a shell and install it there:
+The trick is to install https://pypi.python.org/pypi/memory_profiler
+(and ``psutil``) and then start Gunicorn with it. First start a
+shell and install it there:
 
 .. code-block:: shell
 
     $ docker-compose run --service-ports --user 0  web bash
-    # pip install memory_profiler
+    # pip install memory_profiler psutil
 
 Now, to see memory reports of running functions, add some code to the
 relevant functions you want to memory profile:

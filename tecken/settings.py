@@ -195,19 +195,15 @@ class Core(AWS, Configuration, Celery):
     # this can be cached. This value determines how long we do that caching.
     MEMOIZE_KEY_EXISTING_SIZE_SECONDS = values.IntegerValue(60 * 60 * 24)
 
-    # This is the number passed to
-    # concurrent.futures.ThreadPoolExecutor(max_workers)
-    # The number should match how many concurrent connections boto3 uses
-    # in its connectionpool. The default PoolManager (in vendored urllib3)
-    # that botocore uses is 10. So if we keep this number here to 10 or
-    # less we won't run the rist of saturating that pool and having
-    # discard connections to create new ones.
-    EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS = values.IntegerValue(10)
-
-    # The number of, max, workers to passed to
-    # concurrent.futures.ThreadPoolExecutor(max_workers) when uploading
-    # multiple files to S3.
-    UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS = values.IntegerValue(10)
+    # When we upload a .zip file, we iterate over the content and for
+    # file within (that isn't immediately "ignorable") we kick off a
+    # function which figures out what (and how) to process the file.
+    # That function involves doing a S3 GET (technically ListObjectsV2),
+    # (possible) gzipping the payload and (possibly) a S3 PUT.
+    # All of these function calls get put in a
+    # concurrent.futures.ThreadPoolExecutor pool. This setting is about
+    # how many of these to start, max.
+    UPLOAD_FILE_UPLOAD_MAX_WORKERS = values.IntegerValue(10)
 
     # Whether to store the missing symbols in Postgres or not.
     # If you disable this, at the time of writing, missing symbols
