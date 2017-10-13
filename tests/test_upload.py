@@ -215,16 +215,16 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
     assert len(records) == 10
-    assert records[0][1] == 'tecken.upload_file_exists'
-    assert records[1][1] == 'tecken.upload_file_exists'
-    assert records[2][1] == 'tecken.upload_gzip_payload'
-    assert records[3][1] == 'tecken.upload_put_object'
-    assert records[4][1] == 'tecken.upload_put_object'
-    assert records[5][1] == 'tecken.upload_file_upload_upload'
-    assert records[6][1] == 'tecken.upload_file_upload'
-    assert records[7][1] == 'tecken.upload_file_upload_upload'
-    assert records[8][1] == 'tecken.upload_file_upload'
-    assert records[9][1] == 'tecken.upload_archive'
+    # It's impossible to predict, the order of some metrics records
+    # because of the use of ThreadPoolExecutor. So we can't look at them
+    # in the exact order.
+    all_tags = [x[1] for x in records]
+    assert all_tags.count('tecken.upload_file_exists') == 2
+    assert all_tags.count('tecken.upload_gzip_payload') == 1  # only 1 .sym
+    assert all_tags.count('tecken.upload_put_object') == 2
+    assert all_tags.count('tecken.upload_file_upload_upload') == 2
+    assert all_tags.count('tecken.upload_file_upload') == 2
+    assert all_tags[-1] == 'tecken.upload_archive'
 
 
 @pytest.mark.django_db(transaction=True)
