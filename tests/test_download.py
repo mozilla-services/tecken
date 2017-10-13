@@ -19,7 +19,7 @@ from django.core.cache import cache
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
-from tecken.download.models import MissingSymbol
+from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.download.tasks import (
     download_microsoft_symbol,
     DumpSymsError,
@@ -512,18 +512,27 @@ def test_download_microsoft_symbol_task_happy_path(
     assert file_upload.completed_at
     assert file_upload.microsoft_download
 
+    # It should also have created a MicrosoftDownload record.
+    download_obj, = MicrosoftDownload.objects.all()
+    assert download_obj.completed_at
+    assert download_obj.skipped is False
+    assert download_obj.error is None
+
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 9
-    assert records[0][1] == 'tecken.cabextract'
-    assert records[1][1] == 'tecken.dump_syms'
-    assert records[2][1] == 'tecken.upload_file_exists'
-    assert records[3][1] == 'tecken.upload_gzip_payload'
-    assert records[4][1] == 'tecken.upload_put_object'
-    assert records[5][1] == 'tecken.upload_file_upload_upload'
-    assert records[6][1] == 'tecken.upload_file_upload'
-    assert records[7][1] == 'tecken.microsoft_download_file_upload_upload'
-    assert records[8][1] == 'tecken.upload_microsoft_symbol'
+    assert len(records) == 10
+    assert records[0][1] == 'tecken.download_store_missing_symbol'
+    assert records[1][1] == 'tecken.download_cabextract'
+    assert records[2][1] == 'tecken.download_dump_syms'
+    assert records[3][1] == 'tecken.upload_file_exists'
+    assert records[4][1] == 'tecken.upload_gzip_payload'
+    assert records[5][1] == 'tecken.upload_put_object'
+    assert records[6][1] == 'tecken.upload_file_upload_upload'
+    assert records[7][1] == 'tecken.upload_file_upload'
+    assert records[8][1] == (
+        'tecken.download_microsoft_download_file_upload_upload'
+    )
+    assert records[9][1] == 'tecken.download_upload_microsoft_symbol'
 
 
 @pytest.mark.django_db
@@ -568,6 +577,11 @@ def test_download_microsoft_symbol_task_skipped(
     with botomock(mock_api_call):
         download_microsoft_symbol(symbol, debugid)
 
+    download_obj, = MicrosoftDownload.objects.all()
+    assert not download_obj.error
+    assert download_obj.skipped
+    assert download_obj.completed_at
+
     # The ultimate test is that it should NOT have created a file upload
     assert not FileUpload.objects.all().exists()
 
@@ -598,6 +612,7 @@ def test_download_microsoft_symbol_task_not_found(
     with botomock(mock_api_call):
         download_microsoft_symbol(symbol, debugid)
         assert not FileUpload.objects.all().exists()
+        assert not MicrosoftDownload.objects.all().exists()
 
 
 @pytest.mark.django_db
@@ -621,6 +636,9 @@ def test_download_microsoft_symbol_task_wrong_file_header(
         download_microsoft_symbol(symbol, debugid)
         assert not FileUpload.objects.all().exists()
 
+        download_obj, = MicrosoftDownload.objects.all()
+        assert "did not start with 'MSCF'" in download_obj.error
+
 
 @pytest.mark.django_db
 def test_download_microsoft_symbol_task_cabextract_failing(
@@ -643,7 +661,11 @@ def test_download_microsoft_symbol_task_cabextract_failing(
         download_microsoft_symbol(symbol, debugid)
         assert not FileUpload.objects.all().exists()
 
+        download_obj, = MicrosoftDownload.objects.all()
+        assert 'cabextract failed' in download_obj.error
 
+
+@pytest.mark.django_db
 def test_download_microsoft_symbol_task_dump_syms_failing(
     botomock,
     settings,
@@ -670,6 +692,10 @@ def test_download_microsoft_symbol_task_dump_syms_failing(
     with botomock(mock_api_call):
         with pytest.raises(DumpSymsError):
             download_microsoft_symbol(symbol, debugid)
+
+        download_obj, = MicrosoftDownload.objects.all()
+        assert 'dump_syms extraction failed' in download_obj.error
+        assert 'Something horrible happened' in download_obj.error
 
 
 @pytest.mark.django_db

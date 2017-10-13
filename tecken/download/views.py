@@ -14,7 +14,6 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 from django.utils.encoding import force_bytes
-from django.db import connection
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
@@ -23,7 +22,7 @@ from tecken.base.decorators import (
     cache_memoize,
     set_cors_headers,
 )
-from tecken.download.models import MissingSymbol
+from tecken.download.utils import store_missing_symbol
 from tecken.download.tasks import download_microsoft_symbol
 
 
@@ -55,7 +54,13 @@ def _ignore_symbol(symbol, debugid, filename):
 # Note! The reason this can't use the cache_memoize decorator
 # is because we need tight control of what the cache key becomes. That
 # way we can cache invalidate it later.
-def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
+def download_from_microsoft(
+    symbol,
+    debugid,
+    code_file=None,
+    code_id=None,
+    missing_symbol_hash=None
+):
     """Only kick off the 'download_microsoft_symbol' background task
     if we haven't already done so recently."""
 
@@ -69,6 +74,7 @@ def download_from_microsoft(symbol, debugid, code_file=None, code_id=None):
             debugid,
             code_file=code_file,
             code_id=code_id,
+            missing_symbol_hash=missing_symbol_hash or None
         )
         cache.set(
             cache_key,
@@ -140,7 +146,7 @@ def download_symbol(request, symbol, debugid, filename):
         # Only bother logging it if the client used GET.
         # Otherwise it won't be possible to pick up the extra
         # query string parameters.
-        log_symbol_get_404(
+        missing_symbol_hash = log_symbol_get_404(
             symbol,
             debugid,
             filename,
@@ -162,6 +168,7 @@ def download_symbol(request, symbol, debugid, filename):
                 debugid,
                 code_file=request.GET.get('code_file'),
                 code_id=request.GET.get('code_id'),
+                missing_symbol_hash=missing_symbol_hash,
             )
 
             # The querying of Microsoft's server is potentially slow.
@@ -214,7 +221,7 @@ def log_symbol_get_404(
     are both optional.
     """
     if settings.ENABLE_STORE_MISSING_SYMBOLS:
-        store_missing_symbol(
+        return store_missing_symbol(
             symbol,
             debugid,
             filename,
@@ -248,61 +255,6 @@ def log_symbol_get_404(
             # include ALL missing symbols from 0AM to 0PM on the Saturday.
             # That's why the expiration time here is the last TWO DAYS.
             cache.set(key, 1, 60 * 60 * 24 * 2)
-
-
-@metrics.timer_decorator('download_store_missing_symbol')
-def store_missing_symbol(
-    symbol,
-    debugid,
-    filename,
-    code_file=None,
-    code_id=None,
-):
-    # Ignore it if it's clearly some junk or too weird.
-    if len(symbol) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (symbol ${len(symbol)} chars)'
-        )
-        return
-    if len(debugid) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (debugid ${len(debugid)} chars)'
-        )
-        return
-    if len(filename) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (filename ${len(filename)} chars)'
-        )
-        return
-    hash_ = MissingSymbol.make_md5_hash(
-        symbol,
-        debugid,
-        filename,
-        code_file,
-        code_id,
-    )
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            INSERT INTO download_missingsymbol (
-                hash, symbol, debugid, filename, code_file, code_id,
-                count, created_at, modified_at
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s,
-                1, CLOCK_TIMESTAMP(), CLOCK_TIMESTAMP()
-              )
-            ON CONFLICT (hash)
-            DO UPDATE SET
-                count = download_missingsymbol.count + 1,
-                modified_at = CLOCK_TIMESTAMP()
-            WHERE download_missingsymbol.hash = %s
-            """,
-            [
-                hash_, symbol, debugid, filename,
-                code_file or None, code_id or None,
-                hash_
-            ]
-        )
 
 
 def missing_symbols_csv(request):
