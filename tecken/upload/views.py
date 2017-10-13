@@ -31,8 +31,8 @@ from tecken.upload.utils import (
     get_archive_members,
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
-    key_existing_sizes,
-    get_prepared_file_buffer,
+    # key_existing_sizes,
+    # get_prepared_file_buffer,
 )
 from tecken.upload.models import Upload
 from tecken.upload.forms import UploadByDownloadForm
@@ -101,6 +101,18 @@ def get_bucket_info(user):
         url = exception
 
     return S3Bucket(url)
+
+
+def _ignore_member_file(filename):
+    """Return true if the given filename (could be a filepath), should
+    be completely ignored in the upload process.
+
+    At the moment the list is "whitelist based", meaning all files are
+    processed and uploaded to S3 unless it meets certain checks.
+    """
+    if filename.lower().endswith('-symbols.txt'):
+        return True
+    return False
 
 
 @metrics.timer_decorator('upload_archive')
@@ -184,82 +196,6 @@ def upload_archive(request):
         else:  # pragma: no cover
             raise
 
-    def _ignore_member_file(filename):
-        """Return true if the given filename (could be a filepath), should
-        be completely ignored in the upload process.
-
-        At the moment the list is "whitelist based", meaning all files are
-        processed and uploaded to S3 unless it meets certain checks.
-        """
-        if filename.lower().endswith('-symbols.txt'):
-            return True
-        return False
-
-    # Before proceeding to the upload part, extract a list of all keys
-    # we might upload. Then use the smart utils.key_existing_sizes()
-    # function to get a list of all their sizes in S3. Based on that result
-    # we can determine which ones to bother uploading.
-    all_keys = []
-    ignored_keys = []
-    skipped_keys = []
-    for member in get_archive_members(upload, name):
-        if _ignore_member_file(member.name):
-            ignored_keys.append(member.name)
-            continue
-        key_name = os.path.join(
-            settings.SYMBOL_FILE_PREFIX, member.name
-        )
-        all_keys.append(key_name)
-    key_sizes = key_existing_sizes(client, bucket_info.name, all_keys)
-
-    # Now that we have this dict, loop over all the files again and
-    # compare the sizes with what's in S3.
-    keep_keys = {}  # key --> bytes payload dict
-    for member in get_archive_members(upload, name):
-        if _ignore_member_file(member.name):
-            continue
-        key_name = os.path.join(
-            settings.SYMBOL_FILE_PREFIX, member.name
-        )
-        # Let's see, should keep this file or not.
-        if key_sizes[key_name]:
-            # It apparently, already, exists in S3. Compare this file's
-            # size with what's in S3.
-            # Note, the size in S3 is potentially the compressed size,
-            # so if this file should be compressed to we have to
-            # "pre-compress" it here too.
-            file_buffer, file_size, compressed = get_prepared_file_buffer(
-                member.extractor().read(),
-                key_name
-            )
-            if key_sizes[key_name] == file_size:
-                skipped_keys.append(key_name)
-                logger.info(f'Skipped key {key_name}')
-                metrics.incr('upload_file_upload_skip', 1)
-                continue
-
-            keep_keys[key_name] = (
-                file_buffer,
-                file_size,
-                compressed,
-                # True here in the tuple, because this is an *update* of
-                # an existing key.
-                True,
-            )
-        else:
-            # Definitely a new file
-            file_buffer, file_size, compressed = get_prepared_file_buffer(
-                member.extractor().read(),
-                key_name
-            )
-            keep_keys[key_name] = (
-                file_buffer,
-                file_size,
-                compressed,
-                # False here because it's a new file. Not an update.
-                False,
-            )
-
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
     content = '\n'.join(
@@ -282,45 +218,50 @@ def upload_archive(request):
         size=size,
         download_url=url,
         content_hash=content_hash,
-        skipped_keys=skipped_keys or None,
-        ignored_keys=ignored_keys or None,
     )
 
+    ignored_keys = []
+    skipped_keys = []
     thread_pool = concurrent.futures.ThreadPoolExecutor(
-        max_workers=settings.UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS
+        max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS
     )
-    file_uploads_created = []
+    file_uploads_created = 0
     with thread_pool as executor:
         future_to_key = {}
-        for key_name in keep_keys:
-            file_buffer, file_size, compressed, update = keep_keys[key_name]
-            # We can't do a fire-and-forget, even if we don't need the
-            # FileUpload instance that upload_file_upload() creates and
-            # returns.
+        for member in file_listing:
+            if _ignore_member_file(member.name):
+                ignored_keys.append(member.name)
+                continue
+            key_name = os.path.join(
+                settings.SYMBOL_FILE_PREFIX, member.name
+            )
             future_to_key[
                 executor.submit(
                     upload_file_upload,
                     client,
                     bucket_info.name,
                     key_name,
-                    file_buffer,
-                    file_size,
-                    compressed=compressed,
-                    update=update,
-                    upload=upload_obj,
+                    member.extractor().read(),
+                    upload_id=upload_obj.id,
                 )
             ] = key_name
-        # If we don't wait for the completed result of each future
-        # any errors that are raised within won't bubble up.
+        # Now lets wait for them all to finish and we'll see which ones
+        # were skipped and which ones were created.
         for future in concurrent.futures.as_completed(future_to_key):
-            file_uploads_created.append(future.result())
+            file_upload = future.result()
+            if file_upload:
+                file_uploads_created += 1
+            else:
+                skipped_keys.append(future_to_key[future])
 
-    if keep_keys:
-        logger.info(f'Created {len(file_uploads_created)} FileUpload objects')
+    if file_uploads_created:
+        logger.info(f'Created {file_uploads_created} FileUpload objects')
     else:
         logger.info(f'No file uploads created for {upload_obj!r}')
 
     Upload.objects.filter(id=upload_obj.id).update(
+        skipped_keys=skipped_keys or None,
+        ignored_keys=ignored_keys or None,
         completed_at=timezone.now(),
     )
 

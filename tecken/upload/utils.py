@@ -7,7 +7,7 @@ import zipfile
 import gzip
 import tarfile
 import logging
-import concurrent.futures
+# import concurrent.futures
 from io import BytesIO
 
 import markus
@@ -136,28 +136,6 @@ def key_existing_size(client, bucket, key):
     return 0
 
 
-@metrics.timer_decorator('upload_file_exists_combined')
-def key_existing_sizes(client, bucket, keys):
-    """return a dictionary where every key points to a size.
-    So, if 'keys' is ['v1/foo.pdb', 'v1/bar.sym']
-    return something like {'v1/foo.pdb': 123456, 'v1/bar.sym': 0}
-
-    If the value is 0, the file does not exist in this S3 bucket.
-    """
-    sizes = {}
-    max_workers = settings.EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS
-    pool_class = concurrent.futures.ThreadPoolExecutor
-    with pool_class(max_workers=max_workers) as executor:
-        future_to_key = {
-            executor.submit(key_existing_size, client, bucket, key): key
-            for key in keys
-        }
-        for future in concurrent.futures.as_completed(future_to_key):
-            key = future_to_key[future]
-            sizes[key] = future.result()
-    return sizes
-
-
 def should_compressed_key(key_name):
     """Return true if, based on this key name, the content should be
     gzip compressed."""
@@ -171,41 +149,43 @@ def get_key_content_type(key_name):
     return settings.MIME_OVERRIDES.get(key_extension)
 
 
-def get_prepared_file_buffer(payload, key_name):
-    """Given a bytes string, return a tuple of
-    (BytesIO object, size, compressed).
-    If the payload needs to be compressed (based on the key name),
-    the payload is gzipped. Otherwise left as is.
-    """
-    file_buffer = BytesIO()
-    if should_compressed_key(key_name):
-        with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
-            f.write(payload)
-        file_buffer.seek(0, os.SEEK_END)
-        size = file_buffer.tell()
-        file_buffer.seek(0)
-        return file_buffer, size, True
-    else:
-        file_buffer.write(payload)
-        file_buffer.seek(0, os.SEEK_END)
-        size = file_buffer.tell()
-        file_buffer.seek(0)
-        return file_buffer, size, False
-
-
+@metrics.timer_decorator('upload_file_upload')
 def upload_file_upload(
     s3_client,
     bucket_name,
     key_name,
-    file_buffer,
-    size,
-    compressed=False,
-    upload=None,
-    update=False,
+    payload,
+    upload_id=None,
     microsoft_download=False,
 ):
+    existing_size = key_existing_size(s3_client, bucket_name, key_name)
+
+    if should_compressed_key(key_name):
+        compressed = True
+        with metrics.timer('upload_gzip_payload'):
+            file_buffer = BytesIO()
+            with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
+                f.write(payload)
+            file_buffer.seek(0, os.SEEK_END)
+            size = file_buffer.tell()
+            file_buffer.seek(0)
+    else:
+        compressed = False
+        size = len(payload)
+        # This is a smart hack. The boto3 client.put_object() function
+        # can either take a blob of bytes or a file-like object.
+        # When we gzip the file, we need to have make it a file-like object
+        # so that GzipFile creates the necessary headers.
+        file_buffer = payload
+
+    if existing_size and existing_size == size:
+        # Then don't bother!
+        return
+
+    update = existing_size and existing_size != size
+
     file_upload = FileUpload.objects.create(
-        upload=upload,
+        upload_id=upload_id,
         bucket_name=bucket_name,
         key=key_name,
         update=update,
@@ -235,7 +215,7 @@ def upload_file_upload(
         key_name,
         bucket_name,
     ))
-    with metrics.timer('upload_file_upload'):
+    with metrics.timer('upload_put_object'):
         s3_client.put_object(
             Bucket=bucket_name,
             Key=key_name,
@@ -248,7 +228,7 @@ def upload_file_upload(
     logger.info(f'Uploaded key {key_name}')
     metrics.incr('upload_file_upload_upload', 1)
 
-    # If we managed to upload a file there, different or not,
+    # If we managed to upload a file, different or not,
     # cache invalidate the key_existing_size() lookup.
     try:
         key_existing_size.invalidate(s3_client, bucket_name, key_name)
