@@ -65,8 +65,9 @@ def run(count, directory, bucket, endpoint_url, search=''):
         if response['ResponseMetadata']['HTTPStatusCode'] != 204:
             raise Exception(response)
     print()
-    print('Deleted {} files totalling {}'.format(
+    print('Deleted {} files (of {} possible) totalling {}'.format(
         len(sizes),
+        len(all),
         fmtsize(sum(sizes)),
     ))
 
