@@ -417,3 +417,33 @@ When started with docker, it starts a web server on ``:9000`` that you can
 use to browse uploaded files. Go to ``http://localhost:9000``.
 
 .. _`minio`: https://minio.io/
+
+
+How to Memory Profile Python
+============================
+
+The trick is to install https://pypi.python.org/pypi/memory_profiler and
+then start Gunicorn with it. First start a shell and install it there:
+
+.. code-block:: shell
+
+    $ docker-compose run --service-ports --user 0  web bash
+    # pip install memory_profiler
+
+Now, to see memory reports of running functions, add some code to the
+relevant functions you want to memory profile:
+
+.. code-block:: python
+
+
+    from memory_profiler import profile
+
+    @profile
+    def some_view(request):
+        ...
+
+Now run Gunicorn:
+
+.. code-block:: shell
+
+    $ python -m memory_profiler  `which gunicorn` tecken.wsgi:application -b 0.0.0.0:8000 --timeout 60 --workers 1 --access-logfile -
