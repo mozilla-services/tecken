@@ -223,7 +223,7 @@ def upload_archive(request):
     ignored_keys = []
     skipped_keys = []
     thread_pool = concurrent.futures.ThreadPoolExecutor(
-        max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS
+        max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
     )
     file_uploads_created = 0
     with thread_pool as executor:
