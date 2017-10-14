@@ -24,6 +24,13 @@ class TeckenAppConfig(AppConfig):
     def ready(self):
         # The app is now ready.
 
+        # Because shortcomings in django-configurations, we can't set
+        # DATABASES with CONN_MAX_AGE. So let's fix it here.
+        if settings.CONN_MAX_AGE:
+            settings.DATABASES['default']['CONN_MAX_AGE'] = (
+                settings.CONN_MAX_AGE
+            )
+
         markus.configure(settings.MARKUS_BACKENDS)
 
         # For some unknown reason, if you don't do at least one read
