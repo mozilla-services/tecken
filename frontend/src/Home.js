@@ -35,15 +35,19 @@ class SignedInTiles extends React.PureComponent {
     this.state = {
       loading: true,
       loadingSettings: false,
+      loadingVersions: false,
       stats: null,
-      settings: null
+      settings: null,
+      versions: null
     }
   }
 
   componentDidMount() {
     this._fetchStats()
     if (store.currentUser.is_superuser) {
-      this._fetchCurrentSettings()
+      this._fetchCurrentSettings().then(() => {
+        this._fetchVersions()
+      })
     }
   }
 
@@ -68,7 +72,7 @@ class SignedInTiles extends React.PureComponent {
 
   _fetchCurrentSettings = () => {
     this.setState({ loadingSettings: true })
-    Fetch('/api/_settings/', { credentials: 'same-origin' }).then(r => {
+    return Fetch('/api/_settings/', { credentials: 'same-origin' }).then(r => {
       this.setState({ loadingSettings: false })
       if (r.status === 200) {
         if (store.fetchError) {
@@ -77,6 +81,27 @@ class SignedInTiles extends React.PureComponent {
         return r.json().then(response => {
           this.setState({
             settings: response.settings
+          })
+        })
+      } else {
+        store.fetchError = r
+        // Always return a promise
+        return Promise.resolve()
+      }
+    })
+  }
+
+  _fetchVersions = () => {
+    this.setState({ loadingVersions: true })
+    Fetch('/api/_versions/', { credentials: 'same-origin' }).then(r => {
+      this.setState({ loadingVersions: false })
+      if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null
+        }
+        return r.json().then(response => {
+          this.setState({
+            versions: response.versions
           })
         })
       } else {
@@ -208,7 +233,7 @@ class SignedInTiles extends React.PureComponent {
             <div className="tile is-ancestor">
               <div className="tile is-parent">
                 <article className="tile is-child box">
-                  <p className="title">Current Settings</p>
+                  <h3 className="title">Current Settings</h3>
                   <p>
                     Insight into the environment <b>only for superusers</b>.
                   </p>
@@ -245,6 +270,36 @@ class SignedInTiles extends React.PureComponent {
                       see the source code
                     </a>.
                   </p>
+
+                  {this.state.loadingVersions ? (
+                    <Loading />
+                  ) : (
+                    <h3 className="title" style={{marginTop: 30}}>Current Versions</h3>
+                  )}
+                  {this.state.versions && (
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Key</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <th>React</th>
+                          <td>{React.version}</td>
+                        </tr>
+                        {this.state.versions.map(version => {
+                          return (
+                            <tr key={version.key}>
+                              <th>{version.key}</th>
+                              <td>{this.formatSettingValue(version.value)}</td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  )}
                 </article>
               </div>
             </div>

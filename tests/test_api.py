@@ -1015,6 +1015,34 @@ def test_current_settings(client, settings):
 
 
 @pytest.mark.django_db
+def test_current_versions(client):
+    url = reverse('api:current_versions')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user.is_superuser = True
+    user.save()
+    response = client.get(url)
+    assert response.status_code == 200
+    current_versions = {
+        x['key']: x['value'] for x in response.json()['versions']
+    }
+    assert 'Django' in current_versions
+    assert 'Tecken' in current_versions
+    assert 'PostgreSQL' in current_versions
+    assert 'Redis Cache' in current_versions
+    assert 'Redis Store' in current_versions
+
+
+@pytest.mark.django_db
 def test_filter_uploads_by_size():
     """Test the utility function filter_uploads()"""
     user1 = User.objects.create(email='test@example.com')

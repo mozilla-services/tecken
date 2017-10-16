@@ -7,7 +7,11 @@ import json
 import logging
 from urllib.parse import urlparse, urlunparse
 
+from dockerflow.version import get_version as dockerflow_get_version
+from django_redis import get_redis_connection
+
 from django import http
+from django import get_version
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Permission, User, Group
@@ -16,6 +20,7 @@ from django.db.models import Aggregate
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_protect
+from django.db import connection
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -974,6 +979,48 @@ def current_settings(request):
         })
     })
     context['settings'].sort(key=lambda x: x['key'])
+    return http.JsonResponse(context)
+
+
+@api_login_required
+@api_superuser_required
+def current_versions(request):
+    """return a JSON dict of a selection of keys and their versions
+    """
+    context = {
+        'versions': []
+    }
+    with connection.cursor() as cursor:
+        cursor.execute('select version()')
+        row = cursor.fetchone()
+        value, = row
+        context['versions'].append({
+            'key': 'PostgreSQL',
+            'value': value.split(' on ')[0].replace('PostgreSQL', '').strip()
+        })
+    context['versions'].append({
+        'key': 'Tecken',
+        'value': dockerflow_get_version(settings.BASE_DIR)
+    })
+    context['versions'].append({
+        'key': 'Django',
+        'value': get_version(),
+    })
+    redis_store_info = get_redis_connection('store').info()
+    context['versions'].append({
+        'key': 'Redis Store',
+        'value': redis_store_info['redis_version']
+    })
+    try:
+        redis_cache_info = get_redis_connection('default').info()
+    except NotImplementedError:
+        redis_cache_info = {'redis_version': 'fakeredis'}
+    context['versions'].append({
+        'key': 'Redis Cache',
+        'value': redis_cache_info['redis_version']
+    })
+
+    context['versions'].sort(key=lambda x: x['key'])
     return http.JsonResponse(context)
 
 
