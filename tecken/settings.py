@@ -468,6 +468,7 @@ class Base(Core):
     ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue([
         'queue.taskcluster.net',
         'public-artifacts.taskcluster.net',
+        'cloud-mirror.taskcluster.net',
     ])
 
     # A list of file extensions that if a file is NOT one of these extensions
