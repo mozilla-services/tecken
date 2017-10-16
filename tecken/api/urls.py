@@ -73,6 +73,11 @@ urlpatterns = [
         name='current_settings'
     ),
     url(
+        r'_versions/$',
+        views.current_versions,
+        name='current_versions'
+    ),
+    url(
         r'downloads/missing/$',
         views.downloads_missing,
         name='downloads_missing'
