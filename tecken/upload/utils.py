@@ -7,7 +7,6 @@ import zipfile
 import gzip
 import tarfile
 import logging
-# import concurrent.futures
 from io import BytesIO
 
 import markus

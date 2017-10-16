@@ -137,7 +137,8 @@ def upload_archive(request):
                 logger.info(
                     f'Download to upload {url} ({size_fmt})'
                 )
-                upload = io.BytesIO(requests.get(url).content)
+                with metrics.timer('upload_download_by_url'):
+                    upload = io.BytesIO(requests.get(url).content)
             else:
                 for key, errors in form.errors.as_data().items():
                     return http.JsonResponse(
