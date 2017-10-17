@@ -54,5 +54,5 @@ class MicrosoftDownload(models.Model):
     # When created but turns out we already had it in the S3 destination.
     # Make this Null if it was never even attempted to upload.
     skipped = models.NullBooleanField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     completed_at = models.DateTimeField(null=True)

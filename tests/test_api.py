@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.download.models import MissingSymbol
+from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.api.views import filter_uploads
 from tecken.api.forms import UploadsForm
 
@@ -1261,6 +1261,118 @@ def test_downloads_missing(client):
     # Filter by count
     response = client.get(url, {
         'count': '>1'
+    })
+    data = response.json()
+    assert data['total'] == 1
+
+
+@pytest.mark.django_db
+def test_downloads_microsoft(client):
+    url = reverse('api:downloads_microsoft')
+    response = client.get(url)
+    data = response.json()
+    assert data['microsoft_downloads'] == []
+    assert data['aggregates']['microsoft_downloads']['total'] == 0
+    assert data['total'] == 0
+
+    MicrosoftDownload.objects.create(
+        missing_symbol=MissingSymbol.objects.create(
+            hash='x1',
+            symbol='foo.pdb',
+            debugid='ADEF12345',
+            filename='foo.sym',
+            count=1
+        ),
+        url='https://msdn.example.com/foo.sym',
+        file_upload=FileUpload.objects.create(
+            bucket_name='mybucket',
+            key='v0/foo.pdb/ADEF12345/foo.sym',
+            update=False,
+            compressed=True,
+            size=12345,
+            microsoft_download=True,
+            completed_at=timezone.now(),
+        ),
+        skipped=False,
+        completed_at=timezone.now(),
+    )
+    MicrosoftDownload.objects.create(
+        missing_symbol=MissingSymbol.objects.create(
+            hash='x2',
+            symbol='foo.pdb',
+            debugid='01010101',
+            filename='foo.ex_',
+            count=2
+        ),
+        url='https://msdn.example.com/foo2.sym',
+        error='Something terrible!',
+        completed_at=timezone.now(),
+    )
+
+    response = client.get(url)
+    data = response.json()
+    assert data['total'] == 2
+
+    # Filter by created_at
+    response = client.get(url, {
+        'created_at': timezone.now().isoformat()
+    })
+    data = response.json()
+    assert data['total'] == 0
+    response = client.get(url, {
+        'created_at': '<' + timezone.now().isoformat()
+    })
+    data = response.json()
+    assert data['total'] == 2
+
+    # Filter by symbol
+    response = client.get(url, {
+        'symbol': 'foo.pdb'
+    })
+    data = response.json()
+    assert data['total'] == 2
+
+    # Filter by filename
+    response = client.get(url, {
+        'filename': 'foo.sym'
+    })
+    data = response.json()
+    assert data['total'] == 1
+    first_missing_symbol = data['microsoft_downloads'][0]
+    assert first_missing_symbol['missing_symbol']['filename'] == 'foo.sym'
+
+    # Filter by specific error
+    response = client.get(url, {
+        'state': 'specific-error',
+        'error': 'terrible'
+    })
+    data = response.json()
+    assert data['total'] == 1
+    response = client.get(url, {
+        'state': 'specific-error',
+        'error': 'not found'
+    })
+    data = response.json()
+    assert data['total'] == 0
+
+    # Filter by those errored
+    response = client.get(url, {
+        'state': 'errored',
+    })
+    data = response.json()
+    assert data['total'] == 1
+    assert data['microsoft_downloads'][0]['error'] == 'Something terrible!'
+
+    # Filter by those that have a file upload
+    response = client.get(url, {
+        'state': 'file-upload',
+    })
+    data = response.json()
+    assert data['total'] == 1
+
+    # Those that don't have a file upload
+    response = client.get(url, {
+        'state': 'no-file-upload',
     })
     data = response.json()
     assert data['total'] == 1
