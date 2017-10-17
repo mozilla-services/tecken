@@ -2,7 +2,7 @@ version: '2'
 
 services:
   db:
-    image: postgres:9.5
+    image: postgres:9.6
   redis-store:
     build: ./docker/images/redis
   redis-cache:
