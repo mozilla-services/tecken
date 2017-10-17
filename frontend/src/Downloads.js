@@ -1,27 +1,12 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-// import Fetch from './Fetch'
 import store from './Store'
-//
-// import {
-//   Loading,
-//   Pagination,
-//   TableSubTitle,
-//   ShowValidationErrors
-// } from './Common'
 
 class Downloads extends React.PureComponent {
   constructor(props) {
     super(props)
     this.state = {
-      pageTitle: 'Downloads',
-      // loading: true,
-      // downloads: null,
-      // total: null,
-      // batchSize: null,
-      // apiUrl: null,
-      // filter: {},
-      // validationErrors: null,
+      pageTitle: 'Downloads'
     }
   }
 
@@ -31,10 +16,17 @@ class Downloads extends React.PureComponent {
   }
 
   render() {
-    return <div>
-      <h1 className="title">{this.state.pageTitle}</h1>
-      <Link to="/downloads/missing">Downloads Missing</Link>
-    </div>
+    return (
+      <div>
+        <h1 className="title">{this.state.pageTitle}</h1>
+        <p>
+          <Link to="/downloads/missing">Downloads Missing</Link>
+        </p>
+        <p>
+          <Link to="/downloads/microsoft">Microsoft Downloads</Link>
+        </p>
+      </div>
+    )
   }
 }
 

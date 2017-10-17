@@ -450,6 +450,7 @@ class Base(Core):
     API_UPLOADS_BATCH_SIZE = 20
     API_FILES_BATCH_SIZE = 40
     API_DOWNLOADS_MISSING_BATCH_SIZE = 20
+    API_DOWNLOADS_MICROSOFT_BATCH_SIZE = 20
 
     # Every time we do a symbol upload, we also take a look to see if there
     # are incomplete uploads that could have failed due to some unlucky

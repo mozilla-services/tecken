@@ -221,7 +221,7 @@ class FileUploadsForm(UploadsForm):
         return cleaned
 
 
-class DownloadsForm(BaseFilteringForm):
+class DownloadsMissingForm(BaseFilteringForm):
     symbol = forms.CharField(required=False)
     debugid = forms.CharField(required=False)
     filename = forms.CharField(required=False)
@@ -251,3 +251,12 @@ class DownloadsForm(BaseFilteringForm):
                 raise forms.ValidationError(f'{rest!r} is not a number')
             counts.append((operator, rest))
         return counts
+
+
+class DownloadsMicrosoftForm(DownloadsMissingForm):
+    created_at = forms.CharField(required=False)
+    state = forms.CharField(required=False)
+    error = forms.CharField(required=False)
+
+    def clean_created_at(self):
+        return self._clean_dates(self.cleaned_data['created_at'])

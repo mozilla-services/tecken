@@ -82,4 +82,9 @@ urlpatterns = [
         views.downloads_missing,
         name='downloads_missing'
     ),
+    url(
+        r'downloads/microsoft/$',
+        views.downloads_microsoft,
+        name='downloads_microsoft'
+    ),
 ]

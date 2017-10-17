@@ -29,6 +29,13 @@ const Home = observer(
 
 export default Home
 
+const formatSettingValue = value => {
+  if (typeof value === 'string') {
+    return value
+  }
+  return JSON.stringify(value)
+}
+
 class SignedInTiles extends React.PureComponent {
   constructor(props) {
     super(props)
@@ -110,13 +117,6 @@ class SignedInTiles extends React.PureComponent {
     })
   }
 
-  formatSettingValue = value => {
-    if (typeof value === 'string') {
-      return value
-    }
-    return JSON.stringify(value)
-  }
-
   render() {
     const { user } = this.props
     const { stats, loading } = this.state
@@ -124,183 +124,48 @@ class SignedInTiles extends React.PureComponent {
       <div>
         <div className="tile is-ancestor">
           <div
-            className={
-              user.is_superuser ? 'tile is-parent' : 'tile is-parent is-8'
-            }
+            className={user.is_superuser ? 'tile is-parent' : 'tile is-parent'}
           >
             {store.hasPermission('upload.upload_symbols') ? (
-              <AboutUploadsTile loading={loading} stats={stats} />
+              <UploadsStatsTile loading={loading} stats={stats} />
             ) : (
               <AboutUploadsPermissionTile />
             )}
           </div>
           <div className="tile is-parent">
-            {store.hasPermission('tokens.manage_tokens') ? (
-              <AboutTokensTile loading={loading} stats={stats} />
-            ) : (
-              <AboutTokensPermissionTile />
-            )}
+            <DownloadsStatsTile loading={loading} stats={stats} />
           </div>
-          {user.is_superuser && (
-            <div className="tile is-parent">
-              <article className="tile is-child box">
-                <p className="title">Users</p>
-                {loading || !stats ? (
-                  <Loading />
-                ) : (
-                  <p>
-                    There <b>{stats.users.total} users</b> in total of which{' '}
-                    <b>{stats.users.superusers}</b>{' '}
-                    {stats.users.superusers === 1
-                      ? 'is superuser'
-                      : 'are superusers'},
-                    <b>{stats.users.not_active}</b> are inactive.
-                  </p>
-                )}
-                <p>
-                  <Link to="/users">
-                    Go to <b>User Management</b>
-                  </Link>
-                </p>
-              </article>
-            </div>
-          )}
         </div>
 
         <div className="tile is-ancestor">
           <div className="tile is-parent">
-            <article className="tile is-child box">
-              <p className="title">Authenticated</p>
-              <p>
-                You are signed in as <b>{user.email}</b>.
-                <br />
-                {user.is_superuser && (
-                  <span>
-                    You are a <b>superuser</b>.
-                  </span>
-                )}
-              </p>
-              <p style={{ marginTop: 20 }}>
-                You have the following permissions:
-              </p>
-              {user.permissions && user.permissions.length ? (
-                <ListYourPermissions permissions={user.permissions} />
-              ) : (
-                <AboutPermissions />
-              )}
-            </article>
+            <YouTile user={user} />
           </div>
-          <div className="tile is-parent is-8">
-            <article className="tile is-child box">
-              <p className="title">Where do you want to go?</p>
-              <p>
-                <Link to="/help" className="is-size-5">
-                  Help
-                </Link>
-              </p>
-              <p>
-                <a
-                  href="https://tecken.readthedocs.io"
-                  className="is-size-5"
-                  rel="noopener noreferrer"
-                >
-                  Documentation on Readthedocs
-                </a>
-              </p>
-              <p>
-                <a
-                  href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
-                  className="is-size-5"
-                  rel="noopener noreferrer"
-                >
-                  File a bug
-                </a>
-              </p>
-              <p>
-                <a
-                  href="https://github.com/mozilla-services/tecken"
-                  className="is-size-5"
-                  rel="noopener noreferrer"
-                >
-                  Code on GitHub
-                </a>
-              </p>
-            </article>
+
+          {user.is_superuser && (
+            <div className="tile is-parent">
+              <UsersTile loading={loading} stats={stats} />
+            </div>
+          )}
+
+          <div
+            className={
+              user.is_superuser ? 'tile is-parent is-4' : 'tile is-parent is-8'
+            }
+          >
+            <LinksTile />
           </div>
         </div>
 
         {(this.state.loadingSettings || this.state.settings) && (
             <div className="tile is-ancestor">
               <div className="tile is-parent">
-                <article className="tile is-child box">
-                  <h3 className="title">Current Settings</h3>
-                  <p>
-                    Insight into the environment <b>only for superusers</b>.
-                  </p>
-                  {this.state.loadingSettings && <Loading />}
-                  {this.state.settings && (
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>Setting</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {this.state.settings.map(setting => {
-                          return (
-                            <tr key={setting.key}>
-                              <th>{setting.key}</th>
-                              <td>{this.formatSettingValue(setting.value)}</td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                  <p className="help">
-                    Note that these are only a handful of settings. They are the
-                    ones that are most likely to change from one environment to
-                    another. For other settings,{' '}
-                    <a
-                      href="https://github.com/mozilla-services/tecken/blob/master/tecken/settings.py"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      see the source code
-                    </a>.
-                  </p>
-
-                  {this.state.loadingVersions ? (
-                    <Loading />
-                  ) : (
-                    <h3 className="title" style={{marginTop: 30}}>Current Versions</h3>
-                  )}
-                  {this.state.versions && (
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>Key</th>
-                          <th>Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <th>React</th>
-                          <td>{React.version}</td>
-                        </tr>
-                        {this.state.versions.map(version => {
-                          return (
-                            <tr key={version.key}>
-                              <th>{version.key}</th>
-                              <td>{this.formatSettingValue(version.value)}</td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  )}
-                </article>
+                <EnvironmentTile
+                  loadingSettings={this.state.loadingSettings}
+                  settings={this.state.settings}
+                  loadingVersions={this.state.loadingVersions}
+                  versions={this.state.versions}
+                />
               </div>
             </div>
           )}
@@ -308,6 +173,164 @@ class SignedInTiles extends React.PureComponent {
     )
   }
 }
+
+const EnvironmentTile = ({
+  loadingSettings,
+  settings,
+  loadingVersions,
+  versions
+}) => (
+  <article className="tile is-child box">
+    <h3 className="title">Current Settings</h3>
+    <p>
+      Insight into the environment <b>only for superusers</b>.
+    </p>
+    {loadingSettings && <Loading />}
+    {settings && (
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Setting</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {settings.map(setting => {
+            return (
+              <tr key={setting.key}>
+                <th>{setting.key}</th>
+                <td>{formatSettingValue(setting.value)}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    )}
+    <p className="help">
+      Note that these are only a handful of settings. They are the ones that are
+      most likely to change from one environment to another. For other settings,{' '}
+      <a
+        href="https://github.com/mozilla-services/tecken/blob/master/tecken/settings.py"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        see the source code
+      </a>.
+    </p>
+
+    {loadingVersions ? (
+      <Loading />
+    ) : (
+      <h3 className="title" style={{ marginTop: 30 }}>
+        Current Versions
+      </h3>
+    )}
+    {versions && (
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>React</th>
+            <td>{React.version}</td>
+          </tr>
+          {versions.map(version => {
+            return (
+              <tr key={version.key}>
+                <th>{version.key}</th>
+                <td>{formatSettingValue(version.value)}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    )}
+  </article>
+)
+
+const YouTile = ({ user }) => (
+  <article className="tile is-child box">
+    <p className="title">Authenticated</p>
+    <p>
+      You are signed in as <b>{user.email}</b>.
+      <br />
+      {user.is_superuser && (
+        <span>
+          You are a <b>superuser</b>.
+        </span>
+      )}
+    </p>
+    <p style={{ marginTop: 20 }}>You have the following permissions:</p>
+    {user.permissions && user.permissions.length ? (
+      <ListYourPermissions permissions={user.permissions} />
+    ) : (
+      <AboutPermissions />
+    )}
+  </article>
+)
+
+const UsersTile = ({ loading, stats }) => (
+  <article className="tile is-child box">
+    <p className="title">Users</p>
+    {loading || !stats ? (
+      <Loading />
+    ) : (
+      <p>
+        There <b>{stats.users.total} users</b> in total of which{' '}
+        <b>{stats.users.superusers}</b>{' '}
+        {stats.users.superusers === 1 ? 'is superuser' : 'are superusers'},
+        <b>{stats.users.not_active}</b> are inactive.
+      </p>
+    )}
+    <p>
+      <Link to="/users">
+        Go to <b>User Management</b>
+      </Link>
+    </p>
+  </article>
+)
+
+const LinksTile = () => (
+  <article className="tile is-child box">
+    <p className="title">Where do you want to go?</p>
+    <p>
+      <Link to="/help" className="is-size-5">
+        Help
+      </Link>
+    </p>
+    <p>
+      <a
+        href="https://tecken.readthedocs.io"
+        className="is-size-5"
+        rel="noopener noreferrer"
+      >
+        Documentation on Readthedocs
+      </a>
+    </p>
+    <p>
+      <a
+        href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+        className="is-size-5"
+        rel="noopener noreferrer"
+      >
+        File a bug
+      </a>
+    </p>
+    <p>
+      <a
+        href="https://github.com/mozilla-services/tecken"
+        className="is-size-5"
+        rel="noopener noreferrer"
+      >
+        Code on GitHub
+      </a>
+    </p>
+  </article>
+)
 
 const ListYourPermissions = ({ permissions }) => (
   <ul>
@@ -342,7 +365,7 @@ const AboutUploadsPermissionTile = () => (
   </article>
 )
 
-const AboutUploadsTile = ({ loading, stats }) => (
+const UploadsStatsTile = ({ loading, stats }) => (
   <article className="tile is-child box">
     <p className="title">
       {loading || (stats && stats.uploads.all_uploads)
@@ -352,99 +375,113 @@ const AboutUploadsTile = ({ loading, stats }) => (
     {loading || !stats ? (
       <Loading />
     ) : (
-      <table className="table">
+      <table className="table is-fullwidth">
         <thead>
           <tr>
             <th />
-            <th>Uploads</th>
-            <th>Files</th>
+            <th colSpan={2}>
+              <Link to="/uploads">Uploads</Link>
+            </th>
+            <th colSpan={2}>
+              <Link
+                to="/uploads/files"
+                title="Files from .zip uploads we actually upload to S3"
+              >
+                Uploaded Files
+              </Link>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <UploadsRow
+            title="Today"
+            uploads={stats.uploads.today}
+            files={stats.files.today}
+          />
+          <UploadsRow
+            title="Yesterday"
+            uploads={stats.uploads.yesterday}
+            files={stats.files.yesterday}
+          />
+          <UploadsRow
+            title="This Month"
+            uploads={stats.uploads.this_month}
+            files={stats.files.this_month}
+          />
+          <UploadsRow
+            title="This Year"
+            uploads={stats.uploads.this_year}
+            files={stats.files.this_year}
+          />
+        </tbody>
+      </table>
+    )}
+  </article>
+)
+
+const UploadsRow = ({ title, uploads, files }) => {
+  return (
+    <tr>
+      <th>{title}</th>
+      <td>{thousandFormat(uploads.count)}</td>
+      <td>{formatFileSize(uploads.total_size)}</td>
+      <td>{thousandFormat(files.count)}</td>
+      <td>{formatFileSize(files.total_size)}</td>
+    </tr>
+  )
+}
+
+const DownloadsStatsTile = ({ loading, stats }) => (
+  <article className="tile is-child box">
+    <p className="title">Downloads</p>
+    {loading || !stats ? (
+      <Loading />
+    ) : (
+      <table className="table is-fullwidth">
+        <thead>
+          <tr>
+            <th />
+            <th>
+              <Link to="/downloads/missing">Recorded Missing</Link>
+            </th>
+            <th>
+              <Link to="/downloads/microsoft">Microsoft Downloads</Link>
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <th>Today</th>
-            <UploadsCell
-              count={stats.uploads.today.count}
-              bytes={stats.uploads.today.total_size}
-            />
-            <UploadsCell
-              count={stats.files.today.count}
-              bytes={stats.files.today.total_size}
-            />
+            <TableCountCell count={stats.downloads.missing.today.count} />
+            <TableCountCell count={stats.downloads.microsoft.today.count} />
           </tr>
           <tr>
             <th>Yesterday</th>
-            <UploadsCell
-              count={stats.uploads.yesterday.count}
-              bytes={stats.uploads.yesterday.total_size}
-            />
-            <UploadsCell
-              count={stats.files.yesterday.count}
-              bytes={stats.files.yesterday.total_size}
-            />
+            <TableCountCell count={stats.downloads.missing.yesterday.count} />
+            <TableCountCell count={stats.downloads.microsoft.yesterday.count} />
           </tr>
           <tr>
             <th>This Month</th>
-            <UploadsCell
-              count={stats.uploads.this_month.count}
-              bytes={stats.uploads.this_month.total_size}
-            />
-            <UploadsCell
-              count={stats.files.this_month.count}
-              bytes={stats.files.this_month.total_size}
+            <TableCountCell count={stats.downloads.missing.this_month.count} />
+            <TableCountCell
+              count={stats.downloads.microsoft.this_month.count}
             />
           </tr>
           <tr>
             <th>This Year</th>
-            <UploadsCell
-              count={stats.uploads.this_year.count}
-              bytes={stats.uploads.this_year.total_size}
-            />
-            <UploadsCell
-              count={stats.files.this_year.count}
-              bytes={stats.files.this_year.total_size}
-            />
+            <TableCountCell count={stats.downloads.missing.this_year.count} />
+            <TableCountCell count={stats.downloads.microsoft.this_year.count} />
           </tr>
         </tbody>
       </table>
     )}
-    <Link to="/uploads">
-      Go to <b>Uploads</b>
-    </Link>
   </article>
 )
 
-const UploadsCell = ({ count, bytes }) => {
-  return <td title={formatFileSize(bytes)}>{thousandFormat(count)}</td>
+const TableCountCell = ({ count }) => {
+  return <td>{thousandFormat(count)}</td>
 }
 
-const AboutTokensPermissionTile = () => (
-  <article className="tile is-child box">
-    <p className="title">API Tokens</p>
-    <p>
-      <i>You currently don't have permission to create API Tokens.</i>
-    </p>
-  </article>
-)
-
-const AboutTokensTile = ({ loading, stats }) => (
-  <article className="tile is-child box">
-    <p className="title">API Tokens</p>
-    {loading || !stats ? (
-      <Loading />
-    ) : (
-      <p>
-        You have <b>{stats.tokens.total} API Tokens</b> of which{' '}
-        <b>{stats.tokens.expired}</b> have expired.
-      </p>
-    )}
-    <p>
-      <Link to="/tokens">
-        Go to <b>API Tokens</b>
-      </Link>
-    </p>
-  </article>
-)
 
 const AnonymousTiles = ({ signIn, authLoaded }) => (
   <div>
@@ -486,41 +523,7 @@ const AnonymousTiles = ({ signIn, authLoaded }) => (
         </article>
       </div>
       <div className="tile is-parent is-8">
-        <article className="tile is-child box">
-          <p className="title">Where do you want to go?</p>
-          <p>
-            <Link to="/help" className="is-size-5">
-              Help
-            </Link>
-          </p>
-          <p>
-            <a
-              href="https://tecken.readthedocs.io"
-              className="is-size-5"
-              rel="noopener noreferrer"
-            >
-              Documentation on Readthedocs
-            </a>
-          </p>
-          <p>
-            <a
-              href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
-              className="is-size-5"
-              rel="noopener noreferrer"
-            >
-              File a bug
-            </a>
-          </p>
-          <p>
-            <a
-              href="https://github.com/mozilla-services/tecken"
-              className="is-size-5"
-              rel="noopener noreferrer"
-            >
-              Open Source code on GitHub
-            </a>
-          </p>
-        </article>
+        <LinksTile />
       </div>
     </div>
   </div>
