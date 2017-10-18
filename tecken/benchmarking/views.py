@@ -114,3 +114,16 @@ def caching_vs_boto(request):
     }
 
     return http.JsonResponse(context)
+
+
+def timeouts(request):
+    if not settings.BENCHMARKING_ENABLED:
+        return http.JsonResponse(
+            {'error': 'benchmarking disabled'},
+            status=403,
+        )
+    sleeptime = int(request.GET.get('sleep', 10))
+    if sleeptime > 1000:
+        return http.HttpResponse('Max 1,000 seconds sleep\n', status=400)
+    time.sleep(sleeptime)
+    return http.HttpResponse(f'Done sleeping for {sleeptime} seconds \n')
