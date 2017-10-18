@@ -4,6 +4,8 @@
 
 import gzip
 import os
+import zipfile
+import tempfile
 from io import BytesIO
 
 import pytest
@@ -30,8 +32,6 @@ from tecken.upload.utils import (
 
 _here = os.path.dirname(__file__)
 ZIP_FILE = os.path.join(_here, 'sample.zip')
-TGZ_FILE = os.path.join(_here, 'sample.tgz')
-TARGZ_FILE = os.path.join(_here, 'sample.tar.gz')
 INVALID_ZIP_FILE = os.path.join(_here, 'invalid.zip')
 ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, 'notazipdespiteitsname.zip')
 
@@ -42,28 +42,20 @@ class FakeUser:
 
 
 def test_get_archive_members():
-    with open(TGZ_FILE, 'rb') as f:
-        file_listing, = get_archive_members(f, f.name)
-        assert file_listing.name == (
-            'south-africa-flag/deadbeef/south-africa-flag.jpeg'
-        )
-        assert file_listing.size == 69183
-
-    with open(TARGZ_FILE, 'rb') as f:
-        file_listing, = get_archive_members(f, f.name)
-        assert file_listing.name == (
-            'south-africa-flag/deadbeef/south-africa-flag.jpeg'
-        )
-        assert file_listing.size == 69183
-
-    with open(ZIP_FILE, 'rb') as f:
-        file_listings = list(get_archive_members(f, f.name))
+    with open(ZIP_FILE, 'rb') as f, tempfile.TemporaryDirectory() as tmpdir:
+        zf = zipfile.ZipFile(f)
+        zf.extractall(tmpdir)
+        file_listings = list(get_archive_members(tmpdir))
         # That .zip file has multiple files in it so it's hard to rely
         # on the order.
         assert len(file_listings) == 3
         for file_listing in file_listings:
+            assert file_listing.path
+            assert os.path.isfile(file_listing.path)
             assert file_listing.name
+            assert not file_listing.name.startswith('/')
             assert file_listing.size
+            assert file_listing.size == os.stat(file_listing.path).st_size
 
 
 def test_should_compressed_key(settings):
@@ -132,8 +124,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         ):
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
-            content = api_params['Body']
-            assert isinstance(content, bytes)
+            content = api_params['Body'].read()
             # based on `unzip -l tests/sample.zip` knowledge
             assert len(content) == 69183
 
@@ -182,7 +173,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         assert upload.size == 69812
         # This is predictable and shouldn't change unless the fixture
         # file used changes.
-        assert upload.content_hash == '93f312c283de3df1210dd764426f6c'
+        assert upload.content_hash == 'f7382729695218a7fa003d63246b26'
         assert upload.bucket_name == 'private'
         assert upload.bucket_region is None
         assert upload.bucket_endpoint_url == 'https://s3.example.com'
@@ -454,7 +445,7 @@ def test_upload_archive_key_lookup_cached(
             size = 100
             if lookups:
                 # If this is the second time, return the right size.
-                size = 488
+                size = 501
             result = {
                 'Contents': [
                     {
@@ -761,7 +752,7 @@ def test_upload_archive_both_skipped(
                         'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
                     ),
                     # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 488,
+                    'Size': 501,
                 }
             ]}
 
@@ -874,7 +865,7 @@ def test_upload_archive_by_url(
         ):
             assert 'ContentEncoding' not in api_params
             assert 'ContentType' not in api_params
-            content = api_params['Body']
+            content = api_params['Body'].read()
             assert isinstance(content, bytes)
             # based on `unzip -l tests/sample.zip` knowledge
             assert len(content) == 69183
@@ -961,6 +952,7 @@ def test_upload_archive_by_url(
             data={'url': 'https://whitelisted.example.com/symbols.zip'},
             HTTP_AUTH_TOKEN=token.key,
         )
+        print(response.json())
         assert response.status_code == 201
         assert response.json()['upload']['download_url'] == (
             'https://download.example.com/symbols.zip'
@@ -1012,7 +1004,7 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         HTTP_AUTH_TOKEN=token.key,
     )
     assert response.status_code == 400
-    assert response.json()['error'] == 'File size 0'
+    assert response.json()['error'] == 'File is not a zip file'
 
     # Unrecognized file extension
     with open(ZIP_FILE, 'rb') as f:

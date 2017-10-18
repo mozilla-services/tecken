@@ -4,6 +4,7 @@
 
 import logging
 import hashlib
+from tempfile import TemporaryDirectory
 from functools import wraps
 
 from django import http
@@ -265,6 +266,31 @@ def set_cors_headers(origin='*', methods='GET'):
             response['Access-Control-Allow-Origin'] = origin
             response['Access-Control-Allow-Methods'] = ','.join(methods)
             return response
+
+        return inner
+
+    return decorator
+
+
+def make_tempdir(prefix=None, suffix=None):
+    """Decorator that adds a last argument that is the path to a temporary
+    directory that gets deleted after the function has finished.
+
+    Usage::
+
+        @make_tempdir()
+        def some_function(arg1, arg2, tempdir, kwargs1='one'):
+            assert os.path.isdir(tempdir)
+            ...
+    """
+
+    def decorator(func):
+
+        @wraps(func)
+        def inner(*args, **kwargs):
+            with TemporaryDirectory(prefix=prefix, suffix=suffix) as f:
+                args = args + (f,)
+                return func(*args, **kwargs)
 
         return inner
 

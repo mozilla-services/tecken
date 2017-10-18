@@ -5,9 +5,8 @@
 import os
 import zipfile
 import gzip
-import tarfile
+import shutil
 import logging
-from io import BytesIO
 
 import markus
 
@@ -26,78 +25,35 @@ downloader = SymbolDownloader(settings.SYMBOL_URLS)
 
 
 class UnrecognizedArchiveFileExtension(ValueError):
-    pass
+    """Happens when you try to extract a file name we don't know how
+    to extract."""
 
 
-class _ZipMember:
-
-    def __init__(self, member, container):
-        self.member = member
-        self.container = container
-
-    def extractor(self):
-        return self.container.open(self.name)
-
-    @property
-    def name(self):
-        return self.member.filename
-
-    @property
-    def size(self):
-        return self.member.file_size
-
-
-class _TarMember:
-
-    def __init__(self, member, container):
-        self.member = member
-        self.container = container
-
-    def extractor(self):
-        return self.container.extractfile(self.member)
-
-    @property
-    def name(self):
-        return self.member.name
-
-    @property
-    def size(self):
-        return self.member.size
-
-
-def get_archive_members(file_object, file_name):
-    file_name = file_name.lower()
-    if file_name.endswith('.zip'):
-        zf = zipfile.ZipFile(file_object)
-        for member in zf.infolist():
-            yield _ZipMember(
-                member,
-                zf
-            )
-
-    elif file_name.endswith('.tar.gz') or file_name.endswith('.tgz'):
-        tar = gzip.GzipFile(fileobj=file_object)
-        zf = tarfile.TarFile(fileobj=tar)
-        for member in zf.getmembers():
-            if member.isfile():
-                yield _TarMember(
-                    member,
-                    zf
-                )
-
-    elif file_name.endswith('.tar'):
-        zf = tarfile.TarFile(fileobj=file_object)
-        for member in zf.getmembers():
-            # Sometimes when you make a tar file you get a
-            # smaller index file copy that start with "./._".
-            if member.isfile() and not member.name.startswith('./._'):
-                yield _TarMember(
-                    member,
-                    zf
-                )
-
+def dump_and_extract(root_dir, file_buffer, name):
+    if name.lower().endswith('.zip'):
+        zf = zipfile.ZipFile(file_buffer)
+        zf.extractall(root_dir)
     else:
-        raise UnrecognizedArchiveFileExtension(os.path.splitext(file_name)[1])
+        raise UnrecognizedArchiveFileExtension(os.path.splitext(name)[1])
+    return root_dir
+
+
+class FileMember:
+    # XXX switched to namedtuple or something
+    def __init__(self, path, name):
+        self.path = path
+        self.name = name
+        self.size = os.stat(path).st_size
+
+
+def get_archive_members(directory):
+    # For each file in the directory return an instance of FileMember.
+    # This is sugar for just returning a generator of dicts.
+    for root, dirs, files in os.walk(directory):
+        for name in files:
+            fn = os.path.join(root, name)
+            relative_name = fn[len(directory) + 1:]
+            yield FileMember(fn, relative_name)
 
 
 def _key_existing_size_miss(client, bucket, key):
@@ -153,7 +109,7 @@ def upload_file_upload(
     s3_client,
     bucket_name,
     key_name,
-    payload,
+    file_path,
     upload_id=None,
     microsoft_download=False,
 ):
@@ -162,20 +118,15 @@ def upload_file_upload(
     if should_compressed_key(key_name):
         compressed = True
         with metrics.timer('upload_gzip_payload'):
-            file_buffer = BytesIO()
-            with gzip.GzipFile(fileobj=file_buffer, mode='w') as f:
-                f.write(payload)
-            file_buffer.seek(0, os.SEEK_END)
-            size = file_buffer.tell()
-            file_buffer.seek(0)
+            with open(file_path, 'rb') as f_in:
+                with gzip.open(file_path + '.gz', 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+                    # Change it from now on to this new file name
+                    file_path = file_path + '.gz'
     else:
         compressed = False
-        size = len(payload)
-        # This is a smart hack. The boto3 client.put_object() function
-        # can either take a blob of bytes or a file-like object.
-        # When we gzip the file, we need to have make it a file-like object
-        # so that GzipFile creates the necessary headers.
-        file_buffer = payload
+
+    size = os.stat(file_path).st_size
 
     if existing_size and existing_size == size:
         # Then don't bother!
@@ -215,12 +166,13 @@ def upload_file_upload(
         bucket_name,
     ))
     with metrics.timer('upload_put_object'):
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=key_name,
-            Body=file_buffer,
-            **extras,
-        )
+        with open(file_path, 'rb') as f:
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key_name,
+                Body=f,
+                **extras,
+            )
     FileUpload.objects.filter(id=file_upload.id).update(
         completed_at=timezone.now(),
     )

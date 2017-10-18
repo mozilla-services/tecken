@@ -160,9 +160,15 @@ def download_symbol(request, symbol, debugid, filename):
             filename.lower().endswith('.sym')
 
         ):
+            # If log_symbol_get_404's cache guard prevented it from,
+            # the cache will return the boolean True. Implying that
+            # it was already, recently, stored as a missing symbol.
+            # Don't send that is to download_microsoft_symbol.
+            if missing_symbol_hash and isinstance(missing_symbol_hash, bool):
+                missing_symbol_hash = None
+
             # If we haven't already sent it to the 'download_microsoft_symbol'
             # background task, do so.
-
             download_from_microsoft(
                 symbol,
                 debugid,

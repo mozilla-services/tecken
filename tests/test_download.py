@@ -484,8 +484,7 @@ def test_download_microsoft_symbol_task_happy_path(
             #   $ dump_syms ksproxy.pdb > ksproxy.sym
             #   $ ls -l ksproxy.sym
             #   1721
-            # assert len(content) < 1721
-            assert len(content) == 717
+            assert len(content) == 729
             original_content = gzip.decompress(content)
             assert len(original_content) == 1721
 
@@ -503,7 +502,7 @@ def test_download_microsoft_symbol_task_happy_path(
 
     # The ultimate test is that it should have created a file_upload
     file_upload, = FileUpload.objects.all()
-    assert file_upload.size == 717
+    assert file_upload.size == 729
     assert file_upload.bucket_name == 'private'
     assert file_upload.key == 'v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym'
     assert not file_upload.update
@@ -566,7 +565,7 @@ def test_download_microsoft_symbol_task_skipped(
                     'Key': (
                         'v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym'
                     ),
-                    'Size': 717,
+                    'Size': 729,
                 }
             ]}
 
