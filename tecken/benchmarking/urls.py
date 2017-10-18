@@ -16,4 +16,9 @@ urlpatterns = [
         views.caching_vs_boto,
         name='caching_vs_boto'
     ),
+    url(
+        r'timeouts/$',
+        views.timeouts,
+        name='timeouts'
+    ),
 ]
