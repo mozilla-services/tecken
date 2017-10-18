@@ -986,6 +986,7 @@ def current_settings(request):
         'ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS',
         'DOWNLOAD_FILE_EXTENSIONS_WHITELIST',
         'BENCHMARKING_ENABLED',
+        'ENABLE_STORE_MISSING_SYMBOLS',
     )
     for key in keys:
         value = getattr(settings, key)
