@@ -985,6 +985,7 @@ def current_settings(request):
         'ENABLE_DOWNLOAD_FROM_MICROSOFT',
         'ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS',
         'DOWNLOAD_FILE_EXTENSIONS_WHITELIST',
+        'BENCHMARKING_ENABLED',
     )
     for key in keys:
         value = getattr(settings, key)
