@@ -273,6 +273,16 @@ def set_cors_headers(origin='*', methods='GET'):
 
 
 def make_tempdir(prefix=None, suffix=None):
+    """Decorator that adds a last argument that is the path to a temporary
+    directory that gets deleted after the function has finished.
+
+    Usage::
+
+        @make_tempdir()
+        def some_function(arg1, arg2, tempdir, kwargs1='one'):
+            assert os.path.isdir(tempdir)
+            ...
+    """
 
     def decorator(func):
 
