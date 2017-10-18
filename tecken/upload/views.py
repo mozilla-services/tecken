@@ -4,7 +4,7 @@
 
 import re
 import logging
-import io
+# import io
 import fnmatch
 import zipfile
 import hashlib
@@ -25,10 +25,12 @@ from tecken.base.utils import filesizeformat
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
-    api_require_POST
+    api_require_POST,
+    make_tempdir,
 )
 from tecken.upload.utils import (
     get_archive_members,
+    dump_and_extract,
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
     # key_existing_sizes,
@@ -120,51 +122,54 @@ def _ignore_member_file(filename):
 @csrf_exempt
 @api_login_required
 @api_permission_required('upload.upload_symbols')
-def upload_archive(request):
-    for name in request.FILES:
-        upload = request.FILES[name]
-        size = upload.size
-        url = None
-        break
-    else:
-        if request.POST.get('url'):
-            form = UploadByDownloadForm(request.POST)
-            if form.is_valid():
-                url = form.cleaned_data['url']
-                name = form.cleaned_data['upload']['name']
-                size = form.cleaned_data['upload']['size']
-                size_fmt = filesizeformat(size)
-                logger.info(
-                    f'Download to upload {url} ({size_fmt})'
-                )
-                with metrics.timer('upload_download_by_url'):
-                    upload = io.BytesIO(requests.get(
-                        url,
-                        timeout=(5, 300)
-                    ).content)
-            else:
-                for key, errors in form.errors.as_data().items():
-                    return http.JsonResponse(
-                        {'error': errors[0].message},
-                        status=400,
-                    )
-        else:
-            return http.JsonResponse(
-                {
-                    'error': (
-                        'Must be multipart form data with at least one file'
-                    )
-                },
-                status=400,
-            )
-    if not size:
-        return http.JsonResponse(
-            {'error': 'File size 0'},
-            status=400
-        )
-
+@make_tempdir(settings.UPLOAD_TEMPDIR_PREFIX)
+def upload_archive(request, tempdir):
     try:
-        file_listing = list(get_archive_members(upload, name))
+        for name in request.FILES:
+            upload_ = request.FILES[name]
+            upload_dir = dump_and_extract(tempdir, upload_, name)
+            size = upload_.size
+            url = None
+            break
+        else:
+            if request.POST.get('url'):
+                form = UploadByDownloadForm(request.POST)
+                if form.is_valid():
+                    url = form.cleaned_data['url']
+                    name = form.cleaned_data['upload']['name']
+                    size = form.cleaned_data['upload']['size']
+                    size_fmt = filesizeformat(size)
+                    logger.info(
+                        f'Download to upload {url} ({size_fmt})'
+                    )
+                    with metrics.timer('upload_download_by_url'):
+                        download_name = os.path.join(tempdir, name)
+                        with open(download_name, 'wb') as f:
+                            f.write(
+                                requests.get(
+                                    url,
+                                    timeout=(5, 900)
+                                ).content
+                            )
+                        with open(download_name, 'rb') as f:
+                            upload_dir = dump_and_extract(tempdir, f, name)
+                        os.remove(download_name)
+                else:
+                    for key, errors in form.errors.as_data().items():
+                        return http.JsonResponse(
+                            {'error': errors[0].message},
+                            status=400,
+                        )
+            else:
+                return http.JsonResponse(
+                    {
+                        'error': (
+                            'Must be multipart form data with at '
+                            'least one file'
+                        )
+                    },
+                    status=400,
+                )
     except zipfile.BadZipfile as exception:
         return http.JsonResponse(
             {'error': str(exception)},
@@ -175,6 +180,7 @@ def upload_archive(request):
             {'error': f'Unrecognized archive file extension "{exception}"'},
             status=400,
         )
+    file_listing = list(get_archive_members(upload_dir))
     error = check_symbols_archive_file_listing(file_listing)
     if error:
         return http.JsonResponse({'error': error.strip()}, status=400)
@@ -202,8 +208,10 @@ def upload_archive(request):
 
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
+
     content = '\n'.join(
-        '{}:{}'.format(x.name, x.size) for x in file_listing
+        '{}:{}'.format(x.name, x.size)
+        for x in sorted(file_listing, key=lambda x: x.name)
     )
     # The MD5 is just used to make the temporary S3 file unique in name
     # if the client uploads with the same filename in quick succession.
@@ -245,7 +253,8 @@ def upload_archive(request):
                     client,
                     bucket_info.name,
                     key_name,
-                    member.extractor().read(),
+                    member.path,
+                    # member.extractor().read(),
                     upload_id=upload_obj.id,
                 )
             ] = key_name

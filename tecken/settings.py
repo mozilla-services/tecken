@@ -210,6 +210,11 @@ class Core(AWS, Configuration, Celery):
     # will be stored in the Redis default cache.
     ENABLE_STORE_MISSING_SYMBOLS = values.BooleanValue(True)
 
+    # The prefix used when generating directories in the temp directory.
+    # XXX We should loop and look for directories with this prefix in
+    # the apps.py code.
+    UPLOAD_TEMPDIR_PREFIX = values.Value('raw-uploads')
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""

@@ -74,6 +74,8 @@ def download_microsoft_symbol(
             code_file=code_file,
             code_id=code_id,
         )
+    else:
+        assert isinstance(missing_symbol_hash, str), missing_symbol_hash
     missing_symbol = MissingSymbol.objects.get(hash=missing_symbol_hash)
     download_obj = MicrosoftDownload.objects.create(
         missing_symbol=missing_symbol,
@@ -150,16 +152,22 @@ def download_microsoft_symbol(
 
         # Let's go ahead and upload it now, if it hasn't been uploaded
         # before.
+        file_path = os.path.join(
+            tmpdirname,
+            os.path.splitext(os.path.basename(filepath))[0] + '.sym'
+        )
+        with open(file_path, 'wb') as f:
+            f.write(std_out)
         upload_microsoft_symbol(
             symbol,
             debugid,
-            std_out,
+            file_path,
             download_obj,
         )
 
 
 @metrics.timer('download_upload_microsoft_symbol')
-def upload_microsoft_symbol(symbol, debugid, content, download_obj):
+def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
     filename = os.path.splitext(symbol)[0]
     uri = f'{symbol}/{debugid}/{filename}.sym'
     key_name = os.path.join(settings.SYMBOL_FILE_PREFIX, uri)
@@ -173,7 +181,7 @@ def upload_microsoft_symbol(symbol, debugid, content, download_obj):
         s3_client,
         bucket_name,
         key_name,
-        content,
+        file_path,
         microsoft_download=True,
     )
 
