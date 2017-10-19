@@ -43,7 +43,18 @@ def test_use_s3bucket():
 
 
 def test_s3bucket_client():
+
     mock_session = mock.Mock()
+
+    client_kwargs_calls = []
+    client_args_calls = []
+
+    def get_client(*args, **kwargs):
+        client_args_calls.append(args)
+        client_kwargs_calls.append(kwargs)
+        return mock.Mock()
+
+    mock_session.client.side_effect = get_client
 
     def new_session():
         return mock_session
@@ -55,22 +66,20 @@ def test_s3bucket_client():
         assert client_again is client
         # Only 1 session should have been created
         assert len(mock_session.mock_calls) == 1
-        mock_session.client.assert_called_with('s3')
+        assert 'endpoint_url' not in client_kwargs_calls[-1]
 
         # make a client that requires an endpoint_url
         bucket = S3Bucket('http://s3.example.com/buck/prefix')
         bucket.s3_client
-        mock_session.client.assert_called_with(
-            's3',
-            endpoint_url='http://s3.example.com',
+        assert client_kwargs_calls[-1]['endpoint_url'] == (
+            'http://s3.example.com'
         )
 
         # make a client that requires a different region
         bucket = S3Bucket('https://s3-eu-west-2.amazonaws.com/some-bucket')
         bucket.s3_client
-        mock_session.client.assert_called_with(
-            's3',
-            region_name='eu-west-2',
+        assert client_kwargs_calls[-1]['region_name'] == (
+            'eu-west-2'
         )
 
 

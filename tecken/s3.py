@@ -6,6 +6,7 @@ import re
 from urllib.parse import urlparse
 
 import boto3
+from botocore.config import Config
 
 
 ALL_POSSIBLE_S3_REGIONS = tuple(
@@ -85,13 +86,23 @@ class S3Bucket:
         if not self._s3_client:
             self._s3_client = get_s3_client(
                 endpoint_url=self.endpoint_url,
-                region_name=self.region
+                region_name=self.region,
             )
         return self._s3_client
 
+    def get_s3_client(self, **config_params):
+        """return a boto3 session client with different config parameters"""
+        return get_s3_client(
+            endpoint_url=self.endpoint_url,
+            region_name=self.region,
+            **config_params,
+        )
 
-def get_s3_client(endpoint_url=None, region_name=None):
-    options = {}
+
+def get_s3_client(endpoint_url=None, region_name=None, **config_params):
+    options = {
+        'config': Config(**config_params),
+    }
     if endpoint_url:
         # By default, if you don't specify an endpoint_url
         # boto3 will automatically assume AWS's S3.

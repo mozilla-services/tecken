@@ -91,30 +91,26 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             # Pretend that we have this in S3 and its previous
             # size was 1000.
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    'Size': 1000,
-                }
-            ]}
+            return {'ContentLength': 1000}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Pretend we don't have this in S3 at all
-            return {}
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         if (
             operation_name == 'PutObject' and
@@ -240,29 +236,25 @@ def test_upload_archive_one_uploaded_one_skipped(
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 69183,
-                }
-            ]}
+            # based on `unzip -l tests/sample.zip` knowledge
+            return {'ContentLength': 69183}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Not found at all
-            return {}
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         if (
             operation_name == 'PutObject' and
@@ -325,20 +317,13 @@ def test_key_existing_size_caching(botomock, metricsmock):
         lookups.append((operation_name, api_params))
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'filename'
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'filename'
         ):
             size = 1234
             if sizes_returned:
                 size = 6789
-            result = {'Contents': [
-                {
-                    'Key': (
-                        'filename'
-                    ),
-                    'Size': size,
-                }
-            ]}
+            result = {'ContentLength': size}
             sizes_returned.append(size)
             return result
 
@@ -372,10 +357,13 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
         lookups.append((operation_name, api_params))
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == 'filename'
+            operation_name == 'HeadObject' and
+            api_params['Key'] == 'filename'
         ):
-            return {}
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         raise NotImplementedError
 
@@ -419,24 +407,16 @@ def test_upload_archive_key_lookup_cached(
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 69183,
-                }
-            ]}
+            return {'ContentLength': 69183}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
@@ -447,13 +427,15 @@ def test_upload_archive_key_lookup_cached(
                 # If this is the second time, return the right size.
                 size = 501
             result = {
-                'Contents': [
-                    {
-                        'Key': api_params['Prefix'],
-                        'Size': size,
-                    }
-                ]
+                'ContentLength': size
             }
+            # [
+            #         {
+            #             'Key': api_params['Prefix'],
+            #             'Size': size,
+            #         }
+            #     ]
+            # }
             lookups.append(size)
             return result
 
@@ -535,29 +517,24 @@ def test_upload_archive_one_uploaded_one_errored(
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 69183,
-                }
-            ]}
+            return {'ContentLength': 69183}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Not found at all
-            return {}
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         if (
             operation_name == 'PutObject' and
@@ -619,21 +596,15 @@ def test_upload_archive_with_cache_invalidation(
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             # Pretend that we have this in S3 and its previous
             # size was 1000.
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    'Size': 1000,
-                }
-            ]}
+
+            return {'ContentLength': 1000}
 
         if (
             operation_name == 'ListObjectsV2' and
@@ -641,13 +612,10 @@ def test_upload_archive_with_cache_invalidation(
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
-            if not lookups:
-                # This is when the SymbolDownloader queries it.
-                result = {}
-            elif len(lookups) == 1:
-                # This is when the upload task queries it.
-                result = {}
-            else:
+            # This is when the SymbolDownloader queries it.
+            result = {}
+            if lookups:
+                # Second time
                 result = {
                     'Contents': [
                         {
@@ -657,8 +625,18 @@ def test_upload_archive_with_cache_invalidation(
                     ]
                 }
             lookups.append(api_params['Prefix'])
-            # Pretend we don't have this in S3 at all
             return result
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         if (
             operation_name == 'PutObject' and
@@ -700,7 +678,7 @@ def test_upload_archive_with_cache_invalidation(
         )
 
         # This is just basically to make sense of all the crazy mocking.
-        assert len(lookups) == 3
+        assert len(lookups) == 2
 
 
 @pytest.mark.django_db(transaction=True)
@@ -725,36 +703,20 @@ def test_upload_archive_both_skipped(
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 69183,
-                }
-            ]}
+            return {'ContentLength': 69183}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
-                    ),
-                    # based on `unzip -l tests/sample.zip` knowledge
-                    'Size': 501,
-                }
-            ]}
+            return {'ContentLength': 501}
 
         raise NotImplementedError((operation_name, api_params))
 
@@ -832,30 +794,26 @@ def test_upload_archive_by_url(
             return {}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             # Pretend that we have this in S3 and its previous
             # size was 1000.
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
-                    ),
-                    'Size': 1000,
-                }
-            ]}
+            return {'ContentLength': 1000}
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Pretend we don't have this in S3 at all
-            return {}
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         if (
             operation_name == 'PutObject' and

@@ -4,7 +4,6 @@
 
 import re
 import logging
-# import io
 import fnmatch
 import zipfile
 import hashlib
@@ -33,8 +32,6 @@ from tecken.upload.utils import (
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
-    # key_existing_sizes,
-    # get_prepared_file_buffer,
 )
 from tecken.upload.models import Upload
 from tecken.upload.forms import UploadByDownloadForm
@@ -202,9 +199,22 @@ def upload_archive(request, tempdir):
         return http.JsonResponse({'error': error.strip()}, status=400)
 
     bucket_info = get_bucket_info(request.user)
-    client = bucket_info.s3_client
+    client = bucket_info.get_s3_client(
+        read_timeout=settings.S3_PUT_READ_TIMEOUT,
+        connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
+    )
+    # Use a different s3 client for doing the lookups.
+    # That's because we don't want the size lookup to severly accumulate
+    # in the case of there being some unpredictable slowness.
+    # When that happens the lookup is quickly cancelled and it assumes
+    # the file does not exist.
+    # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
+    lookup_client = bucket_info.get_s3_client(
+        read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
+        connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
+    )
     try:
-        client.head_bucket(Bucket=bucket_info.name)
+        lookup_client.head_bucket(Bucket=bucket_info.name)
     except ClientError as exception:
         if exception.response['Error']['Code'] == '404':
             # This warning message hopefully makes it easier to see what
@@ -270,8 +280,8 @@ def upload_archive(request, tempdir):
                     bucket_info.name,
                     key_name,
                     member.path,
-                    # member.extractor().read(),
                     upload_id=upload_obj.id,
+                    s3_client_lookup=lookup_client,
                 )
             ] = key_name
         # Now lets wait for them all to finish and we'll see which ones
