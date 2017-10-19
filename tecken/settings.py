@@ -42,7 +42,22 @@ class Celery:
     CELERY_TASK_TIME_LIMIT = CELERY_TASK_SOFT_TIME_LIMIT * 2
 
 
-class Core(AWS, Configuration, Celery):
+class S3:
+
+    # How many max seconds to wait for a S3 connection when
+    # doing a lookup.
+    S3_LOOKUP_CONNECT_TIMEOUT = values.IntegerValue(2)  # seconds
+    S3_LOOKUP_READ_TIMEOUT = values.IntegerValue(4)  # seconds
+
+    # The timeouts for doing S3 uploads.
+    # When testing S3 PUT in Stage, the longest PUTs take 20 seconds.
+    S3_PUT_CONNECT_TIMEOUT = values.IntegerValue(10)  # seconds
+    # If upload takes longer than this it's probably best to back off.
+    # The client will likely get a 504 error and will retry soon again.
+    S3_PUT_READ_TIMEOUT = values.IntegerValue(30)  # seconds
+
+
+class Core(AWS, Configuration, Celery, S3):
     """Settings that will never change per-environment."""
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)

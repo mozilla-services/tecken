@@ -11,6 +11,7 @@ from io import StringIO
 
 import pytest
 import mock
+from botocore.exceptions import ClientError
 from markus import INCR
 
 from django.utils import timezone
@@ -459,13 +460,16 @@ def test_download_microsoft_symbol_task_happy_path(
         assert api_params['Bucket'] == 'private'
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym'
             )
         ):
             # Pretend we've never heard of this
-            return {}
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
 
         if (
             operation_name == 'PutObject' and
@@ -556,19 +560,12 @@ def test_download_microsoft_symbol_task_skipped(
         assert api_params['Bucket'] == 'private'
 
         if (
-            operation_name == 'ListObjectsV2' and
-            api_params['Prefix'] == (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
                 'v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym'
             )
         ):
-            return {'Contents': [
-                {
-                    'Key': (
-                        'v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym'
-                    ),
-                    'Size': 729,
-                }
-            ]}
+            return {'ContentLength': 729}
 
         raise NotImplementedError((operation_name, api_params))
 

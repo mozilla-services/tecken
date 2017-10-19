@@ -7,8 +7,11 @@ import zipfile
 import gzip
 import shutil
 import logging
+import socket
 
 import markus
+from botocore.exceptions import ClientError
+from botocore.vendored.requests.exceptions import ReadTimeout
 
 from django.conf import settings
 from django.utils import timezone
@@ -73,22 +76,24 @@ def _key_existing_size_hit(client, bucket, key):
 )
 @metrics.timer_decorator('upload_file_exists')
 def key_existing_size(client, bucket, key):
-    """return the key's size if it exist, else None.
-
-    See
-    https://www.peterbe.com/plog/fastest-way-to-find-out-if-a-file-exists-in-s3
-    for why this is the better approach.
-    """
-    response = client.list_objects_v2(
-        Bucket=bucket,
-        Prefix=key,
-    )
-    for obj in response.get('Contents', []):
-        if obj['Key'] == key:
-            return obj['Size']
-
-    # Because returning None causes problems for the cache decorator
-    return 0
+    """return the key's size if it exist, else 0"""
+    # Return 0 if the key can't be found so the memoize cache can cope
+    try:
+        response = client.head_object(
+            Bucket=bucket,
+            Key=key,
+        )
+        return response['ContentLength']
+    except ClientError as exception:
+        if exception.response['Error']['Code'] == '404':
+            return 0
+        raise
+    except (ReadTimeout, socket.timeout) as exception:
+        logger.info(
+            f'ReadTimeout trying to list_objects_v2 for {bucket}:'
+            f'{key} ({exception})'
+        )
+        return 0
 
 
 def should_compressed_key(key_name):
@@ -112,8 +117,22 @@ def upload_file_upload(
     file_path,
     upload_id=None,
     microsoft_download=False,
+    s3_client_lookup=None,
 ):
-    existing_size = key_existing_size(s3_client, bucket_name, key_name)
+    # The reason you might want to pass a different client for
+    # looking up existing sizes is because you perhaps want to use
+    # a client that is configured to be a LOT less patient.
+    # If there's every a ReadTimeout or ConnectionTimeout in the
+    # existing size lookup, that's probably OK and worth ignoring.
+    # However, when we have to look up the size of 100 different
+    # files, we don't want this rather simple operation to be allowed
+    # to take too long. Because if it times out, it's safe to just
+    # assume the file doesn't already exist.
+    existing_size = key_existing_size(
+        s3_client_lookup or s3_client,
+        bucket_name,
+        key_name
+    )
 
     if should_compressed_key(key_name):
         compressed = True
