@@ -22,6 +22,7 @@ from tecken.base.decorators import (
     cache_memoize,
     set_cors_headers,
 )
+from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
 from tecken.download.tasks import download_microsoft_symbol
 
@@ -304,6 +305,28 @@ def missing_symbols_csv(request):
         'code_id',
     ])
 
+    # By default, only do those updated in the last 24h
+    since = timezone.now() - datetime.timedelta(days=1)
+    qs = MissingSymbol.objects.filter(
+        modified_at__gte=since,
+    )
+    only = ('symbol', 'debugid', 'code_file', 'code_id')
+    for missing in qs.only(*only).order_by('-modified_at'):
+        writer.writerow([
+            missing.symbol,
+            missing.debugid,
+            missing.code_file,
+            missing.code_id,
+        ])
+
+    # HACK!
+    # See https://bugzilla.mozilla.org/show_bug.cgi?id=1407725
+    # We *used* to store all missing symbols in cache. But now we
+    # store it in Postgres. The day we switch over we're going to have a
+    # slight hiccup. To smooth over that hiccup we can read from both
+    # sources.
+    # The following lines can be removed once we've been running the
+    # code that stores missing symbols in Postgres, in Prod.
     key_prefix = 'missingsymbols:{}:'.format(date.strftime('%Y-%m-%d'))
     for key in cache.iter_keys(key_prefix + '*'):
         data = key.replace(key_prefix, '').split('|')
