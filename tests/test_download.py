@@ -351,6 +351,7 @@ def test_log_symbol_get_404_metrics(metricsmock):
     assert len(records) == 2  # changed
 
 
+@pytest.mark.django_db
 def test_missing_symbols_csv(client, clear_redis_store):
     # Log at least one line
     views.log_symbol_get_404(
