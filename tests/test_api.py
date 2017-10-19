@@ -1265,6 +1265,52 @@ def test_downloads_missing(client):
     data = response.json()
     assert data['total'] == 1
 
+    # Filter by debugid
+    response = client.get(url, {
+        'debugid': 'xxx'
+    })
+    data = response.json()
+    assert data['total'] == 0
+    response = client.get(url, {
+        'debugid': 'ADEF12345'
+    })
+    data = response.json()
+    assert data['total'] == 1
+    assert data['missing'][0]['debugid'] == 'ADEF12345'
+
+    # Filter by count
+    response = client.get(url, {
+        'count': '>1'
+    })
+    data = response.json()
+    assert data['total'] == 1
+    assert data['missing'][0]['filename'] == 'foo.ex_'
+    response = client.get(url, {
+        'count': '2'
+    })
+    data = response.json()
+    assert data['total'] == 1
+    assert data['missing'][0]['filename'] == 'foo.ex_'
+
+    # Bad form input
+    response = client.get(url, {
+        'modified_at': 'not a date'
+    })
+    assert response.status_code == 400
+    assert response.json()['errors']['modified_at']
+    response = client.get(url, {
+        'count': 'not a number'
+    })
+    assert response.status_code == 400
+    assert response.json()['errors']['count']
+
+    # Bad pagination
+    response = client.get(url, {
+        'page': 'not a number'
+    })
+    assert response.status_code == 400
+    assert response.json()['errors']['page']
+
 
 @pytest.mark.django_db
 def test_downloads_microsoft(client):
@@ -1376,3 +1422,17 @@ def test_downloads_microsoft(client):
     })
     data = response.json()
     assert data['total'] == 1
+
+    # Form validation failure
+    response = client.get(url, {
+        'created_at': 'not a date',
+    })
+    assert response.status_code == 400
+    assert response.json()['errors']['created_at']
+
+    # Bad pagination
+    response = client.get(url, {
+        'page': 'not a number'
+    })
+    assert response.status_code == 400
+    assert response.json()['errors']['page']
