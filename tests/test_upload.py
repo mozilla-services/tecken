@@ -916,7 +916,7 @@ def test_upload_archive_by_url(
         assert response.status_code == 400
         assert response.json()['error'] == (
             "Not an allowed domain ('notwhitelisted.example.com') to "
-            "download from"
+            "download from."
         )
 
         # More tricky, a URL that when redirecting, redirects
@@ -929,7 +929,7 @@ def test_upload_archive_by_url(
         assert response.status_code == 400
         assert response.json()['error'] == (
             "Not an allowed domain ('bad.example.com') to "
-            "download from"
+            "download from."
         )
 
         # Lastly, the happy path

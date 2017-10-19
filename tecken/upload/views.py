@@ -142,18 +142,34 @@ def upload_archive(request, tempdir):
                     logger.info(
                         f'Download to upload {url} ({size_fmt})'
                     )
+                    download_name = os.path.join(tempdir, name)
                     with metrics.timer('upload_download_by_url'):
-                        download_name = os.path.join(tempdir, name)
+                        response_stream = requests.get(
+                            url,
+                            stream=True,
+                            timeout=(5, 300)
+                        )
                         with open(download_name, 'wb') as f:
-                            f.write(
-                                requests.get(
-                                    url,
-                                    timeout=(5, 900)
-                                ).content
+                            # Read 1MB at a time
+                            chunk_size = 1024 * 1024
+                            stream = response_stream.iter_content(
+                                chunk_size=chunk_size
                             )
-                        with open(download_name, 'rb') as f:
-                            upload_dir = dump_and_extract(tempdir, f, name)
-                        os.remove(download_name)
+                            count_chunks = 0
+                            for chunk in stream:
+                                if chunk:  # filter out keep-alive new chunks
+                                    f.write(chunk)
+                                count_chunks += 1
+                            logger.info(
+                                f'Read {count_chunks} chunks of '
+                                f'{chunk_size}bytes each.'
+                            )
+                    upload_dir = dump_and_extract(
+                        tempdir,
+                        download_name,
+                        name
+                    )
+                    os.remove(download_name)
                 else:
                     for key, errors in form.errors.as_data().items():
                         return http.JsonResponse(

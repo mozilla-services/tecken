@@ -19,18 +19,21 @@ class UploadByDownloadForm(forms.Form):
         url = self.cleaned_data['url']
         # The URL has to be https:// to start with
         parsed = urlparse(url)
-        if parsed.scheme != 'https':
-            raise forms.ValidationError('Insecure URL')
+        if not settings.ALLOW_UPLOAD_BY_ANY_DOMAIN:
+            if parsed.scheme != 'https':
+                raise forms.ValidationError('Insecure URL')
         self._check_url_domain(url)
         return url
 
     @staticmethod
     def _check_url_domain(url):
         netloc_wo_port = urlparse(url).netloc.split(':')[0]
-        if netloc_wo_port not in settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS:
-            raise forms.ValidationError(
-                f'Not an allowed domain ({netloc_wo_port!r}) to download from'
-            )
+        if not settings.ALLOW_UPLOAD_BY_ANY_DOMAIN:
+            if netloc_wo_port not in settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS:
+                raise forms.ValidationError(
+                    f'Not an allowed domain ({netloc_wo_port!r}) '
+                    'to download from.'
+                )
 
     def clean(self):
         cleaned_data = super().clean()

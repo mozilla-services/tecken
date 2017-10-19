@@ -76,7 +76,6 @@ def set_time_took(method):
     return wrapper
 
 
-@metrics.timer_decorator('symboldownloader_exists')
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     args_rewrite=lambda source, key: (source.name, key),
@@ -87,6 +86,7 @@ def set_time_took(method):
         'symboldownloader_exists_cache_miss', 1
     ),
 )
+@metrics.timer_decorator('symboldownloader_exists')
 def exists_in_source(source, key):
     response = source.s3_client.list_objects_v2(
         Bucket=source.name,
@@ -99,7 +99,6 @@ def exists_in_source(source, key):
     return False
 
 
-@metrics.timer_decorator('symboldownloader_public_exists')
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     hit_callable=lambda *a, **k: metrics.incr(
@@ -109,6 +108,7 @@ def exists_in_source(source, key):
         'symboldownloader_public_exists_cache_miss', 1
     ),
 )
+@metrics.timer_decorator('symboldownloader_public_exists')
 def check_url_head(url):
     return requests.head(url).status_code == 200
 

@@ -211,9 +211,11 @@ class Core(AWS, Configuration, Celery):
     ENABLE_STORE_MISSING_SYMBOLS = values.BooleanValue(True)
 
     # The prefix used when generating directories in the temp directory.
-    # XXX We should loop and look for directories with this prefix in
-    # the apps.py code.
     UPLOAD_TEMPDIR_PREFIX = values.Value('raw-uploads')
+
+    # When doing local development, especially load testing, it's sometimes
+    # useful to be able to bypass all URL checks for Upload by Download.
+    ALLOW_UPLOAD_BY_ANY_DOMAIN = values.BooleanValue(False)
 
 
 class Base(Core):

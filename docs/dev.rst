@@ -448,3 +448,41 @@ Now run Gunicorn:
 .. code-block:: shell
 
     $ python -m memory_profiler  `which gunicorn` tecken.wsgi:application -b 0.0.0.0:8000 --timeout 60 --workers 1 --access-logfile -
+
+
+How to do local Upload by Download URL
+======================================
+
+When doing local development and you want to work on doing Symbol Upload
+by HTTP posting the URL, you have a choice. Either put files somewhere
+on a public network, or serve the locally.
+
+Before we start doing local Upload By Download URL, you need to make your
+instance less secure since you'll be using URLs like ``http://localhost:9090``.
+Add ``DJANGO_ALLOW_UPLOAD_BY_ANY_DOMAIN=True`` to your ``.env`` file.
+
+To serve them locally, first start the dev server (``make run``). Then
+you need to start a bash shell in the current running web container:
+
+.. code-block:: shell
+
+    $ make currentshell
+
+Now, you need some ``.zip`` files in the root of the project since it's
+mounted and can be seen by the containers. Once they're there, start a
+simple Python server:
+
+.. code-block:: shell
+
+    $ ls -lh *.zip
+    $ python -m http.server --bind 0.0.0.0 9090
+
+Now, you can send these in with ``tecken-loadtest`` like this:
+
+.. code-block:: shell
+
+    $ export AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxx
+    $ python upload-symbol-zips.py http://localhost:8000 -t 160 --download-url=http://localhost:9090/symbols.zip
+
+This way you'll have 3 terminals. 2 bash terminals inside the container
+and one outside in the ``tecke-loadtests`` directory on your host.
