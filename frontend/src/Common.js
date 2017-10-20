@@ -198,3 +198,172 @@ export const filterToQueryString = filterObj => {
   }
   return qs
 }
+
+export const ShowUploadMetadata = ({ upload }) => (
+  <table className="table is-fullwidth">
+    <tbody>
+      <tr>
+        <th>User</th>
+        <td>{upload.user.email}</td>
+      </tr>
+      <tr>
+        <th>Size</th>
+        <td>{formatFileSize(upload.size)}</td>
+      </tr>
+      <tr>
+        <th>Filename</th>
+        <td>{upload.filename}</td>
+      </tr>
+      <tr>
+        <th>Download URL</th>
+        <td>{upload.download_url ? upload.download_url : <i>null</i>}</td>
+      </tr>
+      <tr>
+        <th>Bucket Name</th>
+        <td>{upload.bucket_name}</td>
+      </tr>
+      <tr>
+        <th>Bucket Region</th>
+        <td>{upload.bucket_region ? upload.bucket_region : <i>null</i>}</td>
+      </tr>
+      <tr>
+        <th>Bucket Endpoint URL</th>
+        <td>
+          {upload.bucket_endpoint_url ? (
+            upload.bucket_endpoint_url
+          ) : (
+            <i>null</i>
+          )}
+        </td>
+      </tr>
+      <tr>
+        <th>Uploaded</th>
+        <td>
+          <DisplayDate date={upload.created_at} />
+        </td>
+      </tr>
+      <tr>
+        <th title="Time when its content was fully processed and uploaded, skipped or ignored">
+          Completed
+        </th>
+        <td>
+          {upload.completed_at ? (
+            <DisplayDate date={upload.completed_at} />
+          ) : (
+            <i>Incomplete!</i>
+          )}
+          {upload.completed_at ? (
+            <small>
+              {' '}
+              (took{' '}
+              <DisplayDateDifference
+                from={upload.created_at}
+                to={upload.completed_at}
+              />)
+            </small>
+          ) : null}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+)
+
+export const ShowFileMetadata = ({ file }) => (
+  <table className="table is-fullwidth">
+    <tbody>
+      <tr>
+        <th>Key</th>
+        <td>{file.key}</td>
+      </tr>
+      <tr>
+        <th>Size</th>
+        <td>{formatFileSize(file.size)}</td>
+      </tr>
+      <tr>
+        <th>Bucket Name</th>
+        <td>{file.bucket_name}</td>
+      </tr>
+      <tr>
+        <th>Update</th>
+        <td>{BooleanIcon(file.update)}</td>
+      </tr>
+      <tr>
+        <th>Compressed</th>
+        <td>{BooleanIcon(file.compressed)}</td>
+      </tr>
+      <tr>
+        <th>Uploaded</th>
+        <td>
+          <DisplayDate date={file.created_at} />
+        </td>
+      </tr>
+      <tr>
+        <th>Completed</th>
+        <td>
+          {file.completed_at ? (
+            <DisplayDate date={file.completed_at} />
+          ) : (
+            <i>Incomplete!</i>
+          )}
+          {file.completed_at ? (
+            <small>
+              {' '}
+              (took{' '}
+              <DisplayDateDifference
+                from={file.created_at}
+                to={file.completed_at}
+              />)
+            </small>
+          ) : null}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+)
+
+export const ShowMicrosoftDownloadMetadata = ({ download }) => (
+  <table className="table is-fullwidth">
+    <tbody>
+      <tr>
+        <th>URL</th>
+        <td>{download.url}</td>
+      </tr>
+      <tr>
+        <th>Error</th>
+        <td>
+          {download.error ? (
+            <span className="has-text-danger">{download.error}</span>
+          ) : (
+            '-'
+          )}
+        </td>
+      </tr>
+      <tr>
+        <th>Created</th>
+        <td>
+          <DisplayDate date={download.created_at} />
+        </td>
+      </tr>
+      <tr>
+        <th>Completed</th>
+        <td>
+          {download.completed_at ? (
+            <DisplayDate date={download.completed_at} />
+          ) : (
+            <i>Incomplete!</i>
+          )}
+          {download.completed_at ? (
+            <small>
+              {' '}
+              (took{' '}
+              <DisplayDateDifference
+                from={download.created_at}
+                to={download.completed_at}
+              />)
+            </small>
+          ) : null}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+)

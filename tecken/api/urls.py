@@ -53,6 +53,11 @@ urlpatterns = [
         name='upload_files'
     ),
     url(
+        r'uploads/files/file/(?P<id>\d+)$',
+        views.upload_file,
+        name='upload_file'
+    ),
+    url(
         r'uploads/upload/(?P<id>\d+)$',
         views.upload,
         name='upload'

@@ -15,7 +15,8 @@ import {
   DisplayDateDifference,
   BooleanIcon,
   thousandFormat,
-  DisplayFilesSummary
+  DisplayFilesSummary,
+  ShowUploadMetadata
 } from './Common'
 import './Upload.css'
 import Fetch from './Fetch'
@@ -240,72 +241,7 @@ const DisplayUpload = ({ upload }) => {
   return (
     <div>
       <h4 className="title is-4">Metadata</h4>
-      <table className="table">
-        <tbody>
-          <tr>
-            <th>User</th>
-            <td>{upload.user.email}</td>
-          </tr>
-          <tr>
-            <th>Size</th>
-            <td>{formatFileSize(upload.size)}</td>
-          </tr>
-          <tr>
-            <th>Filename</th>
-            <td>{upload.filename}</td>
-          </tr>
-          <tr>
-            <th>Download URL</th>
-            <td>{upload.download_url ? upload.download_url : <i>null</i>}</td>
-          </tr>
-          <tr>
-            <th>Bucket Name</th>
-            <td>{upload.bucket_name}</td>
-          </tr>
-          <tr>
-            <th>Bucket Region</th>
-            <td>{upload.bucket_region ? upload.bucket_region : <i>null</i>}</td>
-          </tr>
-          <tr>
-            <th>Bucket Endpoint URL</th>
-            <td>
-              {upload.bucket_endpoint_url ? (
-                upload.bucket_endpoint_url
-              ) : (
-                <i>null</i>
-              )}
-            </td>
-          </tr>
-          <tr>
-            <th>Uploaded</th>
-            <td>
-              <DisplayDate date={upload.created_at} />
-            </td>
-          </tr>
-          <tr>
-            <th title="Time when its content was fully processed and uploaded, skipped or ignored">
-              Completed
-            </th>
-            <td>
-              {upload.completed_at ? (
-                <DisplayDate date={upload.completed_at} />
-              ) : (
-                <i>Incomplete!</i>
-              )}
-              {upload.completed_at ? (
-                <small>
-                  {' '}
-                  (took{' '}
-                  <DisplayDateDifference
-                    from={upload.created_at}
-                    to={upload.completed_at}
-                  />)
-                </small>
-              ) : null}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <ShowUploadMetadata upload={upload} />
       <ShowUploadFiles upload={upload} />
 
       {/* <h4 className="title is-4">Files Summary</h4> */}
@@ -477,7 +413,11 @@ class ShowUploadFiles extends React.PureComponent {
               }
               return (
                 <tr key={file.key}>
-                  <td className="file-key">{file.key}</td>
+                  <td className="file-key">
+                    <Link to={`/uploads/files/file/${file.id}`}>
+                      {file.key}
+                    </Link>
+                  </td>
                   <td>{formatFileSize(file.size)}</td>
                   <td>{BooleanIcon(file.update)}</td>
                   <td>{BooleanIcon(file.compressed)}</td>

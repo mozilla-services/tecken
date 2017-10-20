@@ -303,11 +303,13 @@ class DisplayDownloads extends React.PureComponent {
                   )}
                 </td>
                 <td className="is-clipped">
-                  {download.error ? (
-                    <span className="has-text-danger">{download.error}</span>
-                  ) : (
-                    '-'
-                  )}
+                  {
+                    download.error ? (
+                      <span className="has-text-danger">{download.error}</span>
+                    ) : (
+                      '-'
+                    )
+                  }
                 </td>
                 <td>
                   <DisplayDate date={download.created_at} />
@@ -382,7 +384,9 @@ class StateChoice extends React.PureComponent {
 }
 
 const ShowFileUpload = ({ file_upload }) => (
-  <span>{formatFileSize(file_upload.size)}</span>
+  <Link to={`/uploads/files/file/${file_upload.id}`}>
+    {formatFileSize(file_upload.size)}
+  </Link>
 )
 
 const ShowAggregates = ({ aggregates }) => {
