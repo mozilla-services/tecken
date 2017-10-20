@@ -863,6 +863,74 @@ def upload_files(request):
 
 
 @api_login_required
+def upload_file(request, id):
+    file_upload = get_object_or_404(FileUpload, id=id)
+    # You're only allowed to see this if it's yours or you have the
+    # 'view_all_uploads' permission.
+    if not (
+        (file_upload.upload and file_upload.upload.user == request.user) or
+        request.user.has_perm('upload.view_all_uploads')
+    ):
+        return http.JsonResponse({
+            'error': 'Insufficient access to view this file'
+        }, status=403)
+
+    file_dict = {
+        'id': file_upload.id,
+        'bucket_name': file_upload.bucket_name,
+        'key': file_upload.key,
+        'update': file_upload.update,
+        'compressed': file_upload.compressed,
+        'size': file_upload.size,
+        'completed_at': file_upload.completed_at,
+        'created_at': file_upload.created_at,
+        'upload': None,
+        'microsoft_download': None,
+    }
+
+    if file_upload.upload:
+        upload_obj = file_upload.upload
+        file_dict['upload'] = {
+            'id': upload_obj.id,
+            'filename': upload_obj.filename,
+            'user': {
+                'id': upload_obj.user.id,
+                'email': upload_obj.user.email,
+            },
+            'size': upload_obj.size,
+            'bucket_name': upload_obj.bucket_name,
+            'bucket_region': upload_obj.bucket_region,
+            'bucket_endpoint_url': upload_obj.bucket_endpoint_url,
+            'skipped_keys': upload_obj.skipped_keys or [],
+            'ignored_keys': upload_obj.ignored_keys or [],
+            'download_url': upload_obj.download_url,
+            'created_at': upload_obj.created_at,
+            'completed_at': upload_obj.completed_at,
+        }
+
+    if file_upload.microsoft_download:  # a bool
+        try:
+            microsoft_download = MicrosoftDownload.objects.get(
+                file_upload=file_upload,
+            )
+            file_dict['microsoft_download'] = {
+                'id': microsoft_download.id,
+                'url': microsoft_download.url,
+                'error': microsoft_download.error,
+                'skipped': microsoft_download.skipped,
+                'created_at': microsoft_download.created_at,
+                'completed_at': microsoft_download.completed_at,
+            }
+        except MicrosoftDownload.DoesNotExist:
+            pass
+
+    context = {
+        'file': file_dict,
+    }
+    return http.JsonResponse(context)
+
+
+@api_login_required
 def stats(request):
     # XXX Perhaps we should have some stats coming from Redis about the
     # state of the LRU cache.

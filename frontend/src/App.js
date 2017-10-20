@@ -20,6 +20,7 @@ import DownloadsMicrosoft from './DownloadsMicrosoft'
 import Upload from './Upload'
 import UploadNow from './UploadNow'
 import Files from './Files'
+import File from './File'
 import Users from './Users'
 import User from './User'
 import FetchError from './FetchError'
@@ -146,6 +147,7 @@ const App = observer(
                 <Route path="/downloads/missing" component={DownloadsMissing} />
                 <Route path="/downloads/microsoft" component={DownloadsMicrosoft} />
                 <Route path="/uploads/files" exact component={Files} />
+                <Route path="/uploads/files/file/:id" component={File} />
                 <Route path="/uploads/upload" exact component={UploadNow} />
                 <Route path="/uploads/upload/:id" component={Upload} />
                 <Route path="/uploads" exact component={Uploads} />

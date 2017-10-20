@@ -294,7 +294,9 @@ class DisplayFiles extends React.PureComponent {
           <tbody>
             {files.map(file => (
               <tr key={file.id}>
-                <td className="file-key">{file.key}</td>
+                <td className="file-key">
+                  <Link to={`/uploads/files/file/${file.id}`}>{file.key}</Link>
+                </td>
                 <td>{formatFileSize(file.size)}</td>
                 <td>{file.bucket_name}</td>
                 <td>

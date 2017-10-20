@@ -1436,3 +1436,95 @@ def test_downloads_microsoft(client):
     })
     assert response.status_code == 400
     assert response.json()['errors']['page']
+
+
+@pytest.mark.django_db
+def test_file_upload(client):
+    url = reverse('api:upload_file', args=('9999999999',))
+    response = client.get(url)
+    # Forbidden before Not Found
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    # Now, you get a 404
+    assert response.status_code == 404
+
+    upload = Upload.objects.create(
+        user=User.objects.create(email='her@example.com'),
+        size=123456
+    )
+    # Also, let's pretend there's at least one file upload
+    file_upload = FileUpload.objects.create(
+        upload=upload,
+        size=1234,
+        key='foo.sym',
+    )
+    url = reverse('api:upload_file', args=(file_upload.id,))
+    response = client.get(url)
+    # 403 because it's not your file to view
+    assert response.status_code == 403
+
+    # Pretend it was you who uploaded it
+    upload.user = user
+    upload.save()
+    response = client.get(url)
+    assert response.status_code == 200
+
+    data = response.json()['file']
+    assert data['upload']['user']['email'] == user.email
+    assert not data['microsoft_download']
+
+
+@pytest.mark.django_db
+def test_file_upload_microsoft_download(client):
+    file_upload = FileUpload.objects.create(
+        size=1234,
+        key='foo.sym',
+        microsoft_download=True,
+    )
+
+    MicrosoftDownload.objects.create(
+        missing_symbol=MissingSymbol.objects.create(
+            hash='x1',
+            symbol='foo.pdb',
+            debugid='ADEF12345',
+            filename='foo.sym',
+            count=1
+        ),
+        url='https://msdn.example.com/foo.sym',
+        file_upload=file_upload,
+        skipped=False,
+        completed_at=timezone.now(),
+    )
+
+    url = reverse('api:upload_file', args=(file_upload.id,))
+    response = client.get(url)
+    # 403 because you're not logged in
+    assert response.status_code == 403
+
+    # Log in
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    # Logging in isn't good enough. You need to have the 'view_all_uploads'
+    # permission too.
+    assert response.status_code == 403
+
+    # Get the permission to view all uploads
+    permission = Permission.objects.get(codename='view_all_uploads')
+    user.user_permissions.add(permission)
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()['file']
+    assert not data['upload']
+    assert data['microsoft_download']['url'] == (
+        'https://msdn.example.com/foo.sym'
+    )
