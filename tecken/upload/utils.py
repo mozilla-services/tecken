@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import hashlib
 import os
 import zipfile
 import gzip
@@ -32,6 +33,16 @@ class UnrecognizedArchiveFileExtension(ValueError):
     to extract."""
 
 
+def get_file_md5_hash(fn, blocksize=65536):
+    hasher = hashlib.md5()
+    with open(fn, 'rb') as f:
+        buf = f.read(blocksize)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = f.read(blocksize)
+    return hasher.hexdigest()
+
+
 def dump_and_extract(root_dir, file_buffer, name):
     if name.lower().endswith('.zip'):
         zf = zipfile.ZipFile(file_buffer)
@@ -59,41 +70,46 @@ def get_archive_members(directory):
             yield FileMember(fn, relative_name)
 
 
-def _key_existing_size_miss(client, bucket, key):
-    logger.debug(f'key_existing_size cache miss on {bucket}:{key}')
+def _key_existing_miss(client, bucket, key):
+    logger.debug(f'key_existing cache miss on {bucket}:{key}')
 
 
-def _key_existing_size_hit(client, bucket, key):
-    logger.debug(f'key_existing_size cache hit on {bucket}:{key}')
+def _key_existing_hit(client, bucket, key):
+    logger.debug(f'key_existing cache hit on {bucket}:{key}')
 
 
 @cache_memoize(
     settings.MEMOIZE_KEY_EXISTING_SIZE_SECONDS,
-    prefix='key_existing_size',
+    prefix='key_existing',
     args_rewrite=lambda client, bucket, key: (f'{bucket}:{key}',),
-    miss_callable=_key_existing_size_miss,
-    hit_callable=_key_existing_size_hit,
+    miss_callable=_key_existing_miss,
+    hit_callable=_key_existing_hit,
 )
 @metrics.timer_decorator('upload_file_exists')
-def key_existing_size(client, bucket, key):
-    """return the key's size if it exist, else 0"""
+def key_existing(client, bucket, key):
+    """return a tuple of (
+        key's size if it exists or 0,
+        S3 key metadata
+    )
+    If the file doesn't exist, return None for the metadata.
+    """
     # Return 0 if the key can't be found so the memoize cache can cope
     try:
         response = client.head_object(
             Bucket=bucket,
             Key=key,
         )
-        return response['ContentLength']
+        return response['ContentLength'], response.get('Metadata')
     except ClientError as exception:
         if exception.response['Error']['Code'] == '404':
-            return 0
+            return 0, None
         raise
     except (ReadTimeout, socket.timeout) as exception:
         logger.info(
             f'ReadTimeout trying to list_objects_v2 for {bucket}:'
             f'{key} ({exception})'
         )
-        return 0
+        return 0, None
 
 
 def should_compressed_key(key_name):
@@ -128,30 +144,69 @@ def upload_file_upload(
     # files, we don't want this rather simple operation to be allowed
     # to take too long. Because if it times out, it's safe to just
     # assume the file doesn't already exist.
-    existing_size = key_existing_size(
+    existing_size, existing_metadata = key_existing(
         s3_client_lookup or s3_client,
         bucket_name,
         key_name
     )
 
+    size = os.stat(file_path).st_size
+
+    if not should_compressed_key(key_name):
+        # It's easy when you don't have to compare compressed files.
+        if existing_size and existing_size == size:
+            # Then don't bother!
+            metrics.incr('upload_skip_early_uncompressed', 1)
+            return
+
+    metadata = {}
+    compressed = False
+
     if should_compressed_key(key_name):
         compressed = True
+        original_size = os.stat(file_path).st_size
+        original_md5_hash = get_file_md5_hash(file_path)
+
+        # Before we compress *this* to compare its compressed size with
+        # the compressed size in S3, let's first compare the possible
+        # metadata and see if it's an opportunity for an early exit.
+        existing_metadata = existing_metadata or {}
+        if (
+            existing_metadata.get('original_size') == str(original_size) and
+            existing_metadata.get('original_md5_hash') == original_md5_hash
+        ):
+            # An upload existed with the exact same original size
+            # and the exact same md5 hash.
+            # Then we can definitely exit early here.
+            metrics.incr('upload_skip_early_compressed', 1)
+            return
+
+        # At this point, we can't exit early by comparing the original.
+        # So we're going to have to assume that we'll upload this file.
+        metadata['original_size'] = str(original_size)  # has to be string
+        metadata['original_md5_hash'] = original_md5_hash
+
         with metrics.timer('upload_gzip_payload'):
             with open(file_path, 'rb') as f_in:
                 with gzip.open(file_path + '.gz', 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
                     # Change it from now on to this new file name
                     file_path = file_path + '.gz'
-    else:
-        compressed = False
+            # The new 'size' is the size of the file after being compressed.
+            size = os.stat(file_path).st_size
 
-    size = os.stat(file_path).st_size
+        if existing_size and existing_size == size and not existing_metadata:
+            # This is "legacy fix", but it's worth keeping for at least
+            # well into 2018.
+            # If a symbol file was (gzipped and) uploaded but without
+            # the fancy metadata (see a couple of lines above), then
+            # there is one last possibility to compare the size of the
+            # exising file in S3 when this local file has been compressed
+            # too.
+            metrics.incr('upload_skip_early_compressed_legacy', 1)
+            return
 
-    if existing_size and existing_size == size:
-        # Then don't bother!
-        return
-
-    update = existing_size and existing_size != size
+    update = bool(existing_size)
 
     file_upload = FileUpload.objects.create(
         upload_id=upload_id,
@@ -179,6 +234,8 @@ def upload_file_upload(
         extras['ContentType'] = content_type
     if compressed:
         extras['ContentEncoding'] = 'gzip'
+    if metadata:
+        extras['Metadata'] = metadata
 
     logger.debug('Uploading file {!r} into {!r}'.format(
         key_name,
@@ -201,7 +258,7 @@ def upload_file_upload(
     # If we managed to upload a file, different or not,
     # cache invalidate the key_existing_size() lookup.
     try:
-        key_existing_size.invalidate(s3_client, bucket_name, key_name)
+        key_existing.invalidate(s3_client, bucket_name, key_name)
     except Exception as exception:  # pragma: no cover
         if settings.DEBUG:
             raise
