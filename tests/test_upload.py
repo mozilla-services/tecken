@@ -9,7 +9,6 @@ import tempfile
 from io import BytesIO
 
 import pytest
-from markus import INCR
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError
 
