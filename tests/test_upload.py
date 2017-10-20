@@ -9,6 +9,7 @@ import tempfile
 from io import BytesIO
 
 import pytest
+from markus import INCR
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError
 
@@ -24,7 +25,7 @@ from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.upload.utils import (
     get_archive_members,
-    key_existing_size,
+    key_existing,
     should_compressed_key,
     get_key_content_type,
 )
@@ -305,7 +306,7 @@ def test_upload_archive_one_uploaded_one_skipped(
     )
 
 
-def test_key_existing_size_caching(botomock, metricsmock):
+def test_key_existing_caching(botomock, metricsmock):
 
     user = FakeUser('peterbe@example.com')
     bucket_info = get_bucket_info(user)
@@ -331,17 +332,20 @@ def test_key_existing_size_caching(botomock, metricsmock):
 
     s3_client = bucket_info.s3_client
     with botomock(mock_api_call):
-        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        size, metadata = key_existing(s3_client, 'mybucket', 'filename')
         assert size == 1234
+        assert metadata is None
         assert len(lookups) == 1
 
-        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        size, metadata = key_existing(s3_client, 'mybucket', 'filename')
         assert size == 1234
+        assert metadata is None
         assert len(lookups) == 1
 
-        key_existing_size.invalidate(s3_client, 'mybucket', 'filename')
-        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        key_existing.invalidate(s3_client, 'mybucket', 'filename')
+        size, metadata = key_existing(s3_client, 'mybucket', 'filename')
         assert size == 6789
+        assert metadata is None
         assert len(lookups) == 2
 
 
@@ -350,7 +354,6 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
     user = FakeUser('peterbe@example.com')
     bucket_info = get_bucket_info(user)
 
-    # sizes_returned = []
     lookups = []
 
     def mock_api_call(self, operation_name, api_params):
@@ -369,17 +372,20 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
 
     s3_client = bucket_info.s3_client
     with botomock(mock_api_call):
-        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        size, metadata = key_existing(s3_client, 'mybucket', 'filename')
         assert size is 0
+        assert metadata is None
         assert len(lookups) == 1
 
-        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        size, metadata = key_existing(s3_client, 'mybucket', 'filename')
         assert size is 0
+        assert metadata is None
         assert len(lookups) == 1
 
-        key_existing_size.invalidate(s3_client, 'mybucket', 'filename')
-        size = key_existing_size(s3_client, 'mybucket', 'filename')
+        key_existing.invalidate(s3_client, 'mybucket', 'filename')
+        size, metadata = key_existing(s3_client, 'mybucket', 'filename')
         assert size is 0
+        assert metadata is None
         assert len(lookups) == 2
 
 
@@ -397,6 +403,8 @@ def test_upload_archive_key_lookup_cached(
     url = reverse('upload:upload_archive')
 
     lookups = []
+
+    metadata_cache = {}
 
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
@@ -429,13 +437,116 @@ def test_upload_archive_key_lookup_cached(
             result = {
                 'ContentLength': size
             }
-            # [
-            #         {
-            #             'Key': api_params['Prefix'],
-            #             'Size': size,
-            #         }
-            #     ]
-            # }
+            if metadata_cache.get(api_params['Key']):
+                result['Metadata'] = metadata_cache[api_params['Key']]
+            lookups.append(size)
+            return result
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            metadata_cache[api_params['Key']] = api_params['Metadata']
+            # ...pretend to actually upload it.
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 1
+        assert FileUpload.objects.all().count() == 1
+
+    # Upload the same file again. This time some of the S3 HeadObject
+    # operations should benefit from a cache.
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 2
+        assert FileUpload.objects.all().count() == 1
+        assert len(lookups) == 2
+
+    # Upload the same file again. This time some of the S3 HeadObject
+    # operations should benefit from a cache.
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 3
+        assert FileUpload.objects.all().count() == 1
+        # This time it doesn't need to look up the size a third time
+        assert len(lookups) == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_upload_archive_key_lookup_cached_without_metadata(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock
+):
+    """Same as test_upload_archive_key_lookup_cached() but without
+    any metadata."""
+
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    lookups = []
+
+    metadata_cache = {}
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            return {'ContentLength': 69183}
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # Saying the size is 100 will cause the code to think the
+            # symbol file *is different* so it'll proceed to upload it.
+            size = 100
+            if lookups:
+                # If this is the second time, return the right size.
+                size = 501
+            result = {
+                'ContentLength': size
+            }
+            if metadata_cache.get(api_params['Key']):
+                result['Metadata'] = metadata_cache[api_params['Key']]
             lookups.append(size)
             return result
 
@@ -461,7 +572,7 @@ def test_upload_archive_key_lookup_cached(
         assert Upload.objects.all().count() == 1
         assert FileUpload.objects.all().count() == 1
 
-    # Upload the same file again. This time some of the S3 ListObjectsV2
+    # Upload the same file again. This time some of the S3 HeadObject
     # operations should benefit from a cache.
     with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
         response = client.post(
@@ -475,7 +586,7 @@ def test_upload_archive_key_lookup_cached(
         assert FileUpload.objects.all().count() == 1
         assert len(lookups) == 2
 
-    # Upload the same file again. This time some of the S3 ListObjectsV2
+    # Upload the same file again. This time some of the S3 HeadObject
     # operations should benefit from a cache.
     with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
         response = client.post(
@@ -489,6 +600,85 @@ def test_upload_archive_key_lookup_cached(
         assert FileUpload.objects.all().count() == 1
         # This time it doesn't need to look up the size a third time
         assert len(lookups) == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_upload_archive_key_lookup_cached_by_different_hashes(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock
+):
+
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    put_metadatas = []
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'private'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            return {'ContentLength': 69183}
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            return {
+                'ContentLength': 501,  # Right!
+                'Metadata': {
+                    'original_size': 1156,  # Right!
+                    'original_md5_hash': 'notrightatall',  # Wrong!
+                }
+            }
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # ...pretend to actually upload it.
+            put_metadatas.append(api_params['Metadata'])
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        assert Upload.objects.all().count() == 1
+        # This is the important test. The size on S3 (after gzip) matches
+        # this new incoming file. Also, the original file size also matches.
+        # However, the S3 stored Metadata.original_md5_hash is different so
+        # that it uploads the file.
+        assert FileUpload.objects.all().count() == 1
+        file_upload, = FileUpload.objects.all()
+        assert file_upload.update
+
+        put_metadata, = put_metadatas
+        assert put_metadata['original_size'] == str(1156)
+        assert put_metadata['original_md5_hash'] != 'notrightatall'
 
 
 @pytest.mark.django_db(transaction=True)

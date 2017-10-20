@@ -164,3 +164,24 @@ hard to quickly look at its content in a browser.
 Both the gzip and the mimetype overrides can be changed by setting the
 ``DJANGO_COMPRESS_EXTENSIONS`` and ``DJANGO_MIME_OVERRIDES`` environment
 variables. See ``settings.py`` for the current defaults.
+
+
+Metadata and optimization
+=========================
+
+For every gzipped file we upload, we attach 2 pieces of metadata to the key:
+
+    1. Original size
+    2. Original MD5 checksum
+
+The reasons for doing this is to be able to quickly skip a file if it's
+uploaded a second time.
+
+A similar approach is done for files that *don't* need to be compressed.
+In the case of those files, we skip uploading, again, simply if the file
+size of an existing file hasn't changed. However, that approach is too
+expensive for compressed files. If we don't store and retrieve the
+original size and original MD5 checksum, we have to locally compress
+the file to be able to make that final size comparison. By instead
+checking the original size (and hash) we can skip early without having to
+do the compression again.
