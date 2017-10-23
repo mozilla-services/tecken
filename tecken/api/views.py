@@ -108,6 +108,23 @@ def auth(request):
             reverse('oidc_logout')
         )
     else:
+        if settings.DEBUG:  # pragma: no cover
+            if (
+                settings.OIDC_RP_CLIENT_ID == 'mustbesomething' or
+                settings.OIDC_RP_CLIENT_SECRET == 'mustbesomething'
+            ):
+                # When you start up Tecken for the very first time and
+                # you haven't configured OIDC credentials, let's make a stink
+                # about this.
+                print(
+                    "WARNING!\nSeems you haven't configured the necessary "
+                    "OIDC environment variables OIDC_RP_CLIENT_ID and "
+                    "OIDC_RP_CLIENT_SECRET.\n"
+                    "Check your .env file and make sure you have something "
+                    "set for DJANGO_OIDC_RP_CLIENT_ID and "
+                    "DJANGO_OIDC_RP_CLIENT_SECRET.\n"
+                    "Signing in won't work until this is set.\n"
+                )
         context['sign_in_url'] = request.build_absolute_uri(
             reverse('oidc_authentication_init')
         )
