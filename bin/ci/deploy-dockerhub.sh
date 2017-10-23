@@ -27,7 +27,7 @@ retry 3 docker login -e="$DOCKER_EMAIL" -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWO
 # docker tag and push git branch to dockerhub
 if [ -n "$1" ]; then
     [ "$1" == master ] && TAG=latest || TAG="$1"
-    docker tag tecken:deploy_base "mozilla/tecken:$TAG" ||
+    docker tag tecken:build "mozilla/tecken:$TAG" ||
         (echo "Couldn't tag tecken:build as mozilla/tecken:$TAG" && false)
     retry 3 docker push "mozilla/tecken:$TAG" ||
         (echo "Couldn't push mozilla/tecken:$TAG" && false)

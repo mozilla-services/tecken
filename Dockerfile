@@ -1,4 +1,10 @@
 FROM node:6 as frontend
+
+# Carry this build argument from the
+# `docker build --build-arg SENTRY_PUBLIC_DSN=...` command.
+# For docker-compose, it can simply be set in the environment
+ARG SENTRY_PUBLIC_DSN=UNSET_DSN
+
 COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
