@@ -26,11 +26,11 @@ class AWS:
 
 class Celery:
 
-    # Use the django_celery_results database backend.
-    CELERY_RESULT_BACKEND = 'django-db'
+    # Use the django_celery_results cache backend.
+    CELERY_RESULT_BACKEND = 'django-cache'
 
-    # Throw away task results after two weeks, for debugging purposes.
-    CELERY_RESULT_EXPIRES = datetime.timedelta(days=14)
+    # Throw away task results after 1 hour, for debugging purposes.
+    CELERY_RESULT_EXPIRES = datetime.timedelta(minutes=60)
 
     # Track if a task has been started, not only pending etc.
     CELERY_TASK_TRACK_STARTED = True
