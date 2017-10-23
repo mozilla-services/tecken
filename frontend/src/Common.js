@@ -193,14 +193,17 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
   )
 }
 
-export const filterToQueryString = filterObj => {
+export const filterToQueryString = (filterObj, overrides) => {
   let qs = ''
-  const copy = {}
+  let copy = {}
   Object.keys(filterObj).forEach(key => {
     if (filterObj[key]) {
       copy[key] = filterObj[key]
     }
   })
+  if (overrides) {
+    copy = Object.assign(copy, overrides)
+  }
   if (Object.keys(copy).length) {
     qs = queryString.stringify(copy)
   }

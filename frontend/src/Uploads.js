@@ -40,7 +40,8 @@ class Uploads extends React.PureComponent {
       newUploadsCount: 0
     }
 
-    this.newCountLoopInterval = 10 * 1000
+    // this.newCountLoopInterval = 10 * 1000
+    this.newCountLoopInterval = 5 * 1000
   }
 
   componentWillMount() {
@@ -57,7 +58,11 @@ class Uploads extends React.PureComponent {
       this.setState(
         { filter: queryString.parse(this.props.location.search) },
         () => {
-          this._fetchUploads()
+          // If you load the page with some filtering, the "latestUpload"
+          // might not be the unfiltered latest upload.
+          this._fetchAbsoluteLatestUpload().then(() => {
+            this._fetchUploads()
+          })
         }
       )
     } else {
@@ -135,6 +140,19 @@ class Uploads extends React.PureComponent {
     })
   }
 
+  _fetchAbsoluteLatestUpload = () => {
+    const url = '/api/uploads/'
+    return fetch(url, { credentials: 'same-origin' }).then(r => {
+      if (r.status === 200) {
+        return r.json().then(response => {
+          return this.setState({
+            latestUpload: this._getLatestUpload(response.uploads)
+          })
+        })
+      }
+    })
+  }
+
   _refreshUploads = () => {
     this.setState({ refreshing: true })
     this._fetchUploads()
@@ -157,11 +175,10 @@ class Uploads extends React.PureComponent {
   _fetchUploadsNewCountLoop = () => {
     if (!this.dismounted) {
       let url = '/api/uploads/'
-      // Clone the filter first
-      const filter = Object.assign({}, this.state.filter)
-      // Then force the filter on created_at
-      filter.created_at = `>${this.state.latestUpload}`
-      url += '?' + queryString.stringify(filter)
+      const qs = filterToQueryString(this.state.filter, {
+        created_at: `>${this.state.latestUpload}`
+      })
+      url += '?' + qs
       if (this.previousLatestUpload) {
         // assert that this time it's >= the previous one
         if (this.state.latestUpload < this.previousLatestUpload) {
