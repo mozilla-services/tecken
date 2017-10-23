@@ -429,15 +429,39 @@ def uploads(request):
             'created_at': upload.created_at,
         })
     # Make a FileUpload aggregate count on these uploads
-    file_upload_counts = FileUpload.objects.filter(
+    file_uploads = FileUpload.objects.filter(
         upload_id__in=[x['id'] for x in rows]
-    ).values('upload').annotate(count=Count('upload'))
+    )
     # Convert it to a dict
     file_upload_counts_map = {
-        x['upload']: x['count'] for x in file_upload_counts
+        x['upload']: x['count']
+        for x in file_uploads.values('upload').annotate(
+            count=Count('upload')
+        )
+    }
+    # Convert it to a dict
+    file_upload_counts_map = {
+        x['upload']: x['count']
+        for x in file_uploads.values('upload').filter(
+            completed_at__isnull=False,
+        ).annotate(
+            count=Count('upload')
+        )
+    }
+    # And a dict of all the incomplete ones
+    file_upload_incomplete_counts_map = {
+        x['upload']: x['count']
+        for x in file_uploads.filter(
+            completed_at__isnull=True,
+        ).values('upload').annotate(
+            count=Count('upload')
+        )
     }
     for upload in rows:
         upload['files_count'] = file_upload_counts_map.get(upload['id'], 0)
+        upload['files_incomplete_count'] = (
+            file_upload_incomplete_counts_map.get(upload['id'], 0)
+        )
 
     context['uploads'] = rows
     context['total'] = context['aggregates']['uploads']['count']

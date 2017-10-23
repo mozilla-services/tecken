@@ -476,6 +476,7 @@ class DisplayUploads extends React.PureComponent {
                   >
                     {DisplayFilesSummary(
                       upload.files_count,
+                      upload.files_incomplete_count,
                       upload.skipped_keys.length,
                       upload.ignored_keys.length
                     )}

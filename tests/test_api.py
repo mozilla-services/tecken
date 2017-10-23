@@ -601,7 +601,8 @@ def test_uploads(client):
     assert response.status_code == 200
     data = response.json()
     assert data['uploads'][0]['id'] == upload.id
-    assert data['uploads'][0]['files_count'] == 1
+    assert data['uploads'][0]['files_count'] == 0
+    assert data['uploads'][0]['files_incomplete_count'] == 1
     assert data['can_view_all']
 
     # Now you can search for anybody's uploads
