@@ -164,8 +164,16 @@ export const pluralize = (number, singular, plural) => {
   }
 }
 
-export const DisplayFilesSummary = (files, skipped, ignored) =>
-  `${files} files uploaded. ${skipped} skipped. ${ignored} ignored.`
+export const DisplayFilesSummary = (files, incomplete, skipped, ignored) => {
+  const sentences = []
+  sentences.push(pluralize(files, 'file uploaded', 'files uploaded'))
+  if (incomplete) {
+    sentences.push(pluralize(incomplete, 'file incomplete', 'files incomplete'))
+  }
+  sentences.push(`${skipped} skipped`)
+  // Currently ignoring the 'ignored'
+  return sentences.join('. ') + '.'
+}
 
 export const ShowValidationErrors = ({ errors, resetAndReload }) => {
   return (

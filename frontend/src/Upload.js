@@ -596,7 +596,8 @@ const ShowUploadRow = ({ upload }) => {
           onClick={event => window.scroll(0, 0)}
         >
           {DisplayFilesSummary(
-            upload.file_uploads.length,
+            upload.file_uploads.filter(x => x.completed_at).length,
+            upload.file_uploads.filter(x => !x.completed_at).length,
             upload.skipped_keys.length,
             upload.ignored_keys.length
           )}
