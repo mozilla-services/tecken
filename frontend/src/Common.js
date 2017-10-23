@@ -210,6 +210,8 @@ export const filterToQueryString = (filterObj, overrides) => {
   return qs
 }
 
+const URLTag = url => <span className="url">{url}</span>
+
 export const ShowUploadMetadata = ({ upload }) => (
   <table className="table is-fullwidth">
     <tbody>
@@ -227,8 +229,24 @@ export const ShowUploadMetadata = ({ upload }) => (
       </tr>
       <tr>
         <th>Download URL</th>
-        <td>{upload.download_url ? upload.download_url : <i>null</i>}</td>
+        <td>
+          {upload.download_url ? URLTag(upload.download_url) : <i>null</i>}
+        </td>
       </tr>
+      {upload.download_url && (
+        <tr>
+          <th>Redirect URLs</th>
+          <td>
+            {!upload.redirect_urls.length && <i>n/a</i>}
+            {upload.redirect_urls.length ? (
+              <ol start="0" className="redirect-urls">
+                <li>{URLTag(upload.download_url)}</li>
+                {upload.redirect_urls.map(url => <li>{URLTag(url)}</li>)}
+              </ol>
+            ) : null}
+          </td>
+        </tr>
+      )}
       <tr>
         <th>Bucket Name</th>
         <td>{upload.bucket_name}</td>

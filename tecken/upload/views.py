@@ -8,6 +8,7 @@ import fnmatch
 import zipfile
 import hashlib
 import os
+import time
 import concurrent.futures
 
 import requests
@@ -127,6 +128,7 @@ def upload_archive(request, tempdir):
             upload_dir = dump_and_extract(tempdir, upload_, name)
             size = upload_.size
             url = None
+            redirect_urls = None
             break
         else:
             if request.POST.get('url'):
@@ -138,6 +140,9 @@ def upload_archive(request, tempdir):
                     size_fmt = filesizeformat(size)
                     logger.info(
                         f'Download to upload {url} ({size_fmt})'
+                    )
+                    redirect_urls = (
+                        form.cleaned_data['upload']['redirect_urls'] or None
                     )
                     download_name = os.path.join(tempdir, name)
                     with metrics.timer('upload_download_by_url'):
@@ -153,13 +158,19 @@ def upload_archive(request, tempdir):
                                 chunk_size=chunk_size
                             )
                             count_chunks = 0
+                            start = time.time()
                             for chunk in stream:
                                 if chunk:  # filter out keep-alive new chunks
                                     f.write(chunk)
                                 count_chunks += 1
+                            end = time.time()
+                            total_size = chunk_size * count_chunks
+                            download_speed = size / (end - start)
                             logger.info(
                                 f'Read {count_chunks} chunks of '
-                                f'{chunk_size}bytes each.'
+                                f'{filesizeformat(chunk_size)} each '
+                                f'totalling {filesizeformat(total_size)} '
+                                f'({filesizeformat(download_speed)}/s).'
                             )
                     upload_dir = dump_and_extract(
                         tempdir,
@@ -255,6 +266,7 @@ def upload_archive(request, tempdir):
         bucket_endpoint_url=bucket_info.endpoint_url,
         size=size,
         download_url=url,
+        redirect_urls=redirect_urls,
         content_hash=content_hash,
     )
 
@@ -318,6 +330,7 @@ def _serialize_upload(upload):
         'bucket': upload.bucket_name,
         'region': upload.bucket_region,
         'download_url': upload.download_url,
+        'redirect_urls': upload.redirect_urls or [],
         'completed_at': upload.completed_at,
         'created_at': upload.created_at,
         'user': upload.user.email,
