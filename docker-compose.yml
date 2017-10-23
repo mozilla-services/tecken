@@ -23,7 +23,7 @@ services:
     # This builds the tecken:build container
     image: tecken:build
     environment:
-      - DJANGO_CONFIGURATION=Localdev
+      - DJANGO_CONFIGURATION
     env_file:
       - .env
     volumes:
