@@ -50,13 +50,13 @@ COPY requirements.txt /tmp/
 WORKDIR /tmp
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY . /app
+
 # Switch back to home directory
 WORKDIR /app
 
 # Copy static assets
 COPY --from=frontend /app/frontend/build /app/frontend
-
-COPY . /app
 
 RUN chown -R 10001:10001 /app
 
