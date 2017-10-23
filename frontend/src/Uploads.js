@@ -300,6 +300,7 @@ class Uploads extends React.PureComponent {
             filter={this.state.filter}
             updateFilter={this.updateFilter}
             resetAndReload={this.resetAndReload}
+            previousLatestUpload={this.previousLatestUpload}
           />
         )}
       </div>
@@ -398,6 +399,13 @@ class DisplayUploads extends React.PureComponent {
     this.props.resetAndReload(event)
   }
 
+  isNew = date => {
+    if (this.props.previousLatestUpload) {
+      return date > this.props.previousLatestUpload
+    }
+    return false
+  }
+
   render() {
     const { uploads, aggregates } = this.props
 
@@ -485,7 +493,10 @@ class DisplayUploads extends React.PureComponent {
                 <td>{upload.user.email}</td>
                 <td>{formatFileSize(upload.size)}</td>
                 <td>
-                  <DisplayDate date={upload.created_at} />
+                  <DisplayDate date={upload.created_at} />{' '}
+                  {this.isNew(upload.created_at) && (
+                    <span className="tag is-light">new</span>
+                  )}
                 </td>
                 <td>
                   {upload.completed_at ? (
