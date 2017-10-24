@@ -191,7 +191,6 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
     if file_upload:
         download_obj.skipped = False
         download_obj.file_upload = file_upload
-        logger.info(f'Uploaded key {key_name}')
         metrics.incr('download_microsoft_download_file_upload_upload', 1)
     else:
         download_obj.skipped = True
