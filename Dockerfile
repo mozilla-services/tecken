@@ -19,7 +19,7 @@ RUN mkdir /app && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apt-transport-https build-essential curl git libpq-dev \
-        postgresql-client gettext libffi-dev jed
+        gettext libffi-dev jed
 
 # Install dump_syms
 RUN DEBIAN_FRONTEND=noninteractive \
