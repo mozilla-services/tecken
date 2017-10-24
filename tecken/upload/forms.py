@@ -38,33 +38,55 @@ class UploadByDownloadForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         if 'url' in cleaned_data:
+            # In the main view code where the download actually happens,
+            # it'll follow any redirects automatically, but we want to
+            # do "recursive HEADs" to find out the size of the file.
+            # It also gives us an opportunity to record the redirect trail.
             url = cleaned_data['url']
             parsed = urlparse(url)
-            try:
-                response = requests.head(url)
-            except ConnectionError:
-                raise forms.ValidationError(
-                    f'ConnectionError trying to open {url}'
-                )
-            if response.status_code >= 300 and response.status_code < 400:
-                # Original URL redirected! We need to check the domain
-                # it redirected to too.
-                url = response.headers['location']
-                self._check_url_domain(url)
-                try:
-                    response = requests.head(url)
-                except ConnectionError:
-                    raise forms.ValidationError(
-                        f'ConnectionError trying to open {url}'
-                    )
-                cleaned_data['url'] = url
-            if response.status_code >= 400:
-                raise forms.ValidationError(
-                    f"{url} can't be found ({response.status_code})"
-                )
+            response, redirect_urls = self.get_final_response(url)
             content_length = response.headers['content-length']
             cleaned_data['upload'] = {
                 'name': os.path.basename(parsed.path),
                 'size': int(content_length),
+                'redirect_urls': redirect_urls,
             }
         return cleaned_data
+
+    @staticmethod
+    def get_final_response(initial_url, max_redirects=5):
+        """return the final response when it 200 OK'ed and a list of URLs
+        that we had to go through redirects of."""
+        redirect_urls = []  # the mutable "store"
+
+        def get_response(url):
+            try:
+                response = requests.head(url)
+                status_code = response.status_code
+            except ConnectionError:
+                raise forms.ValidationError(
+                    f'ConnectionError trying to open {url}'
+                )
+            if status_code >= 500:
+                raise forms.ValidationError(
+                    f"{url} errored ({status_code})"
+                )
+            if status_code >= 400:
+                raise forms.ValidationError(
+                    f"{url} can't be found ({status_code})"
+                )
+            if status_code >= 300 and status_code < 400:
+                redirect_url = response.headers['location']
+                redirect_urls.append(redirect_url)
+                # Only do this if we haven't done it "too much" yet.
+                if len(redirect_urls) > max_redirects:
+                    raise forms.ValidationError(
+                        f'Too many redirects trying to open {initial_url}'
+                    )
+                return get_response(redirect_url)
+            assert status_code >= 200 and status_code < 300, status_code
+            return response
+
+        final_response = get_response(initial_url)
+
+        return final_response, redirect_urls

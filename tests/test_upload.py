@@ -1066,19 +1066,6 @@ def test_upload_archive_by_url(
             "download from."
         )
 
-        # More tricky, a URL that when redirecting, redirects
-        # somewhere "bad".
-        response = client.post(
-            url,
-            data={'url': 'https://whitelisted.example.com/bad.zip'},
-            HTTP_AUTH_TOKEN=token.key,
-        )
-        assert response.status_code == 400
-        assert response.json()['error'] == (
-            "Not an allowed domain ('bad.example.com') to "
-            "download from."
-        )
-
         # Lastly, the happy path
         zip_file_content = f.read()
         requestsmock.head(
@@ -1090,7 +1077,7 @@ def test_upload_archive_by_url(
             }
         )
         requestsmock.get(
-            'https://download.example.com/symbols.zip',
+            'https://whitelisted.example.com/symbols.zip',
             content=zip_file_content,
             status_code=200,
         )
@@ -1099,14 +1086,17 @@ def test_upload_archive_by_url(
             data={'url': 'https://whitelisted.example.com/symbols.zip'},
             HTTP_AUTH_TOKEN=token.key,
         )
-        print(response.json())
         assert response.status_code == 201
         assert response.json()['upload']['download_url'] == (
-            'https://download.example.com/symbols.zip'
+            'https://whitelisted.example.com/symbols.zip'
         )
+        assert response.json()['upload']['redirect_urls'] == [
+            'https://download.example.com/symbols.zip'
+        ]
 
         upload, = Upload.objects.all()
         assert upload.download_url
+        assert upload.redirect_urls
         assert upload.user == fakeuser
         assert upload.filename == 'symbols.zip'
         assert upload.completed_at
@@ -1302,12 +1292,78 @@ def test_UploadByDownloadForm_happy_path(requestsmock, settings):
     )
     assert form.cleaned_data['upload']['name'] == 'symbols.zip'
     assert form.cleaned_data['upload']['size'] == 1234
+    assert form.cleaned_data['upload']['redirect_urls'] == []
+
+
+def test_UploadByDownloadForm_redirects(requestsmock, settings):
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ['whitelisted.example.com']
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/symbols.zip',
+        }
+    )
+
+    requestsmock.head(
+        'https://download.example.com/symbols.zip',
+        content=b'content',
+        status_code=200,
+        headers={
+            'Content-Length': '1234',
+        }
+    )
+
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/symbols.zip',
+    })
+    assert form.is_valid()
+    assert form.cleaned_data['url'] == (
+        'https://whitelisted.example.com/symbols.zip'
+    )
+    assert form.cleaned_data['upload']['name'] == 'symbols.zip'
+    assert form.cleaned_data['upload']['size'] == 1234
+    assert form.cleaned_data['upload']['redirect_urls'] == [
+        'https://download.example.com/symbols.zip'
+    ]
+
+
+def test_UploadByDownloadForm_redirects_bad(requestsmock, settings):
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ['whitelisted.example.com']
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/symbols.zip',
+        }
+    )
+
+    requestsmock.head(
+        'https://download.example.com/symbols.zip',
+        content=b'Internal Server Error',
+        status_code=500,
+        headers={
+            'Content-Length': '1234',
+        }
+    )
+
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/symbols.zip',
+    })
+    assert not form.is_valid()
+    validation_errors, = form.errors.as_data().values()
+    assert validation_errors[0].message == (
+        'https://download.example.com/symbols.zip errored (500)'
+    )
 
 
 def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
         'whitelisted.example.com',
-        'download.example.com',
     ]
 
     requestsmock.head(
@@ -1364,3 +1420,34 @@ def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     assert validation_errors[0].message == (
         "https://whitelisted.example.com/404.zip can't be found (404)"
     )
+
+
+def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
+        'whitelisted.example.com',
+    ]
+
+    requestsmock.head(
+        'https://whitelisted.example.com/symbols.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/symbols.zip',
+        }
+    )
+
+    requestsmock.head(
+        'https://download.example.com/symbols.zip',
+        text='Found',
+        status_code=302,
+        headers={
+            'Location': 'https://download.example.com/symbols.zip',
+        }
+    )
+
+    form = UploadByDownloadForm({
+        'url': 'https://whitelisted.example.com/symbols.zip',
+    })
+    assert not form.is_valid()
+    validation_errors, = form.errors.as_data().values()
+    assert 'Too many redirects' in validation_errors[0].message

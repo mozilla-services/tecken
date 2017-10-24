@@ -39,6 +39,9 @@ class Upload(models.Model):
     content_hash = models.CharField(null=True, max_length=32)
     # If the upload was by a download URL
     download_url = models.URLField(max_length=500, null=True)
+    # If the upload by download URL triggered 1 or more redirects, we
+    # record that trail here.
+    redirect_urls = ArrayField(models.URLField(max_length=500), null=True)
     # One increment for every attempt of processing the upload.
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 

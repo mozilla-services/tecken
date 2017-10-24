@@ -425,6 +425,7 @@ def uploads(request):
             'skipped_keys': upload.skipped_keys or [],
             'ignored_keys': upload.ignored_keys or [],
             'download_url': upload.download_url,
+            'redirect_urls': upload.redirect_urls or [],
             'completed_at': upload.completed_at,
             'created_at': upload.created_at,
         })
@@ -747,6 +748,7 @@ def upload(request, id):
             'skipped_keys': upload_obj.skipped_keys or [],
             'ignored_keys': upload_obj.ignored_keys or [],
             'download_url': upload_obj.download_url,
+            'redirect_urls': upload_obj.redirect_urls or [],
             'completed_at': upload_obj.completed_at,
             'created_at': upload_obj.created_at,
             'file_uploads': file_uploads,

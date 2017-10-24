@@ -1,5 +1,6 @@
 body {
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
 }
 
 /* bulma uses `.select select[multiple]` but this is a DOM element that
@@ -11,16 +12,22 @@ body {
    Note: Perhaps we don't know this after upgrading to Bulma 0.4.4
    https://bugzilla.mozilla.org/show_bug.cgi?id=1383249
 */
-.select select[multiple=""] {
-    height: unset;
-    padding: 0;
+.select select[multiple=''] {
+  height: unset;
+  padding: 0;
 }
 
-.select select[multiple=""] option {
-    padding: 0.5em 1em;
+.select select[multiple=''] option {
+  padding: 0.5em 1em;
 }
-
 
 table.is-fullwidth tbody tr th {
   width: 260px;
+}
+
+.redirect-urls li {
+  line-height: 1;
+}
+.redirect-urls .url {
+  font-size: 90%;
 }
