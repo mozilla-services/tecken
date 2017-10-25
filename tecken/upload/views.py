@@ -304,6 +304,7 @@ def upload_archive(request, tempdir):
                 file_uploads_created += 1
             else:
                 skipped_keys.append(future_to_key[future])
+                metrics.incr('upload_file_upload_skip', 1)
 
     if file_uploads_created:
         logger.info(f'Created {file_uploads_created} FileUpload objects')
