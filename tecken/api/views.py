@@ -947,6 +947,7 @@ def upload_file(request, id):
             'skipped_keys': upload_obj.skipped_keys or [],
             'ignored_keys': upload_obj.ignored_keys or [],
             'download_url': upload_obj.download_url,
+            'redirect_urls': upload_obj.redirect_urls or [],
             'created_at': upload_obj.created_at,
             'completed_at': upload_obj.completed_at,
         }
