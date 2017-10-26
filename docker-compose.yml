@@ -26,7 +26,6 @@ services:
       - DJANGO_CONFIGURATION
     env_file:
       - .env
-    command: "web-dev"
 
   # Web container is a prod-like fully-functioning container.
   web:
@@ -44,6 +43,8 @@ services:
       - redis-cache
       - minio
       - statsd
+    volumes:
+      - $PWD:/app
     command: web-dev
 
   # Container specifically for running tests.
