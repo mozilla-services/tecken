@@ -7,12 +7,12 @@ set -eo pipefail
 
 # Builds the React frontend (only if we are in CI)
 
-# Because this is what create-react-app needs as a prefix
-export REACT_APP_SENTRY_PUBLIC_DSN=$SENTRY_PUBLIC_DSN
+if [[ -n "${CI+set}" ]]; then
+    # Because this is what create-react-app needs as a prefix
+    export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
 
-pushd frontend
-if [[ -v CI ]]; then
+    pushd frontend
     yarn --no-progress --non-interactive
     yarn run --no-progress --non-interactive build
+    popd
 fi
-popd
