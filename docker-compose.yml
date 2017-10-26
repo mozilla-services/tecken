@@ -26,8 +26,6 @@ services:
       - DJANGO_CONFIGURATION
     env_file:
       - .env
-    volumes:
-      - $PWD:/app
     command: "web-dev"
 
   # Web container is a prod-like fully-functioning container.
