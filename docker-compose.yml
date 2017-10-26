@@ -19,7 +19,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - SENTRY_PUBLIC_DSN
+        - FRONTEND_SENTRY_PUBLIC_DSN
+        - CI
     # This builds the tecken:build container
     image: tecken:build
     environment:

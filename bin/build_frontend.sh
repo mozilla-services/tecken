@@ -12,7 +12,7 @@ if [[ -n "${CI+set}" ]]; then
     export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
 
     pushd frontend
-    yarn --no-progress --non-interactive
-    yarn run --no-progress --non-interactive build
+    yarn --no-progress
+    yarn run --no-progress build
     popd
 fi
