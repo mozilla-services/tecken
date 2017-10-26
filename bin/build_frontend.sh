@@ -5,19 +5,16 @@ set -eo pipefail
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Builds the React frontend
+# Builds the React frontend, *only* if we are in CI.
 
-# Because this is what create-react-app needs as a prefix
-export REACT_APP_SENTRY_PUBLIC_DSN=$SENTRY_PUBLIC_DSN
+# True if the environment variable 'CI' is NOT empty.
+# In CircleCI, this variable is "true" and in local dev, it's "".
+if [[ ! -z "${CI}" ]]; then
+    # Because this is what create-react-app needs as a prefix
+    export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
 
-pushd frontend
-if [[ -z ${CI+check} ]]; then
-    echo "NOT running in CI"
-    yarn
-    yarn run build
-else
-    echo "Running this in CI"
-    yarn --no-progress --non-interactive
-    yarn run --no-progress --non-interactive build
+    pushd frontend
+    yarn --no-progress
+    yarn run --no-progress build
+    popd
 fi
-popd
