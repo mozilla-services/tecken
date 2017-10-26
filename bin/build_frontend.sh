@@ -7,6 +7,14 @@ set -eo pipefail
 
 # Builds the React frontend (only if we are in CI)
 
+echo "CI: ${CI}"
+if [[ -n "${CI+set}" ]]; then
+    echo "YES -n STUFF"
+fi
+if [[ -z "${CI+check}" ]]; then
+    echo "YES -z CHECK STUFF"
+fi
+
 if [[ -n "${CI+set}" ]]; then
     # Because this is what create-react-app needs as a prefix
     export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
