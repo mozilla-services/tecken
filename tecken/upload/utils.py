@@ -13,13 +13,13 @@ import socket
 import markus
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
+from cache_memoize import cache_memoize
 
 from django.conf import settings
 from django.utils import timezone
 
 from tecken.upload.models import FileUpload
 from tecken.base.symboldownloader import SymbolDownloader
-from tecken.base.decorators import cache_memoize
 
 
 logger = logging.getLogger('tecken')
