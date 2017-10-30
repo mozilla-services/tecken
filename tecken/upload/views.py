@@ -14,6 +14,7 @@ import concurrent.futures
 import requests
 from botocore.exceptions import ClientError
 import markus
+from encore.concurrent.futures.synchronous import SynchronousExecutor
 
 from django import http
 from django.conf import settings
@@ -272,9 +273,14 @@ def upload_archive(request, tempdir):
 
     ignored_keys = []
     skipped_keys = []
-    thread_pool = concurrent.futures.ThreadPoolExecutor(
-        max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
-    )
+
+    if settings.SYNCHRONOUS_UPLOAD_FILE_UPLOAD:
+        # This is only applicable when running unit tests
+        thread_pool = SynchronousExecutor()
+    else:
+        thread_pool = concurrent.futures.ThreadPoolExecutor(
+            max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
+        )
     file_uploads_created = 0
     with thread_pool as executor:
         future_to_key = {}

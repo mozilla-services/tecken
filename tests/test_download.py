@@ -439,7 +439,7 @@ def test_get_microsoft_symbol_client(client, botomock, settings):
             assert len(task_arguments) == 1
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_download_microsoft_symbol_task_happy_path(
     botomock,
     metricsmock,

@@ -74,7 +74,7 @@ def test_get_key_content_type(settings):
     assert get_key_content_type('foo.HTML') == 'text/html'
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     token = Token.objects.create(user=fakeuser)
@@ -214,7 +214,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
     assert all_tags[-1] == 'tecken.upload_archive'
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_skipped(
     client,
     botomock,
@@ -388,7 +388,7 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
         assert len(lookups) == 2
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_key_lookup_cached(
     client,
     botomock,
@@ -494,7 +494,7 @@ def test_upload_archive_key_lookup_cached(
         assert len(lookups) == 2
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_key_lookup_cached_without_metadata(
     client,
     botomock,
@@ -601,7 +601,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         assert len(lookups) == 2
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_key_lookup_cached_by_different_hashes(
     client,
     botomock,
@@ -680,7 +680,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
         assert put_metadata['original_md5_hash'] != 'notrightatall'
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_errored(
     client,
     botomock,
@@ -754,7 +754,7 @@ def test_upload_archive_one_uploaded_one_errored(
     )
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_with_cache_invalidation(
     client,
     botomock,
@@ -870,7 +870,7 @@ def test_upload_archive_with_cache_invalidation(
         assert len(lookups) == 2
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_both_skipped(
     client,
     botomock,
@@ -938,7 +938,7 @@ def test_upload_archive_both_skipped(
     assert not FileUpload.objects.all().exists()
 
 
-@pytest.mark.django_db(transaction=True)
+@pytest.mark.django_db
 def test_upload_archive_by_url(
     client,
     botomock,
