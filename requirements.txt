@@ -384,3 +384,5 @@ pyOpenSSL==17.3.0 \
 django-cache-memoize==0.1.1 \
     --hash=sha256:e04b84b18430dd75a62da6a367b64042bbac8def8aa765d32d6eb74bc3423580 \
     --hash=sha256:12c3359b7f48bf34db739732eae66d9f4b6103093382fa5723774d10be4c352f
+encore==0.7.0 \
+    --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6

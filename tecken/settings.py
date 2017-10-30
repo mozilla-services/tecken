@@ -232,6 +232,10 @@ class Core(AWS, Configuration, Celery, S3):
     # useful to be able to bypass all URL checks for Upload by Download.
     ALLOW_UPLOAD_BY_ANY_DOMAIN = values.BooleanValue(False)
 
+    # This is only really meant for the sake of being overrideable by
+    # other setting classes; in particular the 'Test' class.
+    SYNCHRONOUS_UPLOAD_FILE_UPLOAD = False
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
@@ -592,6 +596,11 @@ class Test(Localdev):
     """Configuration to be used during testing"""
     DEBUG = False
 
+    # Like Celery's old ALWAYS_EAGER option, this tells the code to
+    # swap the ThreadPoolExecutor in for an executor that is
+    # entirely synchronous.
+    SYNCHRONOUS_UPLOAD_FILE_UPLOAD = True
+
     # We might not enable it in certain environments but we definitely
     # want to test the code we have.
     ENABLE_TOKENS_AUTHENTICATION = True
@@ -661,8 +670,6 @@ class Test(Localdev):
         #     'class': 'tecken.markus_extra.LogAllMetricsKeys',
         # },
     ]
-
-    UPLOAD_FILE_UPLOAD_MAX_WORKERS = 1
 
 
 class Dev(Base):
