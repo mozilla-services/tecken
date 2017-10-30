@@ -8,6 +8,7 @@ import hashlib
 import logging
 
 import markus
+from cache_memoize import cache_memoize
 
 from django import http
 from django.conf import settings
@@ -19,7 +20,6 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
     set_request_debug,
     api_require_http_methods,
-    cache_memoize,
     set_cors_headers,
 )
 from tecken.download.models import MissingSymbol

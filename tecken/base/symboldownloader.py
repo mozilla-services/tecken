@@ -11,10 +11,10 @@ import logging
 import requests
 import markus
 from botocore.exceptions import ClientError
+from cache_memoize import cache_memoize
 
 from django.conf import settings
 
-from tecken.base.decorators import cache_memoize
 from tecken.s3 import S3Bucket
 
 
