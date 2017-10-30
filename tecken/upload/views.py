@@ -292,7 +292,7 @@ def upload_archive(request, tempdir):
                     bucket_info.name,
                     key_name,
                     member.path,
-                    upload_id=upload_obj.id,
+                    upload=upload_obj,
                     s3_client_lookup=lookup_client,
                 )
             ] = key_name
