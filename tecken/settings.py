@@ -88,7 +88,7 @@ class Core(AWS, Configuration, Celery, S3):
 
         # Third party apps
         'dockerflow.django',
-        'django_celery_results',
+        'django_celery_results',  # Is this still necessary?
 
         # Third party apps, that need to be listed last
         'mozilla_django_oidc',
@@ -662,8 +662,7 @@ class Test(Localdev):
         # },
     ]
 
-    EXISTING_KEYS_CONCURRENT_FUTURES_MAX_WORKERS = 1
-    UPLOAD_FILE_UPLOAD_CONCURRENT_FUTURES_MAX_WORKERS = 1
+    UPLOAD_FILE_UPLOAD_MAX_WORKERS = 1
 
 
 class Dev(Base):

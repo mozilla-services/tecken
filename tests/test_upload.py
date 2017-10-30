@@ -74,7 +74,7 @@ def test_get_key_content_type(settings):
     assert get_key_content_type('foo.HTML') == 'text/html'
 
 
-@pytest.mark.django_db(transaction=True)  # needed because of concurrency
+@pytest.mark.django_db(transaction=True)
 def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
     token = Token.objects.create(user=fakeuser)

@@ -189,14 +189,14 @@ def test_cache_memoize_different_functions_same_arguments():
     assert function_3(100) == 300
 
 
-def test_set_cors_headers():
+def test_set_cors_headers(rf):
 
     # Happy patch
     @decorators.set_cors_headers()
     def view_function(request):
         return http.HttpResponse('hello world')
 
-    request = RequestFactory().get('/')
+    request = rf.get('/')
     response = view_function(request)
     assert response['Access-Control-Allow-Origin'] == '*'
     assert response['Access-Control-Allow-Methods'] == 'GET'

@@ -131,7 +131,7 @@ def upload_file_upload(
     bucket_name,
     key_name,
     file_path,
-    upload_id=None,
+    upload=None,
     microsoft_download=False,
     s3_client_lookup=None,
 ):
@@ -209,7 +209,7 @@ def upload_file_upload(
     update = bool(existing_size)
 
     file_upload = FileUpload.objects.create(
-        upload_id=upload_id,
+        upload=upload,
         bucket_name=bucket_name,
         key=key_name,
         update=update,
