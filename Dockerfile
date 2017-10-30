@@ -60,7 +60,7 @@ COPY . /app
 WORKDIR /app
 
 # Copy static assets
-COPY --from=frontend /app/frontend/build /app/frontend
+COPY --from=frontend /app/frontend/build /app/frontend/build
 
 RUN chown -R 10001:10001 /app
 
