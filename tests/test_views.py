@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
+import os
 
 import pytest
 import mock
@@ -42,12 +43,43 @@ def test_client_task_tester(client, clear_redis_store):
         assert b'It works!' in response.content
 
 
-@pytest.mark.django_db
-def test_dashboard(client):
+def test_dashboard(client, settings, tmpdir):
+    settings.STATIC_ROOT = tmpdir
+    with open(os.path.join(tmpdir, 'index.html'), 'wb') as f:
+        f.write(
+            b"""<html>
+            <h1>Hi!</h1>
+            </html>"""
+        )
     response = client.get('/')
     assert response.status_code == 200
-    information = response.json()
-    assert 'documentation' in information
+    assert response['content-type'] == 'text/html'
+    html = response.getvalue()
+    assert b'<h1>Hi!</h1>' in html
+
+
+def test_frontend_index_html_redirect(client):
+    # If you hit this URL with '/index.html' explicit it redirects.
+    response = client.get('/index.html')
+    assert response.status_code == 302
+    assert response['location'] == '/'
+
+
+def test_frontend_index_html_aliases(client, settings, tmpdir):
+    settings.STATIC_ROOT = tmpdir
+    with open(os.path.join(tmpdir, 'index.html'), 'wb') as f:
+        f.write(
+            b"""<html>
+            <h1>React Routing!</h1>
+            </html>"""
+        )
+    # For example `/help` is a route taking care of in the React app.
+    response = client.get('/help')
+    assert response.status_code == 200
+    assert response['content-type'] == 'text/html'
+
+    response = client.get('/neverheardof')
+    assert response.status_code == 404
 
 
 def test_sample_task(clear_redis_store):

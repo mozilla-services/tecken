@@ -308,6 +308,32 @@ you normally put Nginx configuration files. For example:
     $ ./test-with-nginx/generate.py > /etc/nginx/sites-enabled/tecken.conf
     $ # however you reload nginx
 
+
+Frontend and prod-like running locally
+======================================
+
+When Tecken is deployed with continuous integration, it builds the static
+assets files for production use. These files are served by Django using
+Whitenoise. Basically, anything that isn't a matched Django URL-to-view
+gets served as a static file, if matched.
+
+Suppose you want to run the prod-like frontend locally. For example, you
+might be hunting a frontend bug that only happens when the assets are
+minified and compiled. To do that you have to manually build the static assets:
+
+.. code-block:: shell
+
+    $ cd frontend
+    $ yarn
+    $ yarn run build
+
+This should create ``frontend/build/*`` files. For example
+``static/js/main.6d3b4de8.js``. This should now be available *thru* Django
+at ``http://localhost:8000/static/js.main.6d3b4de8.js``.
+
+When you're done you can delete ``frontend/build`` and
+``frontend/node_modules``.
+
 Shells and ``hack.py``
 ======================
 

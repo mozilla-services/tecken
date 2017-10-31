@@ -1,9 +1,11 @@
-import React, { Component, PureComponent } from 'react'
+import React from 'react'
 import './App.css'
 import {
   BrowserRouter as Router,
   Route,
-  Redirect
+  Redirect,
+  Switch,
+  Link
 } from 'react-router-dom'
 import Raven from 'raven-js'
 import { observer } from 'mobx-react'
@@ -33,7 +35,7 @@ if (process.env.REACT_APP_SENTRY_PUBLIC_DSN) {
 }
 
 const App = observer(
-  class App extends Component {
+  class App extends React.Component {
     constructor(props) {
       super(props)
       this.state = {
@@ -124,35 +126,41 @@ const App = observer(
       return (
         <Router>
           <div>
-            <Nav
-              signIn={this.signIn}
-              signOut={this.signOut}
-            />
+            <Nav signIn={this.signIn} signOut={this.signOut} />
             <section className="section">
               <div className="container">
                 <DisplayNotificationMessage
                   message={store.notificationMessage}
                 />
                 <FetchError error={store.fetchError} />
-                <Route
-                  path="/"
-                  exact
-                  render={props => {
-                    return <Home {...props} signIn={this.signIn} />
-                  }}
-                />
-                <Route path="/help" component={Help} />
-                <Route path="/tokens" component={Tokens} />
-                <Route path="/downloads" exact component={Downloads} />
-                <Route path="/downloads/missing" component={DownloadsMissing} />
-                <Route path="/downloads/microsoft" component={DownloadsMicrosoft} />
-                <Route path="/uploads/files" exact component={Files} />
-                <Route path="/uploads/files/file/:id" component={File} />
-                <Route path="/uploads/upload" exact component={UploadNow} />
-                <Route path="/uploads/upload/:id" component={Upload} />
-                <Route path="/uploads" exact component={Uploads} />
-                <Route path="/users/:id" component={User} />
-                <Route path="/users" exact component={Users} />
+                <Switch>
+                  <Route
+                    path="/"
+                    exact
+                    render={props => {
+                      return <Home {...props} signIn={this.signIn} />
+                    }}
+                  />
+                  <Route path="/help" component={Help} />
+                  <Route path="/tokens" component={Tokens} />
+                  <Route path="/downloads" exact component={Downloads} />
+                  <Route
+                    path="/downloads/missing"
+                    component={DownloadsMissing}
+                  />
+                  <Route
+                    path="/downloads/microsoft"
+                    component={DownloadsMicrosoft}
+                  />
+                  <Route path="/uploads/files" exact component={Files} />
+                  <Route path="/uploads/files/file/:id" component={File} />
+                  <Route path="/uploads/upload" exact component={UploadNow} />
+                  <Route path="/uploads/upload/:id" component={Upload} />
+                  <Route path="/uploads" exact component={Uploads} />
+                  <Route path="/users/:id" component={User} />
+                  <Route path="/users" exact component={Users} />
+                  <Route component={NoMatch} />
+                </Switch>
 
                 <DisplayAPIRequests />
               </div>
@@ -190,7 +198,23 @@ const App = observer(
 
 export default App
 
-class RedirectMaybe extends PureComponent {
+class NoMatch extends React.PureComponent {
+  render() {
+    return (
+      <div>
+        <h1 className="title">Page Not Found</h1>
+        <h2>
+          No page found <code>{this.props.location.pathname}</code>.
+        </h2>
+        <h2>
+          <Link to="/">Go back to Home</Link>
+        </h2>
+      </div>
+    )
+  }
+}
+
+class RedirectMaybe extends React.PureComponent {
   componentDidMount() {
     if (this.props.redirectTo) {
       // tell the store we've used it
@@ -206,7 +230,7 @@ class RedirectMaybe extends PureComponent {
   }
 }
 
-class DisplayNotificationMessage extends PureComponent {
+class DisplayNotificationMessage extends React.PureComponent {
   reset = event => {
     store.notificationMessage = null
   }

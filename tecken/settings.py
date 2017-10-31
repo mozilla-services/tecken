@@ -116,6 +116,7 @@ class Core(AWS, Configuration, Celery, S3):
         'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
         # Important that this comes after APITokenAuthenticationMiddleware
         'tecken.useradmin.middleware.NotBlockedInAuth0Middleware',
+        'whitenoise.middleware.WhiteNoiseMiddleware',
     )
 
     ROOT_URLCONF = 'tecken.urls'
@@ -137,8 +138,14 @@ class Core(AWS, Configuration, Celery, S3):
     USE_TZ = True
     DATETIME_FORMAT = 'Y-m-d H:i'  # simplified ISO format since we assume UTC
 
-    STATIC_ROOT = values.Value(default='/opt/static/')
-    STATIC_URL = '/static/'
+    STATIC_ROOT = values.Value(
+        default=os.path.join(BASE_DIR, 'frontend/build')
+    )
+
+    STATIC_URL = '/'
+
+    # The default Cache-Control max-age used,
+    WHITENOISE_MAX_AGE = values.IntegerValue(60 * 60)
 
     SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     SESSION_CACHE_ALIAS = 'default'
@@ -184,6 +191,7 @@ class Core(AWS, Configuration, Celery, S3):
 
     # Where users get redirected after successfully signing in
     LOGIN_REDIRECT_URL = '/?signedin=true'
+    LOGIN_REDIRECT_URL_FAILURE = '/?signin=failed'
 
     # API Token authentication is off by default until Tecken has
     # gone through a security checklist.

@@ -2,11 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
-
-from django.conf import settings
 from django.conf.urls import include, url
-from django.views import static
 
 from . import views
 
@@ -48,8 +44,8 @@ urlpatterns = [
         name='contribute_json'
     ),
     url(
-        r'^(?P<path>favicon.ico)$',
-        static.serve,
-        {'document_root': os.path.join(settings.BASE_DIR, 'favicons')}
+        r'(users|tokens|help|uploads|downloads|index\.html)',
+        views.frontend_index_html,
+        name='frontend_index_html'
     ),
 ]

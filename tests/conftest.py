@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
+import tempfile
 
 import pytest
 import mock
@@ -168,3 +169,18 @@ def fakeuser():
         username='peterbe',
         email='peterbe@example.com',
     )
+
+
+@pytest.fixture
+def tmpdir():
+    """Yields a temporary directory that gets deleted at the end of the test.
+    Usage::
+
+        def test_something(tmpdir):
+            with open(os.path.join(tmpdir, 'index.html'), 'wb') as f:
+                f.write(b'Stuff!')
+                ...
+
+    """
+    with tempfile.TemporaryDirectory() as d:
+        yield d
