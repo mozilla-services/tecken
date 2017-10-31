@@ -353,15 +353,8 @@ def test_log_symbol_get_404_metrics(metricsmock):
 
 
 @pytest.mark.django_db
-def test_missing_symbols_csv(client, clear_redis_store):
-    # Log at least one line
-    views.log_symbol_get_404(
-        'xul.pdb',
-        '44E4EC8C2F41492B9369D6B9A059577C2',
-        'xul.sym',
-        code_file='xul.dll',
-        code_id='deadbeef',
-    )
+def test_missing_symbols_csv(client, settings):
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
 
     url = reverse('download:missing_symbols_csv')
     response = client.get(url)
@@ -373,22 +366,52 @@ def test_missing_symbols_csv(client, clear_redis_store):
     assert expect_filename in response['Content-Disposition']
 
     lines = response.content.splitlines()
+    print(lines)
     assert lines == [b'debug_file,debug_id,code_file,code_id']
+
+    # Log at least one line
+    views.log_symbol_get_404(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+        code_file='xul.dll',
+        code_id='deadbeef',
+    )
+    views.log_symbol_get_404(
+        'rooksdol_x64.dll',
+        '58B6E33D262000',
+        'rooksdol_x64.dl_',
+        code_file='',
+        code_id='',
+    )
 
     # It's empty because it reports for yesterday, but we made the
     # only log today.
-    response = client.get(url, {'today': True})
+    response = client.get(url)
     assert response.status_code == 200
+    content = response.content.decode('utf-8')
+    reader = csv.reader(StringIO(content))
+    lines_of_lines = list(reader)
+    assert len(lines_of_lines) == 3
+    line = lines_of_lines[1]
+    assert line[0] == 'rooksdol_x64.dll'
+    assert line[1] == '58B6E33D262000'
+    assert line[2] == ''
+    assert line[3] == ''
 
+    line = lines_of_lines[2]
+    assert line[0] == 'xul.pdb'
+    assert line[1] == '44E4EC8C2F41492B9369D6B9A059577C2'
+    assert line[2] == 'xul.dll'
+    assert line[3] == 'deadbeef'
+
+    # Do the same but with ?microsoft=only filtering
+    response = client.get(url, {'microsoft': 'only'})
+    assert response.status_code == 200
     content = response.content.decode('utf-8')
     reader = csv.reader(StringIO(content))
     lines_of_lines = list(reader)
     assert len(lines_of_lines) == 2
-    last_line = lines_of_lines[-1]
-    assert last_line[0] == 'xul.pdb'
-    assert last_line[1] == '44E4EC8C2F41492B9369D6B9A059577C2'
-    assert last_line[2] == 'xul.dll'
-    assert last_line[3] == 'deadbeef'
 
 
 def test_get_microsoft_symbol_client(client, botomock, settings):
