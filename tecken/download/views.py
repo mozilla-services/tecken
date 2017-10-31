@@ -306,10 +306,18 @@ def missing_symbols_csv(request):
     ])
 
     # By default, only do those updated in the last 24h
-    since = timezone.now() - datetime.timedelta(days=1)
     qs = MissingSymbol.objects.filter(
-        modified_at__gte=since,
+        modified_at__gte=date,
     )
+
+    if request.GET.get('microsoft') == 'only':
+        # This is a trick to immediately limit the symbols that could
+        # be gotten from a Microsoft download.
+        qs = qs.filter(
+            symbol__iendswith='.pdb',
+            filename__iendswith='.sym'
+        )
+
     only = ('symbol', 'debugid', 'code_file', 'code_id')
     for missing in qs.only(*only).order_by('-modified_at'):
         writer.writerow([
