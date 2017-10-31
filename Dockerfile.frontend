@@ -2,11 +2,8 @@
 #   docker-compose build frontend
 #
 
-# XXX Make this match what's in Dockerfile
-FROM node:6.11.1
-
-# XXX Make this the same version as Dockerfile
-RUN curl -o- -L https://yarnpkg.com/install.sh | bash
+# This should match what we have in the Node section of the main Dockerfile.
+FROM node:6
 
 ADD frontend/package.json /package.json
 RUN yarn
