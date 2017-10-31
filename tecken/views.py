@@ -8,9 +8,11 @@ import time
 
 from django import http
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.cache import cache_control
 from django.core.cache import cache
 from django.shortcuts import redirect
 from django.conf import settings
+from django.views.static import serve
 
 from .symbolicate.views import symbolicate_json
 from tecken.base.decorators import api_require_safe
@@ -33,10 +35,7 @@ def dashboard(request):
     ):  # pragma: no cover
         return redirect('http://localhost:3000' + settings.LOGIN_REDIRECT_URL)
 
-    context = {
-        'documentation': 'https://tecken.readthedocs.io',
-    }
-    return http.JsonResponse(context)
+    return frontend_index_html(request)
 
 
 def handler500(request):
@@ -98,4 +97,15 @@ def contribute_json(request):
     return http.JsonResponse(
         contribute_json_dict,
         json_dumps_params={'indent': 3}
+    )
+
+
+@cache_control(max_age=60 * 60 * (not settings.DEBUG))
+def frontend_index_html(request, path='/'):
+    if request.path_info == '/index.html':
+        # remove the static file mention
+        return redirect('/')
+    return serve(
+        request, '/index.html',
+        document_root=settings.STATIC_ROOT,
     )

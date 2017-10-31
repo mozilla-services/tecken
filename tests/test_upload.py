@@ -5,7 +5,6 @@
 import gzip
 import os
 import zipfile
-import tempfile
 from io import BytesIO
 
 import pytest
@@ -41,8 +40,8 @@ class FakeUser:
         self.email = email
 
 
-def test_get_archive_members():
-    with open(ZIP_FILE, 'rb') as f, tempfile.TemporaryDirectory() as tmpdir:
+def test_get_archive_members(tmpdir):
+    with open(ZIP_FILE, 'rb') as f:
         zf = zipfile.ZipFile(f)
         zf.extractall(tmpdir)
         file_listings = list(get_archive_members(tmpdir))

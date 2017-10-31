@@ -78,7 +78,7 @@ The contents of the directory changes names every time and ``.css`` and
 in the filename so the files can be very aggressively cached.
 
 The command to generate the build artifact is done by CircleCI.
-See the ``circle.yml`` file which kicks off a build.
+See the ``.circleci/config.yml`` file which kicks off a build.
 
 You never need the production build when doing local development, on your
 laptop, with Docker.
@@ -126,7 +126,7 @@ AJAX requests. This is done by doing fetches with "same-origin" credentials;
 meaning the frontend trusts that the client will pass its current cookies
 when it makes the AJAX request if and only if the origin is the same.
 
-There is a REST endpoint the frontend talks to under ``/api/auth`` which
+There is a REST endpoint the frontend talks to under ``/api/_auth`` which
 will tell the frontend if the client has a valid cookie, and/or the URL
 needed to go to to make the client authenticate herself with Auth0 and the
 Django web server.
