@@ -58,8 +58,10 @@ def test_dashboard(client, settings, tmpdir):
     assert b'<h1>Hi!</h1>' in html
 
 
-def test_frontend_index_html_redirect(client):
+def test_frontend_index_html_redirect(client, settings, tmpdir):
     # If you hit this URL with '/index.html' explicit it redirects.
+    # But only if there is no 'index.html' file in settings.STATIC_ROOT.
+    settings.STATIC_ROOT = tmpdir
     response = client.get('/index.html')
     assert response.status_code == 302
     assert response['location'] == '/'
