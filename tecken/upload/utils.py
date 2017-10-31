@@ -43,6 +43,7 @@ def get_file_md5_hash(fn, blocksize=65536):
     return hasher.hexdigest()
 
 
+@metrics.timer_decorator('upload_dump_and_extract')
 def dump_and_extract(root_dir, file_buffer, name):
     if name.lower().endswith('.zip'):
         zf = zipfile.ZipFile(file_buffer)
