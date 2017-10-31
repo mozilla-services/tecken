@@ -17,4 +17,14 @@ if [[ ! -z "${CI}" ]]; then
     yarn --no-progress
     yarn run --no-progress build
     popd
+else
+    # If you're NOT in CI, you're most likely in a local development mode.
+    # You need the Dockerfile to build as normal but you don't want to
+    # build the production grade static assets necessarily (it's slow
+    # and for local development you have the 'frontend' container in
+    # docker-compose.yml).
+    # This just makes sure there exists a directory called 'frontend/build'.
+    # If it's empty, that's OK. It it already existed, it won't be
+    # affected.
+    mkdir -p frontend/build
 fi
