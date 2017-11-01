@@ -228,7 +228,7 @@ const ExplainGroups = ({ groups }) => {
         this is done by putting the user in <b>groups</b> that <i>contain</i>{' '}
         permissions.
       </p>
-      <table className="table">
+      <table className="table is-fullwidth">
         <thead>
           <tr>
             <th>Group Name</th>

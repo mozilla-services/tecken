@@ -359,7 +359,7 @@ class DisplayTokens extends PureComponent {
             </li>
           </ul>
         </div>
-        <table className="table">
+        <table className="table is-fullwidth">
           <thead>
             <tr>
               <th style={{ width: 380 }}>Key</th>

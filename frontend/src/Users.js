@@ -97,7 +97,7 @@ class DisplayUsers extends PureComponent {
       )
     }
     return (
-      <table className="table">
+      <table className="table is-fullwidth">
         <thead>
           <tr>
             <th>Email</th>
