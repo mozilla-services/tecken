@@ -77,7 +77,7 @@ jobs:
           name: Linting check for frontend
           working_directory: /tecken
           command: |
-            make frontend-lint
+            make lint-frontend
 
       - run:
           name: Push to Dockerhub
