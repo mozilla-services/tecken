@@ -29,11 +29,51 @@ const Home = observer(
 
 export default Home
 
-const formatSettingValue = value => {
+const formatSettingValue = (value, key = null) => {
   if (typeof value === 'string') {
     return value
   }
+  // exceptions for fancyness
+  if (key === 'Tecken' && value) {
+    return TeckenVersionFancy(value)
+  }
   return JSON.stringify(value)
+}
+
+const TeckenVersionFancy = versions => {
+  const keys = Object.keys(versions)
+  keys.sort()
+  return (
+    <dl>
+      {keys.map(key => {
+        let value = versions[key]
+        if (key === 'build' || key === 'source') {
+          value = (
+            <a href={value} target="_blank" rel="noopener noreferrer">
+              {value}
+            </a>
+          )
+        } else if (key === 'commit') {
+          const commitUrl = `https://github.com/mozilla-services/tecken/commit/${value}`
+          const treeUrl = `https://github.com/mozilla-services/tecken/tree/${value}`
+          const sha = value.substring(0, 7)
+          value = [
+            <a key="commit" href={commitUrl}>
+              commit @ {sha}
+            </a>,
+            <br key="break" />,
+            <a key="tree" href={treeUrl}>
+              tree @ {sha}
+            </a>
+          ]
+        } else if (key === 'version') {
+          const releaseUrl = `https://github.com/mozilla-services/tecken/releases/tag/${value}`
+          value = <a href={releaseUrl}>{value}</a>
+        }
+        return [<dt key="key">{key}</dt>, <dd key="value">{value}</dd>]
+      })}
+    </dl>
+  )
 }
 
 class SignedInTiles extends React.PureComponent {
@@ -187,7 +227,7 @@ const EnvironmentTile = ({
     </p>
     {loadingSettings && <Loading />}
     {settings && (
-      <table className="table">
+      <table className="table is-fullwidth">
         <thead>
           <tr>
             <th>Setting</th>
@@ -226,7 +266,7 @@ const EnvironmentTile = ({
       </h3>
     )}
     {versions && (
-      <table className="table">
+      <table className="table is-fullwidth">
         <thead>
           <tr>
             <th>Key</th>
@@ -242,7 +282,7 @@ const EnvironmentTile = ({
             return (
               <tr key={version.key}>
                 <th>{version.key}</th>
-                <td>{formatSettingValue(version.value)}</td>
+                <td>{formatSettingValue(version.value, version.key)}</td>
               </tr>
             )
           })}
@@ -481,7 +521,6 @@ const DownloadsStatsTile = ({ loading, stats }) => (
 const TableCountCell = ({ count }) => {
   return <td>{thousandFormat(count)}</td>
 }
-
 
 const AnonymousTiles = ({ signIn, authLoaded }) => (
   <div>
