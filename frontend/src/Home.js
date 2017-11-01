@@ -198,17 +198,17 @@ class SignedInTiles extends React.PureComponent {
         </div>
 
         {(this.state.loadingSettings || this.state.settings) && (
-            <div className="tile is-ancestor">
-              <div className="tile is-parent">
-                <EnvironmentTile
-                  loadingSettings={this.state.loadingSettings}
-                  settings={this.state.settings}
-                  loadingVersions={this.state.loadingVersions}
-                  versions={this.state.versions}
-                />
-              </div>
+          <div className="tile is-ancestor">
+            <div className="tile is-parent">
+              <EnvironmentTile
+                loadingSettings={this.state.loadingSettings}
+                settings={this.state.settings}
+                loadingVersions={this.state.loadingVersions}
+                versions={this.state.versions}
+              />
             </div>
-          )}
+          </div>
+        )}
       </div>
     )
   }

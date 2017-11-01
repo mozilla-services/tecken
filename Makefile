@@ -18,6 +18,7 @@ help:
 	@echo "  systemtest       Run system tests against a running tecken"
 	@echo "  django-shell     Django integrative shell"
 	@echo "  psql             Open the psql cli"
+	@echo "  lint-frontend    Runs a linting check on the frontend"
 	@echo "  build-frontend   Builds the frontend static files\n"
 
 # Dev configuration steps
@@ -79,6 +80,9 @@ systemtest: .env .docker-build
 
 tag:
 	@bin/make-tag.py
+
+lint-frontend:
+	docker-compose run frontend lint
 
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh

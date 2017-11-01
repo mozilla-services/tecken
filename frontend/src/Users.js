@@ -11,7 +11,7 @@ class Users extends PureComponent {
     this.pageTitle = 'User Management'
     this.state = {
       loading: true,
-      users: null,
+      users: null
     }
   }
   componentWillMount() {
@@ -53,12 +53,12 @@ class Users extends PureComponent {
   render() {
     return (
       <div>
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
-        {this.state.loading
-          ? <Loading />
-          : <DisplayUsers users={this.state.users} />}
+        <h1 className="title">{this.pageTitle}</h1>
+        {this.state.loading ? (
+          <Loading />
+        ) : (
+          <DisplayUsers users={this.state.users} />
+        )}
       </div>
     )
   }
@@ -124,13 +124,14 @@ class DisplayUsers extends PureComponent {
             <th />
             <th />
             <th>
-              {this.state.filter.q &&
+              {this.state.filter.q && (
                 <button
                   className="button is-primary"
                   onClick={this._resetFilter}
                 >
                   Clear filter
-                </button>}
+                </button>
+              )}
             </th>
           </tr>
         </tfoot>
@@ -153,37 +154,35 @@ class DisplayUsers extends PureComponent {
               <tr key={user.id}>
                 <td>
                   {user.email}{' '}
-                  {!user.is_active
-                    ? <span className="tag is-danger">Not Active</span>
-                    : null}
+                  {!user.is_active ? (
+                    <span className="tag is-danger">Not Active</span>
+                  ) : null}
                 </td>
                 <td>
-                  {user.last_login ? <DisplayDate date={user.last_login} /> : <i>never logged in</i> }
-                  {' '}
+                  {user.last_login ? (
+                    <DisplayDate date={user.last_login} />
+                  ) : (
+                    <i>never logged in</i>
+                  )}{' '}
                   <small>
                     (joined <DisplayDate date={user.date_joined} />)
                   </small>
                 </td>
                 <td>
-                  {user.is_superuser
-                    ? <span className="tag is-warning">Superuser</span>
-                    : user.permissions.map(p =>
-                        <code key={p.id} style={{ display: 'block' }}>
-                          {p.name}
-                        </code>
-                      )}
+                  {user.is_superuser ? (
+                    <span className="tag is-warning">Superuser</span>
+                  ) : (
+                    user.permissions.map(p => (
+                      <code key={p.id} style={{ display: 'block' }}>
+                        {p.name}
+                      </code>
+                    ))
+                  )}
                 </td>
+                <td>{user.no_uploads}</td>
+                <td>{user.no_tokens}</td>
                 <td>
-                  {user.no_uploads}
-                </td>
-                <td>
-                  {user.no_tokens}
-                </td>
-                <td>
-                  <Link
-                    to={`/users/${user.id}`}
-                    className="button is-info"
-                  >
+                  <Link to={`/users/${user.id}`} className="button is-info">
                     Edit
                   </Link>
                 </td>

@@ -125,7 +125,7 @@ services:
       - "35729:35729"
     volumes:
       - $PWD/frontend:/app
-    command: "yarn start | cat"
+    command: start
 
   minio:
     image: minio/minio
