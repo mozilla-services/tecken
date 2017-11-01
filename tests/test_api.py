@@ -1201,27 +1201,6 @@ def test_filter_uploads_by_completed_at():
 
 
 @pytest.mark.django_db
-def test_uploads_datasets(client):
-    url = reverse('api:uploads_datasets')
-    response = client.get(url)
-    assert response.status_code == 403
-
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
-    user.set_password('secret')
-    user.save()
-    assert client.login(username='peterbe', password='secret')
-
-    response = client.get(url)
-    assert response.status_code == 200
-    assert len(response.json()['datasets']) == 3
-
-    # XXX this test clearly doesn't test much of the actual data
-    # gathering in those datasets. However, it works!
-    # We could extend this by creating more Upload and File objects
-    # and re-run and look at the data. Doesn't feel super user at the moment.
-
-
-@pytest.mark.django_db
 def test_downloads_missing(client):
     url = reverse('api:downloads_missing')
     response = client.get(url)
