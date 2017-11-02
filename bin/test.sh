@@ -8,10 +8,18 @@ set -eo pipefail
 export DEVELOPMENT=1
 export DJANGO_CONFIGURATION=Test
 
-# pass CI env vars into docker containers for codecov submission
-[ ! -z ${CI+check} ] && \
-    echo "Getting Codecov environment variables" && \
-    export CI_ENV=`bash <(curl -s https://codecov.io/env)`
 
 # run docker compose with the given environment variables
-docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV test test $@
+
+if [[ ! -z "${CI}" ]]; then
+    echo "IN CI!!!!!"
+    # pass CI env vars into docker containers for codecov submission
+    echo "Getting Codecov environment variables"
+    export CI_ENV=`bash <(curl -s https://codecov.io/env)`
+
+    docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV test-ci test $@
+else
+    echo "NOT IN CI"
+    docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION test test $@
+fi
+#
