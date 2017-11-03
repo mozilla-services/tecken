@@ -9,8 +9,7 @@ jobs:
       - run:
           name: Install essential packages
           command: |
-            # apt-get update
-            apt-get install -y ca-certificates
+            apt-get update && apt-get install -y ca-certificates
       - save_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -46,7 +45,7 @@ jobs:
       - run:
           name: Install essential packages
           command: |
-            apt-get install -y ca-certificates
+            apt-get update && apt-get install -y ca-certificates
 
       - restore_cache:
           keys:
@@ -79,7 +78,7 @@ jobs:
       - run:
           name: Install essential packages
           command: |
-            apt-get install -y ca-certificates
+            apt-get update && apt-get install -y ca-certificates
 
       - restore_cache:
           keys:
@@ -129,7 +128,7 @@ jobs:
       - run:
           name: Install essential packages
           command: |
-            apt-get install -y ca-certificates
+            apt-get update && apt-get install -y ca-certificates
       - restore_cache:
           keys:
             - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
