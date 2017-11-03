@@ -38,7 +38,7 @@ jobs:
           path: ~/tecken/version.json
 
 
-  build:
+  build_and_test:
     docker:
       - image: ubuntu:16.04
     working_directory: ~/tecken
@@ -89,18 +89,6 @@ jobs:
             # build tecken containers
             make build
 
-  run_tests:
-    docker:
-      - image: ubuntu:16.04
-    working_directory: ~/tecken
-    steps:
-      - run:
-          name: Install essential packages
-          command: |
-            apt-get update && apt-get install -y ca-certificates make
-      - restore_cache:
-          keys:
-            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Run tests
           working_directory: ~/tecken
@@ -182,12 +170,9 @@ workflows:
       - make_version_file:
           requires:
             - checkout_code
-      - build:
+      - build_and_test:
           requires:
             - checkout_code
-      - run_tests:
-          requires:
-            - build
       - run_lintcheck:
           requires:
             - checkout_code
