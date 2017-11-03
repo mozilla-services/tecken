@@ -38,12 +38,6 @@ services:
       - redis-cache
     ports:
       - "8000:8000"
-    links:
-      - db
-      - redis-store
-      - redis-cache
-      - minio
-      - statsd
     volumes:
       - $PWD:/app
     command: web-dev
@@ -52,10 +46,6 @@ services:
   test:
     extends:
       service: base
-    links:
-      - db
-      - redis-store
-      - redis-cache
     volumes:
       - $PWD:/app
     command: test
@@ -63,10 +53,6 @@ services:
   test-ci:
     extends:
       service: base
-    links:
-      - db
-      - redis-store
-      - redis-cache
 
   # Container specifically for running system tests against a remote.
   # Python based but distinct from the 'web' container.
@@ -88,10 +74,6 @@ services:
       service: base
     ports:
       - "8000:8000"
-    links:
-      - db
-      - redis-store
-      - redis-cache
     command: web
 
   statsd:
