@@ -10,7 +10,7 @@ export DJANGO_CONFIGURATION=Test
 
 # run docker compose with the given environment variables
 
-if [[ ! -z "${CI}" ]]; then
+if [[ -n "${CI}" ]]; then
     # pass CI env vars into docker containers for codecov submission
     echo "Getting Codecov environment variables"
     export CI_ENV=`bash <(curl -s https://codecov.io/env)`
