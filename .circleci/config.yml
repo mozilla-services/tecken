@@ -1,23 +1,31 @@
 version: 2
 jobs:
-  build:
+  checkout_code:
     docker:
-      # base image
       - image: ubuntu:16.04
-    working_directory: /
+    working_directory: ~/tecken
     steps:
+      - checkout
       - run:
           name: Install essential packages
           command: |
-            apt-get update
-            apt-get install -y ca-certificates curl build-essential make git
+            apt-get update && apt-get install -y ca-certificates
+      - save_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/tecken
 
-      - checkout:
-          path: /tecken
-
+  make_version_file:
+    docker:
+      - image: ubuntu:16.04
+    working_directory: ~/tecken
+    steps:
+      - restore_cache:
+          keys:
+            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Create version.json
-          working_directory: /tecken
+          working_directory: ~/tecken
           command: |
             # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
             printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
@@ -25,10 +33,24 @@ jobs:
             "$CIRCLE_TAG" \
             "$CIRCLE_PROJECT_USERNAME" \
             "$CIRCLE_PROJECT_REPONAME" \
-            "$CIRCLE_BUILD_URL" > /tecken/version.json
-
+            "$CIRCLE_BUILD_URL" > ~/tecken/version.json
       - store_artifacts:
-          path: /tecken/version.json
+          path: ~/tecken/version.json
+
+
+  build_and_test:
+    docker:
+      - image: ubuntu:16.04
+    working_directory: ~/tecken
+    steps:
+      - run:
+          name: Install essential packages
+          command: |
+            apt-get update && apt-get install -y ca-certificates curl make
+
+      - restore_cache:
+          keys:
+            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
 
       - run:
           name: Install Docker
@@ -51,37 +73,74 @@ jobs:
 
       - run:
           name: Build Docker images
-          working_directory: /tecken
+          working_directory: ~/tecken
           command: |
             docker info
             # use example env config
-            cp .env-dist .env
+            ./bin/cp-env-file.sh
             # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
-            printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
-            "$CIRCLE_SHA1" \
-            "$CIRCLE_TAG" \
-            "$CIRCLE_PROJECT_USERNAME" \
-            "$CIRCLE_PROJECT_REPONAME" \
-            "$CIRCLE_BUILD_URL" > version.json
+            # XXX Is this necessary to do again???
+            # printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
+            # "$CIRCLE_SHA1" \
+            # "$CIRCLE_TAG" \
+            # "$CIRCLE_PROJECT_USERNAME" \
+            # "$CIRCLE_PROJECT_REPONAME" \
+            # "$CIRCLE_BUILD_URL" > version.json
             # build tecken containers
             make build
 
       - run:
           name: Run tests
-          working_directory: /tecken
+          working_directory: ~/tecken
           command: |
             cp .env-dist .env
             make test
 
+  run_lintcheck:
+    docker:
+      - image: ubuntu:16.04
+    working_directory: ~/tecken
+    steps:
       - run:
-          name: Linting check for frontend
-          working_directory: /tecken
+          name: Install essential packages
           command: |
-            docker-compose run frontend-ci lint
+            apt-get update && apt-get install -y ca-certificates curl
+
+      - restore_cache:
+          keys:
+            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
 
       - run:
+          name: Install Docker Compose
+          command: |
+            set -x
+            curl -L https://github.com/docker/compose/releases/download/1.16.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+
+      - setup_remote_docker
+
+      - run:
+          name: Linting check for frontend
+          working_directory: ~/tecken
+          command: |
+            touch .env
+            docker-compose run frontend-ci lint
+
+  push_to_dockerhub:
+    docker:
+      - image: ubuntu:16.04
+    working_directory: ~/tecken
+    steps:
+      - run:
+          name: Install essential packages
+          command: |
+            apt-get update && apt-get install -y ca-certificates
+      - restore_cache:
+          keys:
+            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
           name: Push to Dockerhub
-          working_directory: /tecken
+          working_directory: ~/tecken
           command: |
             # set DOCKER_DEPLOY=true in Circle UI to push to Dockerhub
             DOCKER_DEPLOY="${DOCKER_DEPLOY:-false}"
@@ -91,3 +150,24 @@ jobs:
             if [ -n "${CIRCLE_TAG}" ]; then
               bin/ci/deploy-dockerhub.sh "$CIRCLE_TAG"
             fi
+
+
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - checkout_code
+      - make_version_file:
+          requires:
+            - checkout_code
+      - build_and_test:
+          requires:
+            - checkout_code
+      - run_lintcheck:
+          requires:
+            - checkout_code
+      - push_to_dockerhub:
+          requires:
+            - build_and_test
+            - run_lintcheck
+            - make_version_file
