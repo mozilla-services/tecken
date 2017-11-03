@@ -6,6 +6,11 @@ jobs:
     working_directory: ~/tecken
     steps:
       - checkout
+      - run:
+          name: Install essential packages
+          command: |
+            # apt-get update
+            apt-get install -y ca-certificates
       - save_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
@@ -38,15 +43,14 @@ jobs:
       - image: ubuntu:16.04
     working_directory: ~/tecken
     steps:
-      - restore_cache:
-          keys:
-            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-
       - run:
           name: Install essential packages
           command: |
-            apt-get update
-            apt-get install -y ca-certificates curl build-essential make git
+            apt-get install -y ca-certificates
+
+      - restore_cache:
+          keys:
+            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
 
       - run:
           name: Install Docker
@@ -72,6 +76,11 @@ jobs:
       - image: ubuntu:16.04
     working_directory: ~/tecken
     steps:
+      - run:
+          name: Install essential packages
+          command: |
+            apt-get install -y ca-certificates
+
       - restore_cache:
           keys:
             - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
@@ -117,6 +126,10 @@ jobs:
       - image: ubuntu:16.04
     working_directory: ~/tecken
     steps:
+      - run:
+          name: Install essential packages
+          command: |
+            apt-get install -y ca-certificates
       - restore_cache:
           keys:
             - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
