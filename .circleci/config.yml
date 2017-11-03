@@ -156,6 +156,7 @@ workflows:
       - make_version_file:
           requires:
             - checkout_code
+      - build_docker
       - build:
           requires:
             - checkout_code
