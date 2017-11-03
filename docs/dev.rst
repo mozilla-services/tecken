@@ -512,3 +512,25 @@ Now, you can send these in with ``tecken-loadtest`` like this:
 
 This way you'll have 3 terminals. 2 bash terminals inside the container
 and one outside in the ``tecke-loadtests`` directory on your host.
+
+
+Frontend linting - Prettier files
+=================================
+
+All ``.js`` files in the frontend code is expected to be formatted with
+`Prettier`_. Ideally your editor should be configured to automatically
+apply ``Prettier`` on save. Or by a git hook.
+
+If you forget to format any files in a Pull Request, a linting check in
+CircleCI will fail if any file hasn't been formatted. To test this locally,
+use:
+
+.. code-block:: shell
+
+    $ docker-compose run frontend lint
+
+If you get any output, it means it found files that should/could have been
+formatted. The error message will explain what files need attention and
+how to just format them all right now.
+
+.. _`Prettier`: https://prettier.io/
