@@ -178,6 +178,6 @@ workflows:
             - checkout_code
       - push_to_dockerhub:
           requires:
-            - run_tests
+            - build_and_test
             - run_lintcheck
             - make_version_file
