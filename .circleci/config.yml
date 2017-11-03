@@ -33,7 +33,7 @@ jobs:
       - store_artifacts:
           path: /tecken/version.json
 
-  build:
+  build_docker:
     docker:
       - image: ubuntu:16.04
     working_directory: ~/tecken
@@ -63,6 +63,18 @@ jobs:
             set -x
             curl -L https://github.com/docker/compose/releases/download/1.16.0/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
             chmod +x /usr/local/bin/docker-compose
+
+      - setup_remote_docker:
+          version: 17.09.0-ce
+
+  build:
+    docker:
+      - image: ubuntu:16.04
+    working_directory: ~/tecken
+    steps:
+      - restore_cache:
+          keys:
+            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
 
       - setup_remote_docker:
           version: 17.09.0-ce
@@ -146,12 +158,14 @@ workflows:
       - build:
           requires:
             - checkout_code
+            - build_docker
       - run_tests:
           requires:
             - build
       - run_lintcheck:
           requires:
             - checkout_code
+            - build_docker
       - push_to_dockerhub:
           requires:
             - run_tests
