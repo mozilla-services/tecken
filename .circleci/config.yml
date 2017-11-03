@@ -85,6 +85,7 @@ jobs:
           command: |
             docker info
             # use example env config
+            # XXX use the bin/cp-env-file.sh instead
             cp .env-dist .env
             # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
             printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
