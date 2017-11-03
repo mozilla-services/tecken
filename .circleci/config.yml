@@ -22,8 +22,8 @@ jobs:
     working_directory: ~/tecken
     steps:
       - restore_cache:
-        -keys:
-          v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        keys:
+          - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Create version.json
           working_directory: /tecken
@@ -44,8 +44,8 @@ jobs:
     working_directory: ~/tecken
     steps:
       - restore_cache:
-        -keys:
-          v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        keys:
+          - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Install Docker
           command: |
@@ -67,7 +67,7 @@ jobs:
 
       - run:
           name: Build Docker images
-          working_directory: /tecken
+          working_directory: ~/tecken
           command: |
             docker info
             # use example env config
@@ -88,8 +88,8 @@ jobs:
     working_directory: ~/tecken
     steps:
       - restore_cache:
-        -keys:
-          v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        keys:
+          - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Run tests
           working_directory: /tecken
@@ -103,8 +103,8 @@ jobs:
     working_directory: ~/tecken
     steps:
       - restore_cache:
-        -keys:
-          v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        keys:
+          - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Linting check for frontend
           working_directory: /tecken
@@ -117,8 +117,8 @@ jobs:
     working_directory: ~/tecken
     steps:
       - restore_cache:
-        -keys:
-          v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        keys:
+          - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
       - run:
           name: Push to Dockerhub
           working_directory: /tecken
@@ -154,3 +154,4 @@ workflows:
           requires:
             - run_tests
             - run_lintcheck
+            - make_version_file
