@@ -6,7 +6,7 @@ import store from './Store'
    monkeypatch fetch(). XXX maybe we should.
 */
 class FetchError extends PureComponent {
-  resetFetchError = (event) => {
+  resetFetchError = event => {
     store.fetchError = null
   }
   render() {
@@ -24,7 +24,7 @@ class FetchError extends PureComponent {
           <p>
             <strong>Server Response Error</strong>!
           </p>
-          <button className="delete" onClick={this.resetFetchError}></button>
+          <button className="delete" onClick={this.resetFetchError} />
         </div>
         <div className="message-body">
           <p>
@@ -37,7 +37,6 @@ class FetchError extends PureComponent {
       </article>
     )
   }
-
 }
 
 export default FetchError

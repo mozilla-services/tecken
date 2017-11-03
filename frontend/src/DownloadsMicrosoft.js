@@ -303,13 +303,11 @@ class DisplayDownloads extends React.PureComponent {
                   )}
                 </td>
                 <td className="is-clipped">
-                  {
-                    download.error ? (
-                      <span className="has-text-danger">{download.error}</span>
-                    ) : (
-                      '-'
-                    )
-                  }
+                  {download.error ? (
+                    <span className="has-text-danger">{download.error}</span>
+                  ) : (
+                    '-'
+                  )}
                 </td>
                 <td>
                   <DisplayDate date={download.created_at} />
@@ -395,7 +393,9 @@ const ShowAggregates = ({ aggregates }) => {
       <div className="level-item has-text-centered">
         <div>
           <p className="heading">Total</p>
-          <p className="title">{thousandFormat(aggregates.microsoft_downloads.total)}</p>
+          <p className="title">
+            {thousandFormat(aggregates.microsoft_downloads.total)}
+          </p>
         </div>
       </div>
       <div className="level-item has-text-centered">
@@ -410,7 +410,9 @@ const ShowAggregates = ({ aggregates }) => {
         <div>
           <p className="heading">Files Uploaded Sum Size</p>
           <p className="title">
-            {formatFileSize(aggregates.microsoft_downloads.file_uploads.size.sum)}
+            {formatFileSize(
+              aggregates.microsoft_downloads.file_uploads.size.sum
+            )}
           </p>
         </div>
       </div>
@@ -418,7 +420,9 @@ const ShowAggregates = ({ aggregates }) => {
         <div>
           <p className="heading">Files Uploaded Avg Size</p>
           <p className="title">
-            {formatFileSize(aggregates.microsoft_downloads.file_uploads.size.average)}
+            {formatFileSize(
+              aggregates.microsoft_downloads.file_uploads.size.average
+            )}
           </p>
         </div>
       </div>

@@ -9,9 +9,7 @@ class Help extends PureComponent {
   render() {
     return (
       <div className="content">
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
+        <h1 className="title">{this.pageTitle}</h1>
         <h2>Usage as a symbol server for Microsoft Debuggers</h2>
         <p>
           To use this as a symbol server for Microsoft debuggers, see{' '}

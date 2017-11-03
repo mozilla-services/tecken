@@ -119,9 +119,7 @@ class DownloadsMissing extends React.PureComponent {
               <Link to="/downloads/missing">Downloads Missing</Link>
             </li>
             <li>
-              <Link to="/downloads/microsoft">
-                Microsoft Downloads
-              </Link>
+              <Link to="/downloads/microsoft">Microsoft Downloads</Link>
             </li>
           </ul>
         </div>
@@ -283,8 +281,10 @@ class DisplayMissingSymbols extends React.PureComponent {
           <tbody>
             {missing.map(missing => (
               <tr key={missing.id}>
-                <td className="file-key"
-                   title={`code_file=${missing.code_file}   code_id=${missing.code_id}`}>
+                <td
+                  className="file-key"
+                  title={`code_file=${missing.code_file}   code_id=${missing.code_id}`}
+                >
                   {missing.symbol}/{missing.debugid}/{missing.filename}
                 </td>
                 <td>{missing.count}</td>

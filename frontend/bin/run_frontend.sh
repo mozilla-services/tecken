@@ -6,16 +6,26 @@ grr_on_prettier() {
 The above printed files weren't prettier enough.
 
 To check a file use:
-    ./node_modules/.bin/prettier src/Home.js | diff src/Home.js -
+    prettier src/Home.js | diff src/Home.js -
 
 To fix up a file use:
-    ./node_modules/.bin/prettier --write src/Home.js
+    prettier --write src/Home.js
+
+To run 'prettier' inside the frontend Docker container run:
+
+    docker-compose run frontend bash
+    prettier --list-different src/*.js
+
+Or, to just fix them:
+
+    docker-compose run frontend bash
+    prettier --write src/*.js
 
 The config is defined in .prettierrc
 Ideally configure your editor to automatically apply.
 See https://prettier.io/docs/en/editors.html#content
 "
-    return 1
+    exit 1
 }
 
 case $1 in
