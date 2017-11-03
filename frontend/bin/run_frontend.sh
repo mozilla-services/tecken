@@ -15,6 +15,7 @@ The config is defined in .prettierrc
 Ideally configure your editor to automatically apply.
 See https://prettier.io/docs/en/editors.html#content
 "
+    return 1
 }
 
 case $1 in
