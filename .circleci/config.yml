@@ -77,8 +77,7 @@ jobs:
           command: |
             docker info
             # use example env config
-            # XXX use the bin/cp-env-file.sh instead
-            cp .env-dist .env
+            ./bin/cp-env-file.sh
             # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
             # XXX Is this necessary to do again???
             printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
@@ -95,6 +94,10 @@ jobs:
       - image: ubuntu:16.04
     working_directory: ~/tecken
     steps:
+      - run:
+          name: Install essential packages
+          command: |
+            apt-get update && apt-get install -y ca-certificates
       - restore_cache:
           keys:
             - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
@@ -142,6 +145,7 @@ jobs:
           name: Linting check for frontend
           working_directory: ~/tecken
           command: |
+            touch .env
             docker-compose run frontend-ci lint
 
   push_to_dockerhub:
@@ -149,6 +153,10 @@ jobs:
       - image: ubuntu:16.04
     working_directory: ~/tecken
     steps:
+      - run:
+          name: Install essential packages
+          command: |
+            apt-get update && apt-get install -y ca-certificates
       - restore_cache:
           keys:
             - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
