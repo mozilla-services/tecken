@@ -82,7 +82,7 @@ tag:
 	@bin/make-tag.py
 
 lint-frontend:
-	docker-compose run frontend lint
+	docker-compose run frontend-ci lint
 
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh

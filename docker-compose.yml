@@ -127,6 +127,12 @@ services:
       - $PWD/frontend:/app
     command: start
 
+  # Same as 'frontend' but no volumes or command
+  frontend-ci:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+
   minio:
     image: minio/minio
     environment:
