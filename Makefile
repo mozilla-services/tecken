@@ -4,7 +4,6 @@ help:
 	@echo "Welcome to the tecken\n"
 	@echo "The list of commands for local development:\n"
 	@echo "  build            Builds the docker images for the docker-compose setup"
-	@echo "  ci               Run the test with the CI specific Docker setup"
 	@echo "  clean            Stops and removes all docker containers"
 	@echo "  migrate          Runs the Django database migrations"
 	@echo "  redis-cache-cli  Opens a Redis CLI to the cache Redis server"
@@ -18,6 +17,8 @@ help:
 	@echo "  systemtest       Run system tests against a running tecken"
 	@echo "  django-shell     Django integrative shell"
 	@echo "  psql             Open the psql cli"
+	@echo "  lint-frontend    Runs a linting check on the frontend"
+	@echo "  lint-frontend-ci Runs a linting check on the frontend in CI"
 	@echo "  build-frontend   Builds the frontend static files\n"
 
 # Dev configuration steps
@@ -79,6 +80,12 @@ systemtest: .env .docker-build
 
 tag:
 	@bin/make-tag.py
+
+lint-frontend:
+	docker-compose run frontend lint
+
+lint-frontend-ci:
+	docker-compose run frontend-ci lint
 
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh

@@ -125,7 +125,13 @@ services:
       - "35729:35729"
     volumes:
       - $PWD/frontend:/app
-    command: "yarn start | cat"
+    command: start
+
+  # Same as 'frontend' but no volumes or command
+  frontend-ci:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
 
   minio:
     image: minio/minio

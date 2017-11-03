@@ -64,18 +64,17 @@ export default class User extends PureComponent {
   render() {
     return (
       <div>
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
+        <h1 className="title">{this.pageTitle}</h1>
         {this.state.loading && <Loading />}
-        {this.state.user &&
+        {this.state.user && (
           <EditUserForm
             csrfToken={this.csrfToken}
             user={this.state.user}
             groups={this.state.groups}
             editUser={this.editUser}
             userSaved={this.userSaved}
-          />}
+          />
+        )}
         <hr />
         {this.state.groups && <ExplainGroups groups={this.state.groups} />}
       </div>
@@ -113,7 +112,7 @@ class EditUserForm extends PureComponent {
       credentials: 'same-origin',
       headers: new Headers({
         'X-CSRFToken': this.props.csrfToken
-      }),
+      })
     }).then(r => {
       if (store.fetchError) {
         store.fetchError = null
@@ -167,11 +166,9 @@ class EditUserForm extends PureComponent {
               })}
             </select>
           </div>
-          {validationErrors.groups
-            ? <p className="help is-danger">
-                {validationErrors.groups[0]}
-              </p>
-            : null}
+          {validationErrors.groups ? (
+            <p className="help is-danger">{validationErrors.groups[0]}</p>
+          ) : null}
         </div>
         <div className="field">
           <label className="checkbox">
@@ -239,16 +236,10 @@ const ExplainGroups = ({ groups }) => {
           {groups.map(group => {
             return (
               <tr key={group.id}>
-                <td>
-                  {group.name}
-                </td>
+                <td>{group.name}</td>
                 <td>
                   <ul style={{ marginTop: 0 }}>
-                    {group.permissions.map(p =>
-                      <li key={p.id}>
-                        {p.name}
-                      </li>
-                    )}
+                    {group.permissions.map(p => <li key={p.id}>{p.name}</li>)}
                   </ul>
                 </td>
               </tr>

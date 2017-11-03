@@ -74,6 +74,12 @@ jobs:
             make test
 
       - run:
+          name: Linting check for frontend
+          working_directory: /tecken
+          command: |
+            docker-compose run frontend-ci lint
+
+      - run:
           name: Push to Dockerhub
           working_directory: /tecken
           command: |

@@ -110,49 +110,49 @@ class Tokens extends PureComponent {
       <div>
         {this.state.loading && <Loading />}
 
-        {this.state.permissions && !this.state.permissions.length
-          ? <article className="message is-warning">
-              <div className="message-header">
-                <p>Warning</p>
-              </div>
-              <div className="message-body">
-                <p>
-                  You do <b>not have any permissions</b>. It means you{' '}
-                  <b>can not create any API tokens</b>.
-                </p>
-                <p>
-                  To get permission(s) you need to be promoted by an
-                  administrator to elevate your access privileges. <br />
-                  <Link to="/help">Go to Help</Link>
-                </p>
-              </div>
-            </article>
-          : null}
-
-        {this.state.tokens
-          ? <div>
-              <h2 className="title">Your API Tokens</h2>
-              <DisplayTokens
-                tokens={this.state.tokens}
-                totals={this.state.totals}
-                filter={this.state.filter}
-                deleteToken={this.deleteToken}
-                updateFilter={this.updateFilter}
-              />
+        {this.state.permissions && !this.state.permissions.length ? (
+          <article className="message is-warning">
+            <div className="message-header">
+              <p>Warning</p>
             </div>
-          : null}
-
-        {this.state.permissions && this.state.permissions.length
-          ? <div>
-              <hr />
-              <h2 className="title">Create new API Token</h2>
-              <CreateTokenForm
-                permissions={this.state.permissions}
-                createToken={this.createToken}
-                refreshTokens={this._fetchTokens}
-              />
+            <div className="message-body">
+              <p>
+                You do <b>not have any permissions</b>. It means you{' '}
+                <b>can not create any API tokens</b>.
+              </p>
+              <p>
+                To get permission(s) you need to be promoted by an administrator
+                to elevate your access privileges. <br />
+                <Link to="/help">Go to Help</Link>
+              </p>
             </div>
-          : null}
+          </article>
+        ) : null}
+
+        {this.state.tokens ? (
+          <div>
+            <h2 className="title">Your API Tokens</h2>
+            <DisplayTokens
+              tokens={this.state.tokens}
+              totals={this.state.totals}
+              filter={this.state.filter}
+              deleteToken={this.deleteToken}
+              updateFilter={this.updateFilter}
+            />
+          </div>
+        ) : null}
+
+        {this.state.permissions && this.state.permissions.length ? (
+          <div>
+            <hr />
+            <h2 className="title">Create new API Token</h2>
+            <CreateTokenForm
+              permissions={this.state.permissions}
+              createToken={this.createToken}
+              refreshTokens={this._fetchTokens}
+            />
+          </div>
+        ) : null}
       </div>
     )
   }
@@ -238,11 +238,9 @@ class CreateTokenForm extends PureComponent {
               })}
             </select>
           </div>
-          {validationErrors.permissions
-            ? <p className="help is-danger">
-                {validationErrors.permissions[0]}
-              </p>
-            : null}
+          {validationErrors.permissions ? (
+            <p className="help is-danger">{validationErrors.permissions[0]}</p>
+          ) : null}
         </div>
         <div className="field">
           <label className="label">Expires</label>
@@ -261,11 +259,9 @@ class CreateTokenForm extends PureComponent {
               </select>
             </span>
           </p>
-          {validationErrors.expires
-            ? <p className="help is-danger">
-                {validationErrors.expires[0]}
-              </p>
-            : null}
+          {validationErrors.expires ? (
+            <p className="help is-danger">{validationErrors.expires[0]}</p>
+          ) : null}
         </div>
         <div className="field">
           <label className="label">Notes</label>
@@ -278,11 +274,9 @@ class CreateTokenForm extends PureComponent {
               }
             />
           </p>
-          {validationErrors.notes
-            ? <p className="help is-danger">
-                {validationErrors.notes[0]}
-              </p>
-            : null}
+          {validationErrors.notes ? (
+            <p className="help is-danger">{validationErrors.notes[0]}</p>
+          ) : null}
         </div>
         <div className="field is-grouped">
           <p className="control">
@@ -339,9 +333,7 @@ class DisplayTokens extends PureComponent {
         <div className="tabs is-centered">
           <ul>
             <li className={!filter.state && 'is-active'}>
-              <Link to="/tokens?state=active"
-                onClick={this.filterOnActive}
-              >
+              <Link to="/tokens?state=active" onClick={this.filterOnActive}>
                 Active ({totals.active})
               </Link>
             </li>
@@ -351,9 +343,7 @@ class DisplayTokens extends PureComponent {
               </Link>
             </li>
             <li className={filter.state === 'expired' ? 'is-active' : ''}>
-              <Link to="/tokens?state=expired"
-                onClick={this.filterOnExpired}
-              >
+              <Link to="/tokens?state=expired" onClick={this.filterOnExpired}>
                 Expired ({totals.expired})
               </Link>
             </li>
@@ -377,20 +367,19 @@ class DisplayTokens extends PureComponent {
                     <DisplayKey tokenKey={token.key} />
                   </td>
                   <td>
-                    <DisplayExpires expires={token.expires_at} />
-                    {' '}
-                    {token.is_expired && <span className="tag is-danger">Expired</span>}
+                    <DisplayExpires expires={token.expires_at} />{' '}
+                    {token.is_expired && (
+                      <span className="tag is-danger">Expired</span>
+                    )}
                   </td>
                   <td>
-                    {token.permissions.map(p =>
+                    {token.permissions.map(p => (
                       <code key={p.id} style={{ display: 'block' }}>
                         {p.name}
                       </code>
-                    )}
+                    ))}
                   </td>
-                  <td style={{ maxWidth: 450 }}>
-                    {token.notes}
-                  </td>
+                  <td style={{ maxWidth: 450 }}>{token.notes}</td>
                   <td>
                     <button
                       type="button"
@@ -417,18 +406,10 @@ class DisplayKey extends PureComponent {
     this.setState({ truncate: !this.state.truncate })
   }
   render() {
-    let code = (
-      <code>
-        {this.props.tokenKey}
-      </code>
-    )
+    let code = <code>{this.props.tokenKey}</code>
     if (this.state.truncate) {
       const truncated = this.props.tokenKey.substr(0, 10)
-      code = (
-        <code>
-          {`${truncated}…`}
-        </code>
-      )
+      code = <code>{`${truncated}…`}</code>
     }
 
     return (
@@ -462,10 +443,6 @@ const DisplayExpires = ({ expires }) => {
       </span>
     )
   } else {
-    return (
-      <span>
-        in {formatDistanceStrict(date, now)}
-      </span>
-    )
+    return <span>in {formatDistanceStrict(date, now)}</span>
   }
 }

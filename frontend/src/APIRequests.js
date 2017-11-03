@@ -47,19 +47,17 @@ const DisplayAPIRequests = observer(
               const fullUrl = this.displayUrl(request.url)
               return (
                 <p key={i}>
-                  {
-                    request.requiresAuth ?
+                  {request.requiresAuth ? (
                     <code>
                       curl -X {request.method} -H 'Auth-Token:{' '}
                       <Link to="/tokens">YOURTOKENHERE</Link>'{' '}
                       <a href={fullUrl}>{fullUrl}</a>
-                    </code> :
-                    <code>
-                      curl -X {request.method}{' '}
-                      <a href={fullUrl}>{fullUrl}</a>
                     </code>
-                  }
-
+                  ) : (
+                    <code>
+                      curl -X {request.method} <a href={fullUrl}>{fullUrl}</a>
+                    </code>
+                  )}
                 </p>
               )
             })}

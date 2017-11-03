@@ -24,41 +24,41 @@ export default class UploadNow extends PureComponent {
   render() {
     return (
       <div>
-        <h1 className="title">
-          {this.pageTitle}
-        </h1>
+        <h1 className="title">{this.pageTitle}</h1>
 
-        {store.hasPermission('upload.view_all_uploads')
-          ? <div className="tabs is-centered">
-              <ul>
-                <li>
-                  <Link to="/uploads" onClick={this.filterOnAll}>
-                    All Uploads
-                  </Link>
-                </li>
-                <li>
-                  <Link to={`/uploads?user=${store.currentUser.email}`}>
-                    Your Uploads
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/uploads/files">All Files</Link>
-                </li>
-                <li className="is-active">
-                  <Link to="/uploads/upload">Upload Now</Link>
-                </li>
-              </ul>
-            </div>
-          : <div className="tabs is-centered">
-              <ul>
-                <li>
-                  <Link to="/uploads">All Uploads</Link>
-                </li>
-                <li className="is-active">
-                  <Link to="/uploads/upload">Upload Now</Link>
-                </li>
-              </ul>
-            </div>}
+        {store.hasPermission('upload.view_all_uploads') ? (
+          <div className="tabs is-centered">
+            <ul>
+              <li>
+                <Link to="/uploads" onClick={this.filterOnAll}>
+                  All Uploads
+                </Link>
+              </li>
+              <li>
+                <Link to={`/uploads?user=${store.currentUser.email}`}>
+                  Your Uploads
+                </Link>
+              </li>
+              <li>
+                <Link to="/uploads/files">All Files</Link>
+              </li>
+              <li className="is-active">
+                <Link to="/uploads/upload">Upload Now</Link>
+              </li>
+            </ul>
+          </div>
+        ) : (
+          <div className="tabs is-centered">
+            <ul>
+              <li>
+                <Link to="/uploads">All Uploads</Link>
+              </li>
+              <li className="is-active">
+                <Link to="/uploads/upload">Upload Now</Link>
+              </li>
+            </ul>
+          </div>
+        )}
 
         {this.state.loading && <Loading />}
 
@@ -186,12 +186,11 @@ class UploadForm extends PureComponent {
   render() {
     return (
       <form onSubmit={this.submitForm}>
-        {this.state.validationError &&
+        {this.state.validationError && (
           <article className="message is-danger">
-            <div className="message-body">
-              {this.state.validationError}
-            </div>
-          </article>}
+            <div className="message-body">{this.state.validationError}</div>
+          </article>
+        )}
         <div className="field">
           <div className="file has-name is-fullwidth">
             <label className="file-label">
@@ -212,19 +211,20 @@ class UploadForm extends PureComponent {
               </span>
 
               <span className="file-name">
-                {this.state.fileInfo
-                  ? <ShowFileInfo info={this.state.fileInfo} />
-                  : <i>no file selected yet</i>}
+                {this.state.fileInfo ? (
+                  <ShowFileInfo info={this.state.fileInfo} />
+                ) : (
+                  <i>no file selected yet</i>
+                )}
               </span>
             </label>
           </div>
         </div>
-        {this.state.warning &&
+        {this.state.warning && (
           <article className="message is-warning">
-            <div className="message-body">
-              {this.state.warning}
-            </div>
-          </article>}
+            <div className="message-body">{this.state.warning}</div>
+          </article>
+        )}
         <div className="field is-grouped">
           <p className="control">
             <button
@@ -250,13 +250,14 @@ class UploadForm extends PureComponent {
   }
 }
 
-const ShowFileInfo = ({ info }) =>
+const ShowFileInfo = ({ info }) => (
   <span>
     {info.name}{' '}
     <small>
       ({formatFileSize(info.size)} {info.type})
     </small>
   </span>
+)
 
 class UploadByDownloadForm extends UploadForm {
   constructor(props) {
@@ -324,12 +325,11 @@ class UploadByDownloadForm extends UploadForm {
   render() {
     return (
       <form onSubmit={this.submitForm}>
-        {this.state.validationError &&
+        {this.state.validationError && (
           <article className="message is-danger">
-            <div className="message-body">
-              {this.state.validationError}
-            </div>
-          </article>}
+            <div className="message-body">{this.state.validationError}</div>
+          </article>
+        )}
         <div className="field">
           <input
             className="input"
@@ -342,12 +342,11 @@ class UploadByDownloadForm extends UploadForm {
             which you can download.
           </p>
         </div>
-        {this.state.warning &&
+        {this.state.warning && (
           <article className="message is-warning">
-            <div className="message-body">
-              {this.state.warning}
-            </div>
-          </article>}
+            <div className="message-body">{this.state.warning}</div>
+          </article>
+        )}
         <div className="field is-grouped">
           <p className="control">
             <button

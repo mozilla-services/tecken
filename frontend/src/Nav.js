@@ -74,33 +74,35 @@ const Nav = observer(
               >
                 Downloads
               </NavLink>
-              {store.currentUser && store.currentUser.is_superuser
-                ? <NavLink
-                    to="/users"
+              {store.currentUser && store.currentUser.is_superuser ? (
+                <NavLink
+                  to="/users"
+                  className="navbar-item"
+                  activeClassName="is-active"
+                >
+                  User Management
+                </NavLink>
+              ) : null}
+              {store.currentUser &&
+                store.hasPermission('tokens.manage_tokens') && (
+                  <NavLink
+                    to="/tokens"
                     className="navbar-item"
                     activeClassName="is-active"
                   >
-                    User Management
+                    API Tokens
                   </NavLink>
-                : null}
+                )}
               {store.currentUser &&
-                store.hasPermission('tokens.manage_tokens') &&
-                <NavLink
-                  to="/tokens"
-                  className="navbar-item"
-                  activeClassName="is-active"
-                >
-                  API Tokens
-                </NavLink>}
-              {store.currentUser &&
-                store.hasPermission('upload.upload_symbols') &&
-                <NavLink
-                  to="/uploads"
-                  className="navbar-item"
-                  activeClassName="is-active"
-                >
-                  Uploads
-                </NavLink>}
+                store.hasPermission('upload.upload_symbols') && (
+                  <NavLink
+                    to="/uploads"
+                    className="navbar-item"
+                    activeClassName="is-active"
+                  >
+                    Uploads
+                  </NavLink>
+                )}
               <NavLink
                 to="/help"
                 className="navbar-item"
@@ -109,22 +111,24 @@ const Nav = observer(
                 Help
               </NavLink>
               <span className="navbar-item">
-                {store.currentUser &&
+                {store.currentUser && (
                   <button
                     onClick={this.props.signOut}
                     className="button is-info"
                     title={`Signed in as ${store.currentUser.email}`}
                   >
                     Sign Out
-                  </button>}
+                  </button>
+                )}
                 {!store.currentUser &&
-                  store.signInUrl &&
-                  <button
-                    onClick={this.props.signIn}
-                    className="button is-info"
-                  >
-                    Sign In
-                  </button>}
+                  store.signInUrl && (
+                    <button
+                      onClick={this.props.signIn}
+                      className="button is-info"
+                    >
+                      Sign In
+                    </button>
+                  )}
               </span>
             </div>
           </div>
