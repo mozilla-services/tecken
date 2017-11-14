@@ -271,10 +271,10 @@ class DisplayDownloads extends React.PureComponent {
                 />
               </td>
 
-              <td colSpan={2} style={{ width: 172 }}>
+              <td colSpan={2} style={{ width: 172 }} className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter
-                </button>{' '}
+                </button>
                 <button
                   type="button"
                   onClick={this.resetFilter}

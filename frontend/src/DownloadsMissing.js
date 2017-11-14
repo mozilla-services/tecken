@@ -264,10 +264,10 @@ class DisplayMissingSymbols extends React.PureComponent {
                   placeholder="filter..."
                 />
               </td>
-              <td>
+              <td className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter
-                </button>{' '}
+                </button>
                 <button
                   type="button"
                   onClick={this.resetFilter}

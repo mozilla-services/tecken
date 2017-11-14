@@ -440,10 +440,10 @@ class DisplayUploads extends React.PureComponent {
           </thead>
           <tfoot>
             <tr>
-              <td>
+              <td className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter Uploads
-                </button>{' '}
+                </button>
                 <button
                   type="button"
                   onClick={this.resetFilter}
