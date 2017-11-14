@@ -25,6 +25,8 @@ The config is defined in .prettierrc
 Ideally configure your editor to automatically apply.
 See https://prettier.io/docs/en/editors.html#content
 "
+    echo -n "Based on prettier version "
+    /node_modules/.bin/prettier --version
     exit 1
 }
 
