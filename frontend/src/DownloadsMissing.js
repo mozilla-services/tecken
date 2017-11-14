@@ -283,7 +283,9 @@ class DisplayMissingSymbols extends React.PureComponent {
               <tr key={missing.id}>
                 <td
                   className="file-key"
-                  title={`code_file=${missing.code_file}   code_id=${missing.code_id}`}
+                  title={`code_file=${missing.code_file}   code_id=${
+                    missing.code_id
+                  }`}
                 >
                   {missing.symbol}/{missing.debugid}/{missing.filename}
                 </td>

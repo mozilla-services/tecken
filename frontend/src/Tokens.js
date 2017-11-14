@@ -385,7 +385,8 @@ class DisplayTokens extends PureComponent {
                       type="button"
                       className="button is-danger is-small"
                       onClick={event =>
-                        this.onDelete(event, token.id, token.is_expired)}
+                        this.onDelete(event, token.id, token.is_expired)
+                      }
                     >
                       Delete
                     </button>
