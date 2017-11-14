@@ -50,8 +50,21 @@ def handler403(request):
     return http.JsonResponse({'error': 'Forbidden'}, status=403)
 
 
-def handler404(request):
-    return http.JsonResponse({'error': 'Not Found'}, status=404)
+def handler404(request, exception):
+    context = {
+        'error': 'Not Found',
+    }
+    if isinstance(exception.args[0], str):
+        # It was called like this: `raise Http404('Some Message Here')`
+        # For example, if you use `get_object_or_404(Token, id=id)`
+        # that shortcut function will raise the string message it
+        # gets from the `tecken.tokens.models.DoesNotExist` exception.
+        # In this case, use this error message instead.
+        context['error'] = exception.args[0]
+    else:
+        path = exception.args[0]['path']
+        context['path'] = f'/{path}'
+    return http.JsonResponse(context, status=404)
 
 
 def csrf_failure(request, reason=''):
