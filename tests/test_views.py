@@ -16,7 +16,6 @@ from tecken.views import (
     handler500,
     handler400,
     handler403,
-    handler404,
 )
 
 
@@ -123,9 +122,12 @@ def test_handler403(rf):
     assert json.loads(response.content.decode('utf-8'))['error']
 
 
-def test_handler404(rf):
-    request = rf.get('/')
-    response = handler404(request)
+def test_handler404(client):
+    # This handler is best tested as an integration test because
+    # it's a lot easier to simulate.
+    response = client.get('/blabla')
     assert response.status_code == 404
     assert response['Content-type'] == 'application/json'
-    assert json.loads(response.content.decode('utf-8'))['error']
+    information = json.loads(response.content.decode('utf-8'))
+    assert information['error']
+    assert information['path'] == '/blabla'
