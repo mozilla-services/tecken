@@ -53,9 +53,8 @@ class Help extends PureComponent {
             Inside the archive file, each symbol file is supposed to be in a
             directory that is the <b>module name</b> (e.g <code>xul.pdb</code>),
             and that directory should contain a directory that is the{' '}
-            <b>debug ID</b> (e.g. <code>
-              014BB0B098DC4244BCFC9F76ED2FA5302
-            </code>) and in that directory the <b>symbol file</b> (e.g.{' '}
+            <b>debug ID</b> (e.g. <code>014BB0B098DC4244BCFC9F76ED2FA5302</code>)
+            and in that directory the <b>symbol file</b> (e.g.{' '}
             <code>xul.sym</code>).
           </li>
           <li>

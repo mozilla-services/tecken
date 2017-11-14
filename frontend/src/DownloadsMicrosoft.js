@@ -271,10 +271,10 @@ class DisplayDownloads extends React.PureComponent {
                 />
               </td>
 
-              <td colSpan={2} style={{ width: 172 }}>
+              <td colSpan={2} style={{ width: 172 }} className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter
-                </button>{' '}
+                </button>
                 <button
                   type="button"
                   onClick={this.resetFilter}
@@ -290,10 +290,13 @@ class DisplayDownloads extends React.PureComponent {
               <tr key={download.id}>
                 <td
                   className="file-key"
-                  title={`code_file=${download.missing_symbol
-                    .code_file}   code_id=${download.missing_symbol.code_id}`}
+                  title={`code_file=${
+                    download.missing_symbol.code_file
+                  }   code_id=${download.missing_symbol.code_id}`}
                 >
-                  {download.missing_symbol.symbol}/{download.missing_symbol.debugid}/{download.missing_symbol.filename}
+                  {download.missing_symbol.symbol}/{
+                    download.missing_symbol.debugid
+                  }/{download.missing_symbol.filename}
                 </td>
                 <td>
                   {download.file_upload ? (

@@ -54,8 +54,12 @@ const TeckenVersionFancy = versions => {
             </a>
           )
         } else if (key === 'commit') {
-          const commitUrl = `https://github.com/mozilla-services/tecken/commit/${value}`
-          const treeUrl = `https://github.com/mozilla-services/tecken/tree/${value}`
+          const commitUrl = `https://github.com/mozilla-services/tecken/commit/${
+            value
+          }`
+          const treeUrl = `https://github.com/mozilla-services/tecken/tree/${
+            value
+          }`
           const sha = value.substring(0, 7)
           value = [
             <a key="commit" href={commitUrl}>
@@ -67,7 +71,9 @@ const TeckenVersionFancy = versions => {
             </a>
           ]
         } else if (key === 'version') {
-          const releaseUrl = `https://github.com/mozilla-services/tecken/releases/tag/${value}`
+          const releaseUrl = `https://github.com/mozilla-services/tecken/releases/tag/${
+            value
+          }`
           value = <a href={releaseUrl}>{value}</a>
         }
         return [<dt key="key">{key}</dt>, <dd key="value">{value}</dd>]

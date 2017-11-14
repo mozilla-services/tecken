@@ -264,10 +264,10 @@ class DisplayMissingSymbols extends React.PureComponent {
                   placeholder="filter..."
                 />
               </td>
-              <td>
+              <td className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter
-                </button>{' '}
+                </button>
                 <button
                   type="button"
                   onClick={this.resetFilter}
@@ -283,7 +283,9 @@ class DisplayMissingSymbols extends React.PureComponent {
               <tr key={missing.id}>
                 <td
                   className="file-key"
-                  title={`code_file=${missing.code_file}   code_id=${missing.code_id}`}
+                  title={`code_file=${missing.code_file}   code_id=${
+                    missing.code_id
+                  }`}
                 >
                   {missing.symbol}/{missing.debugid}/{missing.filename}
                 </td>

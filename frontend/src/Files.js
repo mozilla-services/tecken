@@ -57,7 +57,7 @@ class Files extends React.PureComponent {
     this.setLoadingTimer = window.setTimeout(() => {
       this.setState({ loading: true })
     }, 500)
-    let url = '/api/uploads/files'
+    let url = '/api/uploads/files/'
     const qs = filterToQueryString(this.state.filter)
     if (qs) {
       url += '?' + qs
