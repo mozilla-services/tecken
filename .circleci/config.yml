@@ -154,6 +154,9 @@ jobs:
             tar -xz -C /tmp -f /tmp/docker-$VER.tgz
             mv /tmp/docker/* /usr/bin
 
+      - setup_remote_docker:
+          version: 17.09.0-ce
+
       - run:
           name: Push to Dockerhub
           working_directory: ~/tecken
