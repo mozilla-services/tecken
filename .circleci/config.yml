@@ -43,7 +43,7 @@ jobs:
           path: ~/tecken/version.json
 
 
-  build_and_test:
+  build_test_and_deploy:
     docker:
       - image: ubuntu:16.04
     working_directory: ~/tecken
@@ -152,7 +152,7 @@ workflows:
       - make_version_file:
           requires:
             - checkout_code
-      - build_and_test:
+      - build_test_and_deploy:
           requires:
             - checkout_code
       - run_lintcheck:
