@@ -65,18 +65,7 @@ jobs:
           working_directory: ~/tecken
           command: |
             docker info
-            # use example env config
-            # ./bin/cp-env-file.sh  XXX delete?
             cp .env-dist .env
-            echo "WHAT IS pwd?"
-            pwd
-            echo "WHAT'S IN here?"
-            ls -ltr
-            echo "WHAT'S IN ~/tecken?"
-            ls -ltr ~/tecken
-            echo "WHAT'S IN /root/tecken?"
-            ls -ltr /root/tecken
-            ls -ltr version.json
             # build tecken containers
             make build
 
