@@ -15,34 +15,6 @@ jobs:
           paths:
             - ~/tecken
 
-  make_version_file:
-    docker:
-      - image: ubuntu:16.04
-    working_directory: ~/tecken
-    steps:
-      - run:
-          name: Install essential packages
-          command: |
-            apt-get update && apt-get install -y ca-certificates curl make
-
-      - restore_cache:
-          keys:
-            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-      - run:
-          name: Create version.json
-          working_directory: ~/tecken
-          command: |
-            # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
-            printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
-            "$CIRCLE_SHA1" \
-            "$CIRCLE_TAG" \
-            "$CIRCLE_PROJECT_USERNAME" \
-            "$CIRCLE_PROJECT_REPONAME" \
-            "$CIRCLE_BUILD_URL" > ~/tecken/version.json
-      - store_artifacts:
-          path: ~/tecken/version.json
-
-
   build_test_and_deploy:
     docker:
       - image: ubuntu:16.04
@@ -77,20 +49,23 @@ jobs:
           version: 17.09.0-ce
 
       - run:
+          name: Create version.json
+          working_directory: ~/tecken
+          command: |
+            # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+            printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
+            "$CIRCLE_SHA1" \
+            "$CIRCLE_TAG" \
+            "$CIRCLE_PROJECT_USERNAME" \
+            "$CIRCLE_PROJECT_REPONAME" \
+            "$CIRCLE_BUILD_URL" > version.json
+
+      - run:
           name: Build Docker images
           working_directory: ~/tecken
           command: |
             docker info
-            # use example env config
-            ./bin/cp-env-file.sh
-            # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
-            # XXX Is this necessary to do again???
-            # printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
-            # "$CIRCLE_SHA1" \
-            # "$CIRCLE_TAG" \
-            # "$CIRCLE_PROJECT_USERNAME" \
-            # "$CIRCLE_PROJECT_REPONAME" \
-            # "$CIRCLE_BUILD_URL" > version.json
+            cp .env-dist .env
             # build tecken containers
             make build
 
@@ -149,9 +124,6 @@ workflows:
   build-test-deploy:
     jobs:
       - checkout_code
-      - make_version_file:
-          requires:
-            - checkout_code
       - build_test_and_deploy:
           requires:
             - checkout_code
