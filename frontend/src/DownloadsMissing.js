@@ -47,12 +47,15 @@ class DownloadsMissing extends React.PureComponent {
   }
 
   _fetchMissing = () => {
-    // delay the loading animation in case it loads really fast
+    // If the backend is pretty fast, the new XHR content comes in
+    // quickly and it's quite distracting to have to switch on the
+    // loading animation just to, almost immediately, switch off
+    // and display the new data.
     this.setLoadingTimer = window.setTimeout(() => {
       if (!this.dismounted) {
         this.setState({ loading: true })
       }
-    }, 500)
+    }, 1000)
     let url = '/api/downloads/missing/'
     const qs = filterToQueryString(this.state.filter)
     if (qs) {
