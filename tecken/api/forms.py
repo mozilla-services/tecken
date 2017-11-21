@@ -83,6 +83,13 @@ class PaginationForm(forms.Form):
 
 class BaseFilteringForm(forms.Form):
 
+    sort = forms.CharField(required=False)
+    reverse = forms.CharField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        self.valid_sorts = kwargs.pop('valid_sorts', None)
+        super().__init__(*args, **kwargs)
+
     def _clean_dates(self, values):
         """return a list of either a datetime, date or None.
         Each one can have an operator."""
@@ -113,6 +120,26 @@ class BaseFilteringForm(forms.Form):
             dates.append((operator, date_obj))
 
         return dates
+
+    def clean_sort(self):
+        value = self.cleaned_data['sort']
+        if value and self.valid_sorts and value not in self.valid_sorts:
+            raise forms.ValidationError(f"Invalid sort '{value}'")
+        return value
+
+    def clean_reverse(self):
+        value = self.cleaned_data['reverse']
+        if value:
+            return True if value == 'true' else False
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get('sort'):
+            cleaned['order_by'] = {
+                'sort': cleaned.pop('sort'),
+                'reverse': cleaned.pop('reverse')
+            }
+        return cleaned
 
 
 class UploadsForm(BaseFilteringForm):
