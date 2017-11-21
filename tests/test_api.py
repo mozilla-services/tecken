@@ -15,7 +15,7 @@ from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.api.views import filter_uploads
-from tecken.api.forms import UploadsForm
+from tecken.api.forms import UploadsForm, BaseFilteringForm
 
 
 @pytest.mark.django_db
@@ -418,6 +418,27 @@ def test_edit_user_permissions(client):
     assert response.status_code == 200
     assert not user.groups.filter(name='Uploaders').exists()
     assert user.groups.filter(name='Upload Auditors').exists()
+
+
+def test_form_order_by():
+    """Any form that inherits BaseFilteringForm has the ability to
+    set 'sort' and 'reverse' and when cleaned returns a dict called
+    'order_by'"""
+    form = BaseFilteringForm({})
+    assert form.is_valid()
+    assert not form.cleaned_data.get('order_by')
+    form = BaseFilteringForm({'sort': 'foo', 'reverse': 'true'})
+    assert form.is_valid()
+    assert form.cleaned_data['order_by'] == {
+        'sort': 'foo',
+        'reverse': True,
+    }
+    form = BaseFilteringForm(
+        {'sort': 'foo', 'reverse': 'true'},
+        valid_sorts=('key1', 'key2')
+    )
+    assert not form.is_valid()
+    assert form.errors['sort']
 
 
 def test_uploadsform_dates():

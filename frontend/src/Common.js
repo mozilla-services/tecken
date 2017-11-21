@@ -396,3 +396,52 @@ export const ShowMicrosoftDownloadMetadata = ({ download }) => (
     </tbody>
   </table>
 )
+
+const capitalize = s => {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+export class SortLink extends React.PureComponent {
+  change = event => {
+    event.preventDefault()
+    const { current, name } = this.props
+    let reverse = true
+    if (current && current.sort === name) {
+      reverse = !current.reverse
+    }
+    this.props.onChangeSort({
+      sort: name,
+      reverse: reverse
+    })
+  }
+  render() {
+    const { current, name } = this.props
+    const title = this.props.title || capitalize(name)
+    const currentUrl = document.location.pathname
+    let isCurrent = false
+    let isReverse = true
+    if (current && current.sort === name) {
+      isCurrent = true
+      isReverse = current.reverse
+    }
+    let arrow
+    if (isCurrent) {
+      if (isReverse) {
+        arrow = '⬇'
+      } else {
+        arrow = '⬆'
+      }
+    } else {
+      arrow = '⇣'
+    }
+    return (
+      <Link
+        to={currentUrl}
+        title={`Click to sort by ${title}`}
+        onClick={this.change}
+      >
+        {arrow}
+      </Link>
+    )
+  }
+}

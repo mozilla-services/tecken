@@ -357,7 +357,10 @@ def uploads(request):
         'can_view_all': request.user.has_perm('upload.view_all_uploads'),
     }
 
-    form = forms.UploadsForm(request.GET)
+    form = forms.UploadsForm(
+        request.GET,
+        valid_sorts=('size', 'created_at')
+    )
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
 
@@ -412,8 +415,18 @@ def uploads(request):
             user.id: {'email': user.email}
             for user in User.objects.filter(id__in=distinct_users_ids)
         }
+
+    if form.cleaned_data.get('order_by'):
+        order_by = form.cleaned_data['order_by']
+    else:
+        order_by = {
+            'sort': 'created_at',
+            'reverse': True,
+        }
+
     rows = []
-    for upload in qs.order_by('-created_at')[start:end]:
+    order_by_string = ('-' if order_by['reverse'] else '') + order_by['sort']
+    for upload in qs.order_by(order_by_string)[start:end]:
         rows.append({
             'id': upload.id,
             'user': user_map[upload.user_id],
@@ -467,6 +480,7 @@ def uploads(request):
     context['uploads'] = rows
     context['total'] = context['aggregates']['uploads']['count']
     context['batch_size'] = batch_size
+    context['order_by'] = order_by
 
     return http.JsonResponse(context)
 
@@ -955,9 +969,11 @@ def current_versions(request):
 
 
 def downloads_missing(request):
-    context = {
-    }
-    form = forms.DownloadsMissingForm(request.GET)
+    context = {}
+    form = forms.DownloadsMissingForm(
+        request.GET,
+        valid_sorts=('modified_at', 'count', 'created_at')
+    )
     if not form.is_valid():
         return http.JsonResponse({'errors': form.errors}, status=400)
 
@@ -992,8 +1008,17 @@ def downloads_missing(request):
 
     context['total'] = context['aggregates']['missing']['total']
 
+    if form.cleaned_data.get('order_by'):
+        order_by = form.cleaned_data['order_by']
+    else:
+        order_by = {
+            'sort': 'modified_at',
+            'reverse': True,
+        }
+
     rows = []
-    for missing in qs.order_by('-modified_at')[start:end]:
+    order_by_string = ('-' if order_by['reverse'] else '') + order_by['sort']
+    for missing in qs.order_by(order_by_string)[start:end]:
         rows.append({
             'id': missing.id,
             'symbol': missing.symbol,
@@ -1006,6 +1031,7 @@ def downloads_missing(request):
             'created_at': missing.created_at,
         })
     context['missing'] = rows
+    context['order_by'] = order_by
 
     return http.JsonResponse(context)
 

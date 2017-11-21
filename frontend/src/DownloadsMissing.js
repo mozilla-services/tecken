@@ -11,7 +11,8 @@ import {
   DisplayDate,
   thousandFormat,
   ShowValidationErrors,
-  filterToQueryString
+  filterToQueryString,
+  SortLink
 } from './Common'
 
 class DownloadsMissing extends React.PureComponent {
@@ -26,7 +27,8 @@ class DownloadsMissing extends React.PureComponent {
       batchSize: null,
       apiUrl: null,
       filter: {},
-      validationErrors: null
+      validationErrors: null,
+      orderBy: null
     }
   }
 
@@ -61,6 +63,15 @@ class DownloadsMissing extends React.PureComponent {
     if (qs) {
       url += '?' + qs
     }
+    if (this.state.orderBy) {
+      if (url.indexOf('?') === -1) {
+        url += '?'
+      } else {
+        url += '&'
+      }
+      url += queryString.stringify(this.state.orderBy)
+    }
+
     this.props.history.push({ search: qs })
 
     return Fetch(url, {}).then(r => {
@@ -78,7 +89,8 @@ class DownloadsMissing extends React.PureComponent {
             aggregates: response.aggregates,
             total: response.total,
             batchSize: response.batch_size,
-            validationErrors: null
+            validationErrors: null,
+            orderBy: response.order_by
           })
         })
       } else if (r.status === 400) {
@@ -109,6 +121,12 @@ class DownloadsMissing extends React.PureComponent {
   resetAndReload = event => {
     event.preventDefault()
     this.setState({ filter: {}, validationErrors: null }, () => {
+      this._fetchMissing()
+    })
+  }
+
+  changeOrderBy = orderBy => {
+    this.setState({ orderBy: orderBy }, () => {
       this._fetchMissing()
     })
   }
@@ -155,6 +173,8 @@ class DownloadsMissing extends React.PureComponent {
             filter={this.state.filter}
             updateFilter={this.updateFilter}
             resetAndReload={this.resetAndReload}
+            changeOrderBy={this.changeOrderBy}
+            orderBy={this.state.orderBy}
           />
         )}
       </div>
@@ -220,9 +240,30 @@ class DisplayMissingSymbols extends React.PureComponent {
               </th>
               <th title="A missing symbol is only counted once per every 24 hours">
                 Count
+                <SortLink
+                  name="count"
+                  current={this.props.orderBy}
+                  onChangeSort={this.props.changeOrderBy}
+                />
               </th>
-              <th>Updated</th>
-              <th>First Seen</th>
+              <th>
+                Updated
+                <SortLink
+                  name="modified_at"
+                  title="Updated"
+                  current={this.props.orderBy}
+                  onChangeSort={this.props.changeOrderBy}
+                />
+              </th>
+              <th>
+                First Seen
+                <SortLink
+                  name="created_at"
+                  title="First Seen"
+                  current={this.props.orderBy}
+                  onChangeSort={this.props.changeOrderBy}
+                />
+              </th>
             </tr>
           </thead>
           <tfoot>

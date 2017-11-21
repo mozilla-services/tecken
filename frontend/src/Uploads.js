@@ -14,7 +14,8 @@ import {
   pluralize,
   DisplayFilesSummary,
   ShowValidationErrors,
-  filterToQueryString
+  filterToQueryString,
+  SortLink
 } from './Common'
 import Fetch from './Fetch'
 import './Uploads.css'
@@ -35,10 +36,10 @@ class Uploads extends React.PureComponent {
       filter: {},
       validationErrors: null,
       latestUpload: null,
-      newUploadsCount: 0
+      newUploadsCount: 0,
+      orderBy: null
     }
 
-    // this.newCountLoopInterval = 10 * 1000
     this.newCountLoopInterval = 5 * 1000
   }
 
@@ -78,11 +79,19 @@ class Uploads extends React.PureComponent {
       if (!this.dismounted) {
         this.setState({ loading: true })
       }
-    }, 500)
+    }, 1000)
     let url = '/api/uploads/'
     const qs = filterToQueryString(this.state.filter)
     if (qs) {
       url += '?' + qs
+    }
+    if (this.state.orderBy) {
+      if (url.indexOf('?') === -1) {
+        url += '?'
+      } else {
+        url += '&'
+      }
+      url += queryString.stringify(this.state.orderBy)
     }
     this.props.history.push({ search: qs })
 
@@ -111,6 +120,7 @@ class Uploads extends React.PureComponent {
               aggregates: response.aggregates,
               total: response.total,
               batchSize: response.batch_size,
+              orderBy: response.order_by,
               validationErrors: null,
               latestUpload: this._getLatestUpload(response.uploads)
             },
@@ -240,6 +250,12 @@ class Uploads extends React.PureComponent {
     return false
   }
 
+  changeOrderBy = orderBy => {
+    this.setState({ orderBy: orderBy }, () => {
+      this._fetchUploads()
+    })
+  }
+
   render() {
     return (
       <div>
@@ -316,6 +332,8 @@ class Uploads extends React.PureComponent {
             updateFilter={this.updateFilter}
             resetAndReload={this.resetAndReload}
             previousLatestUpload={this.previousLatestUpload}
+            changeOrderBy={this.changeOrderBy}
+            orderBy={this.state.orderBy}
           />
         )}
       </div>
@@ -433,8 +451,23 @@ class DisplayUploads extends React.PureComponent {
             <tr>
               <th>Files</th>
               <th>User</th>
-              <th>Size</th>
-              <th>Uploaded</th>
+              <th>
+                Size
+                <SortLink
+                  name="size"
+                  current={this.props.orderBy}
+                  onChangeSort={this.props.changeOrderBy}
+                />
+              </th>
+              <th>
+                Uploaded
+                <SortLink
+                  name="created_at"
+                  title="Uploaded"
+                  current={this.props.orderBy}
+                  onChangeSort={this.props.changeOrderBy}
+                />
+              </th>
               <th>Completed</th>
             </tr>
           </thead>
