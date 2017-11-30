@@ -271,9 +271,9 @@ vine==1.1.4 \
 django_celery_results==1.0.1 \
     --hash=sha256:dfa240fb535a1a2d01c9e605ad71629909318eae6b893c5009eafd7265fde10b \
     --hash=sha256:8bca2605eeff4418be7ce428a6958d64bee0f5bdf1f8e563fbc09a9e2f3d990f
-mozilla-django-oidc==0.4.1 \
-    --hash=sha256:6e6b3fc5ee171d20bbe39ad560e471b1ed2ba16a0a6a3994195e961ecf2e1758 \
-    --hash=sha256:24bf3cb895070a7699247c6b03cae066e7cfdbcb83a59ebf5b2f1f5e4c5c23a1
+mozilla-django-oidc==0.4.2 \
+    --hash=sha256:650716143525bb4bae553dd8c740a1c5986baf6aeae115cba01f6a217ee5fa4f \
+    --hash=sha256:77c29c47d67750d3c53fcd51f1aa496a2cdd65dd27a1f2a15e56ecc3c3714f19
 python-jose==1.4.0 \
     --hash=sha256:fed56224664af0ebc3947853f1bed23b5609f90c7b02e3dce5ef5757d0301664
 pycrypto==2.6.1 \
