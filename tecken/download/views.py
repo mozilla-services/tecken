@@ -35,9 +35,13 @@ logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 
 
-normal_downloader = SymbolDownloader(settings.SYMBOL_URLS)
+normal_downloader = SymbolDownloader(
+    settings.SYMBOL_URLS,
+    file_prefix=settings.SYMBOL_FILE_PREFIX,
+)
 try_downloader = SymbolDownloader(
-    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL]
+    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
+    file_prefix=settings.SYMBOL_FILE_PREFIX,
 )
 
 # Set it "globally" here the module on import-time so we don't have to

@@ -37,8 +37,12 @@ ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, 'notazipdespiteitsname.zip')
 
 
 class FakeUser:
-    def __init__(self, email):
+    def __init__(self, email, perms=('upload.upload_symbols',)):
         self.email = email
+        self.perms = perms
+
+    def has_perm(self, perm):
+        return perm in self.perms
 
 
 def test_get_archive_members(tmpdir):
@@ -93,7 +97,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             # Pretend that we have this in S3 and its previous
@@ -103,7 +107,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Pretend we don't have this in S3 at all
@@ -115,7 +119,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             assert 'ContentEncoding' not in api_params
@@ -131,7 +135,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Because .sym is in settings.COMPRESS_EXTENSIONS
@@ -180,7 +184,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name='private',
-        key='v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
+        key='prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
         compressed=False,
         update=True,
         size=69183,  # based on `unzip -l tests/sample.zip` knowledge
@@ -190,7 +194,7 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name='private',
-        key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
+        key='prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -239,7 +243,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             # based on `unzip -l tests/sample.zip` knowledge
@@ -248,7 +252,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Not found at all
@@ -260,7 +264,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # ...pretend to actually upload it.
@@ -288,7 +292,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         assert upload.bucket_region is None
         assert upload.bucket_endpoint_url == 'https://s3.example.com'
         assert upload.skipped_keys == [
-            'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
         ]
         assert upload.ignored_keys == ['build-symbols.txt']
 
@@ -296,7 +300,7 @@ def test_upload_archive_one_uploaded_one_skipped(
     assert FileUpload.objects.get(
         upload=upload,
         bucket_name='private',
-        key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
+        key='prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -417,7 +421,7 @@ def test_upload_archive_key_lookup_cached(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             return {'ContentLength': 69183}
@@ -425,7 +429,7 @@ def test_upload_archive_key_lookup_cached(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Saying the size is 100 will cause the code to think the
@@ -445,7 +449,7 @@ def test_upload_archive_key_lookup_cached(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             metadata_cache[api_params['Key']] = api_params['Metadata']
@@ -525,7 +529,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             return {'ContentLength': 69183}
@@ -533,7 +537,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Saying the size is 100 will cause the code to think the
@@ -553,7 +557,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # ...pretend to actually upload it.
@@ -628,7 +632,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             return {'ContentLength': 69183}
@@ -636,7 +640,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             return {
@@ -650,7 +654,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # ...pretend to actually upload it.
@@ -709,7 +713,7 @@ def test_upload_archive_one_uploaded_one_errored(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             return {'ContentLength': 69183}
@@ -717,7 +721,7 @@ def test_upload_archive_one_uploaded_one_errored(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Not found at all
@@ -729,7 +733,7 @@ def test_upload_archive_one_uploaded_one_errored(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             raise AnyUnrecognizedError('stop!')
@@ -751,7 +755,7 @@ def test_upload_archive_one_uploaded_one_errored(
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
         upload=upload,
-        key='v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
+        key='prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
     )
 
 
@@ -895,7 +899,7 @@ def test_upload_archive_both_skipped(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             return {'ContentLength': 69183}
@@ -903,7 +907,7 @@ def test_upload_archive_both_skipped(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             return {'ContentLength': 501}
@@ -931,8 +935,8 @@ def test_upload_archive_both_skipped(
         assert upload.bucket_endpoint_url == 'https://s3.example.com'
         # Order isn't predictable so compare using sets.
         assert set(upload.skipped_keys) == set([
-            'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
-            'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
+            'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
+            'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
         ])
         assert upload.ignored_keys == ['build-symbols.txt']
 
@@ -986,7 +990,7 @@ def test_upload_archive_by_url(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             # Pretend that we have this in S3 and its previous
@@ -996,7 +1000,7 @@ def test_upload_archive_by_url(
         if (
             operation_name == 'HeadObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Pretend we don't have this in S3 at all
@@ -1008,7 +1012,7 @@ def test_upload_archive_by_url(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
             )
         ):
             assert 'ContentEncoding' not in api_params
@@ -1025,7 +1029,7 @@ def test_upload_archive_by_url(
         if (
             operation_name == 'PutObject' and
             api_params['Key'] == (
-                'v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
             )
         ):
             # Because .sym is in settings.COMPRESS_EXTENSIONS

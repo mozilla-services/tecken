@@ -46,7 +46,7 @@ def reload_downloaders(urls):
     """
     if isinstance(urls, str):
         urls = tuple([urls])
-    views.downloader = SymbolDownloader(urls)
+    views.normal_downloader = SymbolDownloader(urls)
 
 
 def test_client_happy_path(client, botomock, metricsmock):
@@ -72,7 +72,8 @@ def test_client_happy_path(client, botomock, metricsmock):
         assert parsed.netloc == 's3.example.com'
         # the pre-signed URL will have the bucket in the path
         assert parsed.path == (
-            '/private/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            '/private/prefix/v0/'
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         assert 'Signature=' in parsed.query
         assert 'Expires=' in parsed.query
@@ -117,7 +118,8 @@ def test_client_with_debug(client, botomock, metricsmock):
         assert parsed.netloc == 's3.example.com'
         # the pre-signed URL will have the bucket in the path
         assert parsed.path == (
-            '/private/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            '/private/prefix/v0/'
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         assert 'Signature=' in parsed.query
         assert 'Expires=' in parsed.query
