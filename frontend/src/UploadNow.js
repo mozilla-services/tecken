@@ -94,7 +94,8 @@ class AboutCommandLineUpload extends PureComponent {
         <p>
           To upload via the command line, you need an{' '}
           <Link to="/tokens">API Token</Link> that has the{' '}
-          <code>Upload Symbol Files</code> permission attached to it.
+          <code>Upload Symbols Files</code> (or{' '}
+          <code>Upload Try Symbols Files</code>) permission attached to it.
         </p>
 
         <p>
@@ -129,6 +130,9 @@ class UploadForm extends PureComponent {
     const formData = new FormData()
     const file = this.filesInput.files[0]
     formData.append(file.name, file)
+    if (this.refs.try.checked) {
+      formData.append('try', true)
+    }
     this.setState({ loading: true, validationError: null })
     return fetch('/upload/', {
       method: 'POST',
@@ -138,9 +142,9 @@ class UploadForm extends PureComponent {
       if (store.fetchError) {
         store.fetchError = null
       }
+      this.setState({ loading: false })
       if (r.status === 201) {
         this.setState({
-          loading: false,
           validationError: null,
           warning: null
         })
@@ -154,7 +158,6 @@ class UploadForm extends PureComponent {
       } else if (r.status === 400) {
         r.json().then(data => {
           this.setState({
-            loading: false,
             validationError: data.error,
             warning: null
           })
@@ -217,6 +220,14 @@ class UploadForm extends PureComponent {
                   <i>no file selected yet</i>
                 )}
               </span>
+            </label>
+          </div>
+        </div>
+        <div className="field">
+          <div className="control">
+            <label className="checkbox">
+              <input type="checkbox" name="try" ref="try" value="yes" /> This is{' '}
+              <b>Try</b> build symbols
             </label>
           </div>
         </div>

@@ -537,6 +537,15 @@ class DisplayUploads extends React.PureComponent {
                       upload.ignored_keys.length
                     )}
                   </Link>
+                  {' '}
+                  {upload.try_symbols ? (
+                    <span
+                      className="tag is-info"
+                      title="Uploads for a Try build"
+                    >
+                      Try
+                    </span>
+                  ) : null}
                 </td>
                 <td>{upload.user.email}</td>
                 <td>{formatFileSize(upload.size)}</td>

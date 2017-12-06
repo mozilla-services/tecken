@@ -234,8 +234,14 @@ class SymbolDownloader:
         was returned as an indication that the symbol actually exists."""
         for source in self.sources:
 
-            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            prefix = settings.SYMBOL_FILE_PREFIX
+            if source.prefix:
+                # the source had its own prefix, so prepend that
+                prefix = f'{source.prefix}/{prefix}'
             assert prefix
+
+            print("PREFIX", prefix)
+            print("PRIVATE?", source.private)
 
             if source.private:
                 # If it's a private bucket we use boto3.
@@ -271,13 +277,17 @@ class SymbolDownloader:
                 logger.debug(
                     f'Looking for symbol file by URL {file_url!r}'
                 )
+                print("FILE_URL", file_url)
                 if check_url_head(file_url, _refresh=refresh_cache):
                     return {'url': file_url, 'source': source}
 
     def _get_stream(self, symbol, debugid, filename):
         for source in self.sources:
 
-            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            prefix = settings.SYMBOL_FILE_PREFIX
+            if source.prefix:
+                # the source had its own prefix, so prepend that
+                prefix = f'{source.prefix}/{prefix}'
             assert prefix
 
             if source.private:

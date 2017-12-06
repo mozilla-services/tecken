@@ -33,6 +33,16 @@ class TokenForm(forms.Form):
             permissions.append(
                 Permission.objects.get(id=pk)
             )
+
+        # Due to how we use permissions to route uploads, as a rule
+        # you can not have an Token containing BOTH of these permissions.
+        p1 = Permission.objects.get(codename='upload_symbols')
+        p2 = Permission.objects.get(codename='upload_try_symbols')
+        if p1 in permissions and p2 in permissions:
+            raise forms.ValidationError(
+                'Invalid combination of permissions'
+            )
+
         return permissions
 
 

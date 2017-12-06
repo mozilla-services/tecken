@@ -26,6 +26,14 @@ def create_default_groups(sender, **kwargs):
         )
         logger.info(f'Group "{name}" created')
 
+    # This new permission was added late, and it belongs to the Uploaders
+    # group.
+    if not group.permissions.filter(codename='upload_try_symbols').exists():
+        group.permissions.add(
+            Permission.objects.get(codename='upload_try_symbols')
+        )
+        logger.info(f'Adding "upload_try_symbols" to group {name}')
+
     name = 'Upload Auditors'
     try:
         group = Group.objects.get(name=name)

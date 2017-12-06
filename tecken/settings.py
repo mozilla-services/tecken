@@ -404,6 +404,12 @@ class Base(Core):
     # or else Django won't start.
     UPLOAD_DEFAULT_URL = values.Value()
 
+    # When an upload comes in with symbols from a Try build, these symbols
+    # mustn't be uploaded with the "regular symbols".
+    # This value can be very similar to UPLOAD_DEFAULT_URL in that
+    # it can use the exact same S3 bucket but have a different prefix.
+    UPLOAD_TRY_SYMBOLS_URL = values.Value()
+
     # The config is a list of tuples like this:
     # 'email:url' where the email part can be a glob like regex
     # For example '*@example.com:https://s3-us-west-2.amazonaws.com/mybucket'
@@ -540,6 +546,10 @@ class Localdev(Base):
         'http://minio:9000/testbucket'
     )
 
+    UPLOAD_TRY_SYMBOLS_URL = values.Value(
+        'http://minio:9000/testbucket/try'
+    )
+
     # Run this much sooner in local development.
     UPLOAD_REATTEMPT_LIMIT_SECONDS = values.IntegerValue(60)
 
@@ -656,6 +666,7 @@ class Test(Localdev):
 
     SYMBOL_FILE_PREFIX = 'v0'
     UPLOAD_DEFAULT_URL = 'https://s3.example.com/private/prefix/'
+    UPLOAD_TRY_SYMBOLS_URL = 'https://s3.example.com/try/prefix/'
     UPLOAD_URL_EXCEPTIONS = {
         '*@peterbe.com': 'https://s3.example.com/peterbe-com',
     }

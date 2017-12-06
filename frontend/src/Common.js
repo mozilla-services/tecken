@@ -228,6 +228,12 @@ export const ShowUploadMetadata = ({ upload }) => (
         <td>{upload.filename}</td>
       </tr>
       <tr>
+        <th>Try Symbols</th>
+        <td>
+          {upload.try_symbols ? 'Yes' : 'No'}
+        </td>
+      </tr>
+      <tr>
         <th>Download URL</th>
         <td>
           {upload.download_url ? URLTag(upload.download_url) : <i>null</i>}

@@ -1,3 +1,5 @@
+.. _download:
+
 ========
 Download
 ========
@@ -208,3 +210,34 @@ To do this append ``?_refresh`` to the URL. For example:
     # Now our cache will be updated.
     $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
     ...404 Symbol Not Found...
+
+
+.. _download-try-builds:
+
+Try Builds
+==========
+
+By default, when you request to download a symbol, Tecken will iterate
+through a list of available S3 configurations. By default it's only really
+one, the main S3 bucket for public symbols.
+
+To download symbols that might be part of a Try build you have to pass an
+optional query string key: ``try``. For example:
+
+.. code-block:: shell
+
+    $ curl https://symbols.mozilla.org/tried.pdb/HEX/tried.sym
+    ...404 Symbol Not Found...
+
+    $ curl https://symbols.mozilla.org/tried.pdb/HEX/tried.sym?try
+    ...302 Found...
+
+What Tecken does is, if you pass ``?try`` to the URL, it takes the
+existing list of S3 configurations and *appends* the S3 configuration for
+Try builds.
+
+Note; symbols from Try builds is always tried last! So if there's a known
+symbol called ``foo.pdb/HEX/foo.sym`` and someone triggers a Try build
+(which uploads it symbols) with the exact same name (and build ID) and
+even if you use ``https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?try``
+the existing (non-Try build) symbol will be matched first.

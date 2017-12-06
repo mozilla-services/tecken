@@ -166,7 +166,7 @@ Both the gzip and the mimetype overrides can be changed by setting the
 variables. See ``settings.py`` for the current defaults.
 
 
-Metadata and optimization
+Metadata and Optimization
 =========================
 
 For every gzipped file we upload, we attach 2 pieces of metadata to the key:
@@ -185,3 +185,48 @@ original size and original MD5 checksum, we have to locally compress
 the file to be able to make that final size comparison. By instead
 checking the original size (and hash) we can skip early without having to
 do the compression again.
+
+
+Try Builds
+==========
+
+A Try build is a build of Firefox that isn't necessarily triggered by
+landing a patch in ``mozilla-central``. The access model for triggering
+Try builds is much more relaxed. Try builds generate symbols that are
+useful to have for debugging too. However, because of the difference in
+access rights, it's important that symbols from Try builds aren't
+allowed to override symbols from non-Try builds. For this reason,
+Tecken uploads all symbols from Try builds in a different S3
+configuration.
+
+.. note: At the moment, symbols from Try builds go into the same S3 bucket but into a different root prefix.
+
+Another important difference between a Try build and a non-Try build is
+that the symbols are much less likely to be useful for a long time.
+A developer might be testing something out for a couple of days, do some
+debugging and then move on to something else. Therefore we don't save
+the Try build symbols for equally long in AWS S3.
+
+So how do you distinguish between symbols from a Try build and those
+from a non-Try build?
+
+1. By the API token's permission, or,
+
+2. Explicitly passing the ``try`` POST key with a non-empty value.
+
+If you upload symbols with the frontend, there's a checkbox to indicate
+that it's from a Try build. It's unchecked by default.
+
+To upload by API key permission, create a new API Token and when you
+select permission to associate with it, select ``Upload Try Symbols Files``.
+This is how the backend knows to associate this upload with the files
+coming from a Try build.
+
+There's an override though. You can manually set the key-value ``try``.
+Like this:
+
+.. code-block:: shell
+
+    $ curl -X POST -H 'auth-token: xxx' --form try=true --form myfile.zip=@myfile.zip https://symbols.mozilla.org/upload/
+
+See the :ref:`Try builds <download-try-builds>` documentation under **Download**.

@@ -185,11 +185,12 @@ class CreateTokenForm extends PureComponent {
       body: formData,
       credentials: 'same-origin'
     }).then(r => {
+      this.setState({ loading: false })
       if (store.fetchError) {
         store.fetchError = null
       }
       if (r.status === 201) {
-        this.setState({ loading: false, validationErrors: null })
+        this.setState({ validationErrors: null })
         this._resetForm()
         store.setNotificationMessage('New API Token created')
         this.props.refreshTokens()
@@ -200,7 +201,7 @@ class CreateTokenForm extends PureComponent {
         })
       } else if (r.status === 400) {
         r.json().then(data => {
-          this.setState({ loading: false, validationErrors: data.errors })
+          this.setState({ validationErrors: data.errors })
         })
       } else {
         store.fetchError = r
@@ -218,6 +219,12 @@ class CreateTokenForm extends PureComponent {
       // makes it easier to reference in the JSX
       validationErrors = {}
     }
+
+    const permissionNames = this.props.permissions.map(p => p.name)
+    const hasBothUploadPermissions =
+      permissionNames.includes('Upload Symbols Files') &&
+      permissionNames.includes('Upload Try Symbols Files')
+
     return (
       <form onSubmit={this.submitCreate}>
         <div className="field">
@@ -292,6 +299,14 @@ class CreateTokenForm extends PureComponent {
             </button>
           </p>
         </div>
+
+        {hasBothUploadPermissions ? (
+          <p>
+            <b>Note!</b> An API Token can not contain <i>both</i> the{' '}
+            <code>Upload Symbols Files</code> <i>and</i>
+            <code>Upload Try Symbols Files</code>.
+          </p>
+        ) : null}
       </form>
     )
   }

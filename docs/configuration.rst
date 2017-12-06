@@ -168,6 +168,20 @@ trigger redirects to *another* domain you have to add that domain too.
 For example, if you have a ``mybigsymbolzips.example.com`` that redirects to
 ``cloudfront.amazonaws.net`` you need to add both.
 
+Try Builds
+----------
+
+Try build symbols are symbols that come from builds with a much more
+relaxed access policy. That's why it's important that these kinds of
+symbols don't override the non-Try build symbols. Also, the nature of
+them is much more short-lived and when stored in S3 they should have
+a much shorter expiration time than all other symbols.
+
+The configuration key to set is ``DJANGO_UPLOAD_TRY_SYMBOLS_URL``
+and it works very similar to ``DJANGO_UPLOAD_DEFAULT_URL``.
+
+If the bucket mentioned in this configuration has to exist.
+
 PostgreSQL
 ==========
 

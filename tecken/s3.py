@@ -37,7 +37,7 @@ class S3Bucket:
 
     """
 
-    def __init__(self, url):
+    def __init__(self, url, try_symbols=False):
         parsed = urlparse(url)
         self.scheme = parsed.scheme
         self.netloc = parsed.netloc
@@ -51,6 +51,7 @@ class S3Bucket:
         self.name = name
         self.prefix = prefix
         self.private = 'access=public' not in parsed.query
+        self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
         if not parsed.netloc.endswith('.amazonaws.com'):

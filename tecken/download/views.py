@@ -34,7 +34,11 @@ from tecken.download.tasks import (
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 
-downloader = SymbolDownloader(settings.SYMBOL_URLS)
+
+normal_downloader = SymbolDownloader(settings.SYMBOL_URLS)
+try_downloader = SymbolDownloader(
+    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL]
+)
 
 # Set it "globally" here the module on import-time so we don't have to
 # repeatly get it from the settings module in runtime.
@@ -116,6 +120,13 @@ def download_symbol(request, symbol, debugid, filename):
         return response
 
     refresh_cache = '_refresh' in request.GET
+
+    if 'try' in request.GET:
+        downloader = try_downloader
+    else:
+        downloader = normal_downloader
+
+    print("DOWNLOADER", downloader.urls)
 
     if request.method == 'HEAD':
         if downloader.has_symbol(
