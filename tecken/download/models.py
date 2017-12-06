@@ -22,8 +22,8 @@ class MissingSymbol(models.Model):
     filename = models.CharField(max_length=150)
     # These are optional because they only really apply when
     # symbol downloads are queried from stackwalker.
-    code_file = models.CharField(max_length=50, null=True)
-    code_id = models.CharField(max_length=50, null=True)
+    code_file = models.CharField(max_length=150, null=True)
+    code_id = models.CharField(max_length=150, null=True)
     # This is to keep track of every time we re-encounter this as missing.
     count = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)

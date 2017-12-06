@@ -39,6 +39,16 @@ def store_missing_symbol(
             f'Ignoring log missing symbol (filename ${len(filename)} chars)'
         )
         return
+    if code_file and len(code_file) > 150:
+        logger.info(
+            f'Ignoring log missing symbol (code_file ${len(code_file)} chars)'
+        )
+        return
+    if code_id and len(code_id) > 150:
+        logger.info(
+            f'Ignoring log missing symbol (code_file ${len(code_id)} chars)'
+        )
+        return
     hash_ = MissingSymbol.make_md5_hash(
         symbol,
         debugid,
