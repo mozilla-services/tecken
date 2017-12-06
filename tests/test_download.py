@@ -770,6 +770,20 @@ def test_store_missing_symbol_skips(metricsmock):
 
 
 @pytest.mark.django_db
+def test_store_missing_symbol_skips_bad_code_file_or_id(metricsmock):
+    # If the code_file or code_id is too long don't bother storing it.
+    views.store_missing_symbol(
+        'foo.pdb', 'ABCDEF12345', 'foo.sym',
+        code_file='x' * 200
+    )
+    views.store_missing_symbol(
+        'foo.pdb', 'ABCDEF12345', 'foo.sym',
+        code_id='x' * 200
+    )
+    assert not MissingSymbol.objects.all().exists()
+
+
+@pytest.mark.django_db
 def test_store_missing_symbol_client(client, botomock, settings):
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
     reload_downloader('https://s3.example.com/private/prefix/')
