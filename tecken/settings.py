@@ -666,7 +666,7 @@ class Test(Localdev):
 
     SYMBOL_FILE_PREFIX = 'v0'
     UPLOAD_DEFAULT_URL = 'https://s3.example.com/private/prefix/'
-    UPLOAD_TRY_SYMBOLS_URL = 'https://s3.example.com/try/prefix/'
+    UPLOAD_TRY_SYMBOLS_URL = 'https://s3.example.com/try/prefix'
     UPLOAD_URL_EXCEPTIONS = {
         '*@peterbe.com': 'https://s3.example.com/peterbe-com',
     }

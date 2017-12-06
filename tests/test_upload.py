@@ -220,6 +220,137 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
 
 
 @pytest.mark.django_db
+def test_upload_try_symbols_happy_path(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+):
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename='upload_try_symbols')
+    token.permissions.add(permission)
+    url = reverse('upload:upload_archive')
+
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_TRY_SYMBOLS_URL specifically
+        # for tests.
+        assert api_params['Bucket'] == 'try'
+        if operation_name == 'HeadBucket':
+            # yep, bucket exists
+            return {}
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            # Pretend that we have this in S3 and its previous
+            # size was 1000.
+            return {'ContentLength': 1000}
+
+        if (
+            operation_name == 'HeadObject' and
+            api_params['Key'] == (
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # Pretend we don't have this in S3 at all
+            parsed_response = {
+                'Error': {'Code': '404', 'Message': 'Not found'},
+            }
+            raise ClientError(parsed_response, operation_name)
+
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg'
+            )
+        ):
+            assert 'ContentEncoding' not in api_params
+            assert 'ContentType' not in api_params
+            content = api_params['Body'].read()
+            # based on `unzip -l tests/sample.zip` knowledge
+            assert len(content) == 69183
+
+            # ...pretend to actually upload it.
+            return {
+                # Should there be anything here?
+            }
+        if (
+            operation_name == 'PutObject' and
+            api_params['Key'] == (
+                'prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym'
+            )
+        ):
+            # Because .sym is in settings.COMPRESS_EXTENSIONS
+            assert api_params['ContentEncoding'] == 'gzip'
+            # Because .sym is in settings.MIME_OVERRIDES
+            assert api_params['ContentType'] == 'text/plain'
+            body = api_params['Body'].read()
+            assert isinstance(body, bytes)
+            # If you look at the fixture 'sample.zip', which is used in
+            # these tests you'll see that the file 'xpcshell.sym' is
+            # 1156 originally. But we asser that it's now *less* because
+            # it should have been gzipped.
+            assert len(body) < 1156
+            original_content = gzip.decompress(body)
+            assert len(original_content) == 1156
+
+            # ...pretend to actually upload it.
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
+    with botomock(mock_api_call), open(ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 201
+
+        upload, = Upload.objects.all()
+        assert upload.user == fakeuser
+        assert upload.filename == 'file.zip'
+        assert upload.completed_at
+        # Based on `ls -l tests/sample.zip` knowledge
+        assert upload.size == 69812
+        # This is predictable and shouldn't change unless the fixture
+        # file used changes.
+        assert upload.content_hash == 'f7382729695218a7fa003d63246b26'
+        assert upload.bucket_name == 'try'
+        assert upload.bucket_region is None
+        assert upload.bucket_endpoint_url == 'https://s3.example.com'
+        assert upload.skipped_keys is None
+        assert upload.ignored_keys == ['build-symbols.txt']
+        assert upload.try_symbols
+
+    assert FileUpload.objects.all().count() == 2
+    file_upload = FileUpload.objects.get(
+        upload=upload,
+        bucket_name='try',
+        key='prefix/v0/south-africa-flag/deadbeef/south-africa-flag.jpeg',
+        compressed=False,
+        update=True,
+        size=69183,  # based on `unzip -l tests/sample.zip` knowledge
+    )
+    assert file_upload.completed_at
+
+    file_upload = FileUpload.objects.get(
+        upload=upload,
+        bucket_name='try',
+        key='prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym',
+        compressed=True,
+        update=False,
+        # Based on `unzip -l tests/sample.zip` knowledge, but note that
+        # it's been compressed.
+        size__lt=1156,
+        completed_at__isnull=False,
+    )
+
+
+@pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_skipped(
     client,
     botomock,
@@ -1258,6 +1389,7 @@ def test_get_bucket_info(settings):
     assert bucket_info.name == 'some-bucket'
     assert bucket_info.endpoint_url is None
     assert bucket_info.region is None
+    assert not bucket_info.try_symbols
 
     settings.UPLOAD_DEFAULT_URL = (
         'https://s3-eu-west-2.amazonaws.com/some-bucket'
@@ -1272,6 +1404,36 @@ def test_get_bucket_info(settings):
     assert bucket_info.name == 'buck'
     assert bucket_info.endpoint_url == 'http://s3.example.com'
     assert bucket_info.region is None
+
+
+def test_get_bucket_info_try_symbols(settings):
+
+    user = FakeUser(
+        'peterbe@example.com',
+        perms=('upload.upload_try_symbols',)
+    )
+
+    settings.UPLOAD_DEFAULT_URL = 'https://s3.amazonaws.com/some-bucket'
+    settings.UPLOAD_TRY_SYMBOLS_URL = 'https://s3.amazonaws.com/other-bucket'
+    bucket_info = get_bucket_info(user)
+    assert bucket_info.name == 'other-bucket'
+    assert bucket_info.endpoint_url is None
+    assert bucket_info.region is None
+    assert bucket_info.try_symbols
+
+    # settings.UPLOAD_DEFAULT_URL = (
+    #     'https://s3-eu-west-2.amazonaws.com/some-bucket'
+    # )
+    # bucket_info = get_bucket_info(user)
+    # assert bucket_info.name == 'some-bucket'
+    # assert bucket_info.endpoint_url is None
+    # assert bucket_info.region == 'eu-west-2'
+    #
+    # settings.UPLOAD_DEFAULT_URL = 'http://s3.example.com/buck/prefix'
+    # bucket_info = get_bucket_info(user)
+    # assert bucket_info.name == 'buck'
+    # assert bucket_info.endpoint_url == 'http://s3.example.com'
+    # assert bucket_info.region is None
 
 
 def test_get_bucket_info_exceptions(settings):
