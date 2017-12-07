@@ -155,15 +155,13 @@ class UploadsForm(BaseFilteringForm):
             operator = '!'
             value = value[1:].strip()
         if value:
+            # If it can be converted to an object, use that!
             try:
-                return [operator, User.objects.get(email__iexact=value)]
-            except User.DoesNotExist:
-                try:
-                    return [operator, User.objects.get(email__icontains=value)]
-                except User.DoesNotExist:
-                    raise forms.ValidationError('User not found')
-                except User.MultipleObjectsReturned:
-                    raise forms.ValidationError('User search ambiguous')
+                return [operator, User.objects.get(email__icontains=value)]
+            except (User.DoesNotExist, User.MultipleObjectsReturned):
+                # Send the whole string which will result in a regex match
+                # later.
+                return [operator, value]
 
     def clean_size(self):
         values = self.cleaned_data['size']

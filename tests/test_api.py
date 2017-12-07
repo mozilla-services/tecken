@@ -548,9 +548,19 @@ def test_uploadsform_user():
     form = UploadsForm({
         'user': 'peterbe'
     })
-    assert not form.is_valid()
-    # happens because of this...
-    assert not User.objects.filter(email__icontains='peterbe').exists()
+    # Valid even though there is no user with that email.
+    assert form.is_valid()
+    assert form.cleaned_data['user'][0] == '='
+    assert form.cleaned_data['user'][1] == 'peterbe'
+
+    # Negate now, when there is still no matching user.
+    form = UploadsForm({
+        'user': '!peterbe'
+    })
+    # Valid even though there is no user with that email.
+    assert form.is_valid()
+    assert form.cleaned_data['user'][0] == '!'
+    assert form.cleaned_data['user'][1] == 'peterbe'
 
     user = User.objects.create(username='peterbe', email='peterbe@example.com')
     form = UploadsForm({
@@ -567,6 +577,15 @@ def test_uploadsform_user():
     assert form.is_valid()
     assert form.cleaned_data['user'][0] == '!'
     assert form.cleaned_data['user'][1] == user
+
+    # What if there are more than 1 user that matches.
+    user = User.objects.create(username='p', email='example@peterbe.com')
+    form = UploadsForm({
+        'user': 'peterbe'
+    })
+    assert form.is_valid()
+    assert form.cleaned_data['user'][0] == '='
+    assert form.cleaned_data['user'][1] == 'peterbe'
 
 
 @pytest.mark.django_db
@@ -632,16 +651,12 @@ def test_uploads(client):
     data = response.json()
     assert data['uploads'][0]['id'] == upload.id
 
-    # The 'user' has to match exactly 1 user
-    response = client.get(url, {'user': 'neverheardof'})
-    assert response.status_code == 400
-    assert response.json()['errors']['user']
     User.objects.create(email='nother@example.com', username='nother')
     # Now this becomes ambiguous
     response = client.get(url, {'user': 'her@'})
-    assert response.status_code == 400
-    assert response.json()['errors']['user']
-    # Be specific this time
+    assert response.status_code == 200
+    assert data['uploads'][0]['id'] == upload.id
+    # Be specific this time.
     response = client.get(url, {'user': 'her@example.com'})
     assert response.status_code == 200
     assert data['uploads'][0]['id'] == upload.id

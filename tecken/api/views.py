@@ -491,10 +491,14 @@ def filter_uploads(qs, can_view_all, user, form):
     if can_view_all:
         if form.cleaned_data['user']:
             operator, user = form.cleaned_data['user']
-            if operator == '!':
-                qs = qs.exclude(user=user)
+            qs_function = qs.exclude if operator == '!' else qs.filter
+            # If the form managed to convert it to an instance,
+            # the select queried doesn't need to do a join.
+            # Otherwise do a regex on its email.
+            if isinstance(user, str):
+                qs = qs_function(user__email__icontains=user)
             else:
-                qs = qs.filter(user=user)
+                qs = qs_function(user=user)
     else:
         qs = qs.filter(user=user)
     for operator, value in form.cleaned_data['size']:
