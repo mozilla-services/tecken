@@ -651,10 +651,6 @@ def test_uploads(client):
     data = response.json()
     assert data['uploads'][0]['id'] == upload.id
 
-    # The 'user' has to match exactly 1 user
-    # response = client.get(url, {'user': 'neverheardof'})
-    # assert response.status_code == 400
-    # assert response.json()['errors']['user']
     User.objects.create(email='nother@example.com', username='nother')
     # Now this becomes ambiguous
     response = client.get(url, {'user': 'her@'})
