@@ -34,6 +34,9 @@ class Token(models.Model):
             ('manage_tokens', 'Manage Your API Tokens'),
         )
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__} {self.key[:2]}...{self.key[-2]}>'
+
     @property
     def is_expired(self):
         return self.expires_at < timezone.now()
