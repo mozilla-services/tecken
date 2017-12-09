@@ -130,8 +130,6 @@ def download_symbol(request, symbol, debugid, filename):
     else:
         downloader = normal_downloader
 
-    print("DOWNLOADER", downloader.urls)
-
     if request.method == 'HEAD':
         if downloader.has_symbol(
             symbol,

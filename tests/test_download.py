@@ -38,7 +38,7 @@ PD__FILE = os.path.join(_here, 'ksproxy.pd_')
 FAKE_BROKEN_DUMP_SYMS = os.path.join(_here, 'broken_dump_syms.sh')
 
 
-def reload_downloaders(urls):
+def reload_downloaders(urls, try_downloader=None):
     """Because the tecken.download.views module has a global instance
     of SymbolDownloader created at start-up, it's impossible to easily
     change the URL if you want to test clients with a different URL.
@@ -47,6 +47,8 @@ def reload_downloaders(urls):
     if isinstance(urls, str):
         urls = tuple([urls])
     views.normal_downloader = SymbolDownloader(urls)
+    if try_downloader:
+        views.try_downloader = SymbolDownloader([try_downloader])
 
 
 def test_client_happy_path(client, botomock, metricsmock):
@@ -85,6 +87,59 @@ def test_client_happy_path(client, botomock, metricsmock):
 
         assert response['Access-Control-Allow-Origin'] == '*'
         assert response['Access-Control-Allow-Methods'] == 'GET'
+
+
+@pytest.mark.django_db
+def test_client_try_download(client, botomock, settings):
+    """Suppose there's a file that doesn't exist in any of the
+    settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
+    then to reach that file you need to use ?try on the URL.
+    """
+    reload_downloaders(
+        'https://s3.example.com/private',
+        try_downloader='https://s3.example.com/private/trying'
+    )
+
+    mock_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_calls.append(api_params)
+        if api_params['Prefix'].startswith('trying/v0/'):
+            # Yeah, we have it
+            return {
+                'Contents': [{
+                    'Key': api_params['Prefix'],
+                }]
+            }
+        elif api_params['Prefix'].startswith('v0'):
+            # Pretned nothing was returned. Ie. 404
+            return {}
+        else:
+            raise NotImplementedError(api_params['Prefix'])
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url)
+        assert response.status_code == 404
+        assert len(mock_calls) == 1
+
+        response = client.get(url, {'try': True})
+        assert response.status_code == 302
+        assert len(mock_calls) == 2
+
+        # Do it again, to make sure the caches work in our favor
+        response = client.get(url)
+        assert response.status_code == 404
+        assert len(mock_calls) == 2
+
+        response = client.get(url, {'try': True})
+        assert response.status_code == 302
+        assert len(mock_calls) == 2
 
 
 def test_client_with_debug(client, botomock, metricsmock):
