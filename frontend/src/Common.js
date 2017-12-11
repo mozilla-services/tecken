@@ -229,9 +229,7 @@ export const ShowUploadMetadata = ({ upload }) => (
       </tr>
       <tr>
         <th>Try Symbols</th>
-        <td>
-          {upload.try_symbols ? 'Yes' : 'No'}
-        </td>
+        <td>{upload.try_symbols ? 'Yes' : 'No'}</td>
       </tr>
       <tr>
         <th>Download URL</th>

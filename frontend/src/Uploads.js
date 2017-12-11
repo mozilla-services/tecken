@@ -536,8 +536,7 @@ class DisplayUploads extends React.PureComponent {
                       upload.skipped_keys.length,
                       upload.ignored_keys.length
                     )}
-                  </Link>
-                  {' '}
+                  </Link>{' '}
                   {upload.try_symbols ? (
                     <span
                       className="tag is-info"

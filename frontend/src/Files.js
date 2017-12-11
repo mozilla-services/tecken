@@ -309,8 +309,7 @@ class DisplayFiles extends React.PureComponent {
                     </Link>
                   ) : (
                     <DisplayDate date={file.created_at} />
-                  )}
-                  {' '}
+                  )}{' '}
                   {file.upload && file.upload.try_symbols ? (
                     <span
                       className="tag is-info"
