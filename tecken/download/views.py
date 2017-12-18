@@ -15,6 +15,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.cache import cache
 from django.utils.encoding import force_bytes
+from django.db import OperationalError
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
@@ -24,8 +25,10 @@ from tecken.base.decorators import (
 )
 from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
-from tecken.download.tasks import download_microsoft_symbol
-
+from tecken.download.tasks import (
+    download_microsoft_symbol,
+    store_missing_symbol_task
+)
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
@@ -161,10 +164,18 @@ def download_symbol(request, symbol, debugid, filename):
             filename.lower().endswith('.sym')
 
         ):
-            # If log_symbol_get_404's cache guard prevented it from,
-            # the cache will return the boolean True. Implying that
-            # it was already, recently, stored as a missing symbol.
-            # Don't send that is to download_microsoft_symbol.
+            # The log_symbol_get_404() function is protected by a cache
+            # that "guards" it with a memoize decorator. That memoize
+            # decorator makes sure the same arguments aren't allowed
+            # in more than once (per time interval the memoize cache
+            # is configured to).
+            # However, if it did run (and wasn't memoize blocked), it
+            # yields a hash to "describe" the missing symbol. That's
+            # useful to have when downloading from Microsoft.
+            # The function 'download_from_microsoft()' is will
+            # get or create one of those hashes no matter what. Here
+            # we're just doing a little optimization by passing that
+            # along to download_from_microsoft() to save it some effort.
             if missing_symbol_hash and isinstance(missing_symbol_hash, bool):
                 missing_symbol_hash = None
 
@@ -209,7 +220,7 @@ def log_symbol_get_404(
 ):
     """Store the fact that a symbol could not be found.
 
-    The purpose of this is be able to query "What symbol fetches have
+    The purpose of this is be able to answer "What symbol fetches have
     recently been attempted and failed?" With that knowledge, we can
     deduce which symbols are commonly needed in symbolication but failed
     to be available. Then you can try to go and get hold of them and
@@ -228,40 +239,39 @@ def log_symbol_get_404(
     are both optional.
     """
     if settings.ENABLE_STORE_MISSING_SYMBOLS:
-        return store_missing_symbol(
-            symbol,
-            debugid,
-            filename,
-            code_file=code_file,
-            code_id=code_id,
-        )
-    else:
-        # The old way... This might not be kept.
-
-        # In case they are None or something else falsy but not an empty string
-        code_file = code_file and code_file.strip() or ''
-        code_id = code_id and code_id.strip() or ''
-
-        key = 'missingsymbols:{}:'.format(timezone.now().strftime('%Y-%m-%d'))
-        key += '|'.join((
-            symbol,
-            debugid,
-            filename,
-            code_file,
-            code_id,
-        ))
         try:
-            cache.incr(key, 1)
-        except ValueError:
-            # Can't increment if it's never been stored.
-            # The first purpose of storing missing symbols is to be able to
-            # export a CSV file that lists all missing symbols YESTERDAY.
-            # That report needs to contain everything from midnight yesterday
-            # until midnight today.
-            # So the CSV file is exported at 11PM on a Sunday it needs to
-            # include ALL missing symbols from 0AM to 0PM on the Saturday.
-            # That's why the expiration time here is the last TWO DAYS.
-            cache.set(key, 1, 60 * 60 * 24 * 2)
+            return store_missing_symbol(
+                symbol,
+                debugid,
+                filename,
+                code_file=code_file,
+                code_id=code_id,
+            )
+        except OperationalError as exception:
+            # Note that this doesn't return. The reason is because it's
+            # a background job. We can only fire-and-forget sending it.
+            # That's why we only do this in the unusual case of an
+            # operational error.
+            # By sending it to a background task, it gets to try storing
+            # it again. The reasons that's more like to work is because...
+            #
+            #   A) There's a natural delay until it tries the DB
+            #      write. Perhaps that little delay is all we need to try
+            #      again and be lucky.
+            #   B) The celery tasks have built-in support for retrying.
+            #      So if it fails the first time (which is already unlikely)
+            #      you get a second chance after some deliberate sleep.
+            #
+            # The return value is only rarely useful. It's used to indicate
+            # that it *just* now got written down. And that's useful to know
+            # when we attempt to automatically download it from Microsoft.
+            store_missing_symbol_task.delay(
+                symbol,
+                debugid,
+                filename,
+                code_file=code_file,
+                code_id=code_id,
+            )
 
 
 def missing_symbols_csv(request):
@@ -325,25 +335,6 @@ def missing_symbols_csv(request):
             missing.debugid,
             missing.code_file,
             missing.code_id,
-        ])
-
-    # HACK!
-    # See https://bugzilla.mozilla.org/show_bug.cgi?id=1407725
-    # We *used* to store all missing symbols in cache. But now we
-    # store it in Postgres. The day we switch over we're going to have a
-    # slight hiccup. To smooth over that hiccup we can read from both
-    # sources.
-    # The following lines can be removed once we've been running the
-    # code that stores missing symbols in Postgres, in Prod.
-    key_prefix = 'missingsymbols:{}:'.format(date.strftime('%Y-%m-%d'))
-    for key in cache.iter_keys(key_prefix + '*'):
-        data = key.replace(key_prefix, '').split('|')
-        symbol, debugid, filename, code_file, code_id = data
-        writer.writerow([
-            symbol,
-            debugid,
-            code_file,
-            code_id,
         ])
 
     return response

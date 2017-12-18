@@ -17,6 +17,7 @@ from botocore.exceptions import (
 
 from django.conf import settings
 from django.utils import timezone
+from django.db import OperationalError
 
 from tecken.s3 import S3Bucket
 from tecken.boto_extra import (
@@ -26,13 +27,24 @@ from tecken.boto_extra import (
 from tecken.base.utils import requests_retry_session
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.download.utils import store_missing_symbol
-from tecken.upload.utils import (
-    upload_file_upload,
-)
+from tecken.upload.utils import upload_file_upload
 
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
+
+
+@shared_task(autoretry_for=(OperationalError,))
+def store_missing_symbol_task(*args, **kwargs):
+    """The store_missing_symbol() function is preferred to use directly
+    because it can return a "hash". The hash is useful for doing
+    Microsoft downloads where it wants to associate the missing download
+    with the record of trying to find it on Microsoft's symbol server.
+
+    Use this task when you are OK with doing a fire-and-forget of
+    logging that the symbol is indeed missing.
+    """
+    store_missing_symbol(*args, **kwargs)
 
 
 class DumpSymsError(Exception):
