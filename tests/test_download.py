@@ -16,15 +16,17 @@ from markus import INCR
 
 from django.utils import timezone
 from django.core.urlresolvers import reverse
-from django.core.cache import cache
+from django.db import OperationalError
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.download.tasks import (
     download_microsoft_symbol,
+    store_missing_symbol_task,
     DumpSymsError,
 )
+from tecken.download.utils import store_missing_symbol
 from tecken.upload.models import FileUpload
 
 
@@ -89,11 +91,18 @@ def test_client_with_debug(client, botomock, metricsmock):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
-        return {
-            'Contents': [{
-                'Key': api_params['Prefix'],
-            }]
-        }
+        if api_params['Prefix'].endswith('xil.sym'):
+            return {
+                'Contents': []
+            }
+        elif api_params['Prefix'].endswith('xul.sym'):
+            return {
+                'Contents': [{
+                    'Key': api_params['Prefix'],
+                }]
+            }
+        else:
+            raise NotImplementedError(api_params)
 
     url = reverse('download:download_symbol', args=(
         'xul.pdb',
@@ -129,6 +138,16 @@ def test_client_with_debug(client, botomock, metricsmock):
         response = client.get(ignore_url, HTTP_DEBUG='true')
         assert response.status_code == 404
         assert float(response['debug-time']) == 0.0
+
+        # Do a GET with a file that doesn't exist.
+        not_found_url = reverse('download:download_symbol', args=(
+            'xil.pdb',
+            '55F4EC8C2F41492B9369D6B9A059577A1',
+            'xil.sym',
+        ))
+        response = client.get(not_found_url, HTTP_DEBUG='true')
+        assert response.status_code == 404
+        assert float(response['debug-time']) > 0
 
 
 def test_client_with_ignorable_file_extensions(client, botomock):
@@ -236,8 +255,11 @@ def test_client_404(client, botomock, clear_redis_store):
         assert response.status_code == 404
 
 
-def test_client_404_logged(client, botomock, clear_redis_store):
+@pytest.mark.django_db
+def test_client_404_logged(client, botomock, clear_redis_store, settings):
     reload_downloader('https://s3.example.com/private/prefix/')
+
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -279,20 +301,14 @@ def test_client_404_logged(client, botomock, clear_redis_store):
         # Actually it shouldn't log it twice because the work on logging
         # missing symbols is guarded by a memoizer that prevents it from
         # executing more than once per arguments.
-        key, = list(cache.iter_keys('missingsymbols:*'))
-        # The key should contain today's date
-        today = timezone.now().strftime('%Y-%m-%d')
-        assert today in key
-        (
-            symbol, debugid, filename, code_file, code_id
-        ) = key.split(':')[-1].split('|')
-        assert symbol == 'xul.pdb'
-        assert debugid == '44E4EC8C2F41492B9369D6B9A059577C2'
-        assert filename == 'xul.sym'
-        assert code_file == ''
-        assert code_id == ''
-        value = cache.get(key)
-        assert value == 1
+        assert MissingSymbol.objects.all().count() == 1
+        assert MissingSymbol.objects.get(
+            symbol='xul.pdb',
+            debugid='44E4EC8C2F41492B9369D6B9A059577C2',
+            filename='xul.sym',
+            code_file__isnull=True,
+            code_id__isnull=True,
+        )
 
         # Now look it up with ?code_file= and ?code_id= etc.
         assert client.get(url, {'code_file': 'xul.dll'}).status_code == 404
@@ -303,19 +319,15 @@ def test_client_404_logged(client, botomock, clear_redis_store):
             'code_id': 'deadbeef'
         }).status_code == 404
 
-        keys = list(cache.iter_keys('missingsymbols:*'))
-        # One with neither, one with code_file, one with code_id one with both
-        assert len(keys) == 4
-        key, = [x for x in keys if 'deadbeef' in x and 'xul.dll' in x]
-        assert cache.get(key) == 1
-        (
-            symbol, debugid, filename, code_file, code_id
-        ) = key.split(':')[-1].split('|')
-        assert symbol == 'xul.pdb'
-        assert debugid == '44E4EC8C2F41492B9369D6B9A059577C2'
-        assert filename == 'xul.sym'
-        assert code_file == 'xul.dll'
-        assert code_id == 'deadbeef'
+        assert MissingSymbol.objects.all().count() == 4
+        assert MissingSymbol.objects.get(
+            symbol='xul.pdb',
+            debugid='44E4EC8C2F41492B9369D6B9A059577C2',
+            filename='xul.sym',
+            # The one with both set to something.
+            code_file='xul.dll',
+            code_id='deadbeef',
+        )
 
 
 def test_log_symbol_get_404_metrics(metricsmock):
@@ -460,6 +472,18 @@ def test_get_microsoft_symbol_client(client, botomock, settings):
             # cache. So it shouldn't have called it more than
             # once.
             assert len(task_arguments) == 1
+
+
+@pytest.mark.django_db
+def test_store_missing_symbol_task_happy_path():
+    store_missing_symbol_task('foo.pdb', 'HEX', 'foo.sym', code_file='file')
+    assert MissingSymbol.objects.get(
+        symbol='foo.pdb',
+        debugid='HEX',
+        filename='foo.sym',
+        code_file='file',
+        code_id__isnull=True,
+    )
 
 
 @pytest.mark.django_db
@@ -820,3 +844,60 @@ def test_store_missing_symbol_client(client, botomock, settings):
         # cache. So it shouldn't have called it more than
         # once.
         assert MissingSymbol.objects.filter(count=1).count() == 1
+
+
+@pytest.mark.django_db
+def test_store_missing_symbol_client_operationalerror(
+    client,
+    botomock,
+    settings
+):
+    """If the *storing* of a missing symbols causes an OperationalError,
+    the main client that requests should still be a 404.
+    On the inside, what we do is catch the operational error, and
+    instead call out to a celery job that does it instead.
+
+    This test is a bit cryptic. The S3 call is mocked. The calling of the
+    'store_missing_symbol()' function (that is in 'downloads/views.py')
+    is mocked. Lastly, the wrapped task function 'store_missing_symbol_task()'
+    is also mocked (so we don't actually call out to Redis).
+    Inside the mocked call to the celery task, we actually call the
+    original 'tecken.download.utils.store_missing_symbol' function just to
+    make sure the MissingSymbol record gets created.
+    """
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    reload_downloader('https://s3.example.com/private/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        return {}
+
+    url = reverse('download:download_symbol', args=(
+        'foo.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'foo.ex_',
+    ))
+
+    task_arguments = []
+
+    def fake_task(*args, **kwargs):
+        store_missing_symbol(*args, **kwargs)
+        task_arguments.append(args)
+
+    store_args = []
+
+    def mock_store_missing_symbols(*args, **kwargs):
+        store_args.append(args)
+        raise OperationalError('On noes!')
+
+    _mock_function = 'tecken.download.views.store_missing_symbol_task.delay'
+    with botomock(mock_api_call), mock.patch(
+        'tecken.download.views.store_missing_symbol',
+        new=mock_store_missing_symbols
+    ), mock.patch(_mock_function, new=fake_task):
+        response = client.get(url, {'code_file': 'something'})
+        assert response.status_code == 404
+        assert response.content == b'Symbol Not Found'
+        assert len(store_args) == 1
+        assert len(task_arguments) == 1
+        assert MissingSymbol.objects.all().count() == 1

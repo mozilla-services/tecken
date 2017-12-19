@@ -112,6 +112,8 @@ services:
     links:
       - db
       - redis-cache
+    volumes:
+      - $PWD:/app
     command: worker-purge
 
   frontend:
