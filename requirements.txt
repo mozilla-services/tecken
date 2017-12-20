@@ -302,9 +302,9 @@ flake8==3.5.0 \
 mock==2.0.0 \
     --hash=sha256:5ce3c71c5545b472da17b72268978914d0252980348636840bd34a00b5cc96c1 \
     --hash=sha256:b158b6df76edd239b8208d481dc46b6afd45a846b7812ff0ce58971cf5bc8bba
-pytest==3.2.5 \
-    --hash=sha256:241d7e7798d79192a123ceaf64c602b4d233eacf6d6e42ae27caa97f498b7dc6 \
-    --hash=sha256:6d5bd4f7113b444c55a3bbb5c738a3dd80d43563d063fc42dcb0aaefbdd78b81
+pytest==3.3.1 \
+    --hash=sha256:ae4a2d0bae1098bbe938ecd6c20a526d5d47a94dc42ad7331c9ad06d0efe4962 \
+    --hash=sha256:cf8436dc59d8695346fcd3ab296de46425ecab00d64096cebe79fb51ecb2eb93
 coverage==4.4.2 \
     --hash=sha256:d1ee76f560c3c3e8faada866a07a32485445e16ed2206ac8378bd90dadffb9f0 \
     --hash=sha256:007eeef7e23f9473622f7d94a3e029a45d55a92a1f083f0f3512f5ab9a669b05 \
@@ -390,3 +390,8 @@ django-cache-memoize==0.1.1 \
     --hash=sha256:12c3359b7f48bf34db739732eae66d9f4b6103093382fa5723774d10be4c352f
 encore==0.7.0 \
     --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6
+attrs==17.3.0 \
+    --hash=sha256:e7d51b70f19a4da5fe6b3c9938983e0af3b91e230edc504bd73c443d98037063 \
+    --hash=sha256:c78f53e32d7cf36d8597c8a2c7e3c0ad210f97b9509e152e4c37fa80869f823c
+pluggy==0.6.0 \
+    --hash=sha256:7f8ae7f5bdf75671a718d2daf0a64b7885f74510bcd98b1a0bb420eb9a9d0cff
