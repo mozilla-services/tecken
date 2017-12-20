@@ -42,11 +42,11 @@ def handler500(request):
     return http.JsonResponse({'error': 'Internal Server Error'}, status=500)
 
 
-def handler400(request):
+def handler400(request, exception):
     return http.JsonResponse({'error': 'Bad Request'}, status=400)
 
 
-def handler403(request):
+def handler403(request, exception):
     return http.JsonResponse({'error': 'Forbidden'}, status=403)
 
 

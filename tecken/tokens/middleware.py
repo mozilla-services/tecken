@@ -9,7 +9,6 @@ from django import http
 from django.contrib import auth
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
-from django.utils.deprecation import MiddlewareMixin
 
 from .models import Token
 
@@ -22,15 +21,21 @@ def has_perm(all, codename, obj=None):
     return all.filter(codename=codename).count()
 
 
-class APITokenAuthenticationMiddleware(MiddlewareMixin):
+class APITokenAuthenticationMiddleware:
 
-    def __init__(self):
+    def __init__(self, get_response=None):
         if not settings.ENABLE_TOKENS_AUTHENTICATION:  # pragma: no cover
-            logger.warn('API Token authentication disabled')
+            logger.warning('API Token authentication disabled')
             raise MiddlewareNotUsed
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.process_request(request)
+        if not response:
+            response = self.get_response(request)
+        return response
 
     def process_request(self, request):
-
         key = request.META.get('HTTP_AUTH_TOKEN')
         if not key:
             return

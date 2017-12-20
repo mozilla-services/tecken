@@ -11,7 +11,6 @@ from django import http
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import MiddlewareNotUsed
-from django.utils.deprecation import MiddlewareMixin
 from django.contrib import auth
 
 from tecken.base.utils import requests_retry_session
@@ -73,7 +72,7 @@ def find_users(client_id, client_secret, domain, email, session):
     return response.json()
 
 
-class NotBlockedInAuth0Middleware(MiddlewareMixin):
+class NotBlockedInAuth0Middleware:
     """If the user is found in Auth0's User Management API *and*
     is "blocked" make the user inactive. In active users can't have any
     permissions but we don't have to destroy or change any API tokens.
@@ -90,10 +89,17 @@ class NotBlockedInAuth0Middleware(MiddlewareMixin):
     at throttled interval.
     """
 
-    def __init__(self):
+    def __init__(self, get_response=None):
         if not settings.ENABLE_AUTH0_BLOCKED_CHECK:  # pragma: no cover
-            logger.warn('Auth0 blocked check disabled')
+            logger.warning('Auth0 blocked check disabled')
             raise MiddlewareNotUsed
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.process_request(request)
+        if not response:
+            response = self.get_response(request)
+        return response
 
     def process_request(self, request):
         if not request.user.is_active or not request.user.email:
@@ -105,7 +111,7 @@ class NotBlockedInAuth0Middleware(MiddlewareMixin):
                 # oh my!
                 request.user.is_active = False
                 request.user.save()
-                logger.warn(
+                logger.warning(
                     f'User {request.user.email} is blocked in Auth0 '
                     f'and now made inactive'
                 )

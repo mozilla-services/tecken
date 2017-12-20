@@ -9,6 +9,7 @@ import pytest
 import mock
 
 from django.core.urlresolvers import reverse
+from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 
 from tecken.tasks import sample_task
@@ -108,7 +109,7 @@ def test_handler500(rf):
 
 def test_handler400(rf):
     request = rf.get('/')
-    response = handler400(request)
+    response = handler400(request, NameError())
     assert response.status_code == 400
     assert response['Content-type'] == 'application/json'
     assert json.loads(response.content.decode('utf-8'))['error']
@@ -116,7 +117,7 @@ def test_handler400(rf):
 
 def test_handler403(rf):
     request = rf.get('/')
-    response = handler403(request)
+    response = handler403(request, PermissionDenied())
     assert response.status_code == 403
     assert response['Content-type'] == 'application/json'
     assert json.loads(response.content.decode('utf-8'))['error']
