@@ -7,10 +7,9 @@ from urllib.parse import urlparse
 
 import markus
 
-from django import http
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import MiddlewareNotUsed
+from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
 from django.contrib import auth
 
 from tecken.base.utils import requests_retry_session
@@ -116,9 +115,8 @@ class NotBlockedInAuth0Middleware:
                     f'and now made inactive'
                 )
                 auth.logout(request)
-                return http.HttpResponse(
-                    'User is blocked in Auth0 and made inactive.',
-                    status=403
+                raise PermissionDenied(
+                    'User is blocked in Auth0 and made inactive.'
                 )
             else:
                 logger.info(

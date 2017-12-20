@@ -109,18 +109,22 @@ def test_handler500(rf):
 
 def test_handler400(rf):
     request = rf.get('/')
-    response = handler400(request, NameError())
+    response = handler400(request, NameError('foo is bar'))
     assert response.status_code == 400
     assert response['Content-type'] == 'application/json'
-    assert json.loads(response.content.decode('utf-8'))['error']
+    assert json.loads(response.content.decode('utf-8'))['error'] == (
+        'foo is bar'
+    )
 
 
 def test_handler403(rf):
     request = rf.get('/')
-    response = handler403(request, PermissionDenied())
+    response = handler403(request, PermissionDenied('bad boy!'))
     assert response.status_code == 403
     assert response['Content-type'] == 'application/json'
-    assert json.loads(response.content.decode('utf-8'))['error']
+    assert json.loads(response.content.decode('utf-8'))['error'] == (
+        'bad boy!'
+    )
 
 
 def test_handler404(client):

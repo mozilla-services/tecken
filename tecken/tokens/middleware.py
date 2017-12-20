@@ -5,10 +5,9 @@
 import logging
 from functools import partial
 
-from django import http
 from django.contrib import auth
 from django.conf import settings
-from django.core.exceptions import MiddlewareNotUsed
+from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
 
 from .models import Token
 
@@ -43,22 +42,13 @@ class APITokenAuthenticationMiddleware:
         try:
             token = Token.objects.select_related('user').get(key=key)
             if token.is_expired:
-                return http.JsonResponse(
-                    {'error': 'API Token found but expired'},
-                    status=403,
-                )
+                raise PermissionDenied('API Token found but expired')
         except Token.DoesNotExist:
-            return http.JsonResponse(
-                {'error': 'API Token not matched'},
-                status=403,
-            )
+            raise PermissionDenied('API Token not matched')
 
         user = token.user
         if not user.is_active:
-            return http.JsonResponse(
-                {'error': 'API Token matched but user not active'},
-                status=403,
-            )
+            raise PermissionDenied('API Token matched but user not active')
 
         # It actually doesn't matter so much which backend
         # we use as long as it's something.

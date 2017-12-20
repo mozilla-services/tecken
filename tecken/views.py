@@ -43,11 +43,17 @@ def handler500(request):
 
 
 def handler400(request, exception):
-    return http.JsonResponse({'error': 'Bad Request'}, status=400)
+    return http.JsonResponse({'error': str(exception)}, status=400)
 
 
 def handler403(request, exception):
-    return http.JsonResponse({'error': 'Forbidden'}, status=403)
+    return http.JsonResponse({
+        # The reason for this 'or' fallback is if somewhere in the code
+        # there's a plain `raise PermissionDenied` without a parameter.
+        # If that is the case it's slightly nicer to at least return
+        # the word 'Forbidden'.
+        'error': str(exception) or 'Forbidden'
+    }, status=403)
 
 
 def handler404(request, exception):
