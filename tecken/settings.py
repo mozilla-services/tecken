@@ -105,7 +105,7 @@ class Core(AWS, Configuration, Celery, S3):
     # to check that a once-authenticated user is still a valid user.
     # So if that's "disabled", that's why we have rather short session
     # cookie age.
-    MIDDLEWARE_CLASSES = (
+    MIDDLEWARE = (
         'django.middleware.security.SecurityMiddleware',
         'dockerflow.django.middleware.DockerflowMiddleware',
         # 'django.middleware.csrf.CsrfViewMiddleware',
@@ -328,6 +328,11 @@ class Base(Core):
                 'handlers': ['sentry', 'console'],
             },
             'loggers': {
+                'django': {
+                    'level': 'WARNING',
+                    'handlers': ['console'],
+                    'propagate': False,
+                },
                 'django.db.backends': {
                     'level': 'ERROR',
                     'handlers': ['console'],
@@ -709,10 +714,10 @@ class Dev(Base):
     # Sentry setup
     SENTRY_DSN = values.Value(environ_prefix=None)
 
-    MIDDLEWARE_CLASSES = (
+    MIDDLEWARE = (
         'raven.contrib.django.raven_compat.middleware'
         '.SentryResponseErrorIdMiddleware',
-    ) + Base.MIDDLEWARE_CLASSES
+    ) + Base.MIDDLEWARE
 
     INSTALLED_APPS = Base.INSTALLED_APPS + [
         'raven.contrib.django.raven_compat',

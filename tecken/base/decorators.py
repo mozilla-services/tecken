@@ -10,6 +10,7 @@ from django import http
 from django.conf import settings
 from django.utils.decorators import available_attrs
 from django.contrib.auth.decorators import permission_required
+from django.core.exceptions import PermissionDenied
 
 logger = logging.getLogger('tecken')
 
@@ -26,7 +27,7 @@ def api_login_required(view_func):
             )
             if not settings.ENABLE_TOKENS_AUTHENTICATION:  # pragma: no cover
                 error_msg += ' (ENABLE_TOKENS_AUTHENTICATION is False)'
-            return http.JsonResponse({'error': error_msg}, status=403)
+            raise PermissionDenied(error_msg)
         return view_func(request, *args, **kwargs)
 
     return inner
@@ -50,7 +51,7 @@ def api_superuser_required(view_func):
             error_msg = (
                 'Must be superuser to access this view.'
             )
-            return http.JsonResponse({'error': error_msg}, status=403)
+            raise PermissionDenied(error_msg)
         return view_func(request, *args, **kwargs)
 
     return inner

@@ -206,7 +206,9 @@ def test_tokens_create(client):
         'expires': '10',
     })
     assert response.status_code == 403
-    assert response.json()['errors']['permissions']
+    assert response.json()['error'] == (
+        'View All Symbols Uploads not a valid permission'
+    )
 
     response = client.post(url, {
         'permissions': str(permission.id),

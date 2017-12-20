@@ -13,6 +13,7 @@ from django import http
 from django.conf import settings
 from django.utils.encoding import force_bytes
 from django.core.cache import caches
+from django.core.exceptions import PermissionDenied
 
 from tecken.s3 import S3Bucket
 from . import forms
@@ -31,10 +32,7 @@ def caching_vs_boto(request):
         not settings.BENCHMARKING_ENABLED and
         not request.user.is_superuser
     ):
-        return http.JsonResponse(
-            {'error': 'benchmarking disabled'},
-            status=403,
-        )
+        raise PermissionDenied('benchmarking disabled')
 
     form = forms.CachingVsBotoForm(
         request.GET,
@@ -118,10 +116,7 @@ def caching_vs_boto(request):
 
 def timeouts(request):
     if not settings.BENCHMARKING_ENABLED:
-        return http.JsonResponse(
-            {'error': 'benchmarking disabled'},
-            status=403,
-        )
+        raise PermissionDenied('benchmarking disabled')
     sleeptime = int(request.GET.get('sleep', 10))
     if sleeptime > 1000:
         return http.HttpResponse('Max 1,000 seconds sleep\n', status=400)

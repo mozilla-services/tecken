@@ -21,6 +21,7 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_protect
 from django.db import connection
+from django.core.exceptions import PermissionDenied
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -165,13 +166,9 @@ def tokens(request):
             # Check that none of the sent permissions isn't possible
             for permission in form.cleaned_data['permissions']:
                 if permission not in possible_permissions:
-                    return http.JsonResponse({
-                        'errors': {
-                            'permissions': (
-                                f'{permission.name} not a valid permission'
-                            ),
-                        },
-                    }, status=403)
+                    raise PermissionDenied(
+                        f'{permission.name} not a valid permission'
+                    )
             expires_at = timezone.now() + datetime.timedelta(
                 days=form.cleaned_data['expires']
             )
@@ -519,9 +516,7 @@ def upload(request, id):
         obj.user == request.user or
         request.user.has_perm('upload.view_all_uploads')
     ):
-        return http.JsonResponse({
-            'error': 'Insufficient access to view this upload'
-        }, status=403)
+        raise PermissionDenied('Insufficient access to view this upload')
 
     def make_upload_dict(upload_obj):
         file_uploads_qs = FileUpload.objects.filter(upload=upload_obj)
@@ -718,9 +713,7 @@ def upload_file(request, id):
         (file_upload.upload and file_upload.upload.user == request.user) or
         request.user.has_perm('upload.view_all_uploads')
     ):
-        return http.JsonResponse({
-            'error': 'Insufficient access to view this file'
-        }, status=403)
+        raise PermissionDenied('Insufficient access to view this file')
 
     file_dict = {
         'id': file_upload.id,
