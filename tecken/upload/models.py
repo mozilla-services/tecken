@@ -21,7 +21,10 @@ class Upload(models.Model):
     symbols should be publicly available, others not.
     """
     # Who uploaded it
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
     # The filename it was called when uploaded as an archive
     filename = models.CharField(max_length=100)
     # The name of the bucket where it was placed temporarily
@@ -65,7 +68,7 @@ class FileUpload(models.Model):
     Each Upload is a .zip file containing other files. Each of those
     files are uploaded individually to the same bucket.
     """
-    upload = models.ForeignKey(Upload, null=True)
+    upload = models.ForeignKey(Upload, null=True, on_delete=models.SET_NULL)
     bucket_name = models.CharField(max_length=100)
     key = models.CharField(max_length=300)
     # True if this overwrote an existing key

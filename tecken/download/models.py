@@ -46,11 +46,18 @@ class MissingSymbol(models.Model):
 
 class MicrosoftDownload(models.Model):
     # Leverage this so we don't have to repeat the symbold, debugid, etc.
-    missing_symbol = models.ForeignKey(MissingSymbol)
+    missing_symbol = models.ForeignKey(
+        MissingSymbol,
+        on_delete=models.CASCADE,
+    )
     url = models.URLField(max_length=500)
     error = models.TextField(null=True)
     # Null in case it could never fully be turned into a file upload.
-    file_upload = models.ForeignKey(FileUpload, null=True)
+    file_upload = models.ForeignKey(
+        FileUpload,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
     # When created but turns out we already had it in the S3 destination.
     # Make this Null if it was never even attempted to upload.
     skipped = models.NullBooleanField()

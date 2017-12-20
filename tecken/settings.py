@@ -112,7 +112,6 @@ class Core(AWS, Configuration, Celery, S3):
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.middleware.common.CommonMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
         'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
         # Important that this comes after APITokenAuthenticationMiddleware
         'tecken.useradmin.middleware.NotBlockedInAuth0Middleware',

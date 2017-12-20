@@ -8,7 +8,7 @@ import os
 import pytest
 import mock
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 

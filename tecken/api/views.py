@@ -13,7 +13,7 @@ from django_redis import get_redis_connection
 from django import http
 from django import get_version
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.models import Permission, User, Group
 from django.db.models import Count, Q, Sum, Avg, F
 from django.db.models import Aggregate

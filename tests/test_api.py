@@ -8,7 +8,7 @@ import json
 import pytest
 
 from django.contrib.auth.models import User, Permission, Group
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.utils import timezone
 
 from tecken.tokens.models import Token
