@@ -17,6 +17,7 @@ from django.core.cache import cache
 from django.utils.encoding import force_bytes
 from django.db import OperationalError
 
+from tecken.base.utils import invalid_s3_key_name_characters
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
     set_request_debug,
@@ -100,6 +101,16 @@ def download_symbol(request, symbol, debugid, filename):
     if _ignore_symbol(symbol, debugid, filename):
         logger.debug(f'Ignoring symbol {symbol}/{debugid}/{filename}')
         response = http.HttpResponseNotFound('Symbol Not Found (and ignored)')
+        if request._request_debug:
+            response['Debug-Time'] = 0
+        return response
+
+    if invalid_s3_key_name_characters(symbol + filename):
+        logger.debug(f'Invalid character {symbol!r}/{debugid}/{filename!r}')
+        response = http.HttpResponseBadRequest(
+            'Symbol name lookup contains invalid characters and will never '
+            'be found.'
+        )
         if request._request_debug:
             response['Debug-Time'] = 0
         return response

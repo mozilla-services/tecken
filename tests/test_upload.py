@@ -32,6 +32,7 @@ from tecken.upload.utils import (
 _here = os.path.dirname(__file__)
 ZIP_FILE = os.path.join(_here, 'sample.zip')
 INVALID_ZIP_FILE = os.path.join(_here, 'invalid.zip')
+INVALID_CHARACTERS_ZIP_FILE = os.path.join(_here, 'invalid-characters.zip')
 ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, 'notazipdespiteitsname.zip')
 
 
@@ -1196,6 +1197,21 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         )
         assert response.status_code == 400
         error_msg = 'File is not a zip file'
+        assert response.json()['error'] == error_msg
+
+    # Now upload a file that contains folders and file names that contains
+    # invalid characters.
+    with open(INVALID_CHARACTERS_ZIP_FILE, 'rb') as f:
+        response = client.post(
+            url,
+            {'file.zip': f},
+            HTTP_AUTH_TOKEN=token.key,
+        )
+        assert response.status_code == 400
+        error_msg = (
+            "Invalid character in filename "
+            "'xpcfoo.dbg/A7D6F1BB18CD4CB48/p%eter.sym'"
+        )
         assert response.json()['error'] == error_msg
 
 

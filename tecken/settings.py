@@ -641,10 +641,10 @@ class Test(Localdev):
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )
 
-    SYMBOL_URLS = values.ListValue([
+    SYMBOL_URLS = [
         'https://s3.example.com/public/prefix/?access=public',
         'https://s3.example.com/private/prefix/',
-    ])
+    ]
 
     AUTHENTICATION_BACKENDS = (
         'django.contrib.auth.backends.ModelBackend',
