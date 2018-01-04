@@ -22,7 +22,7 @@ from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 
-from tecken.base.utils import filesizeformat
+from tecken.base.utils import filesizeformat, invalid_s3_key_name_characters
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
@@ -63,7 +63,14 @@ def check_symbols_archive_file_listing(file_listings):
         # and thus rejected.
         split = file_listing.name.split('/')
         if len(split) == 3:
-            # check that the middle part is only hex characters
+            # Check the symbol and the filename part of it to make sure
+            # it doesn't contain any, considered, invalid S3 characters
+            # when it'd become a key.
+            if invalid_s3_key_name_characters(split[0] + split[2]):
+                return (
+                    f'Invalid character in filename {file_listing.name!r}'
+                )
+            # Check that the middle part is only hex characters.
             if not _not_hex_characters.findall(split[1]):
                 continue
         elif len(split) == 1:

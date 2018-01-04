@@ -901,3 +901,66 @@ def test_store_missing_symbol_client_operationalerror(
         assert len(store_args) == 1
         assert len(task_arguments) == 1
         assert MissingSymbol.objects.all().count() == 1
+
+
+def test_client_with_bad_filenames(client, botomock, metricsmock):
+    reload_downloader('https://s3.example.com/private/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        return {
+            'Contents': []
+        }
+
+    with botomock(mock_api_call):
+        url = reverse('download:download_symbol', args=(
+            'xül.pdb',  # <-- note the extended ascii char
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym',
+        ))
+        response = client.get(url)
+        assert response.status_code == 400
+
+        url = reverse('download:download_symbol', args=(
+            'x%l.pdb',  # <-- note the %
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym',
+        ))
+        response = client.get(url)
+        assert response.status_code == 400
+
+        url = reverse('download:download_symbol', args=(
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul#.ex_',  # <-- note the #
+        ))
+        response = client.get(url)
+        assert response.status_code == 400
+
+        # There are many more characters that can cause a 400 response
+        # because the symbol or the filename contains, what's considered,
+        # invalid characters. But there are some that actually work
+        # that might be a bit surprising.
+        url = reverse('download:download_symbol', args=(
+            '汉.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym',
+        ))
+        response = client.get(url)
+        assert response.status_code == 404
+
+        url = reverse('download:download_symbol', args=(
+            'foo.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            '⚡️.sym',
+        ))
+        response = client.get(url)
+        assert response.status_code == 404
+
+        url = reverse('download:download_symbol', args=(
+            'space in the filename.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'bar.ex_',
+        ))
+        response = client.get(url)
+        assert response.status_code == 404
