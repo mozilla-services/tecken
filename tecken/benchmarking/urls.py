@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.conf.urls import url
+from django.urls import path
 
 from . import views
 
@@ -11,13 +11,13 @@ app_name = 'benchmarking'
 
 
 urlpatterns = [
-    url(
-        r'caching-vs-boto/$',
+    path(
+        'caching-vs-boto/',
         views.caching_vs_boto,
         name='caching_vs_boto'
     ),
-    url(
-        r'timeouts/$',
+    path(
+        'timeouts/',
         views.timeouts,
         name='timeouts'
     ),

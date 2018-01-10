@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.conf.urls import url
+from django.urls import path
 
 from . import views
 
@@ -17,73 +17,73 @@ them in your curl script, for example.
 """
 
 urlpatterns = [
-    url(
-        r'_auth/$',
+    path(
+        '_auth/',
         views.auth,
         name='auth'
     ),
-    url(
-        r'_stats/$',
+    path(
+        '_stats/',
         views.stats,
         name='stats'
     ),
-    url(
-        r'tokens/$',
+    path(
+        'tokens/',
         views.tokens,
         name='tokens'
     ),
-    url(
-        r'tokens/token/(?P<id>\d+)$',
+    path(
+        'tokens/token/<int:id>',
         views.delete_token,
         name='delete_token'
     ),
-    url(
-        r'uploads/$',
+    path(
+        'uploads/',
         views.uploads,
         name='uploads'
     ),
-    url(
-        r'uploads/files/$',
+    path(
+        'uploads/files/',
         views.upload_files,
         name='upload_files'
     ),
-    url(
-        r'uploads/files/file/(?P<id>\d+)$',
+    path(
+        'uploads/files/file/<int:id>',
         views.upload_file,
         name='upload_file'
     ),
-    url(
-        r'uploads/upload/(?P<id>\d+)$',
+    path(
+        'uploads/upload/<int:id>',
         views.upload,
         name='upload'
     ),
-    url(
-        r'_users/$',
+    path(
+        '_users/',
         views.users,
         name='users'
     ),
-    url(
-        r'_users/user/(?P<id>\d+)$',
+    path(
+        '_users/user/<int:id>',
         views.edit_user,
         name='edit_user'
     ),
-    url(
-        r'_settings/$',
+    path(
+        '_settings/',
         views.current_settings,
         name='current_settings'
     ),
-    url(
-        r'_versions/$',
+    path(
+        '_versions/',
         views.current_versions,
         name='current_versions'
     ),
-    url(
-        r'downloads/missing/$',
+    path(
+        'downloads/missing/',
         views.downloads_missing,
         name='downloads_missing'
     ),
-    url(
-        r'downloads/microsoft/$',
+    path(
+        'downloads/microsoft/',
         views.downloads_microsoft,
         name='downloads_microsoft'
     ),
