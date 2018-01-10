@@ -312,6 +312,7 @@ def test_client_404(client, botomock, clear_redis_store):
         assert response.status_code == 404
 
 
+@pytest.mark.django_db
 def test_client_404_logged(client, botomock, clear_redis_store, settings):
     reload_downloaders('https://s3.example.com/private/prefix/')
 
@@ -922,7 +923,7 @@ def test_store_missing_symbol_client_operationalerror(
     make sure the MissingSymbol record gets created.
     """
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -960,7 +961,7 @@ def test_store_missing_symbol_client_operationalerror(
 
 
 def test_client_with_bad_filenames(client, botomock, metricsmock):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
