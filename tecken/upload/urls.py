@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.conf.urls import url
+from django.urls import path
 
 from . import views
 
@@ -10,8 +10,8 @@ from . import views
 app_name = 'upload'
 
 urlpatterns = [
-    url(
-        r'^$',
+    path(
+        '',
         views.upload_archive,
         name='upload_archive'
     ),

@@ -10,7 +10,7 @@ from markus import TIMING
 from django.core.management.base import CommandError
 from django.contrib.auth.models import User
 from django.core.management import call_command
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 
 @pytest.mark.django_db
@@ -19,7 +19,6 @@ def test_superuser_command():
     call_command(
         'superuser',
         'foo@example.com',
-        interactive=False,
         stdout=stdout,
     )
     output = stdout.getvalue()
@@ -32,7 +31,6 @@ def test_superuser_command():
     call_command(
         'superuser',
         'foo@example.com',
-        interactive=False,
         stdout=stdout,
     )
     output = stdout.getvalue()
@@ -45,7 +43,6 @@ def test_superuser_command():
         call_command(
             'superuser',
             'gibberish',
-            interactive=False,
             stdout=stdout,
         )
 
@@ -69,7 +66,6 @@ def test_is_blocked_in_auth0_command(requestsmock):
     call_command(
         'is-blocked-in-auth0',
         'not@example.com',
-        interactive=False,
         stdout=stdout,
     )
     output = stdout.getvalue()
@@ -86,7 +82,6 @@ def test_is_blocked_in_auth0_command(requestsmock):
     call_command(
         'is-blocked-in-auth0',
         'blocked@example.com',
-        interactive=False,
         stdout=stdout,
     )
     output = stdout.getvalue()
@@ -102,7 +97,6 @@ def test_is_blocked_in_auth0_command(requestsmock):
     call_command(
         'is-blocked-in-auth0',
         'notfound@example.com',
-        interactive=False,
         stdout=stdout,
     )
     output = stdout.getvalue()
@@ -113,7 +107,6 @@ def test_is_blocked_in_auth0_command(requestsmock):
         call_command(
             'is-blocked-in-auth0',
             'gibberish',
-            interactive=False,
             stdout=stdout,
         )
 

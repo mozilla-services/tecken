@@ -5,7 +5,7 @@
 import requests
 from markus import INCR, GAUGE
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.symbolicate import views

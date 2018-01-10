@@ -11,7 +11,7 @@ import pytest
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
 

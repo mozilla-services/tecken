@@ -534,3 +534,20 @@ formatted. The error message will explain what files need attention and
 how to just format them all right now.
 
 .. _`Prettier`: https://prettier.io/
+
+
+Python warnings
+===============
+
+The best way to get **all** Python warnings out on ``stdout`` is to run
+Django with the ``PYTHONWARNINGS`` environment variable.
+
+.. code-block:: shell
+
+    $ docker-compose run --service-ports --user 0  web bash
+
+Then when you're in bash of the web container:
+
+.. code-block:: shell
+
+    # PYTHONWARNINGS=d ./manage.py runserver 0.0.0.0:8000

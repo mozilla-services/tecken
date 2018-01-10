@@ -15,7 +15,7 @@ from botocore.exceptions import ClientError
 from markus import INCR
 
 from django.utils import timezone
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import OperationalError
 
 from tecken.base.symboldownloader import SymbolDownloader

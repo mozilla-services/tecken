@@ -22,7 +22,10 @@ def get_future():
 
 
 class Token(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
     key = models.CharField(max_length=32, default=make_key)
     expires_at = models.DateTimeField(default=get_future)
     permissions = models.ManyToManyField(Permission)

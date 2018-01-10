@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.conf.urls import include, url
+from django.urls import register_converter, path, include
 
 from . import views
 
@@ -14,37 +14,41 @@ handler403 = 'tecken.views.handler403'
 handler404 = 'tecken.views.handler404'
 
 
+class FrontendRoutesPrefixConverter:
+    regex = r'users|tokens|help|uploads|downloads|index\.html'
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return value
+
+
+register_converter(FrontendRoutesPrefixConverter, 'frontendroutes')
+
+
 urlpatterns = [
-    url(r'^$', views.dashboard, name='dashboard'),
-    url(r'^__task_tester__$', views.task_tester, name='task_tester'),
-    url(
-        r'symbolicate/',
+    path('', views.dashboard, name='dashboard'),
+    path('__task_tester__', views.task_tester, name='task_tester'),
+    path(
+        'symbolicate/',
         include('tecken.symbolicate.urls', namespace='symbolicate')
     ),
-    url(r'^oidc/', include('mozilla_django_oidc.urls')),
-    url(
-        r'upload/',
-        include('tecken.upload.urls', namespace='upload')
-    ),
-    url(
-        r'api/',
-        include('tecken.api.urls', namespace='api')
-    ),
-    url(
-        r'__benchmarking__/',
+    path('oidc/', include('mozilla_django_oidc.urls')),
+    path('upload/', include('tecken.upload.urls', namespace='upload')),
+    path('api/', include('tecken.api.urls', namespace='api')),
+    path(
+        '__benchmarking__/',
         include('tecken.benchmarking.urls', namespace='benchmarking')
     ),
-    url(
-        r'',
-        include('tecken.download.urls', namespace='download')
-    ),
-    url(
-        r'^contribute\.json$',
+    path('', include('tecken.download.urls', namespace='download')),
+    path(
+        'contribute.json',
         views.contribute_json,
         name='contribute_json'
     ),
-    url(
-        r'(users|tokens|help|uploads|downloads|index\.html)',
+    path(
+        '<frontendroutes:path>',
         views.frontend_index_html,
         name='frontend_index_html'
     ),
