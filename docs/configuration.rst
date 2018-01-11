@@ -149,7 +149,6 @@ all files within the uploaded ``.zip`` gets uploaded to a bucket called
           configuration is best moved to user land. That way superusers can
           decided about these kinds of exceptions.
 
-
 Upload By Download
 ------------------
 
@@ -167,6 +166,30 @@ Note that, if you decide to add another domain, if requests to that domain
 trigger redirects to *another* domain you have to add that domain too.
 For example, if you have a ``mybigsymbolzips.example.com`` that redirects to
 ``cloudfront.amazonaws.net`` you need to add both.
+
+Try Builds
+----------
+
+Try build symbols are symbols that come from builds with a much more
+relaxed access policy. That's why it's important that these kinds of
+symbols don't override the non-Try build symbols. Also, the nature of
+them is much more short-lived and when stored in S3 they should have
+a much shorter expiration time than all other symbols.
+
+The configuration key to set is ``DJANGO_UPLOAD_TRY_SYMBOLS_URL``
+and it works very similar to ``DJANGO_UPLOAD_DEFAULT_URL``.
+
+It's blank (aka. unset) by default, and if not explicitly set
+it becomes the same as ``DJANGO_UPLOAD_DEFAULT_URL`` but with the prefix
+``try`` after the bucket name and before anything else.
+
+So if ``DJANGO_UPLOAD_TRY_SYMBOLS_URL`` isn't set and
+``DJANGO_UPLOAD_DEFAULT_URL`` is ``http://s3.example.com/bucket/version0``
+then ``DJANGO_UPLOAD_TRY_SYMBOLS_URL`` "becomes"
+``http://s3.example.com/bucket/try/version0``.
+
+If the URL points to a S3 bucket that doesn't already exist, you have to
+manually create the S3 bucket first.
 
 PostgreSQL
 ==========

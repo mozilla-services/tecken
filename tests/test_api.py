@@ -194,7 +194,7 @@ def test_tokens_create(client):
     permission = Permission.objects.get(codename='upload_symbols')
     user.user_permissions.add(permission)
     response = client.post(url, {
-        'permissions': str(permission.id),
+        'permissions': f'{permission.id}',
         'expires': 'notaninteger',
     })
     assert response.status_code == 400
@@ -202,7 +202,7 @@ def test_tokens_create(client):
 
     not_your_permission = Permission.objects.get(codename='view_all_uploads')
     response = client.post(url, {
-        'permissions': str(not_your_permission.id),
+        'permissions': f'{not_your_permission.id}',
         'expires': '10',
     })
     assert response.status_code == 403
@@ -211,7 +211,7 @@ def test_tokens_create(client):
     )
 
     response = client.post(url, {
-        'permissions': str(permission.id),
+        'permissions': f'{permission.id}',
         'expires': '10',
         'notes': 'Hey man!  ',
     })
@@ -224,6 +224,29 @@ def test_tokens_create(client):
     )
     assert epsilon < 1
     assert permission in token.permissions.all()
+
+
+@pytest.mark.django_db
+def test_tokens_create_bad_permissions_combo(client):
+    url = reverse('api:tokens')
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    permission0 = Permission.objects.get(codename='manage_tokens')
+    user.user_permissions.add(permission0)
+    permission1 = Permission.objects.get(codename='upload_try_symbols')
+    user.user_permissions.add(permission1)
+    permission2 = Permission.objects.get(codename='upload_symbols')
+    user.user_permissions.add(permission2)
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.post(url, {
+        'permissions': f'{permission1.id},{permission2.id}',
+        'expires': '10',
+    })
+    assert response.status_code == 400
+    errors = response.json()['errors']
+    assert errors == {'permissions': ['Invalid combination of permissions']}
 
 
 @pytest.mark.django_db
@@ -1480,7 +1503,7 @@ def test_file_upload(client):
     file_upload = FileUpload.objects.create(
         upload=upload,
         size=1234,
-        key='foo.sym',
+        key='foo.pdb/deadbeaf123/foo.sym',
     )
     url = reverse('api:upload_file', args=(file_upload.id,))
     response = client.get(url)
@@ -1496,13 +1519,39 @@ def test_file_upload(client):
     data = response.json()['file']
     assert data['upload']['user']['email'] == user.email
     assert not data['microsoft_download']
+    assert data['url'] == '/foo.pdb/deadbeaf123/foo.sym'
+
+
+@pytest.mark.django_db
+def test_file_upload_try_upload(client):
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    upload = Upload.objects.create(
+        user=user,
+        size=123456,
+        try_symbols=True,
+    )
+    # Also, let's pretend there's at least one file upload
+    file_upload = FileUpload.objects.create(
+        upload=upload,
+        size=1234,
+        key='foo.pdb/deadbeaf123/foo.sym',
+    )
+    url = reverse('api:upload_file', args=(file_upload.id,))
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()['file']
+    assert data['url'] == '/foo.pdb/deadbeaf123/foo.sym?try'
 
 
 @pytest.mark.django_db
 def test_file_upload_microsoft_download(client):
     file_upload = FileUpload.objects.create(
         size=1234,
-        key='foo.sym',
+        key='foo.pdb/deadbeaf123/foo.sym',
         microsoft_download=True,
     )
 

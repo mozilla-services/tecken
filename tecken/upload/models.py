@@ -42,6 +42,8 @@ class Upload(models.Model):
     content_hash = models.CharField(null=True, max_length=32)
     # If the upload was by a download URL
     download_url = models.URLField(max_length=500, null=True)
+    # If the uploaded symbols come from a Try build.
+    try_symbols = models.BooleanField(default=False)
     # If the upload by download URL triggered 1 or more redirects, we
     # record that trail here.
     redirect_urls = ArrayField(models.URLField(max_length=500), null=True)
@@ -51,6 +53,7 @@ class Upload(models.Model):
     class Meta:
         permissions = (
             ('upload_symbols', 'Upload Symbols Files'),
+            ('upload_try_symbols', 'Upload Try Symbols Files'),
             ('view_all_uploads', 'View All Symbols Uploads'),
         )
 

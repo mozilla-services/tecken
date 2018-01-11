@@ -551,3 +551,23 @@ Then when you're in bash of the web container:
 .. code-block:: shell
 
     # PYTHONWARNINGS=d ./manage.py runserver 0.0.0.0:8000
+
+Writing Documentation Faster
+============================
+
+When you're actively editing (these!) ``.rst`` files you might want to
+run ``make docs`` to generate a local ``docs/_build/html/*.html`` page
+and open that locally in a browser to see that it looks right.
+
+The problem with that is that it's a bit slow to start a Docker container
+afresh every time. Instead, to build and build and build more rapidly do
+this:
+
+.. code-block:: shell
+
+    $ docker-compose run --user 0 web bash
+    # ./bin/build_docs.sh
+
+Now, it will install all the necessary Python dependencies only the first
+time. Any time you make a change, just run that ``./bin/build_docs.sh``
+command again.

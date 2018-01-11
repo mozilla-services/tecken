@@ -8,9 +8,12 @@ from functools import wraps
 
 from django import http
 from django.conf import settings
-from django.utils.decorators import available_attrs
-from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import PermissionDenied
+from django.utils.decorators import available_attrs
+from django.contrib.auth.decorators import (
+    permission_required,
+    user_passes_test,
+)
 
 logger = logging.getLogger('tecken')
 
@@ -38,6 +41,23 @@ def api_permission_required(perm):
     that forces the `raise_exception` to be set to True.
     """
     return permission_required(perm, raise_exception=True)
+
+
+def api_any_permission_required(*perms):
+    """Allow the user through if the user has any of the provided
+    permissions. If none, raise a PermissionDenied error.
+
+    Also, unlike the django.contrib.auth.decorators.permission_required,
+    in this one we hardcode it to raise PermissionDenied if the
+    any-permission check fails.
+    """
+    def check_perms(user):
+        # First check if the user has the permission (even anon users)
+        for perm in perms:
+            if user.has_perm(perm):
+                return True
+        raise PermissionDenied
+    return user_passes_test(check_perms)
 
 
 def api_superuser_required(view_func):

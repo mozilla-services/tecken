@@ -84,12 +84,12 @@ def test_iter_lines():
 
 def test_has_public(requestsmock):
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=''
     )
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xxx.pdb/'
+        'https://s3.example.com/public/prefix/v0/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
@@ -97,7 +97,7 @@ def test_has_public(requestsmock):
     urls = (
         'https://s3.example.com/public/prefix/?access=public',
     )
-    downloader = SymbolDownloader(urls)
+    downloader = SymbolDownloader(urls, file_prefix='v0')
     assert downloader.has_symbol(
         'xul.pdb',
         '44E4EC8C2F41492B9369D6B9A059577C2',
@@ -169,6 +169,7 @@ def test_has_private_caching_and_invalidation(botomock):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
+        print(api_params['Prefix'])
         mock_calls.append(api_params['Prefix'])
         return {
             'Contents': [{
@@ -298,12 +299,12 @@ def test_has_private_without_prefix(botomock):
 
 def test_get_url_public(requestsmock):
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=''
     )
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xxx.pdb/'
+        'https://s3.example.com/public/prefix/v0/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
@@ -318,7 +319,7 @@ def test_get_url_public(requestsmock):
         'xul.sym'
     )
     assert url == (
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
     )
     url = downloader.get_symbol_url(
@@ -355,7 +356,7 @@ def test_get_url_private(botomock):
         # The bucket gets put in the top-domain.
         assert url.startswith('https://s3.example.com/')
         assert (
-            '/private/prefix/xul.pdb/'
+            '/private/prefix/v0/xul.pdb/'
             '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym?'
         ) in url
         assert 'Expires=' in url
@@ -384,16 +385,16 @@ def test_public_default_file_prefix(requestsmock, settings):
     However, we don't want to lose the flexibility to actually override
     it on a *per URL* basis.
     """
-    settings.SYMBOL_FILE_PREFIX = 'myprfx'
+    # settings.SYMBOL_FILE_PREFIX = 'myprfx'
 
     requestsmock.head(
-        'https://s3.example.com/public/start/xxx.pdb/'
+        'https://s3.example.com/public/start/myprfx/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
     )
     requestsmock.head(
-        'https://s3.example.com/also-public/prrffxx/xxx.pdb/'
+        'https://s3.example.com/also-public/prrffxx/myprfx/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
@@ -412,7 +413,7 @@ def test_public_default_file_prefix(requestsmock, settings):
         # No prefix!
         'https://s3.example.com/special?access=public',
     )
-    downloader = SymbolDownloader(urls)
+    downloader = SymbolDownloader(urls, file_prefix='myprfx')
     assert not downloader.has_symbol(
         'xxx.pdb',
         '44E4EC8C2F41492B9369D6B9A059577C2',
@@ -420,13 +421,13 @@ def test_public_default_file_prefix(requestsmock, settings):
     )
 
     requestsmock.get(
-        'https://s3.example.com/public/start/xxx.pdb/'
+        'https://s3.example.com/public/start/myprfx/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
     )
     requestsmock.get(
-        'https://s3.example.com/also-public/prrffxx/xxx.pdb/'
+        'https://s3.example.com/also-public/prrffxx/myprfx/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
@@ -451,8 +452,6 @@ def test_public_default_file_prefix(requestsmock, settings):
 def test_private_default_file_prefix(botomock, settings):
     """See doc string in test_public_default_file_prefix
     """
-    settings.SYMBOL_FILE_PREFIX = 'myprfx'
-
     all_mock_calls = []
 
     def mock_api_call(self, operation_name, api_params):
@@ -479,7 +478,7 @@ def test_private_default_file_prefix(botomock, settings):
         # No prefix
         'https://s3.example.com/some-bucket',
     )
-    downloader = SymbolDownloader(urls)
+    downloader = SymbolDownloader(urls, file_prefix='myprfx')
     with botomock(mock_api_call):
         assert not downloader.has_symbol(
             'xxx.pdb',
@@ -488,8 +487,8 @@ def test_private_default_file_prefix(botomock, settings):
         )
 
         assert len(all_mock_calls) == 3
-        assert all_mock_calls[0].startswith('borje/xxx.pdb')
-        assert all_mock_calls[1].startswith('prrffxx/xxx.pdb')
+        assert all_mock_calls[0].startswith('borje/myprfx/xxx.pdb')
+        assert all_mock_calls[1].startswith('prrffxx/myprfx/xxx.pdb')
         assert all_mock_calls[2].startswith('myprfx/xxx.pdb')
 
         # reset the mutable recorder
@@ -504,8 +503,8 @@ def test_private_default_file_prefix(botomock, settings):
             next(stream)
 
         assert len(all_mock_calls) == 3
-        assert all_mock_calls[0].startswith('borje/xxx.pdb')
-        assert all_mock_calls[1].startswith('prrffxx/xxx.pdb')
+        assert all_mock_calls[0].startswith('borje/myprfx/xxx.pdb')
+        assert all_mock_calls[1].startswith('prrffxx/myprfx/xxx.pdb')
         assert all_mock_calls[2].startswith('myprfx/xxx.pdb')
 
 
@@ -533,7 +532,7 @@ def test_get_url_private_dotted_name(botomock):
             'xul.sym'
         )
         assert (
-            '/com.example.private/prefix/xul.pdb/'
+            '/com.example.private/prefix/v0/xul.pdb/'
             '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym?'
         ) in url
 
@@ -549,12 +548,12 @@ def test_get_url_private_dotted_name(botomock):
 
 def test_get_stream_public(requestsmock):
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         content=b'LINE ONE\nLINE TWO\n'
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xxx.pdb/'
+        'https://s3.example.com/public/prefix/v0/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         content=b'Page Not Found',
         status_code=404,
@@ -570,7 +569,7 @@ def test_get_stream_public(requestsmock):
     )
     url = next(stream)
     assert url == (
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
     )
     lines = list(stream)
@@ -615,7 +614,7 @@ def test_get_stream_private(botomock):
         bucket_name, key = next(stream)
         assert bucket_name == 'private'
         assert key == (
-            'prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            'prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         lines = list(stream)
         assert lines == [
@@ -663,7 +662,7 @@ def test_get_stream_gzipped(botomock):
         bucket_name, key = next(stream)
         assert bucket_name == 'private'
         assert key == (
-            'prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            'prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         lines = list(stream)
         assert lines == [
@@ -699,7 +698,7 @@ def test_get_stream_gzipped_but_not_gzipped(botomock):
         bucket_name, key = next(stream)
         assert bucket_name == 'private'
         assert key == (
-            'prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            'prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         # But when you start to stream it will realize that the file is not
         # actually gzipped and SymbolDownloader will automatically just skip
@@ -746,12 +745,12 @@ def test_multiple_urls_public_then_private(requestsmock, botomock):
         }
 
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=''
     )
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xxx.pdb/'
+        'https://s3.example.com/public/prefix/v0/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
@@ -790,12 +789,12 @@ def test_multiple_urls_private_then_public(requestsmock, botomock):
         }
 
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=''
     )
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xxx.pdb/'
+        'https://s3.example.com/public/prefix/v0/xxx.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xxx.sym',
         text='Page Not Found',
         status_code=404,
@@ -821,7 +820,7 @@ def test_multiple_urls_private_then_public(requestsmock, botomock):
 
 def test_has_public_case_insensitive_debugid(requestsmock):
     requestsmock.head(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=''
     )
@@ -867,7 +866,7 @@ def test_get_stream_public_content_encode_error(requestsmock):
             raise ContentDecodingError('something terrible!')
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         raw=BreakingStreamHTTPResponse(
             status=200

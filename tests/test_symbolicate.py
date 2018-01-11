@@ -93,12 +93,12 @@ def test_symbolicate_json_happy_path_django_view(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
@@ -165,12 +165,12 @@ def test_symbolicate_json_one_cache_lookup(clear_redis_store, requestsmock):
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
@@ -203,12 +203,12 @@ def test_symbolicate_json_bad_module_indexes(clear_redis_store, requestsmock):
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
@@ -234,12 +234,12 @@ def test_symbolicate_json_bad_module_offset(clear_redis_store, requestsmock):
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
@@ -269,12 +269,12 @@ def test_symbolicate_json_happy_path_with_debug(
     )
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
     )
@@ -346,12 +346,12 @@ def test_symbolicate_json_one_symbol_not_found(
     )
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text='Not found',
         status_code=404
@@ -382,12 +382,12 @@ def test_symbolicate_json_one_symbol_not_found_with_debug(
     )
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text='Not found',
         status_code=404
@@ -415,12 +415,12 @@ def test_symbolicate_json_one_symbol_empty(
     )
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text=''
     )
@@ -465,12 +465,12 @@ def test_symbolicate_json_one_symbol_500_error(
     )
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         text='Interval Server Error',
         status_code=500
@@ -494,12 +494,12 @@ def test_symbolicate_json_one_symbol_sslerror(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         exc=requests.exceptions.SSLError
     )
@@ -522,12 +522,12 @@ def test_symbolicate_json_one_symbol_readtimeout(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         exc=requests.exceptions.ReadTimeout
     )
@@ -550,12 +550,12 @@ def test_symbolicate_json_one_symbol_connectionerror(
         'https://s3.example.com/public/prefix/?access=public',
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/xul.pdb/'
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
         '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
         text=SAMPLE_SYMBOL_CONTENT['xul.sym']
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/wntdll.pdb/'
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
         'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
         exc=requests.exceptions.ConnectionError
     )

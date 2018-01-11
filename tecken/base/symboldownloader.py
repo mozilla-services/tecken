@@ -169,16 +169,17 @@ class SymbolDownloader:
         requests.exceptions.ConnectionError,
     )
 
-    def __init__(self, urls):
+    def __init__(self, urls, file_prefix=settings.SYMBOL_FILE_PREFIX):
         self.urls = urls
         self._sources = None
+        self.file_prefix = file_prefix
 
     def _get_sources(self):
         for url in self.urls:
             # The URL is expected to have the bucket name as the first
             # part of the pathname.
             # In the future we might expand to a more elaborate scheme.
-            yield S3Bucket(url)
+            yield S3Bucket(url, file_prefix=self.file_prefix)
 
     @property
     def sources(self):
@@ -191,7 +192,8 @@ class SymbolDownloader:
         # used when the key was cached by exists_in_source() we have
         # to iterate over the source.
         for source in self.sources:
-            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            prefix = source.prefix
+            assert prefix
             if source.private:
                 # At some point we ran
                 # exists_in_source(source, key)
@@ -234,7 +236,7 @@ class SymbolDownloader:
         was returned as an indication that the symbol actually exists."""
         for source in self.sources:
 
-            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            prefix = source.prefix
             assert prefix
 
             if source.private:
@@ -277,7 +279,7 @@ class SymbolDownloader:
     def _get_stream(self, symbol, debugid, filename):
         for source in self.sources:
 
-            prefix = source.prefix or settings.SYMBOL_FILE_PREFIX
+            prefix = source.prefix
             assert prefix
 
             if source.private:

@@ -90,6 +90,7 @@ def auth(request):
         permissions = Permission.objects.filter(codename__in=(
             'view_all_uploads',
             'upload_symbols',
+            'upload_try_symbols',
             'manage_tokens',
         ))
         user_permissions = request.user.get_all_permissions()
@@ -148,6 +149,7 @@ def tokens(request):
 
     all_permissions = (
         Permission.objects.get(codename='upload_symbols'),
+        Permission.objects.get(codename='upload_try_symbols'),
         Permission.objects.get(codename='view_all_uploads'),
         Permission.objects.get(codename='manage_tokens'),
     )
@@ -434,6 +436,7 @@ def uploads(request):
             'bucket_endpoint_url': upload.bucket_endpoint_url,
             'skipped_keys': upload.skipped_keys or [],
             'ignored_keys': upload.ignored_keys or [],
+            'try_symbols': upload.try_symbols,
             'download_url': upload.download_url,
             'redirect_urls': upload.redirect_urls or [],
             'completed_at': upload.completed_at,
@@ -546,6 +549,7 @@ def upload(request, id):
             'bucket_endpoint_url': upload_obj.bucket_endpoint_url,
             'skipped_keys': upload_obj.skipped_keys or [],
             'ignored_keys': upload_obj.ignored_keys or [],
+            'try_symbols': upload_obj.try_symbols,
             'download_url': upload_obj.download_url,
             'redirect_urls': upload_obj.redirect_urls or [],
             'completed_at': upload_obj.completed_at,
@@ -681,6 +685,7 @@ def upload_files(request):
                 upload = uploads[upload_id]
                 uploads_cache[upload_id] = {
                     'id': upload.id,
+                    'try_symbols': upload.try_symbols,
                     'user': {
                         'id': upload.user.id,
                         'email': upload.user.email,
@@ -715,6 +720,11 @@ def upload_file(request, id):
     ):
         raise PermissionDenied('Insufficient access to view this file')
 
+    symbol, debugid, filename = file_upload.key.split('/')[-3:]
+    url = reverse('download:download_symbol', args=(symbol, debugid, filename))
+    if file_upload.upload and file_upload.upload.try_symbols:
+        url += '?try'
+
     file_dict = {
         'id': file_upload.id,
         'bucket_name': file_upload.bucket_name,
@@ -722,6 +732,7 @@ def upload_file(request, id):
         'update': file_upload.update,
         'compressed': file_upload.compressed,
         'size': file_upload.size,
+        'url': url,
         'completed_at': file_upload.completed_at,
         'created_at': file_upload.created_at,
         'upload': None,
@@ -908,6 +919,10 @@ def current_settings(request):
     context['settings'].append({
         'key': 'UPLOAD_DEFAULT_URL',
         'value': clean_url(settings.UPLOAD_DEFAULT_URL)
+    })
+    context['settings'].append({
+        'key': 'UPLOAD_TRY_SYMBOLS_URL',
+        'value': clean_url(settings.UPLOAD_TRY_SYMBOLS_URL)
     })
     context['settings'].append({
         'key': 'SYMBOL_URLS',

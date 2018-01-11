@@ -25,7 +25,7 @@ from django.views.decorators.csrf import csrf_exempt
 from tecken.base.utils import filesizeformat, invalid_s3_key_name_characters
 from tecken.base.decorators import (
     api_login_required,
-    api_permission_required,
+    api_any_permission_required,
     api_require_POST,
     make_tempdir,
 )
@@ -84,12 +84,33 @@ def check_symbols_archive_file_listing(file_listings):
         )
 
 
-def get_bucket_info(user):
+def get_bucket_info(user, try_symbols=None):
     """return an object that has 'bucket', 'endpoint_url',
     'region'.
     Only 'bucket' is mandatory in the response object.
     """
-    url = settings.UPLOAD_DEFAULT_URL
+
+    if try_symbols is None:
+        # If it wasn't explicitly passed, we need to figure this out by
+        # looking at the user who uploads.
+        # Namely, we're going to see if the user has the permission
+        # 'upload.upload_symbols'. If the user does, it means the user intends
+        # to *not* upload Try build symbols.
+        # This is based on the axiom that, if the upload is made with an
+        # API token, that API token can't have *both* the
+        # 'upload.upload_symbols' permission *and* the
+        # 'upload.upload_try_symbols' permission.
+        # If the user uploads via the web the user has a choice to check
+        # a checkbox that is off by default. If doing so, the user isn't
+        # using an API token, so the user might have BOTH permissions.
+        # Then the default falls on this NOT being a Try upload.
+        try_symbols = not user.has_perm('upload.upload_symbols')
+
+    if try_symbols:
+        url = settings.UPLOAD_TRY_SYMBOLS_URL
+    else:
+        url = settings.UPLOAD_DEFAULT_URL
+
     exceptions = settings.UPLOAD_URL_EXCEPTIONS
     if user.email.lower() in exceptions:
         # easy
@@ -108,7 +129,7 @@ def get_bucket_info(user):
     if exception:
         url = exception
 
-    return S3Bucket(url)
+    return S3Bucket(url, try_symbols=try_symbols)
 
 
 def _ignore_member_file(filename):
@@ -127,7 +148,10 @@ def _ignore_member_file(filename):
 @api_require_POST
 @csrf_exempt
 @api_login_required
-@api_permission_required('upload.upload_symbols')
+@api_any_permission_required(
+    'upload.upload_symbols',
+    'upload.upload_try_symbols',
+)
 @make_tempdir(settings.UPLOAD_TEMPDIR_PREFIX)
 def upload_archive(request, tempdir):
     try:
@@ -217,7 +241,19 @@ def upload_archive(request, tempdir):
     if error:
         return http.JsonResponse({'error': error.strip()}, status=400)
 
-    bucket_info = get_bucket_info(request.user)
+    # If you pass an extract argument, independent of value, with key 'try'
+    # then we definitely knows this is a Try symbols upload.
+    is_try_upload = request.POST.get('try')
+
+    bucket_info = get_bucket_info(request.user, try_symbols=is_try_upload)
+    if is_try_upload is None:
+        # If 'is_try_upload' isn't immediately true by looking at the
+        # request.POST parameters, the get_bucket_info() function can
+        # figure it out too.
+        is_try_upload = bucket_info.try_symbols
+    else:
+        # In case it's passed in as a string
+        is_try_upload = bool(is_try_upload)
     client = bucket_info.get_s3_client(
         read_timeout=settings.S3_PUT_READ_TIMEOUT,
         connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
@@ -251,6 +287,12 @@ def upload_archive(request, tempdir):
         else:  # pragma: no cover
             raise
 
+    # Every key has a prefix. If the S3Bucket instance has it's own prefix
+    # prefix that first :)
+    prefix = settings.SYMBOL_FILE_PREFIX
+    if bucket_info.prefix:
+        prefix = f'{bucket_info.prefix}/{prefix}'
+
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
 
@@ -276,6 +318,7 @@ def upload_archive(request, tempdir):
         download_url=url,
         redirect_urls=redirect_urls,
         content_hash=content_hash,
+        try_symbols=is_try_upload,
     )
 
     ignored_keys = []
@@ -296,7 +339,7 @@ def upload_archive(request, tempdir):
                 ignored_keys.append(member.name)
                 continue
             key_name = os.path.join(
-                settings.SYMBOL_FILE_PREFIX, member.name
+                prefix, member.name
             )
             future_to_key[
                 executor.submit(
@@ -344,6 +387,7 @@ def _serialize_upload(upload):
         'bucket': upload.bucket_name,
         'region': upload.bucket_region,
         'download_url': upload.download_url,
+        'try_symbols': upload.try_symbols,
         'redirect_urls': upload.redirect_urls or [],
         'completed_at': upload.completed_at,
         'created_at': upload.created_at,

@@ -38,7 +38,7 @@ PD__FILE = os.path.join(_here, 'ksproxy.pd_')
 FAKE_BROKEN_DUMP_SYMS = os.path.join(_here, 'broken_dump_syms.sh')
 
 
-def reload_downloader(urls):
+def reload_downloaders(urls, try_downloader=None):
     """Because the tecken.download.views module has a global instance
     of SymbolDownloader created at start-up, it's impossible to easily
     change the URL if you want to test clients with a different URL.
@@ -46,11 +46,13 @@ def reload_downloader(urls):
     """
     if isinstance(urls, str):
         urls = tuple([urls])
-    views.downloader = SymbolDownloader(urls)
+    views.normal_downloader = SymbolDownloader(urls)
+    if try_downloader:
+        views.try_downloader = SymbolDownloader([try_downloader])
 
 
 def test_client_happy_path(client, botomock, metricsmock):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -72,7 +74,8 @@ def test_client_happy_path(client, botomock, metricsmock):
         assert parsed.netloc == 's3.example.com'
         # the pre-signed URL will have the bucket in the path
         assert parsed.path == (
-            '/private/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            '/private/prefix/v0/'
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         assert 'Signature=' in parsed.query
         assert 'Expires=' in parsed.query
@@ -86,8 +89,61 @@ def test_client_happy_path(client, botomock, metricsmock):
         assert response['Access-Control-Allow-Methods'] == 'GET'
 
 
+@pytest.mark.django_db
+def test_client_try_download(client, botomock, settings):
+    """Suppose there's a file that doesn't exist in any of the
+    settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
+    then to reach that file you need to use ?try on the URL.
+    """
+    reload_downloaders(
+        'https://s3.example.com/private',
+        try_downloader='https://s3.example.com/private/trying'
+    )
+
+    mock_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        mock_calls.append(api_params)
+        if api_params['Prefix'].startswith('trying/v0/'):
+            # Yeah, we have it
+            return {
+                'Contents': [{
+                    'Key': api_params['Prefix'],
+                }]
+            }
+        elif api_params['Prefix'].startswith('v0'):
+            # Pretned nothing was returned. Ie. 404
+            return {}
+        else:
+            raise NotImplementedError(api_params['Prefix'])
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url)
+        assert response.status_code == 404
+        assert len(mock_calls) == 1
+
+        response = client.get(url, {'try': True})
+        assert response.status_code == 302
+        assert len(mock_calls) == 2
+
+        # Do it again, to make sure the caches work in our favor
+        response = client.get(url)
+        assert response.status_code == 404
+        assert len(mock_calls) == 2
+
+        response = client.get(url, {'try': True})
+        assert response.status_code == 302
+        assert len(mock_calls) == 2
+
+
 def test_client_with_debug(client, botomock, metricsmock):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -117,7 +173,8 @@ def test_client_with_debug(client, botomock, metricsmock):
         assert parsed.netloc == 's3.example.com'
         # the pre-signed URL will have the bucket in the path
         assert parsed.path == (
-            '/private/prefix/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+            '/private/prefix/v0/'
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
         )
         assert 'Signature=' in parsed.query
         assert 'Expires=' in parsed.query
@@ -167,7 +224,7 @@ def test_client_with_ignorable_file_extensions(client, botomock):
 
 
 def test_client_with_debug_with_cache(client, botomock, metricsmock):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     mock_api_calls = []
 
@@ -202,7 +259,7 @@ def test_client_with_debug_with_cache(client, botomock, metricsmock):
 
 
 def test_client_with_cache_refreshed(client, botomock, metricsmock):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     mock_api_calls = []
 
@@ -235,7 +292,7 @@ def test_client_with_cache_refreshed(client, botomock, metricsmock):
 
 
 def test_client_404(client, botomock, clear_redis_store):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -257,7 +314,7 @@ def test_client_404(client, botomock, clear_redis_store):
 
 @pytest.mark.django_db
 def test_client_404_logged(client, botomock, clear_redis_store, settings):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
 
@@ -428,7 +485,7 @@ def test_missing_symbols_csv(client, settings):
 
 def test_get_microsoft_symbol_client(client, botomock, settings):
     settings.ENABLE_DOWNLOAD_FROM_MICROSOFT = True
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     mock_calls = []
 
@@ -810,7 +867,7 @@ def test_store_missing_symbol_skips_bad_code_file_or_id(metricsmock):
 @pytest.mark.django_db
 def test_store_missing_symbol_client(client, botomock, settings):
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     mock_calls = []
 
@@ -866,7 +923,7 @@ def test_store_missing_symbol_client_operationalerror(
     make sure the MissingSymbol record gets created.
     """
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
@@ -904,7 +961,7 @@ def test_store_missing_symbol_client_operationalerror(
 
 
 def test_client_with_bad_filenames(client, botomock, metricsmock):
-    reload_downloader('https://s3.example.com/private/prefix/')
+    reload_downloaders('https://s3.example.com/private/prefix/')
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'

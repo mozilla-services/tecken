@@ -309,7 +309,15 @@ class DisplayFiles extends React.PureComponent {
                     </Link>
                   ) : (
                     <DisplayDate date={file.created_at} />
-                  )}
+                  )}{' '}
+                  {file.upload && file.upload.try_symbols ? (
+                    <span
+                      className="tag is-info"
+                      title="Part of a Try build upload"
+                    >
+                      Try
+                    </span>
+                  ) : null}
                 </td>
                 <td>{BooleanIcon(file.update)}</td>
                 <td>{BooleanIcon(file.compressed)}</td>
