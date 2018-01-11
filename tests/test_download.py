@@ -89,6 +89,45 @@ def test_client_happy_path(client, botomock, metricsmock):
         assert response['Access-Control-Allow-Methods'] == 'GET'
 
 
+def test_client_legacy_product_prefix(client, botomock, metricsmock):
+    reload_downloaders('https://s3.example.com/private/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        return {
+            'Contents': [{
+                'Key': api_params['Prefix'],
+            }]
+        }
+
+    url = reverse('download:download_symbol_legacy', args=(
+        'firefox',
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        response = client.get(url)
+        assert response.status_code == 302
+        parsed = urlparse(response['location'])
+        assert parsed.netloc == 's3.example.com'
+        # the pre-signed URL will have the bucket in the path
+        assert parsed.path == (
+            '/private/prefix/v0/'
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+        )
+        assert 'Signature=' in parsed.query
+        assert 'Expires=' in parsed.query
+        assert 'AWSAccessKeyId=' in parsed.query
+
+        response = client.head(url)
+        assert response.status_code == 200
+        assert response.content == b''
+
+        assert response['Access-Control-Allow-Origin'] == '*'
+        assert response['Access-Control-Allow-Methods'] == 'GET'
+
+
 @pytest.mark.django_db
 def test_client_try_download(client, botomock, settings):
     """Suppose there's a file that doesn't exist in any of the

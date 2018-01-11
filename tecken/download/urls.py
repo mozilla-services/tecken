@@ -24,7 +24,7 @@ class LegacyProductPrefixesConverter(_Converter):
     the products we had at the time.
     To be safe (Jan 2018), let's just keep this around as a valid URL.
     """
-    regex = '(firefox|seamonkey|sunbird|thunderbird|xulrunner|fennec|b2g)'
+    regex = r'firefox|seamonkey|sunbird|thunderbird|xulrunner|fennec|b2g'
 
 
 register_converter(MixedCaseHexConverter, 'hex')
@@ -42,7 +42,7 @@ urlpatterns = [
     # Note how the product name is specific and ignored.
     path(
         '<legacyproducts>/<str:symbol>/<hex:debugid>/<str:filename>',
-        views.download_symbol,
+        views.download_symbol_legacy,
         name='download_symbol_legacy'
     ),
     path(

@@ -96,6 +96,14 @@ def download_from_microsoft(
         )
 
 
+@set_request_debug
+@api_require_http_methods(['GET', 'HEAD'])
+@set_cors_headers(origin='*', methods='GET')
+def download_symbol_legacy(request, legacyproducts, symbol, debugid, filename):
+    metrics.incr('download_legacyproducts')
+    return download_symbol(request, symbol, debugid, filename)
+
+
 @metrics.timer_decorator('download_symbol')
 @set_request_debug
 @api_require_http_methods(['GET', 'HEAD'])
