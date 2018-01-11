@@ -245,6 +245,16 @@ class Core(AWS, Configuration, Celery, S3):
     # other setting classes; in particular the 'Test' class.
     SYNCHRONOUS_UPLOAD_FILE_UPLOAD = False
 
+    DOWNLOAD_LEGACY_PRODUCTS_PREFIXES = [
+        'firefox',
+        'seamonkey',
+        'sunbird',
+        'thunderbird',
+        'xulrunner',
+        'fennec',
+        'b2g'
+    ]
+
 
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""

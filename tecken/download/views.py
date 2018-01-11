@@ -99,8 +99,10 @@ def download_from_microsoft(
 @set_request_debug
 @api_require_http_methods(['GET', 'HEAD'])
 @set_cors_headers(origin='*', methods='GET')
-def download_symbol_legacy(request, legacyproducts, symbol, debugid, filename):
-    metrics.incr('download_legacyproducts')
+def download_symbol_legacy(request, legacyproduct, symbol, debugid, filename):
+    if legacyproduct not in settings.DOWNLOAD_LEGACY_PRODUCTS_PREFIXES:
+        raise http.Http404('Invalid legacy product prefix')
+    metrics.incr('download_legacyproduct')
     return download_symbol(request, symbol, debugid, filename)
 
 

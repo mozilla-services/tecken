@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 from django.urls import register_converter, path
+from django.conf import settings
 
 from . import views
 
@@ -24,11 +25,11 @@ class LegacyProductPrefixesConverter(_Converter):
     the products we had at the time.
     To be safe (Jan 2018), let's just keep this around as a valid URL.
     """
-    regex = r'firefox|seamonkey|sunbird|thunderbird|xulrunner|fennec|b2g'
+    regex = '({})'.format('|'.join(settings.DOWNLOAD_LEGACY_PRODUCTS_PREFIXES))
 
 
 register_converter(MixedCaseHexConverter, 'hex')
-register_converter(LegacyProductPrefixesConverter, 'legacyproducts')
+register_converter(LegacyProductPrefixesConverter, 'legacyproduct')
 
 
 app_name = 'download'
@@ -41,7 +42,7 @@ urlpatterns = [
     ),
     # Note how the product name is specific and ignored.
     path(
-        '<legacyproducts>/<str:symbol>/<hex:debugid>/<str:filename>',
+        '<legacyproduct>/<str:symbol>/<hex:debugid>/<str:filename>',
         views.download_symbol_legacy,
         name='download_symbol_legacy'
     ),

@@ -127,6 +127,17 @@ def test_client_legacy_product_prefix(client, botomock, metricsmock):
         assert response['Access-Control-Allow-Origin'] == '*'
         assert response['Access-Control-Allow-Methods'] == 'GET'
 
+        # But if you try to mess with the prefix to something NOT
+        # recognized, it should immediately 404.
+        url = reverse('download:download_symbol_legacy', args=(
+            'gobblygook',
+            'xul.pdb',
+            '44E4EC8C2F41492B9369D6B9A059577C2',
+            'xul.sym',
+        ))
+        response = client.get(url)
+        assert response.status_code == 404
+
 
 @pytest.mark.django_db
 def test_client_try_download(client, botomock, settings):
