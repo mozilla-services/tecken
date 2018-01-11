@@ -150,6 +150,21 @@ all files within the uploaded ``.zip`` gets uploaded to a bucket called
           decided about these kinds of exceptions.
 
 
+Try Uploading
+-------------
+
+Try uploads are similar to regular uploads except they go into a different
+S3 URL. To set it use the ``DJANGO_UPLOAD_TRY_SYMBOLS_URL`` environment
+variable. It's blank (aka. unset) by default, and if not explicitly set
+it becomes the same as ``DJANGO_UPLOAD_DEFAULT_URL`` but with the prefix
+``try`` after the bucket name and before anything else.
+
+So if ``DJANGO_UPLOAD_TRY_SYMBOLS_URL`` isn't set and
+``DJANGO_UPLOAD_DEFAULT_URL`` is ``http://s3.example.com/bucket/version0``
+then ``DJANGO_UPLOAD_TRY_SYMBOLS_URL`` "becomes"
+``http://s3.example.com/bucket/try/version0``.
+
+
 Upload By Download
 ------------------
 

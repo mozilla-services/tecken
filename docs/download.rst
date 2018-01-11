@@ -238,6 +238,6 @@ Try builds.
 
 Note; symbols from Try builds is always tried last! So if there's a known
 symbol called ``foo.pdb/HEX/foo.sym`` and someone triggers a Try build
-(which uploads it symbols) with the exact same name (and build ID) and
+(which uploads its symbols) with the exact same name (and build ID) and
 even if you use ``https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?try``
 the existing (non-Try build) symbol will be matched first.

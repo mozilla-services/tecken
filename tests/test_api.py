@@ -1503,7 +1503,7 @@ def test_file_upload(client):
     file_upload = FileUpload.objects.create(
         upload=upload,
         size=1234,
-        key='foo.sym',
+        key='foo.pdb/deadbeaf123/foo.sym',
     )
     url = reverse('api:upload_file', args=(file_upload.id,))
     response = client.get(url)
@@ -1519,13 +1519,39 @@ def test_file_upload(client):
     data = response.json()['file']
     assert data['upload']['user']['email'] == user.email
     assert not data['microsoft_download']
+    assert data['url'] == '/foo.pdb/deadbeaf123/foo.sym'
+
+
+@pytest.mark.django_db
+def test_file_upload_try_upload(client):
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    upload = Upload.objects.create(
+        user=user,
+        size=123456,
+        try_symbols=True,
+    )
+    # Also, let's pretend there's at least one file upload
+    file_upload = FileUpload.objects.create(
+        upload=upload,
+        size=1234,
+        key='foo.pdb/deadbeaf123/foo.sym',
+    )
+    url = reverse('api:upload_file', args=(file_upload.id,))
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()['file']
+    assert data['url'] == '/foo.pdb/deadbeaf123/foo.sym?try'
 
 
 @pytest.mark.django_db
 def test_file_upload_microsoft_download(client):
     file_upload = FileUpload.objects.create(
         size=1234,
-        key='foo.sym',
+        key='foo.pdb/deadbeaf123/foo.sym',
         microsoft_download=True,
     )
 

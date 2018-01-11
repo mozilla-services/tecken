@@ -720,6 +720,11 @@ def upload_file(request, id):
     ):
         raise PermissionDenied('Insufficient access to view this file')
 
+    symbol, debugid, filename = file_upload.key.split('/')[-3:]
+    url = reverse('download:download_symbol', args=(symbol, debugid, filename))
+    if file_upload.upload and file_upload.upload.try_symbols:
+        url += '?try'
+
     file_dict = {
         'id': file_upload.id,
         'bucket_name': file_upload.bucket_name,
@@ -727,6 +732,7 @@ def upload_file(request, id):
         'update': file_upload.update,
         'compressed': file_upload.compressed,
         'size': file_upload.size,
+        'url': url,
         'completed_at': file_upload.completed_at,
         'created_at': file_upload.created_at,
         'upload': None,

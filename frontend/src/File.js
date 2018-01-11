@@ -107,12 +107,6 @@ export default class File extends React.PureComponent {
   }
 }
 
-const stripPrefix = uri => {
-  const parts = uri.split('/')
-  parts[0] = ''
-  return parts.join('/')
-}
-
 class DisplayFile extends React.PureComponent {
   constructor(props) {
     super(props)
@@ -124,8 +118,7 @@ class DisplayFile extends React.PureComponent {
   }
 
   headQuery = file => {
-    const publicUrl = stripPrefix(file.key)
-    fetch(publicUrl, { method: 'HEAD' }).then(r => {
+    fetch(file.url, { method: 'HEAD' }).then(r => {
       this.setState({ headSuccess: r.status === 200, headLoading: false })
     })
   }
@@ -135,7 +128,7 @@ class DisplayFile extends React.PureComponent {
   }
 
   absoluteURL = () => {
-    const uri = stripPrefix(this.props.file.key)
+    const uri = this.props.file.url
     let host = document.location.host
     if (host === 'localhost:3000') {
       // You're in the middle of local development, change this

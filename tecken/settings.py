@@ -8,6 +8,8 @@ import datetime
 import logging
 import subprocess
 import os
+from urllib.parse import urlparse
+
 
 from configurations import Configuration, values
 from dockerflow.version import get_version
@@ -247,6 +249,24 @@ class Core(AWS, Configuration, Celery, S3):
 class Base(Core):
     """Settings that may change per-environment, some with defaults."""
 
+    @classmethod
+    def setup(cls):
+        super(Base, cls).setup()
+
+        # For the sake of convenience we want to make UPLOAD_TRY_SYMBOLS_URL
+        # optional as an environment variable. If it's not set, set it
+        # by taking the UPLOAD_DEFAULT_URL and adding the prefix "/try"
+        # right after the bucket name.
+        if not cls.UPLOAD_TRY_SYMBOLS_URL:
+            default_url = urlparse(cls.UPLOAD_DEFAULT_URL)
+            path = default_url.path.split('/')
+            # Since it always start with '/', the point after the bucket
+            # name is the 3rd one.
+            path.insert(2, 'try')
+            # Note `._replace` is actually not a private method.
+            try_url = default_url._replace(path='/'.join(path))
+            cls.UPLOAD_TRY_SYMBOLS_URL = try_url.geturl()
+
     SECRET_KEY = values.SecretValue()
 
     DEBUG = values.BooleanValue(default=False)
@@ -408,7 +428,24 @@ class Base(Core):
     # mustn't be uploaded with the "regular symbols".
     # This value can be very similar to UPLOAD_DEFAULT_URL in that
     # it can use the exact same S3 bucket but have a different prefix.
+    #
+    # Note! By default the value for 'UPLOAD_TRY_SYMBOLS_URL' becomes
+    # the value of 'UPLOAD_DEFAULT_URL' but with a '/try' suffix added.
     UPLOAD_TRY_SYMBOLS_URL = values.Value()
+    # # The reason for this is to simplify things in local dev and non-Prod
+    # # environments where the location isn't as important.
+    # # Basically, if don't set this, the value
+    # # becomes `settings.UPLOAD_DEFAULT_URL + '/try'` (but carefully so)
+    # @property
+    # def UPLOAD_TRY_SYMBOLS_URL(self):
+    #     print(Configuration.LANGUAGES)
+    #     print(Configuration.UPLOAD_TRY_SYMBOLS_URL)
+    #     # # super()
+    #     # print(dir(self))
+    #     # print(self.UPLOAD_TRY_SYMBOLS_URL.value.copy())
+    #     return '/TRY'
+    #     value = super().value
+    #     return value + '/TRY'
 
     # The config is a list of tuples like this:
     # 'email:url' where the email part can be a glob like regex
@@ -546,9 +583,8 @@ class Localdev(Base):
         'http://minio:9000/testbucket'
     )
 
-    UPLOAD_TRY_SYMBOLS_URL = values.Value(
-        'http://minio:9000/testbucket/try'
-    )
+    # Note! By default the value for 'UPLOAD_TRY_SYMBOLS_URL' becomes
+    # the value of 'UPLOAD_DEFAULT_URL' but with a '/try' prefix added.
 
     # Run this much sooner in local development.
     UPLOAD_REATTEMPT_LIMIT_SECONDS = values.IntegerValue(60)
