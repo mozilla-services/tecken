@@ -82,7 +82,7 @@ class FileUpload(models.Model):
     # Used when this upload belongs to a Microsoft proxy download
     microsoft_download = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     def __repr__(self):
         return (
