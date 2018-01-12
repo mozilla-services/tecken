@@ -571,3 +571,19 @@ this:
 Now, it will install all the necessary Python dependencies only the first
 time. Any time you make a change, just run that ``./bin/build_docs.sh``
 command again.
+
+
+Backup and Restore PostgreSQL
+=============================
+
+To make a backup of the whole database use ``pg_dump`` like this:
+
+.. code-block:: shell
+
+    $ docker-compose run db pg_dump -h db -U postgres > tecken.sql
+
+If you import it with:
+
+.. code-block:: shell
+
+    $ docker-compose run db psql -h db -U postgres < tecken.sql

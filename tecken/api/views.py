@@ -798,10 +798,11 @@ def stats(request):
 
     def count_and_size(qs, start, end):
         sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-        return {
-            'count': sub_qs.count(),
-            'total_size': sub_qs.aggregate(size=Sum('size'))['size'],
-        }
+
+        return sub_qs.aggregate(
+            count=Count('id'),
+            total_size=Sum('size'),
+        )
 
     today = timezone.now()
     start_today = today.replace(hour=0, minute=0, second=0)
