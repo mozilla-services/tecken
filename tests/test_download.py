@@ -437,6 +437,49 @@ def test_client_404_logged(client, botomock, clear_redis_store, settings):
         )
 
 
+@pytest.mark.django_db
+def test_client_404_logged_bad_code_file(
+    client,
+    botomock,
+    clear_redis_store,
+    settings,
+):
+    """The root of this test is to test something that's been observed
+    to happen in production; query strings for missing symbols with
+    values that contain URL encoded nullbytes (%00).
+    """
+    reload_downloaders('https://s3.example.com/private/prefix/')
+
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'ListObjectsV2'
+        return {}
+
+    url = reverse('download:download_symbol', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
+    with botomock(mock_api_call):
+        params = {
+            'code_file': '\x00'
+        }
+        assert client.head(url, params).status_code == 404
+        assert client.get(url, params).status_code == 400
+
+        # It won't get logged
+        assert not MissingSymbol.objects.all().exists()
+
+        # Same thing to happen if the 'code_id' contains nullbytes
+        params = {
+            'code_id': 'Nice\x00Try'
+        }
+        assert client.head(url, params).status_code == 404
+        assert client.get(url, params).status_code == 400
+        assert not MissingSymbol.objects.all().exists()
+
+
 def test_log_symbol_get_404_metrics(metricsmock):
     views.log_symbol_get_404(
         'xul.pdb',
