@@ -30,6 +30,7 @@ from tecken.download.tasks import (
     download_microsoft_symbol,
     store_missing_symbol_task
 )
+from tecken.download.forms import DownloadForm
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
@@ -181,6 +182,21 @@ def download_symbol(request, symbol, debugid, filename):
     delayed_lookup = False
 
     if request.method == 'GET':
+        # Only bother looking at the query string if the request was GET.
+        form = DownloadForm(request.GET)
+        if not form.is_valid():
+            # Even if there might be more than one error, just exit
+            # out on the first one. It's not important to know
+            # all the errors if there is at least one.
+            for key in form.errors:
+                for message in form.errors[key]:
+                    return http.HttpResponseBadRequest(
+                        f'{key}: {message}'
+                    )
+        else:
+            code_file = form.cleaned_data['code_file']
+            code_id = form.cleaned_data['code_id']
+
         # Only bother logging it if the client used GET.
         # Otherwise it won't be possible to pick up the extra
         # query string parameters.
@@ -188,8 +204,8 @@ def download_symbol(request, symbol, debugid, filename):
             symbol,
             debugid,
             filename,
-            code_file=request.GET.get('code_file'),
-            code_id=request.GET.get('code_id'),
+            code_file=code_file,
+            code_id=code_id,
         )
 
         if (
@@ -218,8 +234,8 @@ def download_symbol(request, symbol, debugid, filename):
             download_from_microsoft(
                 symbol,
                 debugid,
-                code_file=request.GET.get('code_file'),
-                code_id=request.GET.get('code_id'),
+                code_file=code_file,
+                code_id=code_id,
                 missing_symbol_hash=missing_symbol_hash,
             )
 
@@ -274,6 +290,7 @@ def log_symbol_get_404(
     """
     if settings.ENABLE_STORE_MISSING_SYMBOLS:
         try:
+            print(repr(code_file))
             return store_missing_symbol(
                 symbol,
                 debugid,
