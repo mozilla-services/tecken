@@ -119,7 +119,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: frontend/Dockerfile
     environment:
       - NODE_ENV=development
     ports:
@@ -133,7 +133,7 @@ services:
   frontend-ci:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: frontend/Dockerfile
 
   minio:
     image: minio/minio
