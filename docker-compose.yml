@@ -119,7 +119,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: frontend/Dockerfile
     environment:
       - NODE_ENV=development
     ports:
