@@ -8,7 +8,7 @@
     "date-fns": "2.0.0-alpha.7",
     "font-awesome": "4.7.0",
     "mobx": "3.3.1",
-    "mobx-react": "4.3.4",
+    "mobx-react": "4.3.5",
     "query-string": "5.0.1",
     "raven-js": "3.20.0",
     "react": "16.1.1",
