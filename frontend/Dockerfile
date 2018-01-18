@@ -3,7 +3,7 @@
 #
 
 # This should match what we have in the Node section of the main Dockerfile.
-FROM node:6
+FROM node:6.12.3
 
 ADD frontend/yarn.lock /yarn.lock
 ADD frontend/package.json /package.json
