@@ -1,4 +1,4 @@
-FROM node:6 as frontend
+FROM node:6.12.3 as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
