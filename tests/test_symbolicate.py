@@ -6,6 +6,7 @@ import requests
 from markus import INCR, GAUGE
 
 from django.urls import reverse
+from django.core.cache import caches
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.symbolicate import views
@@ -83,12 +84,13 @@ PUBLIC junk
 }
 
 
-def test_symbolicate_json_happy_path_django_view(
+def test_client_happy_path(
     json_poster,
     clear_redis_store,
     requestsmock,
     metricsmock,
 ):
+    # XXX Stop using the public downloader.
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -138,7 +140,7 @@ def test_symbolicate_json_happy_path_django_view(
     # store, we can't use metricsmock.has_record()
     memory_gauges = [
         record for record in metrics_records
-        if record[0] == GAUGE and 'store_memory' in record[1]
+        if record[0] == GAUGE and 'used_memory' in record[1]
     ]
     assert len(memory_gauges) == 2
 
@@ -161,6 +163,7 @@ def test_symbolicate_json_happy_path_django_view(
 
 
 def test_symbolicate_json_one_cache_lookup(clear_redis_store, requestsmock):
+    # XXX Stop using the public downloader.
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -195,10 +198,81 @@ def test_symbolicate_json_one_cache_lookup(clear_redis_store, requestsmock):
     assert result['debug']['downloads']['count'] == 2
     # 'xul.pdb' is needed once, 'wntdll.pdb' is needed twice
     # but it should only require 1 cache lookup.
-    assert result['debug']['cache_lookups']['count'] == 1
+    assert result['debug']['cache_lookups']['count'] == 2
+
+
+def test_symbolicate_json_lru_causing_mischief(
+    clear_redis_store,
+    requestsmock
+):
+    """Warning! This test is quite fragile.
+    It runs the symbolication twice. After the first run, the test
+    manually goes in and deletes the hash map.
+    This requires "direct access" to the Redis store but it's to
+    simulate what the LRU naturally does but without waiting for
+    time or max. memory usage.
+    """
+
+    # XXX Stop using the public downloader.
+    reload_downloader(
+        'https://s3.example.com/public/prefix/?access=public',
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/v0/xul.pdb/'
+        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
+        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+    )
+    requestsmock.get(
+        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
+        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
+        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    )
+    symbolicator = views.SymbolicateJSON(
+        # This will draw from the 2nd memory_map item TWICE
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
+        ],
+        debug=True,
+    )
+    result = symbolicator.result
+    assert result['knownModules'] == [True, True]
+    assert result['symbolicatedStacks'] == [
+        [
+            'XREMain::XRE_mainRun() (in xul.pdb)',
+            'KiUserCallbackDispatcher (in wntdll.pdb)',
+            # 'KiRaiseUserExceptionDispatcher (in wntdll.pdb)',
+        ]
+    ]
+    assert result['debug']['downloads']['count'] == 2
+    assert result['debug']['cache_lookups']['count'] == 2
+
+    # Pretend the LRU evicted the 'xul.pdb/...' hashmap.
+    store = caches['store']
+    hashmap_key, = [
+        key for key in store.iter_keys('*')
+        if not key.endswith(':keys') and 'xul.pdb' in key
+    ]
+    assert store.delete(hashmap_key)
+
+    # Same symbolication one more time
+    symbolicator = views.SymbolicateJSON(
+        # This will draw from the 2nd memory_map item TWICE
+        stacks=[[[0, 11723767], [1, 65802]]],
+        memory_map=[
+            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
+        ],
+        debug=True,
+    )
+    result_second = symbolicator.result
+    # Because the xul.pdb symbol had to be downloaded again
+    assert result_second['debug']['downloads']['count'] == 1
 
 
 def test_symbolicate_json_bad_module_indexes(clear_redis_store, requestsmock):
+    # XXX Stop using the public downloader.
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -230,6 +304,7 @@ def test_symbolicate_json_bad_module_indexes(clear_redis_store, requestsmock):
 
 
 def test_symbolicate_json_bad_module_offset(clear_redis_store, requestsmock):
+    # XXX Stop using the public downloader.
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -264,6 +339,7 @@ def test_symbolicate_json_happy_path_with_debug(
     clear_redis_store,
     requestsmock
 ):
+    # XXX Stop using the public downloader.
     reload_downloader(
         'https://s3.example.com/public/prefix/?access=public',
     )
@@ -298,7 +374,7 @@ def test_symbolicate_json_happy_path_with_debug(
     assert result['debug']['stacks']['real'] == 2
     assert result['debug']['time'] > 0.0
     # One cache lookup was attempted
-    assert result['debug']['cache_lookups']['count'] == 1
+    assert result['debug']['cache_lookups']['count'] == 2
     assert result['debug']['cache_lookups']['time'] > 0.0
     assert result['debug']['downloads']['count'] == 2
     assert result['debug']['downloads']['size'] > 0.0
@@ -330,7 +406,7 @@ def test_symbolicate_json_happy_path_with_debug(
     assert result['debug']['stacks']['real'] == 2
     assert result['debug']['stacks']['count'] == 2
     assert result['debug']['time'] > 0.0
-    assert result['debug']['cache_lookups']['count'] == 1
+    assert result['debug']['cache_lookups']['count'] == 5
     assert result['debug']['cache_lookups']['time'] > 0.0
     assert result['debug']['downloads']['count'] == 0
     assert result['debug']['downloads']['size'] == 0.0

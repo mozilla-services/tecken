@@ -4,12 +4,10 @@
 
 import time
 import logging
-import zlib
 from bisect import bisect
 from collections import defaultdict
 
 import markus
-import msgpack
 import ujson as json
 
 from django_redis import get_redis_connection
@@ -19,7 +17,6 @@ from django.http import HttpResponse
 from django.core.cache import caches
 from django.views.decorators.csrf import csrf_exempt
 
-from tecken.base.utils import filesizeformat
 from tecken.base.symboldownloader import (
     SymbolDownloader,
     SymbolNotFound,
@@ -68,8 +65,7 @@ class SymbolicateJSON:
         self.stacks = stacks
         self.memory_map = memory_map
         self.debug = debug
-        # per request global map of all symbol maps
-        self.all_symbol_maps = {}
+
         # the result we will populate
         self.result = {
             'symbolicatedStacks': [],
@@ -77,19 +73,29 @@ class SymbolicateJSON:
         }
         self._run()
 
-    def add_to_symbols_maps(self, key, map_):
-        # When inserting to the function global all_symbol_maps
-        # store it as a tuple with an additional value (for
-        # the sake of optimization) of the sorted list of ALL
-        # offsets as int16s ascending order.
-        self.all_symbol_maps[key] = (
-            map_,
-            sorted(map_)
-        )
-
     def _run(self):
         # Record the total time it took to symbolicate
         t0 = time.time()
+
+        all_symbol_offsets = {}
+        all_symbol_maps = {}
+
+        def add_to_symbols_offsets(key, offsets, symbol_map=None):
+            # XXX Redo this comment.
+            # Consider moving this function into the _run() method.
+            all_symbol_offsets[key] = sorted(offsets)
+
+            # IF we had to download the symbol file, and parse it, let's
+            # keep it around. This is an optimization technique.
+            # Normally, a download from the Internet results in us stuffing
+            # the Redis store with with all its values, then we actually
+            # doing the symbolication process we query the Redis store for
+            # each symbol key and offset. But if we already have it all
+            # here in memory (because of the download), let's keep it and
+            # save some Redis store queries.
+            if symbol_map:
+                # XXX actually use this!
+                all_symbol_maps[key] = symbol_map
 
         cache_lookup_times = []
         download_times = []
@@ -98,7 +104,7 @@ class SymbolicateJSON:
 
         # First look up all symbols that we're going to need so that
         # when it's time to really loop over `self.stacks` the
-        # 'self.all_symbol_maps' should be fully populated as well as it
+        # 'self.all_symbol_offsets' should be fully populated as well as it
         # can be.
         needs_to_be_downloaded = set()
         for stack in self.stacks:
@@ -110,27 +116,31 @@ class SymbolicateJSON:
                 # Keep a dict of the symbol keys and each's module index
                 modules_lookups[symbol_key] = module_index
 
-        # get_symbol_maps() takes a list of symbol keys, does a Redis
-        # GETMANY over all of them, then returns a dict containing
-        # metrics about that lookup and a dict called 'symbols'
-        # which has the individual information for each symbol.
-        informations = self.get_symbol_maps(modules_lookups)
+        # get_symbol_offsets() takes a list of symbol keys, returns a
+        # dict that contains a dict called 'symbols'. Each key, in it,
+        # is the symbol key and the values is the complete list of
+        # ALL keys we have for that symbol key.
+        # E.g. `informations['symbols'][('xul.pdb', 'HEX')] == [45110, 130109]`
+        # If, for a particular symbol key we didn't have anything in the
+        # Redis store, the value is None.
+        informations = self.get_symbol_offsets(modules_lookups)
 
-        # Hit or miss, there was a cache lookup
+        # Hit or miss, there was a cache (Redis store) lookup.
         if self.debug:
-            cache_lookup_times.append(
-                informations['cache_lookup_time']
+            cache_lookup_times.extend(
+                informations['cache_lookup_times']
             )
 
-        # Now loop over every symbol looked up from get_symbol_maps()
+        # Now loop over every symbol looked up from get_symbol_offsets()
         # Expect that, for every symbol, there is something. Even
         # though it might be empty. If it's empty (i.e. no 'symbol_map' key)
         # it means we looked in the cache but it not in the cache.
-        for symbol_key, information in informations['symbols'].items():
+        for symbol_key in informations['symbols']:
             module_index = modules_lookups[symbol_key]
-            if 'symbol_map' in information:
+            information = informations['symbols'][symbol_key]
+            if 'symbol_offsets' in information:
                 # We were able to look it up from cache.
-                symbol_map = information['symbol_map']
+                symbol_offsets = information['symbol_offsets']
                 # But even though it was in cache it might have just
                 # been cached temporarily because it has previously
                 # failed.
@@ -139,7 +149,7 @@ class SymbolicateJSON:
                 # If it was successfully fetched from cache,
                 # these metrics will be available.
                 self.result['knownModules'][module_index] = found
-                self.add_to_symbols_maps(symbol_key, symbol_map)
+                add_to_symbols_offsets(symbol_key, symbol_offsets)
             else:
                 # These are the symbols that we're going to have to
                 # download from the Internet.
@@ -149,7 +159,7 @@ class SymbolicateJSON:
                 ))
 
         # Now let's go ahead and download the symbols that need to be
-        # fetched over the network.
+        # fetch from the Internet.
         if needs_to_be_downloaded:
             # The self.load_symbols() method can cope
             # with 'needs_to_be_downloaded' being an empty list, as
@@ -159,8 +169,12 @@ class SymbolicateJSON:
             # which makes it hard to see how long it takes.
             downloaded = self.load_symbols(needs_to_be_downloaded)
             for symbol_key, information, module_index in downloaded:
-                symbol_map = information['symbol_map']
-                self.add_to_symbols_maps(symbol_key, symbol_map)
+                symbol_offsets = information['symbol_map'].keys()
+                add_to_symbols_offsets(
+                    symbol_key,
+                    symbol_offsets,
+                    symbol_map=information['symbol_map']
+                )
                 if self.debug:
                     if 'download_time' in information:
                         download_times.append(information['download_time'])
@@ -181,8 +195,64 @@ class SymbolicateJSON:
         # symbol).
         stacks_per_module = defaultdict(int)
 
-        # Now that all needed symbols are looked up, we should be
-        # ready to symbolicate for reals.
+        # Before we loop over the stack, loop over it once just to
+        # figure out which HGET commands we're going to need to send.
+        lookups = {}
+        for stack in self.stacks:
+            for module_index, module_offset in stack:
+                if module_index < 0:
+                    continue
+                symbol_filename, debug_id = self.memory_map[module_index]
+                symbol_key = (symbol_filename, debug_id)
+                symbol_offset_list = all_symbol_offsets.get(symbol_key)
+                if symbol_offset_list:
+                    # There exists a list of offsets for this module!
+                    # Prepare the dict.
+                    if symbol_key not in lookups:
+                        lookups[symbol_key] = []
+                    if module_offset in symbol_offset_list:
+                        lookups[symbol_key].append(module_offset)
+                    else:
+                        lookups[symbol_key].append(self._get_nearest(
+                            symbol_offset_list,
+                            module_offset
+                        ))
+
+        # Now we know which lookups we need to do. I.e. Redis store queries.
+        # Actually look them up.
+        signatures = {}
+        redis_store_connection = get_redis_connection('store')
+        for symbol_key, keys in lookups.items():
+            signatures[symbol_key] = {}
+            if symbol_key in all_symbol_maps:
+                # 'all_symbol_maps' is a dict of *every* offset and signature
+                # for this symbol key.
+                # The reason we have this (and thus won't need to query Redis)
+                # is because the symbol has had to be downloaded from the
+                # Internet and parsed into a dict (for the sake of
+                # storing it in Redis) already. Let's not waste this
+                # opportunity. Basically only possible the first time you
+                # depend on a module for symbolication.
+                for key in keys:
+                    signatures[symbol_key][key] = (
+                        all_symbol_maps[symbol_key][key]
+                    )
+            else:
+                cache_key = self._make_cache_key(symbol_key)
+                t0 = time.time()
+                values = redis_store_connection.hmget(
+                    store.make_key(cache_key),
+                    keys
+                )
+                t1 = time.time()
+                cache_lookup_times.append(t1 - t0)
+                for i, key in enumerate(keys):
+                    # The list 'values' is a list of byte strings.
+                    signatures[symbol_key][key] = values[i].decode('utf-8')
+
+        # All the downloads (if there were any) *and* all the Redis store
+        # lookups have been done. Now, let's focus on making the struct
+        # that is going to be the output.
         for stack in self.stacks:
             response_stack = []
             for module_index, module_offset in stack:
@@ -206,19 +276,25 @@ class SymbolicateJSON:
                 # output. So give it a string key instead of a tuple.
                 stacks_per_module['{}/{}'.format(*symbol_key)] += 1
 
-                symbol_map, symbol_offset_list = self.all_symbol_maps.get(
-                    symbol_key,
-                    ({}, [])
-                )
-                signature = symbol_map.get(module_offset)
-                # If it wasn't an immediate match in the map, look up
-                # the nearest signature rounded down.
-                if signature is None and symbol_map:
-                    signature = symbol_map[
-                        symbol_offset_list[
-                            bisect(symbol_offset_list, module_offset) - 1
-                        ]
-                    ]
+                symbol_offset_list = all_symbol_offsets.get(symbol_key)
+
+                # If there was no list, the symbol could ultimately not
+                # be found, at all. There's no point trying to figure out
+                # what the signature is.
+                signature = None
+                if symbol_offset_list:
+                    # Even if our module offset isn't in that list,
+                    # there is still hope to be able to find the
+                    # nearest signature.
+                    if module_offset in symbol_offset_list:
+                        # Let's get it from the store!
+                        signature = signatures[symbol_key][module_offset]
+                    else:
+                        nearest = self._get_nearest(
+                            symbol_offset_list,
+                            module_offset
+                        )
+                        signature = signatures[symbol_key][nearest]
 
                 response_stack.append(
                     '{} (in {})'.format(
@@ -262,54 +338,213 @@ class SymbolicateJSON:
             }
 
     @staticmethod
+    def _get_nearest(offset_list, offset):
+        """return the item in the list to the left nearst point.
+        For example, if the 'offset_list' is: [10, 20, 30]
+        and 'offset' is 25, the return 20.
+        This function assumes that the 'offset_list' is sorted.
+        This function also assumes that 'offset' is *not* in
+        'offset_list'.
+
+        The origin of this function is that we look for offsets in
+        a stack as these are kinda like lines of code. Imagine this
+        C++ program::
+
+            10) ...
+            11) void some_function() {
+            12)     ...
+            13)     ...
+            14)     ...
+            15) }
+            17) void other_function() {
+            18)     ...
+            19) }
+            20) ...
+
+        Here, the 'offset_list' is going to be [11, 17]. The offsets
+        where the functions are.
+        Suppose the 'offset' we're being asked to look up is 13, meaning
+        the interesting thing happened on "line" 13. The nearest "function
+        definition line" is 11. That's where the function was defined.
+        To find 11, we bisect the list of all offsets and subtract 1.
+        I.e. bisect([11, 17], 13) == p == 1
+        And [11, 17][p - 1] == 11
+        """
+        return offset_list[bisect(offset_list, offset) - 1]
+
+    @staticmethod
     def _make_cache_key(symbol_key):
         return 'symbol:{}/{}'.format(*symbol_key)
 
     @metrics.timer_decorator('symbolicate_get_symbol_maps')
-    def get_symbol_maps(self, symbol_keys):
+    def get_symbol_offsets(self, symbol_keys):
+        """Return a dict that contains the following keys:
+            * 'symbols'
+            * 'cache_lookup_times' (only present if self.debug==True)
+
+        The 'symbols' key contains a dict that looks like this::
+
+            {
+                "xul.pdb/HEX": {
+                    "found": True,
+                    "symbol_offsets": [1235, 4577, 6412, 7800]
+                },
+                "win32.dll/HEX": {
+                    "found": False,
+                    "symbol_offsets": None  # Means it wasn't find in Redis
+                }
+            }
+
+        To optimize the Redis lookups everything that can be queried
+        "in batch" is done so. So multiple lookup keys get turned into
+        a list just so we can do things like MGET Redis queries.
+        """
         cache_keys = {self._make_cache_key(x): x for x in symbol_keys}
-        # output of 'store.get_many' is an OrderedDict
+        redis_store_connection = get_redis_connection('store')
+        cache_lookup_times = []
+
+        # This is the dict we're going to build up. Each key is a
+        # symbol key's cache key. Each value is a list of offsets.
+        many = {}
+
+        # Build up a list of the names of ALL keys that contains the
+        # the keys.
+        cache_keys_keys = []
+        for cache_key in cache_keys:
+            cache_keys_keys.append(cache_key + ':keys')
         t0 = time.time()
-        many = store.get_many(cache_keys.keys())
+        # store.get_many() returns an OrderedDict() object that
+        # maps each *available* key to their list of ALL hash map keys.
+        all_keys = store.get_many(cache_keys_keys)
         t1 = time.time()
+        cache_lookup_times.append(t1 - t0)
+
+        # Important! Why aren't using Redis HKEYS?
+        # tl;dr It's too slow.
+        #
+        # You *could* do this:
+        #   > HSET foo key1 valueX
+        #   > HSET foo key2 valueY
+        #   > HSET foo key3 valueZ
+        # ...and to get that list of [key1, key2, key3] you can do:
+        #   > HKEYS foo
+        #   1) key1
+        #   2) key2
+        #   3) key3
+        #
+        # But that's very slow. HKEYS is O(N).
+        #
+        # Instead, we do one extra simple SET for a list of all keys.
+        # So like this:
+        #   > HSET foo key1 valueX
+        #   > HSET foo key2 valueY
+        #   > HSET foo key3 valueZ
+        #   > SET foo:keys "[key1, key2, key3]"
+        #
+        # Now, instead of HKEYS we use simple GET:
+        #   > GET foo
+        #   1) "[key1, key2, key3]"
+        #
+        # That list gets serialized (and compressed) by django_redis
+        # so we don't have to worry about turning it back into a pure
+        # Python list.
+        #
+        # The caveat is that we now have 2 "top level keys" (foo the
+        # hash map and foo:keys the plain key/value).
+        #
+        # What *can* happen is that since the Redis store is configured
+        # as a LRU cache, one of these might get evicted.
+        # If the plain key/value "foo:keys" gets evicted, we plainly
+        # assume it has never existed and we "start over" download
+        # it from the Internet. Just as if we've never ever encounted
+        # it before.
+        # Alternatively, the hash map "foo" might have been evicted.
+        # It's impossible to know so we have to make a HLEN query to
+        # check if the hash map is still there.
+
+        # If there are no offsets at all, it means there are no
+        # hash maps of this symbol key. But perhaps we've previously
+        # attempted to download the symbols file from the Internet
+        # and failed. In that case, we don't want to repeatedly try
+        # to download it again (and fail repeatedly).
+        # All "failed" attempts are stored as regular keys with an
+        # empty dict.
+        # The reason for using a list is so that we can do an MGET
+        # later.
+        maybes = []
+
+        for cache_key in cache_keys:
+            keys = all_keys.get(cache_key + ':keys')
+            if keys:
+                # Cool! The list of all hash map keys exists in Redis.
+                # But, what if the LRU kicked out the hash map??
+                # The quickest way to find out is to ask to the length
+                # of the hash map.
+                t0 = time.time()
+                length = redis_store_connection.hlen(
+                    store.make_key(cache_key)
+                )
+                t1 = time.time()
+                cache_lookup_times.append(t1 - t0)
+                if not length:
+                    # The list of keys existed but not the hashmap :(
+                    keys = []
+            if keys:
+                many[cache_key] = keys
+            else:
+                maybes.append(cache_key)
+        if maybes:
+            t0 = time.time()
+            empties = store.get_many(maybes)
+            t1 = time.time()
+            cache_lookup_times.append(t1 - t0)
+            many.update(empties)
+
+        t1 = time.time()
+
+        # All Redis queries that can be done have been done.
+        # Time to "package it up".
+
         informations = {
             'symbols': {},
         }
-
         for cache_key in cache_keys:
             symbol_key = cache_keys[cache_key]
             information = {}
 
-            symbol_map = many.get(cache_key)
-            if symbol_map is None:  # not existant in cache
+            symbol_offsets = many.get(cache_key)
+            # print('symbol_offsets', cache_key, symbol_offsets)
+            if symbol_offsets is None:  # not existant in cache
                 # Need to download this from the Internet.
                 metrics.incr('symbolicate_cache_miss', 1)
                 # If the symbols weren't in the cache, this will be dealt
                 # with later by this method's caller.
+                # XXX I don't like this! That would can be done here instead.
             else:
-                assert isinstance(symbol_map, dict)
-                if not symbol_map:  # e.g. an empty dict
+                assert isinstance(symbol_offsets, list)
+                if not symbol_offsets:  # e.g. an empty list
                     # It was cached but empty. That means it was logged that
                     # it was previously attempted but failed.
                     # The reason it's cached is to avoid it being looked up
                     # again and again when it's just going to continue to fail.
-                    information['symbol_map'] = {}
+                    information['symbol_offsets'] = []
                     information['found'] = False
                 else:
                     metrics.incr('symbolicate_cache_hit', 1)
                     # If it was in cache, that means it was originally found.
-                    information['symbol_map'] = symbol_map
+                    information['symbol_offsets'] = symbol_offsets
                     information['found'] = True
             informations['symbols'][symbol_key] = information
 
         if self.debug:
-            informations['cache_lookup_time'] = t1 - t0
+            informations['cache_lookup_times'] = cache_lookup_times
         return informations
 
     def load_symbols(self, requirements):
         """return a list that contains items of 3-tuples of
         (symbol_key, information, module_index)
         """
+        redis_store_connection = get_redis_connection('store')
         # This could be done concurrently, but from experience we see that
         # the LRU cache does a very good job staying warm and containing
         # lots of objects so it's rare that we need to download more things
@@ -323,55 +558,51 @@ class SymbolicateJSON:
                 if not information['download_size']:
                     raise SymbolFileEmpty()
                 assert isinstance(information['symbol_map'], dict)
-                store.set(
-                    cache_key,
-                    information['symbol_map'],
-                    # When doing local dev, only store it for 100 min
-                    # But in prod set it to indefinite.
-                    timeout=settings.DEBUG and 60 * 100 or None
-                )
-                # The current configuration of how django_redis works is
-                # that it uses msgpack t o marshal the objects we store
-                # as binary strings.
-                # Let's try to better mimic what django_redis does for
-                # the sake of our logging here.
-                # msgpack (just like pickle) might not be secure because
-                # if an unsuspecting reader can't trust where it was
-                # serialized they might unpack something undesireable.
-                # However, no client can access actually making this
-                # because our own code creates the dicts that we do ultimately
-                # send to msgpack.
-                symbol_map_size = len(zlib.compress(
-                    msgpack.dumps(information['symbol_map'])
-                ))  # nosec
+
+                with metrics.timer('symbolicate_store_hashmap'):
+                    t0 = time.time()
+                    redis_store_connection.hmset(
+                        store.make_key(cache_key),
+                        information['symbol_map']
+                    )
+                    all_keys = list(information['symbol_map'].keys())
+                    store.set(
+                        cache_key + ':keys',
+                        all_keys,
+                        timeout=None,
+                    )
+                    t1 = time.time()
+
+                store_time = t1 - t0
+
                 logger.info(
-                    'Storing {!r} ({}) in LRU cache (Took {:.2f}s)'.format(
-                        cache_key,
-                        filesizeformat(symbol_map_size),
+                    'Storing hash map for {} ({} keys). '
+                    'Took {:.2f}s to download. '
+                    'Took {:.2f}s to store in LRU.'
+                    ''.format(
+                        '/'.join(symbol_key),
+                        format(len(all_keys), ','),
                         information['download_time'],
+                        store_time,
                     )
                 )
-                metrics.gauge('symbolicate_storing_symbol', symbol_map_size)
                 information['found'] = True
 
-                # We don't need to know the store cache's memory usage
+                # We don't *need* to know the store cache's memory usage
                 # but it's a useful number in understanding how the LRU
                 # is behaving. Take this opportunity to send a gauge of
                 # the amount of memory the store is using
-                redis_store_connection = get_redis_connection('store')
                 info = redis_store_connection.info()
-                metrics.gauge('symbolicate_store_memory', info['used_memory'])
-                metrics.gauge(
-                    'symbolicate_store_keys', redis_store_connection.dbsize()
-                )
+                metrics.gauge('symbolicate_used_memory', info['used_memory'])
 
             except (SymbolNotFound, SymbolFileEmpty, SymbolDownloadError):
                 # If it can't be downloaded, cache it as an empty result
                 # so we don't need to do this every time we're asked to
                 # look up this symbol.
+                metrics.incr('symbolicate_download_fail', 1)
                 store.set(
                     cache_key,
-                    {},
+                    [],
                     settings.DEBUG and 60 or 60 * 60,
                 )
                 # If nothing could be downloaded, keep it anyway but
