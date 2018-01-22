@@ -34,8 +34,10 @@ wait_for() {
 [ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis-cache 6379 && wait_for redis-store 6379
 
 case $1 in
-  web)
+  migrate)
     ${CMD_PREFIX_PYTHON:-python} manage.py migrate --noinput
+    ;;
+  web)
     ${CMD_PREFIX} gunicorn tecken.wsgi:application -b 0.0.0.0:${PORT} --timeout ${GUNICORN_TIMEOUT} --workers ${GUNICORN_WORKERS} --access-logfile -
     ;;
   web-dev)
