@@ -5,129 +5,17 @@
 import os
 
 import requests
-import pytest
 
 
 BASE_URL = os.environ.get('BASE_URL')
 assert BASE_URL
 
 
-def _test(uri, firstline=None, expect_status_code=200):
-    assert uri.startswith('/')
+def test_basic_head_and_get():
+    uri = '/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym'
     url = BASE_URL + uri
-    if firstline or expect_status_code != 200:
-        function = requests.get
-    else:
-        function = requests.head
-    # This short timeout might make this unpractical for people
-    # running these tests on laptops in bad network environments.
-    # Arguably, if that's the case, perhaps don't run these tests.
-    response = function(url, timeout=10)
-    assert response.status_code == expect_status_code
+    head_response = requests.head(url)
+    assert head_response.status_code in (200, 404)
 
-    if firstline:
-        assert firstline == response.text.splitlines()[0]
-
-
-def large_symbols_available():
-    """return true if we should attempt to do request.HEAD on symbol
-    URLs that are huuuge.
-    The reason this is off by default is because it's not feasible to
-    upload certain symbols in a S3 mock because they're just too large.
-    """
-    var = str(os.environ.get('TEST_LARGE_SYMBOLS', False)).lower().strip()
-    return var in ('true', 'yes', '1')
-
-
-def test_basic_get():
-    _test(
-        '/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym',
-        'MODULE windows x86 448794C699914DB8A8F9B9F88B98D7412 firefox.pdb'
-    )
-
-
-def test_basic_pdb():
-    # Basic GET of a native debug symbols file for Windows/Linux/Mac
-    _test('/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.pd_')
-
-
-@pytest.mark.skipif(large_symbols_available, reason='Not testing HUGE symbols')
-def test_basic_dbg():
-    _test('/libxul.so/20BC1801B0B1864324D3B9E933328A170/libxul.so.dbg.gz')
-
-
-@pytest.mark.skipif(large_symbols_available, reason='Not testing HUGE symbols')
-def test_basic_dsym():
-    _test('/XUL/E3532A114F1C37E2AF567D8E6975F80C0/XUL.dSYM.tar.bz2')
-
-
-def test_mixed_case():
-    """bug 660932, bug 414852"""
-    _test(
-        '/firefox.pdb/448794c699914db8a8f9b9f88b98d7412/firefox.sym',
-        'MODULE windows x86 448794C699914DB8A8F9B9F88B98D7412 firefox.pdb'
-    )
-
-
-def test_old_firefox_prefix():
-    _test(
-        '/firefox/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym',
-        'MODULE windows x86 448794C699914DB8A8F9B9F88B98D7412 firefox.pdb'
-    )
-
-
-def test_old_thunderbird_prefix():
-    # Yes, this looks dumb.
-    _test(
-        (
-            '/thunderbird/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/'
-            'firefox.sym'
-        ),
-        'MODULE windows x86 448794C699914DB8A8F9B9F88B98D7412 firefox.pdb'
-    )
-
-
-def test_firefox_without_prefix():
-    """
-    bug 1246151 - The firefox binary on Linux/Mac is just named `firefox`,
-    so make sure the rewrite rules to strip the app name don't
-    break downloading these files.
-    """
-    _test(
-        '/firefox/946C0C63132015DD88CA2EFCBB9AC4C70/firefox.sym',
-        'MODULE Linux x86_64 946C0C63132015DD88CA2EFCBB9AC4C70 firefox'
-    )
-
-
-def test_non_symbol_debug_files():
-    """
-    Some files are debug files that aren't plain symbols. These are
-    different from regular symbols in that they have a much shorter
-    debug ID.
-    """
-    _test(
-        '/firefox.exe/59021DD066000/firefox.ex_'
-    )
-
-
-@pytest.mark.skip(reason='This test is too fragile when caching is involved')
-def test_delberately_404ing_and_csv_reporting():
-    _test(
-        '/foo.pdb/00000000111111112222222333333/foo.sym'
-        '?code_file=foo.dll&code_id=deadbeef',
-        expect_status_code=404
-    )
-
-    # download the CSV report of missing symbols
-    url = BASE_URL + '/missingsymbols.csv'
-    # If we don't add ?today=true to the CSV reporting it will,
-    # by default, look at yesterdays missing symbols
-    response = requests.get(url, {'today': True})
-    assert response.status_code == 200
-    assert response.headers['content-type'] == 'text/csv'
-
-    lines = response.text.splitlines()
-    first_line = lines[0]
-    assert first_line == 'debug_file,debug_id,code_file,code_id'
-    # At least one line should contain this:
-    assert 'foo.pdb,00000000111111112222222333333,foo.dll,deadbeef' in lines
+    get_response = requests.get(url)
+    assert get_response.status_code in (404, 302)
