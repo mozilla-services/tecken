@@ -2,14 +2,18 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from io import BytesIO
+
 import requests
 from markus import INCR, GAUGE
+from botocore.exceptions import ClientError
 
 from django.urls import reverse
 from django.core.cache import caches
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.symbolicate import views
+from tecken.symbolicate.tasks import invalidate_symbolicate_cache
 
 
 def reload_downloader(urls):
@@ -644,3 +648,78 @@ def test_symbolicate_json_one_symbol_connectionerror(
     )
     result = symbolicator.result
     assert result['knownModules'] == [True, False]
+
+
+def test_invalidate_symbols_invalidates_cache(
+    clear_redis_store,
+    botomock,
+    json_poster,
+    settings
+):
+    settings.SYMBOL_URLS = ['https://s3.example.com/private/prefix/']
+    reload_downloader('https://s3.example.com/private/prefix/')
+
+    mock_api_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'GetObject'
+        if mock_api_calls:
+            # This means you're here for the second time.
+            # Pretend we have the symbol this time.
+            mock_api_calls.append((operation_name, api_params))
+            return {
+                'Body': BytesIO(
+                    bytes(SAMPLE_SYMBOL_CONTENT['xul.sym'], 'utf-8')
+                )
+            }
+        else:
+            mock_api_calls.append((operation_name, api_params))
+            if api_params['Key'].endswith('xul.sym'):
+                parsed_response = {
+                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                }
+                raise ClientError(parsed_response, operation_name)
+            raise NotImplementedError(api_params)
+
+    with botomock(mock_api_call):
+        url = reverse('symbolicate:symbolicate_json')
+        response = json_poster(url, {
+            'stacks': [[[0, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [False]
+        assert len(mock_api_calls) == 1
+
+        response = json_poster(url, {
+            'stacks': [[[0, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [False]
+        # Expected because the cache stores that the file can't be found.
+        assert len(mock_api_calls) == 1
+
+        # Pretend an upload comes in and stores those symbols.
+        invalidate_symbolicate_cache([
+            ('xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'),
+        ])
+        response = json_poster(url, {
+            'stacks': [[[0, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
+            ],
+            'version': 4,
+        })
+        result = response.json()
+        assert result['knownModules'] == [True]
+        assert result['symbolicatedStacks'] == [
+            ['XREMain::XRE_mainRun() (in xul.pdb)']
+        ]
+        assert len(mock_api_calls) == 2

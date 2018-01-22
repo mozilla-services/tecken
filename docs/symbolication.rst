@@ -128,30 +128,6 @@ ignored. For example if you have a frame tuple that looks like this:
 ``["1.00000"]`` as a string.
 
 
-How Caching Works
-=================
-
-The S3 symbol storage is vastly bigger than the Symbol Server Symbolication
-can have available at short notice so each symbol is looked up on the fly
-and when looked up once, stored in a `Redis server`_ that is configured to work
-to work as an LRU_ (Least Recently Used) cache.
-
-It means it's capped and it will keep symbols that are frequently used hot.
-When the Redis LRU cache saves an entry, it compares if the total memory used
-is now going to be bigger than the maximum memory amount
-(configured by config or by  the limit of the server it runs on) allowed.
-If so, it figures out which keys were **least recently** used and deletes
-them from Redis. The default configuration for how many it deletes is 5 but
-you can change that in configuration.
-
-The eviction policy of the Redis LRU is ``allkeys-lru``. If the eviction
-policy is not changed to one that evicts, every write would cause an error
-when you try to save new symbols.
-
-.. _LRU: https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_Recently_Used_.28LRU.29
-.. _`Redis server`: https://redis.io/topics/lru-cache
-
-
 Example Symbolication
 =====================
 
@@ -274,3 +250,43 @@ The list of errors that might occur are:
 
 * ``requests.exceptions.ContentDecodingError`` (if a symbol is served in a
   non-gzip way and can't be decompressed)
+
+
+How Caching Works
+=================
+
+The S3 symbol storage is vastly bigger than the Symbol Server Symbolication
+can have available at short notice so each symbol is looked up on the fly
+and when looked up once, stored in a `Redis server`_ that is configured to work
+to work as an LRU_ (Least Recently Used) cache.
+
+It means it's capped and it will keep symbols that are frequently used hot.
+When the Redis LRU cache saves an entry, it compares if the total memory used
+is now going to be bigger than the maximum memory amount
+(configured by config or by  the limit of the server it runs on) allowed.
+If so, it figures out which keys were **least recently** used and deletes
+them from Redis. The default configuration for how many it deletes is 5 but
+you can change that in configuration.
+
+The eviction policy of the Redis LRU is ``allkeys-lru``. If the eviction
+policy is not changed to one that evicts, every write would cause an error
+when you try to save new symbols.
+
+.. _LRU: https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_Recently_Used_.28LRU.29
+.. _`Redis server`: https://redis.io/topics/lru-cache
+
+Symbolication Caching and New Uploads
+=====================================
+
+Symbolication relies on using Redis as a LRU cache. Meaning, if the
+symbolication process has to use the Internet (i.e. AWS S3) to
+download a symbol file, it prevents this from "happening again" by storing
+that in the LRU *without* an expiration time. That means that if a new
+symbol upload comes in that replaces an existing symbol file, in S3,
+the LRU cache needs to be informed.
+
+The way it works is that for every single file that is uploaded (the
+individual file, not the ``.zip`` file), its key is sent to the LRU to be
+invalidated. It currently does not replace what gets invalidated. Instead
+that "void" is left untouched until the symbolication process needs it
+and it will then have to re-download it and store it again.

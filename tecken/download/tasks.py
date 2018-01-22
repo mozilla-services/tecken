@@ -28,7 +28,7 @@ from tecken.base.utils import requests_retry_session
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.download.utils import store_missing_symbol
 from tecken.upload.utils import upload_file_upload
-
+from tecken.symbolicate.utils import invalidate_symbolicate_cache
 
 logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
@@ -210,3 +210,8 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
         metrics.incr('download_microsoft_download_file_upload_skip', 1)
     download_obj.completed_at = timezone.now()
     download_obj.save()
+
+    # We need to inform the symbolicate app, that some new symbols
+    # were uploaded.
+    symbol_key = (symbol, debugid)
+    invalidate_symbolicate_cache([symbol_key])
