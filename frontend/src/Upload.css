@@ -12,6 +12,7 @@ table.files-table td {
 }
 table.files-table td.file-key {
   font-size: 80%;
+  line-height: 1.1;
 }
 
 dl dt { font-weight: bold; }
