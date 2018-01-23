@@ -521,15 +521,12 @@ class SymbolicateJSON:
                 # with later by this method's caller.
                 # XXX I don't like this! That would can be done here instead.
             else:
-                # We *used* store it as a empty dict (when we wanted to
-                # remember that it can't be found). But in the new code
-                # we use an empty list.
+                # We *used* store the whole symbol map as a dict.
+                # Both if it actually existed and both if it was not found
+                # in S3.
                 # This makes things complicated for upgrading existing
                 # systems. So let's make a fix for that.
-                if (
-                    isinstance(symbol_offsets, dict) and
-                    not symbol_offsets
-                ):  # pragma: no cover
+                if isinstance(symbol_offsets, dict):  # pragma: no cover
                     symbol_offsets = []
 
                 assert isinstance(symbol_offsets, list), type(symbol_offsets)
