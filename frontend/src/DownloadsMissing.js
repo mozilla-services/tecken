@@ -325,13 +325,15 @@ class DisplayMissingSymbols extends React.PureComponent {
           <tbody>
             {missing.map(missing => (
               <tr key={missing.id}>
-                <td
-                  className="file-key"
-                  title={`code_file=${missing.code_file}   code_id=${
-                    missing.code_id
-                  }`}
-                >
+                <td className="file-key">
                   {missing.symbol}/{missing.debugid}/{missing.filename}
+                  <br />
+                  {missing.code_file || missing.code_id ? (
+                    <ShowMissingCodeAndId
+                      file={missing.code_file}
+                      id={missing.code_id}
+                    />
+                  ) : null}
                 </td>
                 <td>{missing.count}</td>
                 <td>
@@ -355,6 +357,30 @@ class DisplayMissingSymbols extends React.PureComponent {
 
         <ShowAggregates aggregates={aggregates} />
       </form>
+    )
+  }
+}
+
+const ShowMissingCodeAndId = ({ file, id }) => {
+  if (file && id) {
+    return (
+      <span>
+        <b>file:</b> {file}
+        {'   '}
+        <b>id:</b> {id}
+      </span>
+    )
+  } else if (file) {
+    return (
+      <span>
+        <b>file:</b> {file}
+      </span>
+    )
+  } else if (id) {
+    return (
+      <span>
+        <b>id:</b> {file}
+      </span>
     )
   }
 }
