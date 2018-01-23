@@ -18,4 +18,4 @@ def test_basic_head_and_get():
     assert head_response.status_code in (200, 404)
 
     get_response = requests.get(url)
-    assert get_response.status_code in (404, 302)
+    assert get_response.status_code in (200, 302, 404)
