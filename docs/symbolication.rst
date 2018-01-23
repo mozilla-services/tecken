@@ -232,25 +232,18 @@ you can also do the same POST request to :base_url:`/` too.
 Sporadic Network Errors
 =======================
 
-If you try to run a symbolication on a flaky network all sorts of network
-errors can happen between the symbolication service and the general
-symbol store (S3). If any of these errors occur, it does **not** break
-the request but in the symbolication output, the module is simply marked
-as not known.
+If, during symbolication, we fail to download a symbol from the S3 store,
+the symbolication fails and a ``503 Service Unavailable`` is returned.
+This only happens if the communication with S3 fails in an **operational
+way** such as failing to connect, SSL errors, or timeouts.
 
-The list of errors that might occur are:
+If you, as a client receive this error it means you can try again later
+and it should work then.
 
-* ``requests.exceptions.ConnectionError`` (e.g. DNS errors)
-
-* ``requests.exceptions.SSLError`` (happens if the network connection breaks
-  whilst TLS handshaking)
-
-* ``requests.exceptions.ReadTimeout`` (unlikely but can happen either
-  network is temporarily saturated)
-
-* ``requests.exceptions.ContentDecodingError`` (if a symbol is served in a
-  non-gzip way and can't be decompressed)
-
+If however there are problems with the symbol files downloaded from S3,
+the client will receive a ``200 OK`` modules needed will be reported as
+**not found**. For example, if a certain ``xul.sym`` file is corrupt,
+the symbolication will work but it will say the module can't be found.
 
 How Caching Works
 =================

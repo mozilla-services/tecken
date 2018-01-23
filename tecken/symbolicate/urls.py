@@ -11,8 +11,13 @@ app_name = 'symbolicate'
 urlpatterns = [
     path(
         'v4',
-        views.symbolicate_json,
-        name='symbolicate_json'
+        views.symbolicate_v4_json,
+        name='symbolicate_v4_json'
+    ),
+    path(
+        'v5',
+        views.symbolicate_v5_json,
+        name='symbolicate_v5_json'
     ),
 
 ]

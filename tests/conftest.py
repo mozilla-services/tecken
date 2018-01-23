@@ -34,9 +34,12 @@ def json_poster(client):
     as a valid JSON string with the right header.
     """
     def inner(url, data, **extra):
+        debug = extra.pop('debug', None)
         if not isinstance(data, str):
             data = json.dumps(data)
         extra['content_type'] = 'application/json'
+        if debug is not None:
+            extra['HTTP_DEBUG'] = str(debug)
         return client.post(url, data, **extra)
     return inner
 
