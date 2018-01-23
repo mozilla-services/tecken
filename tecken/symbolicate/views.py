@@ -521,7 +521,18 @@ class SymbolicateJSON:
                 # with later by this method's caller.
                 # XXX I don't like this! That would can be done here instead.
             else:
-                assert isinstance(symbol_offsets, list)
+                # We *used* store it as a empty dict (when we wanted to
+                # remember that it can't be found). But in the new code
+                # we use an empty list.
+                # This makes things complicated for upgrading existing
+                # systems. So let's make a fix for that.
+                if (
+                    isinstance(symbol_offsets, dict) and
+                    not symbol_offsets
+                ):  # pragma: no cover
+                    symbol_offsets = []
+
+                assert isinstance(symbol_offsets, list), type(symbol_offsets)
                 if not symbol_offsets:  # e.g. an empty list
                     # It was cached but empty. That means it was logged that
                     # it was previously attempted but failed.
