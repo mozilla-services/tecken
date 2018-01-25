@@ -79,7 +79,13 @@ def test_get_key_content_type(settings):
 
 
 @pytest.mark.django_db
-def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
+def test_upload_archive_happy_path(
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache
+):
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename='upload_symbols')
@@ -218,6 +224,22 @@ def test_upload_archive_happy_path(client, botomock, fakeuser, metricsmock):
     assert all_tags.count('tecken.upload_file_upload') == 2
     assert all_tags[-1] == 'tecken.upload_archive'
 
+    invalidate_symbolicate_cache_args = [
+        x[0] for x in
+        upload_mock_invalidate_symbolicate_cache.all_delay_arguments
+    ]
+    # The upload should have triggered a call to
+    # tecken.symbolicate.tasks.invalidate_symbolicate_cache
+    # one time for these uploaded files
+    call_args, = invalidate_symbolicate_cache_args
+    # And the first (and only argument) should be a list of tuples
+    first_arg, = call_args
+    # Use `sorted()` because the order is unpredictable.
+    assert sorted(first_arg) == [
+        ('south-africa-flag', 'deadbeef'),
+        ('xpcshell.dbg', 'A7D6F1BB18CD4CB48'),
+    ]
+
 
 @pytest.mark.django_db
 def test_upload_try_symbols_happy_path(
@@ -225,6 +247,7 @@ def test_upload_try_symbols_happy_path(
     botomock,
     fakeuser,
     metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
 ):
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename='upload_try_symbols')
@@ -355,7 +378,8 @@ def test_upload_archive_one_uploaded_one_skipped(
     client,
     botomock,
     fakeuser,
-    metricsmock
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -529,7 +553,8 @@ def test_upload_archive_key_lookup_cached(
     client,
     botomock,
     fakeuser,
-    metricsmock
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -635,7 +660,8 @@ def test_upload_archive_key_lookup_cached_without_metadata(
     client,
     botomock,
     fakeuser,
-    metricsmock
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
 ):
     """Same as test_upload_archive_key_lookup_cached() but without
     any metadata."""
@@ -742,7 +768,8 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
     client,
     botomock,
     fakeuser,
-    metricsmock
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -821,7 +848,8 @@ def test_upload_archive_one_uploaded_one_errored(
     client,
     botomock,
     fakeuser,
-    metricsmock
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
 ):
 
     class AnyUnrecognizedError(Exception):
@@ -896,7 +924,8 @@ def test_upload_archive_with_cache_invalidation(
     botomock,
     fakeuser,
     metricsmock,
-    settings
+    settings,
+    upload_mock_invalidate_symbolicate_cache
 ):
 
     settings.SYMBOL_URLS = ['https://s3.example.com/mybucket']
@@ -1081,7 +1110,8 @@ def test_upload_archive_by_url(
     fakeuser,
     metricsmock,
     settings,
-    requestsmock
+    requestsmock,
+    upload_mock_invalidate_symbolicate_cache
 ):
 
     requestsmock.head(

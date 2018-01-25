@@ -27,7 +27,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Specifically list the apps that have tasks.py
 # Note! If not doing this you get a strange RuntimeError
 # ('path' must be None or a list, not <class '_frozen_importlib_external._NamespacePath'>)  # noqa
-app.autodiscover_tasks(['tecken', 'tecken.download'])
+app.autodiscover_tasks(['tecken', 'tecken.download', 'tecken.symbolicate'])
 
 
 @app.task(bind=True)

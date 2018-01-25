@@ -35,6 +35,7 @@ from tecken.upload.utils import (
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
 )
+from tecken.symbolicate.tasks import invalidate_symbolicate_cache_task
 from tecken.upload.models import Upload
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
@@ -332,6 +333,8 @@ def upload_archive(request, tempdir):
             max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
         )
     file_uploads_created = 0
+    uploaded_symbol_keys = []
+    key_to_symbol_keys = {}
     with thread_pool as executor:
         future_to_key = {}
         for member in file_listing:
@@ -341,6 +344,11 @@ def upload_archive(request, tempdir):
             key_name = os.path.join(
                 prefix, member.name
             )
+            # We need to know and remember, for every file attempted,
+            # what that name corresponds to as a "symbol key".
+            # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
+            symbol_key = tuple(member.name.split('/')[:2])
+            key_to_symbol_keys[key_name] = symbol_key
             future_to_key[
                 executor.submit(
                     upload_file_upload,
@@ -358,12 +366,18 @@ def upload_archive(request, tempdir):
             file_upload = future.result()
             if file_upload:
                 file_uploads_created += 1
+                uploaded_symbol_keys.append(
+                    key_to_symbol_keys[file_upload.key]
+                )
             else:
                 skipped_keys.append(future_to_key[future])
                 metrics.incr('upload_file_upload_skip', 1)
 
     if file_uploads_created:
         logger.info(f'Created {file_uploads_created} FileUpload objects')
+        # If there were some file uploads, there will be some symbol keys
+        # that we can send to a background task to invalidate.
+        invalidate_symbolicate_cache_task.delay(uploaded_symbol_keys)
     else:
         logger.info(f'No file uploads created for {upload_obj!r}')
 
