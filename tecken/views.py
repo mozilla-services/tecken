@@ -14,19 +14,22 @@ from django.shortcuts import redirect
 from django.conf import settings
 from django.views.static import serve
 
-from .symbolicate.views import symbolicate_json
 from tecken.base.decorators import api_require_safe
 from tecken.tasks import sample_task
 
 
 @csrf_exempt
 def dashboard(request):
-    # Ideally people should...
-    # `HTTP -X POST -d JSON http://hostname/symbolicate/`
-    # But if they do it directly on the root it should still work,
-    # for legacy reasons.
     if request.method == 'POST' and request.body:
-        return symbolicate_json(request)
+        # We *used* to allow symbolication off the '/' root URL. It was
+        # due to legacy when Tecken became a mix of Socorro's symbol upload,
+        # Snappy's symbolication, etc.
+        # It's time to get out of that habit and start using the right
+        # endpoint explicitly.
+        return http.HttpResponse(
+            'See http://tecken.readthedocs.io/en/latest/symbolication.html',
+            status=410  # Gone
+        )
 
     absolute_url = request.build_absolute_uri()
     if (

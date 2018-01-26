@@ -163,12 +163,6 @@ class SymbolDownloader:
         'MODULE windows x86 9354378E7F4E4322A83EA57C483671962 nss3.pdb'
     """
 
-    requests_operational_errors = (
-        requests.exceptions.ReadTimeout,
-        requests.exceptions.SSLError,
-        requests.exceptions.ConnectionError,
-    )
-
     def __init__(self, urls, file_prefix=settings.SYMBOL_FILE_PREFIX):
         self.urls = urls
         self._sources = None
@@ -351,13 +345,7 @@ class SymbolDownloader:
                 logger.debug(
                     f'Looking for symbol file by URL {file_url!r}'
                 )
-                try:
-                    response = requests.get(file_url, stream=True)
-                except self.requests_operational_errors as exception:
-                    logger.warning(
-                        f'{exception!r} when downloading {source}'
-                    )
-                    continue
+                response = requests.get(file_url, stream=True)
                 if response.status_code == 404:
                     # logger.warning('{} 404 Not Found'.format(file_url))
                     continue
