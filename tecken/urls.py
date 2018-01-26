@@ -15,7 +15,7 @@ handler404 = 'tecken.views.handler404'
 
 
 class FrontendRoutesPrefixConverter:
-    regex = r'users|tokens|help|uploads|downloads|index\.html'
+    regex = r'(users|tokens|help|uploads|downloads|index\.html).*?'
 
     def to_python(self, value):
         return value
