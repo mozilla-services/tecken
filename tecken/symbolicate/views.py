@@ -302,33 +302,36 @@ class SymbolicateJSON:
                 # If there was no list, the symbol could ultimately not
                 # be found, at all. There's no point trying to figure out
                 # what the signature is.
-                signature = None
+                function = None
                 if symbol_offset_list:
                     # Even if our module offset isn't in that list,
                     # there is still hope to be able to find the
                     # nearest signature.
                     if module_offset in symbol_offset_list:
                         # Let's get it from the store!
-                        signature = signatures[symbol_key][module_offset]
+                        function = signatures[symbol_key][module_offset]
                         function_start = module_offset
+                        function_offset = 0
                     else:
                         function_start = self._get_nearest(
                             symbol_offset_list,
                             module_offset
                         )
-                        signature = signatures[symbol_key][function_start]
+                        function = signatures[symbol_key][function_start]
+                        function_offset = module_offset - function_start
 
                 frame = {
                     'module_offset': module_offset,
                     'module': symbol_filename,
                     'frame': j,
                 }
-                if signature is not None:
-                    frame['function'] = signature
-                    frame['function_offset'] = module_offset - function_start
+                if function is not None:
+                    frame['function'] = function
+                    frame['function_offset'] = function_offset
 
                 response_stack.append(frame)
 
+            # XXX Stop calling it this. It's an old word.
             result['symbolicatedStacks'].append(response_stack)
 
         t1 = time.time()

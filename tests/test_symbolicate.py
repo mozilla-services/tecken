@@ -934,27 +934,32 @@ def test_invalidate_symbols_invalidates_cache(
             raise NotImplementedError(api_params)
 
     with botomock(mock_api_call):
-        url = reverse('symbolicate:symbolicate_json')
+        url = reverse('symbolicate:symbolicate_v5_json')
         response = json_poster(url, {
-            'stacks': [[[0, 65802]]],
+            'stacks': [[[0, 11723767]]],
             'memoryMap': [
                 ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
             ],
-            'version': 4,
         })
         result = response.json()
-        assert result['knownModules'] == [False]
+        result1 = result['results'][0]
+        stack1 = result1['stacks'][0]
+        frame1 = stack1[0]
+        assert 'function' not in frame1  # module couldn't be found
         assert len(mock_api_calls) == 1
 
         response = json_poster(url, {
-            'stacks': [[[0, 65802]]],
+            'stacks': [[[0, 11723767]]],
             'memoryMap': [
                 ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
             ],
             'version': 4,
         })
         result = response.json()
-        assert result['knownModules'] == [False]
+        result1 = result['results'][0]
+        stack1 = result1['stacks'][0]
+        frame1 = stack1[0]
+        assert 'function' not in frame1  # module still couldn't be found
         # Expected because the cache stores that the file can't be found.
         assert len(mock_api_calls) == 1
 
@@ -963,15 +968,16 @@ def test_invalidate_symbols_invalidates_cache(
             ('xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'),
         ])
         response = json_poster(url, {
-            'stacks': [[[0, 65802]]],
+            'stacks': [[[0, 11723767]]],
             'memoryMap': [
                 ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
             ],
             'version': 4,
         })
         result = response.json()
-        assert result['knownModules'] == [True]
-        assert result['symbolicatedStacks'] == [
-            ['XREMain::XRE_mainRun() (in xul.pdb)']
-        ]
+        result1 = result['results'][0]
+        stack1 = result1['stacks'][0]
+        frame1 = stack1[0]
+        assert frame1['function']
+        assert frame1['function'] == 'XREMain::XRE_mainRun()'
         assert len(mock_api_calls) == 2
