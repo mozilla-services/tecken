@@ -168,6 +168,9 @@ class SymbolDownloader:
         self._sources = None
         self.file_prefix = file_prefix
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__} urls={self.urls}>'
+
     def _get_sources(self):
         for url in self.urls:
             # The URL is expected to have the bucket name as the first

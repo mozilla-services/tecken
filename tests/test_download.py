@@ -173,11 +173,31 @@ def test_client_try_download(client, botomock, settings):
         '44E4EC8C2F41492B9369D6B9A059577C2',
         'xul.sym',
     ))
+    try_url = reverse('download:download_symbol_try', args=(
+        'xul.pdb',
+        '44E4EC8C2F41492B9369D6B9A059577C2',
+        'xul.sym',
+    ))
     with botomock(mock_api_call):
         response = client.get(url)
         assert response.status_code == 404
         assert len(mock_calls) == 1
 
+        response = client.get(try_url)
+        assert response.status_code == 302
+        assert len(mock_calls) == 2
+        # Also note that the headers are the same as for regular downloads
+        assert response['Access-Control-Allow-Origin'] == '*'
+        # And like regular download, you're only allowed to use GET or HEAD
+        response = client.put(try_url)
+        assert response.status_code == 405
+        # And calling it with DEBUG header should return a header with
+        # some debug info. Just like regular download.
+        response = client.get(try_url, HTTP_DEBUG='true')
+        assert response.status_code == 302
+        assert float(response['debug-time']) > 0
+
+        # You can also use the regular URL but add ?try to the URL
         response = client.get(url, {'try': True})
         assert response.status_code == 302
         assert len(mock_calls) == 2
@@ -187,7 +207,7 @@ def test_client_try_download(client, botomock, settings):
         assert response.status_code == 404
         assert len(mock_calls) == 2
 
-        response = client.get(url, {'try': True})
+        response = client.get(try_url)
         assert response.status_code == 302
         assert len(mock_calls) == 2
 

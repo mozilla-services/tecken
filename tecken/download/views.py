@@ -97,9 +97,6 @@ def download_from_microsoft(
         )
 
 
-@set_request_debug
-@api_require_http_methods(['GET', 'HEAD'])
-@set_cors_headers(origin='*', methods='GET')
 def download_symbol_legacy(request, legacyproduct, symbol, debugid, filename):
     if legacyproduct not in settings.DOWNLOAD_LEGACY_PRODUCTS_PREFIXES:
         raise http.Http404('Invalid legacy product prefix')
@@ -107,11 +104,21 @@ def download_symbol_legacy(request, legacyproduct, symbol, debugid, filename):
     return download_symbol(request, symbol, debugid, filename)
 
 
+def download_symbol_try(request, symbol, debugid, filename):
+    return download_symbol(
+        request,
+        symbol,
+        debugid,
+        filename,
+        try_symbols=True,
+    )
+
+
 @metrics.timer_decorator('download_symbol')
 @set_request_debug
 @api_require_http_methods(['GET', 'HEAD'])
 @set_cors_headers(origin='*', methods='GET')
-def download_symbol(request, symbol, debugid, filename):
+def download_symbol(request, symbol, debugid, filename, try_symbols=False):
     # First there's an opportunity to do some basic pattern matching on
     # the symbol, debugid, and filename parameters to determine
     # if we can, with confidence, simply ignore it.
@@ -136,7 +143,7 @@ def download_symbol(request, symbol, debugid, filename):
 
     refresh_cache = '_refresh' in request.GET
 
-    if 'try' in request.GET:
+    if 'try' in request.GET or try_symbols:
         downloader = try_downloader
     else:
         downloader = normal_downloader

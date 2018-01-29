@@ -40,7 +40,11 @@ urlpatterns = [
         views.missing_symbols_csv,
         name='missing_symbols_csv'
     ),
-    # Note how the product name is specific and ignored.
+    path(
+        'try/<str:symbol>/<hex:debugid>/<str:filename>',
+        views.download_symbol_try,
+        name='download_symbol_try'
+    ),
     path(
         '<legacyproduct>/<str:symbol>/<hex:debugid>/<str:filename>',
         views.download_symbol_legacy,
