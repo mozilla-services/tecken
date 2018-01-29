@@ -222,7 +222,8 @@ through a list of available S3 configurations. By default it's only really
 one, the main S3 bucket for public symbols.
 
 To download symbols that might be part of a Try build you have to pass an
-optional query string key: ``try``. For example:
+optional query string key: ``try``. Or you can prefix the URL with ``/try``.
+For example:
 
 .. code-block:: shell
 
@@ -232,9 +233,12 @@ optional query string key: ``try``. For example:
     $ curl https://symbols.mozilla.org/tried.pdb/HEX/tried.sym?try
     ...302 Found...
 
-What Tecken does is, if you pass ``?try`` to the URL, it takes the
-existing list of S3 configurations and *appends* the S3 configuration for
-Try builds.
+    $ curl https://symbols.mozilla.org/try/tried.pdb/HEX/tried.sym
+    ...302 Found...
+
+What Tecken does is, if you pass ``?try`` to the URL or use the ``/try``
+prefix, it takes the existing list of S3 configurations and
+*appends* the S3 configuration for Try builds.
 
 Note; symbols from Try builds is always tried last! So if there's a known
 symbol called ``foo.pdb/HEX/foo.sym`` and someone triggers a Try build
