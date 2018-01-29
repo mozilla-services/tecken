@@ -10,7 +10,7 @@
     "mobx": "3.3.1",
     "mobx-react": "4.3.4",
     "query-string": "5.0.1",
-    "raven-js": "3.20.0",
+    "raven-js": "3.22.1",
     "react": "16.1.1",
     "react-dom": "16.1.1",
     "react-fontawesome": "1.6.1",
