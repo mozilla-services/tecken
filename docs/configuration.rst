@@ -167,6 +167,19 @@ trigger redirects to *another* domain you have to add that domain too.
 For example, if you have a ``mybigsymbolzips.example.com`` that redirects to
 ``cloudfront.amazonaws.net`` you need to add both.
 
+Symbolication
+-------------
+
+Symbolication uses the same configuration as Download does, namely
+``DJANGO_SYMBOL_URLS``.
+
+The value of the ``DJANGO_SYMBOL_URLS`` is encoded (as a short hash) into
+every key Redis uses to store previous downloads as structured data.
+Meaning, if you change ``DJANGO_SYMBOL_URLS`` on an already running,
+all existing Redis store caching will be reset. And the old keys, that
+are now no longer accessible, will slowly be recycled as the Redis store
+uses a LRU eviction policy.
+
 Try Builds
 ----------
 
