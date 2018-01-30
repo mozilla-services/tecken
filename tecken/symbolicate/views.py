@@ -24,7 +24,6 @@ from django.views.decorators.csrf import csrf_exempt
 from tecken.base.symboldownloader import (
     SymbolDownloader,
     SymbolNotFound,
-    SymbolDownloadError,
 )
 from tecken.base.decorators import set_request_debug
 from .utils import make_symbol_key_cache_key
@@ -106,7 +105,7 @@ class SymbolicateJSON:
         # the result we will populate
         result = {
             'symbolicatedStacks': [],
-            'knownModules': [False] * len(memory_map),
+            'knownModules': [None] * len(memory_map),
         }
 
         # Record the total time it took to symbolicate
@@ -546,7 +545,6 @@ class SymbolicateJSON:
             information = {}
 
             symbol_offsets = many.get(cache_key)
-            # print('symbol_offsets', cache_key, symbol_offsets)
             if symbol_offsets is None:  # not existant in cache
                 # Need to download this from the Internet.
                 metrics.incr('symbolicate_cache_miss', 1)
@@ -776,11 +774,8 @@ def symbolicate_v4_json(request, json_body):
     #     return http.HttpResponse(str(exception), status=503)
     # The result will have 'symbolicatedStacks' list that isn't in the
     # old v4 format so we have to rewrite it.
-    # print("REWRITE:")
-    # print(result['symbolicatedStacks'])
 
     def rewrite_dict_to_list(d):
-        # print("D", d)
         if 'function' not in d:
             try:
                 function = hex(d['module_offset'])
@@ -790,14 +785,12 @@ def symbolicate_v4_json(request, json_body):
                 function = str(d['module_offset'])
         else:
             function = d['function']
-        print(d)
         return '{} (in {})'.format(
             function,
             d['module']
         )
 
     for i, stack in enumerate(result['symbolicatedStacks']):
-        # print("STACK:", repr(stack))
         result['symbolicatedStacks'][i] = [
             rewrite_dict_to_list(x) for x in stack
         ]
@@ -902,14 +895,18 @@ def symbolicate_v5_json(request, json_body):
                 job['stacks'],
                 job['memoryMap'],
             )
+            found_modules = {}
+            for i, module in enumerate(job['memoryMap']):
+                found_modules['/'.join(module)] = result['knownModules'][i]
+
             job_result = {
                 'stacks': [
                     serialize_frames(x) for x in result['symbolicatedStacks']
                 ],
+                'found_modules': found_modules,
             }
             if 'debug' in result:
                 job_result['debug'] = result['debug']
-
             results['results'].append(job_result)
         return JsonResponse(results)
     except operational_exceptions as exception:
