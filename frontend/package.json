@@ -8,17 +8,17 @@
     "date-fns": "2.0.0-alpha.7",
     "font-awesome": "4.7.0",
     "mobx": "3.4.1",
-    "mobx-react": "4.3.4",
+    "mobx-react": "4.3.5",
     "query-string": "5.0.1",
     "raven-js": "3.22.1",
-    "react": "16.1.1",
-    "react-dom": "16.1.1",
+    "react": "16.2.0",
+    "react-dom": "16.2.0",
     "react-fontawesome": "1.6.1",
     "react-router-dom": "4.2.2"
   },
   "devDependencies": {
     "prettier": "1.10.2",
-    "react-scripts": "1.0.17"
+    "react-scripts": "1.1.0"
   },
   "scripts": {
     "start": "react-scripts start",
