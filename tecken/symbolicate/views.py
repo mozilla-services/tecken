@@ -424,7 +424,7 @@ class SymbolicateJSON:
                 },
                 "win32.dll/HEX": {
                     "found": False,
-                    "symbol_offsets": None  # Means it wasn't find in Redis
+                    "symbol_offsets": None  # Means it wasn't found in Redis
                 }
             }
 
@@ -886,7 +886,12 @@ def symbolicate_v5_json(request, json_body):
 
     def serialize_frames(frames):
         for frame in frames:
-            frame['module_offset'] = hex(frame['module_offset'])
+            try:
+                frame['module_offset'] = hex(frame['module_offset'])
+            except TypeError:
+                # Happens if 'module_offset' is not an int16
+                # and thus can't be represented in hex.
+                frame['module_offset'] = str(frame['module_offset'])
             if 'function_offset' in frame and frame.get('function'):
                 frame['function_offset'] = hex(frame['function_offset'])
         return frames
@@ -900,10 +905,11 @@ def symbolicate_v5_json(request, json_body):
             job_result = {
                 'stacks': [
                     serialize_frames(x) for x in result['symbolicatedStacks']
-                ]
+                ],
             }
             if 'debug' in result:
                 job_result['debug'] = result['debug']
+
             results['results'].append(job_result)
         return JsonResponse(results)
     except operational_exceptions as exception:

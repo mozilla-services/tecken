@@ -547,6 +547,28 @@ def test_symbolicate_v4_json_bad_module_offset(
     ]
 
 
+def test_symbolicate_v5_json_bad_module_offset(
+    json_poster,
+    clear_redis_store,
+    botomock
+):
+    reload_downloader('https://s3.example.com/public/prefix/')
+
+    url = reverse('symbolicate:symbolicate_v5_json')
+    with botomock(default_mock_api_call):
+        response = json_poster(url, {
+            'stacks': [[[-1, 1.00000000], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        })
+    result = response.json()
+    result1, = result['results']
+    frame1 = result1['stacks'][0][0]
+    assert frame1['module_offset'] == str(1.0)
+
+
 def test_symbolicate_v4_json_happy_path_with_debug(
     json_poster,
     clear_redis_store,
