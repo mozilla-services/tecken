@@ -1068,7 +1068,6 @@ def test_invalidate_symbols_invalidates_cache(
             'memoryMap': [
                 ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
             ],
-            'version': 4,
         })
         result = response.json()
         result1 = result['results'][0]
@@ -1087,7 +1086,6 @@ def test_invalidate_symbols_invalidates_cache(
             'memoryMap': [
                 ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
             ],
-            'version': 4,
         })
         result = response.json()
         result1 = result['results'][0]
@@ -1096,3 +1094,63 @@ def test_invalidate_symbols_invalidates_cache(
         assert frame1['function']
         assert frame1['function'] == 'XREMain::XRE_mainRun()'
         assert len(mock_api_calls) == 2
+
+
+def test_change_symbols_urls_invalidates_cache(
+    clear_redis_store,
+    botomock,
+    json_poster,
+    settings
+):
+    # Initial configuration
+    settings.SYMBOL_URLS = ['https://s3.example.com/private/prefix/']
+    reload_downloader('https://s3.example.com/private/prefix/')
+
+    mock_api_calls = []
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'GetObject'
+        mock_api_calls.append((operation_name, api_params))
+        assert api_params['Key'].endswith(
+            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+        )
+        content = SAMPLE_SYMBOL_CONTENT['xul.sym']
+        if len(mock_api_calls) > 1:
+            # This is the second time! Mess with it a bit.
+            content = content.upper()
+        return {
+            'Body': BytesIO(content.encode('utf-8'))
+        }
+
+    with botomock(mock_api_call):
+        url = reverse('symbolicate:symbolicate_v5_json')
+        job = {
+            'stacks': [[[0, 11723767]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
+            ],
+        }
+        response = json_poster(url, job, debug=True)
+        result = response.json()
+        result1, = result['results']
+        stack1, = result1['stacks']
+        frame1, = stack1
+        assert frame1['function'] == 'XREMain::XRE_mainRun()'
+        assert result1['debug']['downloads']['count'] == 1
+
+        # Now, in the middle of everything, change the SYMBOL_URLS.
+        # This should cause the exact same symbolication request to
+        # have to do another download and because of the mocking
+        # noticing this is the second download, it messes with the
+        # fixture content.
+        settings.SYMBOL_URLS = [
+            'https://s3.example.com/private/prefix/',
+            'https://s3.example.com/different',
+        ]
+        response = json_poster(url, job, debug=True)
+        result = response.json()
+        result1, = result['results']
+        stack1, = result1['stacks']
+        frame1, = stack1
+        assert frame1['function'] == 'XREMAIN::XRE_MAINRUN()'
+        assert result1['debug']['downloads']['count'] == 1

@@ -258,7 +258,7 @@ class SymbolicateJSON:
                         self.all_symbol_maps[symbol_key][key]
                     )
             else:
-                cache_key = make_symbol_key_cache_key(symbol_key)
+                cache_key = self._make_cache_key(symbol_key)
                 t0 = time.time()
                 values = redis_store_connection.hmget(
                     store.make_key(cache_key),
@@ -406,7 +406,6 @@ class SymbolicateJSON:
     @staticmethod
     def _make_cache_key(symbol_key):
         return make_symbol_key_cache_key(symbol_key)
-        # return 'symbol:{}/{}'.format(*symbol_key)
 
     @metrics.timer_decorator('symbolicate_get_symbol_maps')
     def get_symbol_offsets(self, symbol_keys):
@@ -431,7 +430,7 @@ class SymbolicateJSON:
         "in batch" is done so. So multiple lookup keys get turned into
         a list just so we can do things like MGET Redis queries.
         """
-        cache_keys = {make_symbol_key_cache_key(x): x for x in symbol_keys}
+        cache_keys = {self._make_cache_key(x): x for x in symbol_keys}
         redis_store_connection = get_redis_connection('store')
         cache_lookup_times = []
 
@@ -590,7 +589,7 @@ class SymbolicateJSON:
         # from S3 via the network. If we do it's very often just 1 more
         # so there's little point in making that parallel.
         for symbol_key, module_index in requirements:
-            cache_key = make_symbol_key_cache_key(symbol_key)
+            cache_key = self._make_cache_key(symbol_key)
             information = {}
             try:
                 information.update(self.load_symbol(*symbol_key))
