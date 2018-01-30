@@ -49,7 +49,7 @@ the ``yarn`` installed in the Docker frontend container. For example:
 
 .. code-block:: shell
 
-    $ docker run -it tecken_frontend bash
+    $ docker-compose run frontend bash
     > yarn outdated                   # will display which packages can be upgraded today
     > yarn upgrade date-fns --latest  # example of upgrading an existing package
     > yarn add new-hotness            # adds a new package
