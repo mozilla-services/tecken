@@ -237,6 +237,10 @@ def test_client_happy_path_v5(
             }
         ]
     ]
+    assert result1['found_modules'] == {
+        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
+        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': True,
+    }
 
     metrics_records = metricsmock.get_records()
     assert metrics_records[0] == (
@@ -511,7 +515,7 @@ def test_symbolicate_v4_json_bad_module_indexes(
         'version': 4,
     })
     result = response.json()
-    assert result['knownModules'] == [False, True]
+    assert result['knownModules'] == [None, True]
     assert result['symbolicatedStacks'] == [
         [
             f'{hex(11723767)} (in wntdll.pdb)',
@@ -538,7 +542,7 @@ def test_symbolicate_v4_json_bad_module_offset(
             'version': 4,
         })
     result = response.json()
-    assert result['knownModules'] == [False, True]
+    assert result['knownModules'] == [None, True]
     assert result['symbolicatedStacks'] == [
         [
             f'{str(1.0000000)} (in wntdll.pdb)',
@@ -677,6 +681,95 @@ def test_symbolicate_v4_json_one_symbol_not_found_with_debug(
     # It should work but because only 1 file could be downloaded,
     # there'll be no measurement of the one that 404 failed.
     assert result['debug']['downloads']['count'] == 1
+
+
+def test_symbolicate_v5_json_one_symbol_not_found(
+    json_poster,
+    clear_redis_store,
+    botomock,
+):
+    reload_downloader('https://s3.example.com/public/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        if operation_name == 'GetObject':
+            filename = api_params['Key'].split('/')[-1]
+            if filename == 'wntdll.sym':
+                parsed_response = {
+                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                }
+                raise ClientError(parsed_response, operation_name)
+            if filename in SAMPLE_SYMBOL_CONTENT:
+                return {
+                    'Body': BytesIO(
+                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
+                    )
+                }
+            raise NotImplementedError(api_params)
+
+        raise NotImplementedError(operation_name)
+
+    url = reverse('symbolicate:symbolicate_v5_json')
+    with botomock(mock_api_call):
+        response = json_poster(url, {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        })
+    result = response.json()
+    result1, = result['results']
+    assert result1['found_modules'] == {
+        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
+        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': False,
+    }
+
+
+def test_symbolicate_v5_json_one_symbol_never_looked_up(
+    json_poster,
+    clear_redis_store,
+    botomock,
+):
+    """What if you say you have 2 modules in your memory map but you never
+    reference one of them. In that case the module is neither found or
+    not found."""
+    reload_downloader('https://s3.example.com/public/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        if operation_name == 'GetObject':
+            filename = api_params['Key'].split('/')[-1]
+            if filename == 'wntdll.sym':
+                parsed_response = {
+                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                }
+                raise ClientError(parsed_response, operation_name)
+            if filename in SAMPLE_SYMBOL_CONTENT:
+                return {
+                    'Body': BytesIO(
+                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
+                    )
+                }
+            raise NotImplementedError(api_params)
+
+        raise NotImplementedError(operation_name)
+
+    url = reverse('symbolicate:symbolicate_v5_json')
+    with botomock(mock_api_call):
+        response = json_poster(url, {
+            # Note! We never use a module index of 1 to point to the
+            # second module in the memoryMap.
+            'stacks': [[[0, 11723767], [0, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        })
+    result = response.json()
+    result1, = result['results']
+    assert result1['found_modules'] == {
+        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
+        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': None,
+    }
 
 
 def test_symbolicate_v4_json_one_symbol_empty(
