@@ -30,7 +30,6 @@ from tecken.base.decorators import (
     make_tempdir,
 )
 from tecken.upload.utils import (
-    get_archive_members,
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
     upload_file_upload,
@@ -154,11 +153,11 @@ def _ignore_member_file(filename):
     'upload.upload_try_symbols',
 )
 @make_tempdir(settings.UPLOAD_TEMPDIR_PREFIX)
-def upload_archive(request, tempdir):
+def upload_archive(request, upload_dir):
     try:
         for name in request.FILES:
             upload_ = request.FILES[name]
-            upload_dir = dump_and_extract(tempdir, upload_, name)
+            file_listing = dump_and_extract(upload_dir, upload_, name)
             size = upload_.size
             url = None
             redirect_urls = None
@@ -177,7 +176,7 @@ def upload_archive(request, tempdir):
                     redirect_urls = (
                         form.cleaned_data['upload']['redirect_urls'] or None
                     )
-                    download_name = os.path.join(tempdir, name)
+                    download_name = os.path.join(upload_dir, name)
                     with metrics.timer('upload_download_by_url'):
                         response_stream = requests.get(
                             url,
@@ -205,8 +204,8 @@ def upload_archive(request, tempdir):
                                 f'totalling {filesizeformat(total_size)} '
                                 f'({filesizeformat(download_speed)}/s).'
                             )
-                    upload_dir = dump_and_extract(
-                        tempdir,
+                    file_listing = dump_and_extract(
+                        upload_dir,
                         download_name,
                         name
                     )
@@ -237,7 +236,6 @@ def upload_archive(request, tempdir):
             {'error': f'Unrecognized archive file extension "{exception}"'},
             status=400,
         )
-    file_listing = list(get_archive_members(upload_dir))
     error = check_symbols_archive_file_listing(file_listing)
     if error:
         return http.JsonResponse({'error': error.strip()}, status=400)
