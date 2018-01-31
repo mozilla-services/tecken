@@ -4,7 +4,7 @@
 
 import gzip
 import os
-import zipfile
+# import zipfile
 from io import BytesIO
 
 import pytest
@@ -22,7 +22,7 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.upload.views import get_bucket_info
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.upload.utils import (
-    get_archive_members,
+    dump_and_extract,
     key_existing,
     should_compressed_key,
     get_key_content_type,
@@ -45,21 +45,25 @@ class FakeUser:
         return perm in self.perms
 
 
-def test_get_archive_members(tmpdir):
+def test_dump_and_extract(tmpdir):
     with open(ZIP_FILE, 'rb') as f:
-        zf = zipfile.ZipFile(f)
-        zf.extractall(tmpdir)
-        file_listings = list(get_archive_members(tmpdir))
-        # That .zip file has multiple files in it so it's hard to rely
-        # on the order.
-        assert len(file_listings) == 3
-        for file_listing in file_listings:
-            assert file_listing.path
-            assert os.path.isfile(file_listing.path)
-            assert file_listing.name
-            assert not file_listing.name.startswith('/')
-            assert file_listing.size
-            assert file_listing.size == os.stat(file_listing.path).st_size
+        file_listings = dump_and_extract(tmpdir, f, ZIP_FILE)
+    # That .zip file has multiple files in it so it's hard to rely
+    # on the order.
+    assert len(file_listings) == 3
+    for file_listing in file_listings:
+        assert file_listing.path
+        assert os.path.isfile(file_listing.path)
+        assert file_listing.name
+        assert not file_listing.name.startswith('/')
+        assert file_listing.size
+        assert file_listing.size == os.stat(file_listing.path).st_size
+
+    # Inside the tmpdir there should now exist these files.
+    # Know thy fixtures...
+    assert os.path.isdir(os.path.join(tmpdir, 'xpcshell.dbg'))
+    assert os.path.isdir(os.path.join(tmpdir, 'south-africa-flag'))
+    assert os.path.isfile(os.path.join(tmpdir, 'build-symbols.txt'))
 
 
 def test_should_compressed_key(settings):

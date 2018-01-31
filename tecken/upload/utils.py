@@ -45,30 +45,36 @@ def get_file_md5_hash(fn, blocksize=65536):
 
 @metrics.timer_decorator('upload_dump_and_extract')
 def dump_and_extract(root_dir, file_buffer, name):
+    """Given a directory and an open compressed file and its filename,
+    extract all the files in the file and return a list of FileMember
+    objects.
+    The FileMember objects is only ever files. Not the directories.
+    """
     if name.lower().endswith('.zip'):
         zf = zipfile.ZipFile(file_buffer)
         zf.extractall(root_dir)
     else:
         raise UnrecognizedArchiveFileExtension(os.path.splitext(name)[1])
-    return root_dir
+
+    return [
+        FileMember(
+            os.path.join(root_dir, filename),
+            filename
+        ) for filename in zf.namelist()
+        if os.path.isfile(os.path.join(root_dir, filename))
+    ]
 
 
 class FileMember:
-    # XXX switched to namedtuple or something
+    __slots__ = ['path', 'name']
+
     def __init__(self, path, name):
         self.path = path
         self.name = name
-        self.size = os.stat(path).st_size
 
-
-def get_archive_members(directory):
-    # For each file in the directory return an instance of FileMember.
-    # This is sugar for just returning a generator of dicts.
-    for root, dirs, files in os.walk(directory):
-        for name in files:
-            fn = os.path.join(root, name)
-            relative_name = fn[len(directory) + 1:]
-            yield FileMember(fn, relative_name)
+    @property
+    def size(self):
+        return os.stat(self.path).st_size
 
 
 def _key_existing_miss(client, bucket, key):
