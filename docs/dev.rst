@@ -572,6 +572,24 @@ Now, it will install all the necessary Python dependencies only the first
 time. Any time you make a change, just run that ``./bin/build_docs.sh``
 command again.
 
+How to ``psql``
+===============
+
+The simplest way is to use the shortcut in the ``Makefile``
+
+.. code-block:: shell
+
+    $ make psql
+
+If you have a ``.sql`` file you want to send into ``psql`` you can do that
+too with:
+
+.. code-block:: shell
+
+    $ docker-compose run db psql -h db -U postgres < stats-queries.sql
+
+...for example.
+
 
 Backup and Restore PostgreSQL
 =============================
@@ -587,3 +605,16 @@ If you import it with:
 .. code-block:: shell
 
     $ docker-compose run db psql -h db -U postgres < tecken.sql
+
+
+Enable full logging of SQL used
+===============================
+
+To see all the SQL the ORM uses, change the ``LOGGING`` configuration
+in ``settings.py``.
+
+First, change the level for ``django.db.backends`` from ``INFO`` to ``DEBUG``.
+Second, change ``LOGGING_DEFAULT_LEVEL`` from ``INFO`` to ``DEBUG``.
+
+Now, when you run ``make run`` you should see all SQL from Django into
+the terminal stdout.
