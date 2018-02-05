@@ -448,11 +448,6 @@ const UploadsStatsTile = ({ loading, stats }) => (
             uploads={stats.uploads.this_month}
             files={stats.files.this_month}
           />
-          <UploadsRow
-            title="This Year"
-            uploads={stats.uploads.this_year}
-            files={stats.files.this_year}
-          />
         </tbody>
       </table>
     )}
@@ -506,11 +501,6 @@ const DownloadsStatsTile = ({ loading, stats }) => (
             <TableCountCell
               count={stats.downloads.microsoft.this_month.count}
             />
-          </tr>
-          <tr>
-            <th>This Year</th>
-            <TableCountCell count={stats.downloads.missing.this_year.count} />
-            <TableCountCell count={stats.downloads.microsoft.this_year.count} />
           </tr>
         </tbody>
       </table>

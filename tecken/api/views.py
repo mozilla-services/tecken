@@ -808,20 +808,17 @@ def stats(request):
     start_today = today.replace(hour=0, minute=0, second=0)
     start_yesterday = start_today - datetime.timedelta(days=1)
     start_this_month = today.replace(day=1)
-    start_this_year = start_this_month.replace(month=1)
 
     numbers['uploads'] = {
         'all_uploads': all_uploads,
         'today': count_and_size(upload_qs, start_today, today),
         'yesterday': count_and_size(upload_qs, start_yesterday, start_today),
         'this_month': count_and_size(upload_qs, start_this_month, today),
-        'this_year': count_and_size(upload_qs, start_this_year, today),
     }
     numbers['files'] = {
         'today': count_and_size(files_qs, start_today, today),
         'yesterday': count_and_size(files_qs, start_yesterday, start_today),
         'this_month': count_and_size(files_qs, start_this_month, today),
-        'this_year': count_and_size(files_qs, start_this_year, today),
     }
 
     missing_qs = MissingSymbol.objects.all()
@@ -844,13 +841,11 @@ def stats(request):
             'today': count_missing(start_today, today),
             'yesterday': count_missing(start_yesterday, start_today),
             'this_month': count_missing(start_this_month, today),
-            'this_year': count_missing(start_this_year, today),
         },
         'microsoft': {
             'today': count_microsoft(start_today, today),
             'yesterday': count_microsoft(start_yesterday, start_today),
             'this_month': count_microsoft(start_this_month, today),
-            'this_year': count_microsoft(start_this_year, today),
         },
     }
 
