@@ -26,3 +26,4 @@ all-metrics-keys.json
 test-upload-inbox/
 upload-inbox/
 miniodata/
+.pytest_cache/
