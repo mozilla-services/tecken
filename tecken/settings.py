@@ -227,7 +227,7 @@ class Core(AWS, Configuration, Celery, S3):
     # All of these function calls get put in a
     # concurrent.futures.ThreadPoolExecutor pool. This setting is about
     # how many of these to start, max.
-    UPLOAD_FILE_UPLOAD_MAX_WORKERS = values.IntegerValue(10)
+    UPLOAD_FILE_UPLOAD_MAX_WORKERS = values.IntegerValue(default=None)
 
     # Whether to store the missing symbols in Postgres or not.
     # If you disable this, at the time of writing, missing symbols
