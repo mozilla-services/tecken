@@ -2,21 +2,25 @@
   "name": "tecken",
   "description": "The Mozilla Symbol Server",
   "participate": {
+    "docs": "https://tecken.readthedocs.io",
     "irc": "irc://irc.mozilla.org/#breakpad",
-    "irc-contacts": [
-      "peterbe"
-    ]
+    "irc-contacts": ["peterbe", "ted"]
   },
+
   "repository": {
     "url": "https://github.com/mozilla-services/tecken",
     "license": "MPL 2.0"
   },
   "bugs": {
-      "list": "https://github.com/mozilla-services/tecken/issues",
-      "report": "https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+    "list":
+      "https://bugzilla.mozilla.org/buglist.cgi?resolution=---&query_format=advanced&component=Symbols&product=Socorro&list_id=14003234",
+    "report":
+      "https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
   },
   "urls": {
-      "dev": "https://symbols.dev.mozaws.net"
+    "dev": "https://symbols.dev.mozaws.net",
+    "stage": "https://symbols.stage.mozaws.net",
+    "prod": "https://symbols.mozilla.org"
   },
   "whatsdeployed": "https://whatsdeployed.io/s-5HY"
 }
