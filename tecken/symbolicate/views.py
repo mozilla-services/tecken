@@ -25,7 +25,7 @@ from tecken.base.symboldownloader import (
     SymbolDownloader,
     SymbolNotFound,
 )
-from tecken.base.decorators import set_request_debug
+from tecken.base.decorators import set_request_debug, set_cors_headers
 from .utils import make_symbol_key_cache_key
 
 
@@ -748,6 +748,7 @@ def json_post(view_function):
     return inner
 
 
+@set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
 @metrics.timer_decorator('symbolicate_json')
@@ -796,6 +797,7 @@ def symbolicate_v4_json(request, json_body):
     return JsonResponse(result)
 
 
+@set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
 @metrics.timer_decorator('symbolicate_json')
