@@ -242,6 +242,8 @@ def test_client_happy_path_v5(
         'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': True,
     }
 
+    assert response['Access-Control-Allow-Origin'] == '*'
+
     metrics_records = metricsmock.get_records()
     assert metrics_records[0] == (
         INCR, 'tecken.symbolicate_cache_miss', 1, None
@@ -333,6 +335,8 @@ def test_client_happy_path_v4(
             'KiUserCallbackDispatcher (in wntdll.pdb)'
         ]
     ]
+
+    assert response['Access-Control-Allow-Origin'] == '*'
 
     metrics_records = metricsmock.get_records()
     assert metrics_records[0] == (
