@@ -4,6 +4,8 @@ Tecken - All things Mozilla Symbol Server
 [![CircleCI](https://circleci.com/gh/mozilla-services/tecken.svg?style=svg)](https://circleci.com/gh/mozilla-services/tecken)
 [![Updates](https://pyup.io/repos/github/mozilla-services/tecken/shield.svg)](https://pyup.io/repos/github/mozilla-services/tecken/)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovateapp.com/)
+[![What's Deployed](https://img.shields.io/badge/whatsdeployed-dev,stage,prod-green.svg)](https://whatsdeployed.io/s-5HY)
+
 
 
 Please use the documentation on: **https://tecken.readthedocs.io**
