@@ -1107,6 +1107,14 @@ def test_client_with_bad_filenames(client, botomock, metricsmock):
         response = client.get(url)
         assert response.status_code == 400
 
+        url = reverse('download:download_symbol', args=(
+            'crypt3\x10.pdb',
+            '3D0443BF4FF5446B83955512615FD0942',
+            'crypt3\x10.pd_'
+        ))
+        response = client.get(url)
+        assert response.status_code == 400
+
         # There are many more characters that can cause a 400 response
         # because the symbol or the filename contains, what's considered,
         # invalid characters. But there are some that actually work
