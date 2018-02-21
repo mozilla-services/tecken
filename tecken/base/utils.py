@@ -59,7 +59,11 @@ def filesizeformat(bytes):
 
 # See the docstring in invalid_s3_key_name_characters for an explanation
 # of this regex.
-INVALID_S3_CHARS_REGEX = re.compile(r'[\x80-\xff\\\^`><{}\[\]#%"\'\~\|]')
+INVALID_S3_CHARS_REGEX = re.compile(
+    # \x00-\x1f is the "ASCII control characters". That's 00 (Null character)
+    # until 31 (Unit separator) (whatever that is).
+    r'[\x00-\x1f\x80-\xff\\\^`><{}\[\]#%"\'\~\|]'
+)
 
 
 def invalid_s3_key_name_characters(key):
