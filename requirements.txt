@@ -80,9 +80,9 @@ funcsigs==1.0.2 \
 redis==2.10.6 \
     --hash=sha256:8a1900a9f2a0a44ecf6e8b5eb3e967a9909dfed219ad66df094f27f7d6f330fb \
     --hash=sha256:a22ca993cea2962dbb588f9f30d0015ac4afcc45bee27d3978c0dbe9e97c6c0f
-django-redis==4.8.0 \
-    --hash=sha256:5229da5b07ccb8d3e3e9ee098c0b7c03e20eba48634bc456697dd73d62c68b19 \
-    --hash=sha256:9660332cf9de5689a7ebbe0c623c4a0de79e0916a6ae867b5d0b94759bba46c9
+django-redis==4.9.0 \
+    --hash=sha256:a90343c33a816073b735f0bed878eaeec4f83b75fcc0dce2432189b8ea130424 \
+    --hash=sha256:15b47faef6aefaa3f47135a2aeb67372da300e4a4cf06809c66ab392686a2155
 contextlib2==0.5.5 \
     --hash=sha256:f5260a6e679d2ff42ec91ec5252f4eeffdcf21053db9113bd0a8e4d953769c00 \
     --hash=sha256:509f9419ee91cdd00ba34443217d5ca51f5a364a404e1dce9e8979cea969ca48
