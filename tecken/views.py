@@ -8,7 +8,7 @@ import time
 
 from django import http
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.cache import cache_control
+from django.views.decorators.cache import cache_control, never_cache
 from django.core.cache import cache
 from django.shortcuts import redirect
 from django.conf import settings
@@ -130,4 +130,29 @@ def frontend_index_html(request, path='/'):
     return serve(
         request, '/index.html',
         document_root=settings.STATIC_ROOT,
+    )
+
+
+@never_cache
+def auth_debug(request):
+    """Helps to check that your server-client relationship is good and sane.
+    If, in some environment, you can authenticate it might be because
+    cookies don't work or the server cache is busted.
+    """
+    out = []
+    if cache.get('auth_debug'):
+        out.append('Cache works!')
+    else:
+        cache.set('auth_debug', True, 10)
+        out.append('Refresh to see if caching works.')
+
+    if request.session.get('auth_debug'):
+        out.append('Session cookies work!')
+    else:
+        request.session['auth_debug'] = True
+        out.append('Refresh to see if session cookies work.')
+
+    return http.HttpResponse(
+        '\n'.join([''] + out),
+        content_type='text/plain; charset=utf-8'
     )
