@@ -141,3 +141,19 @@ def test_handler404(client):
     information = json.loads(response.content.decode('utf-8'))
     assert information['error']
     assert information['path'] == '/blabla'
+
+
+def test_auth_debug(client):
+    url = reverse('auth_debug')
+
+    response = client.get(url)
+    assert response.status_code == 200
+    text = response.content.decode('utf-8')
+    assert 'Refresh to see if caching works.' in text
+    assert 'Refresh to see if session cookies work.' in text
+
+    response = client.get(url)
+    assert response.status_code == 200
+    text = response.content.decode('utf-8')
+    assert 'Cache works!' in text
+    assert 'Session cookies work!' in text

@@ -618,3 +618,17 @@ Second, change ``LOGGING_DEFAULT_LEVEL`` from ``INFO`` to ``DEBUG``.
 
 Now, when you run ``make run`` you should see all SQL from Django into
 the terminal stdout.
+
+
+Auth not working
+================
+
+There are many reasons for why authentication might not work. Most of the
+pit falls lies with the the configuration and credentials around OpenID
+Connect. I.e. Auth0 in our current case.
+
+Another important thing is that on the Django side, caching and cookies work.
+
+If you have trouble authenticating you can start the server and go to:
+``http://localhost:8000/__auth_debug__``.  It will check that the cache
+can work between requests and that session cookies can be set and read.
