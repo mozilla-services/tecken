@@ -11,7 +11,8 @@ from markus import INCR, GAUGE
 from botocore.exceptions import ClientError
 
 from django.urls import reverse
-from django.core.cache import caches
+from django.core.cache import caches, cache
+from django.utils import timezone
 
 from tecken.base.symboldownloader import SymbolDownloader, SymbolDownloadError
 from tecken.symbolicate import views
@@ -206,6 +207,12 @@ def test_client_happy_path_v5(
 ):
     reload_downloader('https://s3.example.com/public/prefix/')
 
+    count_cache_key = views.get_symbolication_count_key(
+        'v5',
+        timezone.now(),
+    )
+    symbolication_count = cache.get(count_cache_key, 0)
+
     url = reverse('symbolicate:symbolicate_v5_json')
     with botomock(default_mock_api_call):
         job = {
@@ -269,6 +276,9 @@ def test_client_happy_path_v5(
     metricsmock.has_record(GAUGE, 'tecken.store_keys', 1, None)
     # Called twice because this test depends on downloading two symbols
     metricsmock.has_record(GAUGE, 'tecken.store_keys', 2, None)
+
+    symbolication_count_after = cache.get(count_cache_key)
+    assert symbolication_count_after == symbolication_count + 1
 
 
 def test_client_happy_path_v5_with_debug(

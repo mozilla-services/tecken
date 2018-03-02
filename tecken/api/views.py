@@ -22,10 +22,12 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_protect
 from django.db import connection
 from django.core.exceptions import PermissionDenied
+from django.core.cache import cache
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
 from tecken.download.models import MissingSymbol, MicrosoftDownload
+from tecken.symbolicate.views import get_symbolication_count_key
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
@@ -804,6 +806,10 @@ def stats(request):
             total_size=Sum('size'),
         )
 
+    def count_symbolications(prefix, dateobj):
+        cache_key = get_symbolication_count_key(prefix, dateobj)
+        return cache.get(cache_key, 0)
+
     today = timezone.now()
     start_today = today.replace(hour=0, minute=0, second=0)
     start_yesterday = start_today - datetime.timedelta(days=1)
@@ -846,6 +852,17 @@ def stats(request):
             'today': count_microsoft(start_today, today),
             'yesterday': count_microsoft(start_yesterday, start_today),
             'this_month': count_microsoft(start_this_month, today),
+        },
+    }
+
+    numbers['symbolications'] = {
+        'v4': {
+            'today': count_symbolications('v4', today),
+            'yesterday': count_symbolications('v4', start_yesterday),
+        },
+        'v5': {
+            'today': count_symbolications('v5', today),
+            'yesterday': count_symbolications('v5', start_yesterday),
         },
     }
 

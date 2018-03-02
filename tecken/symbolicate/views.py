@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import datetime
 import time
 import logging
 from bisect import bisect
@@ -18,7 +19,7 @@ from django_redis import get_redis_connection
 from django import http
 from django.conf import settings
 from django.http import HttpResponse
-from django.core.cache import caches
+from django.core.cache import caches, cache
 from django.views.decorators.csrf import csrf_exempt
 
 from tecken.base.symboldownloader import (
@@ -74,6 +75,19 @@ class JsonResponse(HttpResponse):
         kwargs.setdefault('content_type', 'application/json')
         data = json.dumps(data, **json_dumps_params)
         super().__init__(content=data, **kwargs)
+
+
+def get_symbolication_count_key(prefix, dateobj):
+    date = dateobj.strftime('%Y%m%d')
+    return f'symbolicationcount:{prefix}:{date}'
+
+
+def increment_symbolication_count(prefix):
+    cache_key = get_symbolication_count_key(prefix, datetime.datetime.utcnow())
+    try:
+        cache.incr(cache_key)
+    except ValueError:
+        cache.set(cache_key, 1, 60 * 60 * 24 * 3)
 
 
 class SymbolicateJSON:
@@ -790,6 +804,8 @@ def symbolicate_v4_json(request, json_body):
             d['module']
         )
 
+    increment_symbolication_count('v4')
+
     for i, stack in enumerate(result['symbolicatedStacks']):
         result['symbolicatedStacks'][i] = [
             rewrite_dict_to_list(x) for x in stack
@@ -889,6 +905,8 @@ def symbolicate_v5_json(request, json_body):
             if 'function_offset' in frame and frame.get('function'):
                 frame['function_offset'] = hex(frame['function_offset'])
         return frames
+
+    increment_symbolication_count('v5')
 
     try:
         for job in json_body['jobs']:
