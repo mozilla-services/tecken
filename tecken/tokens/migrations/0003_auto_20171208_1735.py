@@ -32,7 +32,15 @@ AFFECTED_TOKENS = (
 def correct_migrated_tokens_permissions(apps, schema_editor):
     Token = apps.get_model('tokens', 'Token')
     Permission = apps.get_model('auth', 'Permission')
-    permission = Permission.objects.get(codename='upload_symbols')
+    try:
+        permission = Permission.objects.get(codename='upload_symbols')
+    except Permission.DoesNotExist:
+        # If the permission doesn't exist, it's because you're starting
+        # the system for the very first time ever.
+        # See https://bugzilla.mozilla.org/show_bug.cgi?id=1443156
+        # If this is the case you definitely don't need to worry about
+        # updating some existing Tokens.
+        return
     for first_key, last_key, first_email, last_email in AFFECTED_TOKENS:
         try:
             token = Token.objects.get(
