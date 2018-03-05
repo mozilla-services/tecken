@@ -231,26 +231,37 @@ class SymbolicateJSON:
 
         # Before we loop over the stack, loop over it once just to
         # figure out which HGET commands we're going to need to send.
-        lookups = {}
+        lookups = defaultdict(list)
+
+        # We'll use the module_index repeatedly to figure out what the
+        # of all symbol offsets are. To avoid repeating that logic
+        # too much we'll just a little dict as a cache.
+        _symbol_offset_list_cache = {}
+
         for stack in stacks:
             for module_index, module_offset in stack:
                 if module_index < 0:
                     continue
-                symbol_filename, debug_id = memory_map[module_index]
-                symbol_key = (symbol_filename, debug_id)
-                symbol_offset_list = self.all_symbol_offsets.get(symbol_key)
+                symbol_offset_list = _symbol_offset_list_cache.get(
+                    module_index
+                )
+                if symbol_offset_list is None:
+                    symbol_filename, debug_id = memory_map[module_index]
+                    symbol_key = (symbol_filename, debug_id)
+
+                    symbol_offset_list = self.all_symbol_offsets.get(
+                        symbol_key
+                    )
+                    _symbol_offset_list_cache[module_index] = (
+                        symbol_offset_list
+                    )
+
                 if symbol_offset_list:
                     # There exists a list of offsets for this module!
-                    # Prepare the dict.
-                    if symbol_key not in lookups:
-                        lookups[symbol_key] = []
-                    if module_offset in symbol_offset_list:
-                        lookups[symbol_key].append(module_offset)
-                    else:
-                        lookups[symbol_key].append(self._get_nearest(
-                            symbol_offset_list,
-                            module_offset
-                        ))
+                    lookups[symbol_key].append(self._get_nearest(
+                        symbol_offset_list,
+                        module_offset
+                    ))
 
         # Now we know which lookups we need to do. I.e. Redis store queries.
         # Actually look them up.
@@ -284,10 +295,12 @@ class SymbolicateJSON:
                     # The list 'values' is a list of byte strings.
                     signatures[symbol_key][key] = values[i].decode('utf-8')
 
+        _symbol_offset_list_cache = {}  # reset the cache
+
         # All the downloads (if there were any) *and* all the Redis store
         # lookups have been done. Now, let's focus on making the struct
         # that is going to be the output.
-        for i, stack in enumerate(stacks):
+        for stack in stacks:
             response_stack = []
             for j, (module_index, module_offset) in enumerate(stack):
                 total_stacks += 1
@@ -302,15 +315,23 @@ class SymbolicateJSON:
 
                 real_stacks += 1
 
-                symbol_filename, debug_id = memory_map[module_index]
+                symbol_offset_list = _symbol_offset_list_cache.get(
+                    module_index,
+                )
+                if symbol_offset_list is None:
+                    symbol_filename, debug_id = memory_map[module_index]
+                    symbol_key = (symbol_filename, debug_id)
 
-                symbol_key = (symbol_filename, debug_id)
+                    # This 'stacks_per_module' will only be used in the debug
+                    # output. So give it a string key instead of a tuple.
+                    stacks_per_module['{}/{}'.format(*symbol_key)] += 1
 
-                # This 'stacks_per_module' will only be used in the debug
-                # output. So give it a string key instead of a tuple.
-                stacks_per_module['{}/{}'.format(*symbol_key)] += 1
-
-                symbol_offset_list = self.all_symbol_offsets.get(symbol_key)
+                    symbol_offset_list = self.all_symbol_offsets.get(
+                        symbol_key
+                    )
+                    _symbol_offset_list_cache[module_index] = (
+                        symbol_offset_list
+                    )
 
                 # If there was no list, the symbol could ultimately not
                 # be found, at all. There's no point trying to figure out
@@ -320,18 +341,12 @@ class SymbolicateJSON:
                     # Even if our module offset isn't in that list,
                     # there is still hope to be able to find the
                     # nearest signature.
-                    if module_offset in symbol_offset_list:
-                        # Let's get it from the store!
-                        function = signatures[symbol_key][module_offset]
-                        function_start = module_offset
-                        function_offset = 0
-                    else:
-                        function_start = self._get_nearest(
-                            symbol_offset_list,
-                            module_offset
-                        )
-                        function = signatures[symbol_key][function_start]
-                        function_offset = module_offset - function_start
+                    function_start = self._get_nearest(
+                        symbol_offset_list,
+                        module_offset
+                    )
+                    function_offset = module_offset - function_start
+                    function = signatures[symbol_key][function_start]
 
                 frame = {
                     'module_offset': module_offset,
