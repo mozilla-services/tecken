@@ -41,6 +41,10 @@ keeping track how it does things.
 
 [Tecken Performance](https://app.datadoghq.com/dash/339351/tecken-performance)
 
+[Tecken Redis](https://app.datadoghq.com/screen/190509/tecken-redis)
+
+[Symbols RDS](https://app.datadoghq.com/screen/280710/symbols-rds)
+
 New Relic
 ---------
 
