@@ -1,7 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-import queryString from 'query-string'
 import {
   Loading,
   DisplayDate,
@@ -12,7 +11,8 @@ import {
   thousandFormat,
   formatSeconds,
   DisplayDateDifference,
-  filterToQueryString
+  filterToQueryString,
+  parseQueryString
 } from './Common'
 import Fetch from './Fetch'
 import './Upload.css' // they have enough in common
@@ -42,7 +42,7 @@ class Files extends React.PureComponent {
     document.title = this.pageTitle
     if (this.props.location.search) {
       this.setState(
-        { filter: queryString.parse(this.props.location.search) },
+        { filter: parseQueryString(this.props.location.search) },
         () => {
           this._fetchFiles(false)
         }

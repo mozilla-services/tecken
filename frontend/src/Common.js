@@ -2,7 +2,6 @@ import React from 'react'
 import FontAwesome from 'react-fontawesome'
 import 'font-awesome/css/font-awesome.css'
 import { Link } from 'react-router-dom'
-import queryString from 'query-string'
 
 import {
   toDate,
@@ -105,9 +104,9 @@ export const Pagination = ({
   }
 
   const nextPageUrl = page => {
-    const qs = queryString.parse(location.search)
-    qs.page = page
-    return location.pathname + '?' + queryString.stringify(qs)
+    const searchParams = new URLSearchParams(location.search)
+    searchParams.set('page', page)
+    return location.pathname + '?' + searchParams.toString()
   }
 
   const goTo = (event, page) => {
@@ -193,21 +192,34 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
   )
 }
 
+export const parseQueryString = qs => {
+  const searchParams = new URLSearchParams(qs)
+  const parsed = {}
+  for (let [key, value] of searchParams) {
+    const already = parsed[key]
+    if (already === undefined) {
+      parsed[key] = value
+    } else if (Array.isArray(already)) {
+      parsed[key].push(value)
+    } else {
+      parsed[key] = [already, value]
+    }
+  }
+  return parsed
+}
+
 export const filterToQueryString = (filterObj, overrides) => {
-  let qs = ''
-  let copy = {}
-  Object.keys(filterObj).forEach(key => {
-    if (filterObj[key]) {
-      copy[key] = filterObj[key]
+  const copy = Object.assign(filterObj, overrides || {})
+  const searchParams = new URLSearchParams()
+  Object.entries(copy).forEach(([key, value]) => {
+    if (Array.isArray(value) && value.length) {
+      value.forEach(v => searchParams.append(key, v))
+    } else if (value) {
+      searchParams.set(key, value)
     }
   })
-  if (overrides) {
-    copy = Object.assign(copy, overrides)
-  }
-  if (Object.keys(copy).length) {
-    qs = queryString.stringify(copy)
-  }
-  return qs
+  searchParams.sort()
+  return searchParams.toString()
 }
 
 const URLTag = url => <span className="url">{url}</span>

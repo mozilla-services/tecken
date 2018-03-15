@@ -1,10 +1,9 @@
 import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
-import queryString from 'query-string'
 
 import { toDate, isBefore, formatDistanceStrict } from 'date-fns/esm'
 
-import { Loading } from './Common'
+import { Loading, filterToQueryString, parseQueryString } from './Common'
 import Fetch from './Fetch'
 import store from './Store'
 
@@ -30,7 +29,7 @@ class Tokens extends PureComponent {
 
     if (this.props.location.search) {
       this.setState(
-        { filter: queryString.parse(this.props.location.search) },
+        { filter: parseQueryString(this.props.location.search) },
         () => {
           this._fetchTokens()
         }
@@ -44,12 +43,9 @@ class Tokens extends PureComponent {
     this.setState({ loading: true })
 
     let url = '/api/tokens/'
-    let qs = ''
-    if (Object.keys(this.state.filter).length) {
-      qs = '?' + queryString.stringify(this.state.filter)
-    }
+    const qs = filterToQueryString(this.state.filter)
     if (qs) {
-      url += qs
+      url += '?' + qs
     }
     this.props.history.push({ search: qs })
 
@@ -347,7 +343,7 @@ class DisplayTokens extends PureComponent {
       <div>
         <div className="tabs is-centered">
           <ul>
-            <li className={!filter.state && 'is-active'}>
+            <li className={!filter.state ? 'is-active' : ''}>
               <Link to="/tokens?state=active" onClick={this.filterOnActive}>
                 Active ({totals.active})
               </Link>

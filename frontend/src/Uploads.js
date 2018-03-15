@@ -2,7 +2,6 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { format } from 'date-fns/esm'
 
-import queryString from 'query-string'
 import {
   Loading,
   DisplayDate,
@@ -15,6 +14,7 @@ import {
   DisplayFilesSummary,
   ShowValidationErrors,
   filterToQueryString,
+  parseQueryString,
   SortLink
 } from './Common'
 import Fetch from './Fetch'
@@ -55,7 +55,7 @@ class Uploads extends React.PureComponent {
     document.title = this.state.pageTitle
     if (this.props.location.search) {
       this.setState(
-        { filter: queryString.parse(this.props.location.search) },
+        { filter: parseQueryString(this.props.location.search) },
         () => {
           // If you load the page with some filtering, the "latestUpload"
           // might not be the unfiltered latest upload.
@@ -81,17 +81,9 @@ class Uploads extends React.PureComponent {
       }
     }, 1000)
     let url = '/api/uploads/'
-    const qs = filterToQueryString(this.state.filter)
+    const qs = filterToQueryString(this.state.filter, this.state.orderBy)
     if (qs) {
       url += '?' + qs
-    }
-    if (this.state.orderBy) {
-      if (url.indexOf('?') === -1) {
-        url += '?'
-      } else {
-        url += '&'
-      }
-      url += queryString.stringify(this.state.orderBy)
     }
     this.props.history.push({ search: qs })
 
