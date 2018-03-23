@@ -9,7 +9,7 @@
     "font-awesome": "4.7.0",
     "mobx": "3.6.1",
     "mobx-react": "4.4.3",
-    "raven-js": "3.23.3",
+    "raven-js": "3.24.0",
     "react": "16.2.0",
     "react-dom": "16.2.0",
     "react-fontawesome": "1.6.1",
