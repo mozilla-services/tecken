@@ -2,11 +2,11 @@ version: '2'
 
 services:
   db:
-    image: postgres:9.6
+    image: postgres:9.6@sha256:8df3344385deb0d5d781c442b2e275f7c321d601652d6317ce25ed8ffad03427
   redis-store:
     build: ./docker/images/redis
   redis-cache:
-    image: redis:3.2
+    image: redis:3.2@sha256:fd310669f5f1be3d96cfe560264cacd5067d6b03b35764b608ada2db98be6208
 
   # ------------------------------------------------------------------
   # After this point is dev-related services.
@@ -96,7 +96,7 @@ services:
 
   statsd:
     # https://hub.docker.com/r/hopsoft/graphite-statsd/
-    image: hopsoft/graphite-statsd
+    image: hopsoft/graphite-statsd:latest@sha256:42074ad968921e2b8053f3f0b222a605d8307060be0d7bd53b2e3b4b8b8d8952
     ports:
       - "8080:80"
       - "2003-2004:2003-2004"
@@ -136,7 +136,7 @@ services:
       dockerfile: frontend/Dockerfile
 
   minio:
-    image: minio/minio
+    image: minio/minio:latest@sha256:9435caca984718133fcb728662d2ea56f390fd8125df84becb93af2054d4b0ef
     environment:
       - MINIO_ACCESS_KEY=minio
       - MINIO_SECRET_KEY=miniostorage
