@@ -628,11 +628,34 @@ class SymbolicateJSON:
 
                 with metrics.timer('symbolicate_store_hashmap'):
                     t0 = time.time()
-                    redis_store_connection.hmset(
-                        store.make_key(cache_key),
-                        information['symbol_map']
-                    )
-                    all_keys = list(information['symbol_map'].keys())
+                    # This big dict we're about to send to Redis with HMSET
+                    # might be too large to fit and if it is too large
+                    # redis-py will throw a ConnectionError with something
+                    # like 'Errno 104' because Redis simply shuts down the
+                    # socket.
+                    # To avoid that, set this monster dict in batches.
+                    # Empirically we found the ConnectionError happens when
+                    # the dict, converted to a string, is around 9MB.
+                    # Also empirically, the *average* value is 90 bytes and the
+                    # average key is 8 bytes. So if each key+value is about
+                    # 100 bytes, to make a batch of the dict into copies that
+                    # are no larger than 5MB you have to read about 50,000
+                    # keys at a time.
+                    count = 0
+                    buffer = {}
+                    hmset_key = store.make_key(cache_key)
+                    all_keys = []
+                    for key in information['symbol_map']:
+                        all_keys.append(key)
+                        buffer[key] = information['symbol_map'][key]
+                        count += 1
+                        if count > 50_000:
+                            redis_store_connection.hmset(hmset_key, buffer)
+                            count = 0
+                            buffer = {}
+                    if count:
+                        redis_store_connection.hmset(hmset_key, buffer)
+
                     store.set(
                         cache_key + ':keys',
                         all_keys,

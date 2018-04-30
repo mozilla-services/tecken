@@ -1168,3 +1168,67 @@ def test_change_symbols_urls_invalidates_cache(
         frame1, = stack1
         assert frame1['function'] == 'XREMAIN::XRE_MAINRUN()'
         assert result1['debug']['downloads']['count'] == 1
+
+
+def test_symbolicate_huge_symbol_file(
+    json_poster,
+    clear_redis_store,
+    botomock,
+    metricsmock,
+    settings,
+):
+    """This test is a variation on test_client_happy_path_v5 where the
+    symbol file that gets downloaded from S3 is so big that it has more
+    50,000 rows/signatures. In fact, it has 75,000 signatures and we're
+    expecting to find the signature of the very last offset.
+
+    This test verifies that the "batch HMSET" code in the load_symbols()
+    function really works.
+    """
+    settings.SYMBOL_URLS = ['https://s3.example.com/private/prefix/']
+    reload_downloader('https://s3.example.com/public/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        """Use when nothing weird with the boto gets is expected"""
+        if operation_name == 'GetObject':
+            filename = api_params['Key'].split('/')[-1]
+            if filename == 'libxul.so.sym':
+                monster = []
+                for i in range(75_0000):
+                    address = hex(i)
+                    signature = format(i, ',')
+                    monster.append(
+                        f'FUNC {address} 000 X {signature}'
+                    )
+                content = '\n'.join(monster)
+                return {
+                    'Body': BytesIO(content.encode('utf-8'))
+                }
+            raise NotImplementedError(api_params)
+
+        raise NotImplementedError(operation_name)
+
+    url = reverse('symbolicate:symbolicate_v5_json')
+    with botomock(mock_api_call):
+        job = {
+            'stacks': [[[0, 75_000]]],
+            'memoryMap': [
+                ['libxul.so', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ],
+        }
+        response = json_poster(url, {'jobs': [job]})
+    assert response.status_code == 200
+    result = response.json()
+    assert len(result['results']) == 1
+    result1 = result['results'][0]
+    assert result1['stacks'] == [
+        [
+            {
+                "module_offset": "0x124f8",  # hex(75_000)
+                "module": "libxul.so",
+                "frame": 0,
+                "function": "75,000",  # format(75_000, ',')
+                "function_offset": "0x0"  # hex(0)
+            }
+        ]
+    ]
