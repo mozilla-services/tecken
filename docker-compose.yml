@@ -6,7 +6,7 @@ services:
   redis-store:
     build: ./docker/images/redis
   redis-cache:
-    image: redis:3.2@sha256:cab41ba7bd101e6d310a9a0c36bc9ad9a925d98a2331b1eb6c878a38ea1e22dc
+    image: redis:3.2@sha256:b7876fe0c77fc0fd1c04b462aa9494a049f306d3e362d770b844b221130f2c72
 
   # ------------------------------------------------------------------
   # After this point is dev-related services.
