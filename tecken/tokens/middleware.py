@@ -5,8 +5,8 @@
 import logging
 from functools import partial
 
-from django.contrib import auth
 from django.conf import settings
+from django.contrib.auth.signals import user_logged_in
 from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
 
 from .models import Token
@@ -50,13 +50,10 @@ class APITokenAuthenticationMiddleware:
         if not user.is_active:
             raise PermissionDenied('API Token matched but user not active')
 
-        # It actually doesn't matter so much which backend
-        # we use as long as it's something.
-        user.backend = 'django.contrib.auth.backends.ModelBackend'
         # Overwrite the has_perm method so that it's restricted to only
         # the permission that the Token object specifies.
         user.has_perm = partial(has_perm, token.permissions.all())
-        # User is valid. Set request.user and persist user in the session
+        # User is valid. Set request.user and persist user in the request
         # by logging the user in.
         request.user = user
-        auth.login(request, user)
+        user_logged_in.send(sender=user.__class__, request=request, user=user)
