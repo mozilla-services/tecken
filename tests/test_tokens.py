@@ -22,12 +22,15 @@ def test_client_homepage_with_valid_token(client):
     assert 'sign_in_url' in response.json()
 
     user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    assert not user.last_login
     token = Token.objects.create(user=user)
 
     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
     assert response.status_code == 200
     assert 'sign_in_url' not in response.json()['user']
     assert response.json()['user']['email'] == user.email
+    user.refresh_from_db()
+    assert user.last_login
 
 
 @pytest.mark.django_db
