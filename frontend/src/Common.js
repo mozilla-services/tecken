@@ -209,7 +209,7 @@ export const parseQueryString = qs => {
 }
 
 export const filterToQueryString = (filterObj, overrides) => {
-  const copy = Object.assign(filterObj, overrides || {})
+  const copy = Object.assign(overrides || {}, filterObj)
   const searchParams = new URLSearchParams()
   Object.entries(copy).forEach(([key, value]) => {
     if (Array.isArray(value) && value.length) {
