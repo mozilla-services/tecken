@@ -136,7 +136,7 @@ services:
       dockerfile: frontend/Dockerfile
 
   minio:
-    image: minio/minio:latest@sha256:a732ad40ecadec448a87ebcf0109008153b730dc0a4f0f5f5a38915a34664f8c
+    image: minio/minio:latest@sha256:f30b10a7c2b2685df33acc6ca5bee62708a827999dff122031dfcfe87570c420
     environment:
       - MINIO_ACCESS_KEY=minio
       - MINIO_SECRET_KEY=miniostorage
