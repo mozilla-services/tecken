@@ -25,6 +25,7 @@ import Files from './Files'
 import File from './File'
 import Users from './Users'
 import User from './User'
+import Symbolication from './Symbolication'
 import FetchError from './FetchError'
 import Fetch from './Fetch'
 import DisplayAPIRequests from './APIRequests'
@@ -159,6 +160,7 @@ const App = observer(
                   <Route path="/uploads" exact component={Uploads} />
                   <Route path="/users/:id" component={User} />
                   <Route path="/users" exact component={Users} />
+                  <Route path="/symbolication" component={Symbolication} />
                   <Route component={NoMatch} />
                 </Switch>
 
