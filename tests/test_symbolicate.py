@@ -223,6 +223,7 @@ def test_client_happy_path_v5(
             ],
         }
         response = json_poster(url, {'jobs': [job]})
+    assert response.status_code == 200
     result = response.json()
     assert len(result['results']) == 1
     result1 = result['results'][0]

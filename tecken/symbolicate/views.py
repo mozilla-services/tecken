@@ -34,7 +34,10 @@ logger = logging.getLogger('tecken')
 metrics = markus.get_metrics('tecken')
 store = caches['store']
 
-downloader = SymbolDownloader(settings.SYMBOL_URLS)
+downloader = SymbolDownloader(
+    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
+    file_prefix=settings.SYMBOL_FILE_PREFIX,
+)
 
 # This lists all the possible exceptions that the SymbolDownloader
 # might raise that we swallow in runtime.
@@ -91,7 +94,8 @@ def increment_symbolication_count(prefix):
 
 
 class SymbolicateJSON:
-    def __init__(self, debug=False):
+    def __init__(self, downloader, debug=False):
+        self.downloader = downloader
         self.debug = debug
 
         # These dicts fill up as we either query the Redis store or
@@ -768,7 +772,7 @@ class SymbolicateJSON:
         else:
             symbol_filename = lib_filename + '.sym'
 
-        stream = downloader.get_symbol_stream(
+        stream = self.downloader.get_symbol_stream(
             lib_filename,
             debug_id,
             symbol_filename
@@ -817,7 +821,10 @@ def symbolicate_v4_json(request, json_body):
             exception
         )}, status=400)
 
-    symbolicator = SymbolicateJSON(debug=request._request_debug)
+    symbolicator = SymbolicateJSON(
+        downloader,
+        debug=request._request_debug,
+    )
     try:
         result = symbolicator.symbolicate(stacks, memory_map)
     except operational_exceptions as exception:
@@ -927,7 +934,10 @@ def symbolicate_v5_json(request, json_body):
 
     # By creating 1 instance per multiple jobs, we can benefit from
     # re-used downloads of memory maps.
-    symbolicator = SymbolicateJSON(debug=request._request_debug)
+    symbolicator = SymbolicateJSON(
+        downloader,
+        debug=request._request_debug,
+    )
     results = {
         'results': []
     }

@@ -25,6 +25,35 @@ Here is an example:
 .. code-block:: json
 
     {
+        "jobs": [
+            {
+              "memoryMap": [
+                [
+                  "xul.pdb",
+                  "44E4EC8C2F41492B9369D6B9A059577C2"
+                ],
+                [
+                  "wntdll.pdb",
+                  "D74F79EB1F8D4A45ABCD2F476CCABACC2"
+                ]
+              ],
+              "stacks": [
+                [
+                  [0, 11723767],
+                  [1, 65802]
+                ]
+              ]
+            }
+        ]
+    }
+
+
+As a shortcut, you don't have to have a list ``jobs``. E.g. this works
+the same as the example above:
+
+.. code-block:: json
+
+    {
       "memoryMap": [
         [
           "xul.pdb",
@@ -35,7 +64,6 @@ Here is an example:
           "D74F79EB1F8D4A45ABCD2F476CCABACC2"
         ]
       ],
-      "version": 4,
       "stacks": [
         [
           [0, 11723767],
@@ -43,6 +71,8 @@ Here is an example:
         ]
       ]
     }
+
+
 
 The ``memoryMap`` is list of symbol filenames and their debug ID. Each 2-D
 tuple corresponds to a path in our S3 symbol store. The full URL comes
@@ -69,6 +99,46 @@ in the ``memoryMap`` which in this example is
 ``["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"]``.
 
 What you get back is a JSON output that looks like this:
+
+.. code-block:: json
+
+    {
+      "results": [
+        {
+          "stacks": [
+            [
+              {
+                "frame": 0,
+                "module_offset": "0xb2e3f7",
+                "module": "xul.pdb"
+              },
+              {
+                "frame": 1,
+                "module_offset": "0x1010a",
+                "module": "wntdll.pdb"
+              }
+            ]
+          ],
+          "found_modules": {
+            "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": false,
+            "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": false
+          }
+        }
+      ]
+    }
+
+The ``results`` list's order matches the list of ``jobs`` in the input.
+
+
+Legacy API, Version 4
+=====================
+
+Prior to Version 5, was version 4 and the difference are as follows. The
+input could only be exactly 1 job. And the JSON input had to contain
+``"version": 4``.
+
+The output had less information and it was always the output of exactly 1 job.
+And example output:
 
 .. code-block:: json
 
@@ -133,8 +203,11 @@ Example Symbolication
 
 Here's an example you can copy and paste::
 
-    curl -d '{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]],"version":4}' http://localhost:8000/symbolicate/v4
+    curl -d '{"jobs": [{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]]}]}' http://localhost:8000/symbolicate/v5
 
+Note, if you only have a single job you can write it as this too::
+
+    curl -d '{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]]}' http://localhost:8000/symbolicate/v5
 
 
 Symbolication With Debug
