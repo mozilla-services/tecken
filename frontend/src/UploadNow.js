@@ -285,6 +285,9 @@ class UploadByDownloadForm extends UploadForm {
     }
     const formData = new FormData()
     formData.append('url', url)
+    if (this.refs.try.checked) {
+      formData.append('try', true)
+    }
     this.setState({ loading: true, validationError: null })
     return fetch('/upload/', {
       method: 'POST',
@@ -352,6 +355,14 @@ class UploadByDownloadForm extends UploadForm {
             The upload by download is restricted to a whitelist of domains from
             which you can download.
           </p>
+        </div>
+        <div className="field">
+          <div className="control">
+            <label className="checkbox">
+              <input type="checkbox" name="try" ref="try" value="yes" /> This is{' '}
+              <b>Try</b> build symbols
+            </label>
+          </div>
         </div>
         {this.state.warning && (
           <article className="message is-warning">
