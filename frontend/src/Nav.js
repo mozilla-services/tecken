@@ -104,6 +104,13 @@ const Nav = observer(
                   </NavLink>
                 )}
               <NavLink
+                to="/symbolication"
+                className="navbar-item"
+                activeClassName="is-active"
+              >
+                Symbolication
+              </NavLink>
+              <NavLink
                 to="/help"
                 className="navbar-item"
                 activeClassName="is-active"

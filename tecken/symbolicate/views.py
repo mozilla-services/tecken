@@ -295,9 +295,13 @@ class SymbolicateJSON:
                 )
                 t1 = time.time()
                 cache_lookup_times.append(t1 - t0)
+
                 for i, key in enumerate(keys):
                     # The list 'values' is a list of byte strings.
-                    signatures[symbol_key][key] = values[i].decode('utf-8')
+                    value = values[i]
+                    if value is not None:
+                        value = value.decode('utf-8')
+                    signatures[symbol_key][key] = value
 
         _symbol_offset_list_cache = {}  # reset the cache
 
@@ -917,6 +921,16 @@ def symbolicate_v5_json(request, json_body):
                 raise TypeError(
                     f"Stack number {i + 1} is 'memoryMap' not a list"
                 )
+            # Each one should be a list of two items
+            for i, mm in enumerate(stack['memoryMap']):
+                if not isinstance(mm, list):
+                    raise TypeError(
+                        f"Memory map number {i + 1} is not a list"
+                    )
+                if len(mm) != 2:
+                    raise TypeError(
+                        f"Memory map number {i + 1} isn't a list of 2 strings"
+                    )
             if not isinstance(stack['stacks'], list):
                 raise TypeError(
                     f"Stack number {i + 1} is 'stacks' not a list"
