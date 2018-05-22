@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError, EndpointConnectionError
 from django.core import checks
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from dockerflow.django.checks import (
+from dockerflow.health import (
     ERROR_CANNOT_CONNECT_REDIS,
     ERROR_MISSING_REDIS_CLIENT,
     ERROR_MISCONFIGURED_REDIS,
