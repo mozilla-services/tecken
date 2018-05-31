@@ -2,7 +2,7 @@ version: '2'
 
 services:
   db:
-    image: postgres:9.6@sha256:5beac0fe8a25cf68bb420c21fd8b213e346b9f8eaf3c7ff07bde1daa75289445
+    image: postgres:9.6@sha256:807c72e792464d0c6097fc9facf2d4697b39b11ed90373aee0df466dd8a8068f
   redis-store:
     build: ./docker/images/redis
   redis-cache:
@@ -136,7 +136,7 @@ services:
       dockerfile: frontend/Dockerfile
 
   minio:
-    image: minio/minio:latest@sha256:9b333aebc4c479d3fb1b5c302dafa54f06b0acce3f27f0429afa5a7207a7fe3f
+    image: minio/minio:latest@sha256:6060a242978964a3b089597943f0ec7c0e3104b9d8c8b7e8e971cc529cae7b79
     environment:
       - MINIO_ACCESS_KEY=minio
       - MINIO_SECRET_KEY=miniostorage
