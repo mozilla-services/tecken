@@ -66,10 +66,8 @@ The CSV report is actually ultimately to help the Socorro Processor
 which used to manage reporting symbols that can't be found during
 processing. See https://bugzilla.mozilla.org/show_bug.cgi?id=1361809
 
-If you're only interested in missing symbols whose symbol ended with
-``.pdb`` and filename ended with ``.sym`` (case insensitively) you can
-append ``?microsoft=only``. E.g.:
-:base_url:`/missingsymbols.csv?microsoft=only`.
+It only yields missing symbols whose symbol ended with
+``.pdb`` and filename ended with ``.sym`` (case insensitively).
 The purpose of this is to get missing symbols that *could* be fetched
 from Microsoft.
 

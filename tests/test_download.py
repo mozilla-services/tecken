@@ -574,26 +574,12 @@ def test_missing_symbols_csv(client, settings):
     content = response.content.decode('utf-8')
     reader = csv.reader(StringIO(content))
     lines_of_lines = list(reader)
-    assert len(lines_of_lines) == 3
+    assert len(lines_of_lines) == 2
     line = lines_of_lines[1]
-    assert line[0] == 'rooksdol_x64.dll'
-    assert line[1] == '58B6E33D262000'
-    assert line[2] == ''
-    assert line[3] == ''
-
-    line = lines_of_lines[2]
     assert line[0] == 'xul.pdb'
     assert line[1] == '44E4EC8C2F41492B9369D6B9A059577C2'
     assert line[2] == 'xul.dll'
     assert line[3] == 'deadbeef'
-
-    # Do the same but with ?microsoft=only filtering
-    response = client.get(url, {'microsoft': 'only'})
-    assert response.status_code == 200
-    content = response.content.decode('utf-8')
-    reader = csv.reader(StringIO(content))
-    lines_of_lines = list(reader)
-    assert len(lines_of_lines) == 2
 
 
 def test_get_microsoft_symbol_client(client, botomock, settings):
