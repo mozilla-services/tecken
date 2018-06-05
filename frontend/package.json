@@ -10,8 +10,8 @@
     "mobx": "4.2.1",
     "mobx-react": "5.1.2",
     "raven-js": "3.25.2",
-    "react": "16.2.0",
-    "react-dom": "16.2.0",
+    "react": "16.4.0",
+    "react-dom": "16.4.0",
     "react-fontawesome": "1.6.1",
     "react-router-dom": "4.2.2"
   },
