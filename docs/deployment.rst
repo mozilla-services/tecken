@@ -9,7 +9,7 @@ Environments
 
 Mozilla Symbol Server is deployed in 3 different environments:
 
-1. Production (https://symbols.mozilla.org SOON!)
+1. Production (https://symbols.mozilla.org)
 
 2. Stage (https://symbols.stage.mozaws.net)
 
