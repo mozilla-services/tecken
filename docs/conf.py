@@ -63,7 +63,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Mozilla Symbol Server'
-copyright = u'2016-2017, Mozilla'
+copyright = u'2016-2018, Mozilla'
 author = u'Mozilla'
 
 # The version info for the project you're documenting, acts as replacement for
