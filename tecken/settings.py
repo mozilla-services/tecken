@@ -108,7 +108,6 @@ class Core(AWS, Configuration, Celery, S3):
     # So if that's "disabled", that's why we have rather short session
     # cookie age.
     MIDDLEWARE = (
-        'django.middleware.security.SecurityMiddleware',
         'dockerflow.django.middleware.DockerflowMiddleware',
         # 'django.middleware.csrf.CsrfViewMiddleware',
         'django.contrib.sessions.middleware.SessionMiddleware',
@@ -748,15 +747,10 @@ class Dev(Base):
 
     ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = int(datetime.timedelta(days=365).total_seconds())
-    SECURE_HSTS_PRELOAD = True
     # Mark session and CSRF cookies as being HTTPS-only.
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
     # This is needed to get a CRSF token in /admin
     ANON_ALWAYS = True
 
