@@ -110,7 +110,9 @@ What you get back is a JSON output that looks like this:
               {
                 "frame": 0,
                 "module_offset": "0xb2e3f7",
-                "module": "xul.pdb"
+                "module": "xul.pdb",
+                "function": "sctp_send_initiate",
+                "function_offset": "0x4ca"
               },
               {
                 "frame": 1,
@@ -121,7 +123,7 @@ What you get back is a JSON output that looks like this:
           ],
           "found_modules": {
             "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": false,
-            "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": false
+            "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": true
           }
         }
       ]
