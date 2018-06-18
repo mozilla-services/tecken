@@ -18,7 +18,7 @@ Mozilla Symbol Server.
 What It Is
 ==========
 
-You make a POST request to :base_url:`/symbolicate/v4` with a JSON body.
+You make a POST request to :base_url:`/symbolicate/v5` with a JSON body.
 That JSON body has to contain certain keys and adhere to a specific format.
 Here is an example:
 
@@ -83,9 +83,6 @@ again but instead of ``.pdb`` it's replaced with ``.sym``.
 
 So, as a full example, ``["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"]``
 becomes ``https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym``.
-
-The ``version`` key needs to be a 4. This might change in the future as the
-symbolication server changes. For now, just set it to ``4``.
 
 The ``stacks`` part is a list of lists, also known as "an array of stack traces".
 Each stack trace is a list of "frames". Each frame is a 2-D tuple of
