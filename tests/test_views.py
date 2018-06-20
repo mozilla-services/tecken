@@ -162,3 +162,16 @@ def test_auth_debug(client):
     text = response.content.decode('utf-8')
     assert 'Cache works!' in text
     assert 'Session cookies work!' in text
+
+
+@pytest.mark.django_db
+def test_heartbeat_no_warnings(client, botomock, settings):
+
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == 'HeadBucket'
+        return {}
+
+    with botomock(mock_api_call):
+        response = client.get('/__heartbeat__')
+        assert response.status_code == 200
+        assert response.json()['status'] == 'ok'
