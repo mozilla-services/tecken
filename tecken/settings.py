@@ -155,6 +155,7 @@ class Core(AWS, Configuration, Celery, S3):
     # with confidence we do these good deeds in Nginx.
     # https://docs.djangoproject.com/en/1.11/ref/checks/#security
     SILENCED_SYSTEM_CHECKS = [
+        'security.W001',  # Dealt with using Nginx headers
         'security.W002',  # Dealt with using Nginx headers
         'security.W003',  # CSRF is explicit only on the views that need it
         # We can't set SECURE_HSTS_INCLUDE_SUBDOMAINS since this runs under a
@@ -685,6 +686,7 @@ class Test(Localdev):
     ENABLE_AUTH0_BLOCKED_CHECK = False
 
     SECRET_KEY = values.Value('not-so-secret-after-all')
+    SESSION_COOKIE_SECURE = True
 
     OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
     OIDC_RP_CLIENT_SECRET = values.Value('not-so-secret-after-all')
