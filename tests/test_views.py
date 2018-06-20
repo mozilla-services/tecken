@@ -173,5 +173,8 @@ def test_heartbeat_no_warnings(client, botomock, settings):
 
     with botomock(mock_api_call):
         response = client.get('/__heartbeat__')
+        if response.status_code != 200:
+            # For the sake of CI testing
+            print(response.json())
         assert response.status_code == 200
         assert response.json()['status'] == 'ok'
