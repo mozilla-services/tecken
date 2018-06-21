@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import copy
+import re
 from io import BytesIO
 
 import botocore
@@ -306,6 +308,69 @@ def test_client_happy_path_v5_with_debug(
     # There are other tests that do a better job of testing the debug
     # content.
     assert result1['debug']
+
+
+def test_client_happy_path_v5_with_m_prefix(
+    json_poster,
+    clear_redis_store,
+    botomock,
+    metricsmock,
+):
+    """The origins of this is that in
+    https://bugzilla.mozilla.org/show_bug.cgi?id=1470092 a change was made
+    to Breakpad such that some of the .sym files decode the FUNC and PUBLIC
+    lines differently. Now there's potentially an 'm' followed the
+    prefixes 'FUNC ' and 'PUBLIC '.
+    I.e. a line used to look like this::
+
+        PUBLIC 10070 10 KiUserCallbackExceptionHandler
+
+    It might now look like this::
+
+        PUBLIC m 10070 10 KiUserCallbackExceptionHandler
+
+    We need to make sure we support both.
+    """
+    reload_downloader('https://s3.example.com/public/prefix/')
+
+    def mock_api_call(self, operation_name, api_params):
+        """Hack the fixture (strings) so they contain the 'm' prefix."""
+        def replace(s):
+            return re.sub(r'^FUNC [^m] ', 'FUNC m ', s, flags=re.M)
+
+        content = copy.deepcopy(SAMPLE_SYMBOL_CONTENT)
+        content['xul.sym'] = replace(content['xul.sym'])
+        content['wntdll.sym'] = replace(content['wntdll.sym'])
+
+        if operation_name == 'GetObject':
+            filename = api_params['Key'].split('/')[-1]
+            if filename in content:
+                return {
+                    'Body': BytesIO(
+                        content[filename].encode('utf-8')
+                    )
+                }
+            raise NotImplementedError(api_params)
+
+        raise NotImplementedError(operation_name)
+
+    url = reverse('symbolicate:symbolicate_v5_json')
+    with botomock(mock_api_call):
+        job = {
+            'stacks': [[[0, 11723767], [1, 65802]]],
+            'memoryMap': [
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            ],
+        }
+        response = json_poster(url, {'jobs': [job]})
+    result = response.json()
+    assert len(result['results']) == 1
+    result1 = result['results'][0]
+    assert list(result1['found_modules'].values()) == [True, True]
+    stack1, stack2 = result1['stacks'][0]
+    assert stack1['function'] == 'XREMain::XRE_mainRun()'
+    assert stack2['function'] == 'KiUserCallbackDispatcher'
 
 
 def test_client_happy_path_v4(
