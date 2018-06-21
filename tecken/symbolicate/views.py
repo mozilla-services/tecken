@@ -719,7 +719,7 @@ class SymbolicateJSON:
         # We are only interested in lines that match this regex.
         # The 'm' is special. It's an extra *optional* prefix which,
         # we currently omit.
-        # Origin: https://bugzilla.mozilla.org/show_bug.cgi?id=1470092
+        # Origin: https://bugs.chromium.org/p/google-breakpad/issues/detail?id=751
         # Note, as pointed out in
         # https://github.com/mozilla-services/tecken/issues/924#issuecomment-399130860
         # some day we might actually extract and use the presence of this 'm'
