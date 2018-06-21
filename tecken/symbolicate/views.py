@@ -5,6 +5,7 @@
 import datetime
 import time
 import logging
+import re
 from bisect import bisect
 from functools import wraps
 from collections import defaultdict
@@ -715,6 +716,17 @@ class SymbolicateJSON:
         t0 = time.time()
         stream = self.get_download_symbol_stream(filename, debug_id)
 
+        # We are only interested in lines that match this regex.
+        # The 'm' is special. It's an extra *optional* prefix which,
+        # we currently omit.
+        # Origin: https://bugzilla.mozilla.org/show_bug.cgi?id=1470092
+        # Note, as pointed out in
+        # https://github.com/mozilla-services/tecken/issues/924#issuecomment-399130860
+        # some day we might actually extract and use the presence of this 'm'
+        # as a potential factor of the symbolication.
+        # As of June 2018, we deliberately omit it.
+        starts_regex = re.compile(r'^(FUNC|PUBLIC) (m )?')
+
         # Need to parse it by line and make a dict of of offset->function
         public_symbols = {}
         func_symbols = {}
@@ -725,9 +737,19 @@ class SymbolicateJSON:
         for line in stream:
             total_size += len(line)
             line_number += 1
-            if line.startswith('PUBLIC '):
-                fields = line.strip().split(None, 3)
-                if len(fields) < 4:
+
+            try:
+                found, = starts_regex.findall(line)
+                prefix = found[0]
+            except ValueError:
+                # If it didn't match anything at the start, don't bother
+                # with this line.
+                continue
+
+            rest = starts_regex.sub('', line)
+            if prefix == 'PUBLIC':
+                fields = rest.strip().split(None, 2)
+                if len(fields) != 3:
                     logger.warning(
                         'PUBLIC line {} in {} has too few fields'.format(
                             line_number,
@@ -735,12 +757,12 @@ class SymbolicateJSON:
                         )
                     )
                     continue
-                address = int(fields[1], 16)
-                symbol = fields[3]
+                address = int(fields[0], 16)
+                symbol = fields[2]
                 public_symbols[address] = symbol
-            elif line.startswith('FUNC '):
-                fields = line.strip().split(None, 4)
-                if len(fields) < 4:
+            elif prefix == 'FUNC':
+                fields = rest.strip().split(None, 3)
+                if len(fields) != 4:
                     logger.warning(
                         'FUNC line {} in {} has too few fields'.format(
                             line_number,
@@ -748,8 +770,8 @@ class SymbolicateJSON:
                         )
                     )
                     continue
-                address = int(fields[1], 16)
-                symbol = fields[4]
+                address = int(fields[0], 16)
+                symbol = fields[3]
                 func_symbols[address] = symbol
 
         # Prioritize PUBLIC symbols over FUNC symbols # XXX why?
