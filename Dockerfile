@@ -37,7 +37,6 @@ RUN apt-get update && \
         gettext libffi-dev jed
 
 # Install dump_syms
-RUN echo "search" && apt-cache search gcc
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends \
         gyp ninja-build binutils-gold gcc-6 g++-6 pkg-config cabextract
