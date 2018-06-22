@@ -3,23 +3,19 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from __future__ import print_function  # in case you use Python 2
-
 import datetime
 import subprocess
 
-try:
-    input = raw_input
-except NameError:
-    # good, you're using Python 3
-    pass
+
+def _check_output(*args, **kwargs):
+    return subprocess.check_output(*args, **kwargs).decode('utf-8').strip()
 
 
 def run():
     # Let's make sure we're up-to-date
-    current_branch = subprocess.check_output(
+    current_branch = _check_output(
         'git rev-parse --abbrev-ref HEAD'.split()
-    ).strip()
+    )
     if current_branch != 'master':
         print("Must be on the master branch to do this")
         return 1
@@ -37,13 +33,13 @@ def run():
         return 2
 
     # Make sure we have all the old git tags
-    subprocess.check_output(
+    _check_output(
         'git pull origin master --tags'.split(),
         stderr=subprocess.STDOUT
     )
 
     # We're going to use the last tag to help you write a tag message
-    last_tag, last_tag_message = subprocess.check_output([
+    last_tag, last_tag_message = _check_output([
         'git',
         'for-each-ref',
         '--sort=-taggerdate',
@@ -51,7 +47,7 @@ def run():
         '--format',
         '%(tag)|%(contents:subject)',
         'refs/tags'
-    ]).strip().split('|', 1)
+    ]).split('|', 1)
 
     print('\nLast tags was: {}'.format(last_tag))
     if last_tag_message.count('\n') > 1:
@@ -61,7 +57,7 @@ def run():
         print('Message: ', last_tag_message)
     print('-' * 80)
 
-    commits_since = subprocess.check_output(
+    commits_since = _check_output(
         'git log {last_tag}..HEAD --oneline'.format(last_tag=last_tag).split()
     )
     print('Commits since last tag:')
@@ -73,9 +69,9 @@ def run():
     # Normally it's today's date in ISO format with dots.
     tag_name = datetime.datetime.utcnow().strftime('%Y.%m.%d')
     # But is it taken, if so how many times has it been taken before?
-    existing_tags = subprocess.check_output([
+    existing_tags = _check_output([
         'git', 'tag', '-l', '{}*'.format(tag_name)
-    ]).strip().splitlines()
+    ]).splitlines()
     if existing_tags:
         count_starts = len(
             [x for x in existing_tags if x.startswith(tag_name)]
