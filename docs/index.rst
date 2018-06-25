@@ -40,6 +40,7 @@ Project docs:
    docker
    authentication
    benchmarking
+   endtoendtesting
 
 Indices and tables
 ==================
