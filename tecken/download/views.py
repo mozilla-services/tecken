@@ -383,7 +383,7 @@ def missing_symbols_csv(request):
     )
 
     only = ('symbol', 'debugid', 'code_file', 'code_id')
-    for missing in qs.only(*only).order_by('-modified_at'):
+    for missing in qs.only(*only):
         writer.writerow([
             missing.symbol,
             missing.debugid,
