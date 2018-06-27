@@ -7,6 +7,7 @@ import {
   Switch,
   Link
 } from 'react-router-dom'
+import { withRouter } from 'react-router'
 import Raven from 'raven-js'
 import { observer } from 'mobx-react'
 import 'bulma/css/bulma.css'
@@ -34,6 +35,8 @@ import store from './Store'
 if (process.env.REACT_APP_SENTRY_PUBLIC_DSN) {
   Raven.config(process.env.REACT_APP_SENTRY_PUBLIC_DSN).install()
 }
+
+const NavWithRouter = withRouter(Nav)
 
 const App = observer(
   class App extends React.Component {
@@ -126,8 +129,8 @@ const App = observer(
       }
       return (
         <Router>
-          <div>
-            <Nav signIn={this.signIn} signOut={this.signOut} />
+          <React.Fragment>
+            <NavWithRouter signIn={this.signIn} signOut={this.signOut} />
             <section className="section">
               <div className="container">
                 <DisplayNotificationMessage
@@ -191,7 +194,7 @@ const App = observer(
                 </div>
               </div>
             </footer>
-          </div>
+          </React.Fragment>
         </Router>
       )
     }
