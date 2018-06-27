@@ -13,7 +13,7 @@ COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
 
-FROM python:3.6-slim@sha256:6f39e7dfc5158b351cfea004541fc85898452c2e4cbeb2b36f00c286fc957a88
+FROM python:3.6-slim@sha256:67f8e7ce02c42a4618e9089469068853b029c736f367dc0792dad35287dad530
 MAINTAINER Peter Bengtsson <peterbe@mozilla.com>
 
 ENV PYTHONUNBUFFERED=1 \
