@@ -250,6 +250,8 @@ class SymbolicateJSON:
                 symbol_offset_list = _symbol_offset_list_cache.get(
                     module_index
                 )
+
+                # First time we encounter this module_index?
                 if symbol_offset_list is None:
                     symbol_filename, debug_id = memory_map[module_index]
                     symbol_key = (symbol_filename, debug_id)
@@ -263,15 +265,20 @@ class SymbolicateJSON:
 
                 if symbol_offset_list:
                     # There exists a list of offsets for this module!
-                    lookups[symbol_key].append(self._get_nearest(
+
+                    symbol_key = tuple(memory_map[module_index])
+                    nearest = self._get_nearest(
                         symbol_offset_list,
                         module_offset
-                    ))
+                    )
+                    if nearest not in lookups[symbol_key]:
+                        lookups[symbol_key].append(nearest)
 
         # Now we know which lookups we need to do. I.e. Redis store queries.
         # Actually look them up.
         signatures = {}
         redis_store_connection = get_redis_connection('store')
+
         for symbol_key, keys in lookups.items():
             signatures[symbol_key] = {}
             if symbol_key in self.all_symbol_maps:
@@ -347,6 +354,7 @@ class SymbolicateJSON:
                 # what the signature is.
                 function = None
                 if symbol_offset_list:
+                    symbol_key = tuple(memory_map[module_index])
                     # Even if our module offset isn't in that list,
                     # there is still hope to be able to find the
                     # nearest signature.
