@@ -164,6 +164,29 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
     assert response.status_code == 400
     assert response.json()['error']
 
+    # stacks is not a list of lists of lists
+    response = json_poster(url, {'jobs': [{
+        'stacks': [[0, 8057492], [1, 391014], [0, 52067355]],
+        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+    }]})
+    assert response.status_code == 400
+    assert response.json()['error']
+    # Same, but you're not using 'jobs'.
+    response = json_poster(url, {
+        'stacks': [[0, 8057492], [1, 391014], [0, 52067355]],
+        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+    })
+    assert response.status_code == 400
+    assert response.json()['error']
+
+    # Stacks is a list of lists of lists of 3 items.
+    response = json_poster(url, {'jobs': [{
+        'stacks': [[[0, 8057492, 10000]]],
+        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+    }]})
+    assert response.status_code == 400
+    assert response.json()['error']
+
 
 def test_symbolicate_v4_json_bad_inputs(client, json_poster):
     url = reverse('symbolicate:symbolicate_v4_json')
@@ -674,13 +697,8 @@ def test_symbolicate_v4_json_bad_module_offset(
             'version': 4,
         })
     result = response.json()
-    assert result['knownModules'] == [None, True]
-    assert result['symbolicatedStacks'] == [
-        [
-            f'{str(1.0000000)} (in wntdll.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)'
-        ]
-    ]
+    assert response.status_code == 400
+    assert result['error']
 
 
 def test_symbolicate_v5_json_bad_module_offset(
@@ -699,10 +717,9 @@ def test_symbolicate_v5_json_bad_module_offset(
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         })
+    assert response.status_code == 400
     result = response.json()
-    result1, = result['results']
-    frame1 = result1['stacks'][0][0]
-    assert frame1['module_offset'] == str(1.0)
+    assert result['error']
 
 
 def test_symbolicate_v4_json_happy_path_with_debug(

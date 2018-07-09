@@ -838,6 +838,29 @@ def json_post(view_function):
     return inner
 
 
+class InvalidStacks(Exception):
+    """Happens when the input stacks does not confirm to the standard."""
+    # XXX This would perhaps be best replaced with a JSON Schema solution.
+
+
+def validate_stacks(stacks):
+    if not isinstance(stacks, list):
+        raise InvalidStacks("Must be a list")
+
+    for stack in stacks:
+        if not isinstance(stack, list):
+            raise InvalidStacks("Must be a list of lists")
+        for frame in stack:
+            if not isinstance(frame, list):
+                raise InvalidStacks("Must be a list of lists of lists")
+            if len(frame) != 2:
+                raise InvalidStacks(
+                    "List of lists of frames must be 2 numbers"
+                )
+            if not (isinstance(frame[0], int) and isinstance(frame[1], int)):
+                raise InvalidStacks("Frame must be two integers")
+
+
 @set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
@@ -847,6 +870,13 @@ def symbolicate_v4_json(request, json_body):
 
     try:
         stacks = json_body['stacks']
+        try:
+            validate_stacks(stacks)
+        except InvalidStacks as exception:
+            return JsonResponse(
+                {'error': str(exception)},
+                status=400
+            )
         memory_map = json_body['memoryMap']
         if json_body.get('version') != 4:
             return JsonResponse({'error': 'Expect version==4'}, status=400)
@@ -1002,6 +1032,13 @@ def symbolicate_v5_json(request, json_body):
 
     try:
         for job in json_body['jobs']:
+            try:
+                validate_stacks(job['stacks'])
+            except InvalidStacks as exception:
+                return JsonResponse(
+                    {'error': str(exception)},
+                    status=400
+                )
             result = symbolicator.symbolicate(
                 job['stacks'],
                 job['memoryMap'],
