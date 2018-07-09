@@ -215,7 +215,7 @@ def test_upload_archive_happy_path(
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 11
+    assert len(records) == 12
     # It's impossible to predict, the order of some metrics records
     # because of the use of ThreadPoolExecutor. So we can't look at them
     # in the exact order.
@@ -226,6 +226,7 @@ def test_upload_archive_happy_path(
     assert all_tags.count('tecken.upload_dump_and_extract') == 1
     assert all_tags.count('tecken.upload_file_upload_upload') == 2
     assert all_tags.count('tecken.upload_file_upload') == 2
+    assert all_tags.count('tecken.upload_uploads') == 1
     assert all_tags[-1] == 'tecken.upload_archive'
 
     invalidate_symbolicate_cache_args = [
