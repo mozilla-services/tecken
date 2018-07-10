@@ -28,6 +28,11 @@ urlpatterns = [
         name='stats'
     ),
     path(
+        'stats/symbolication',
+        views.stats_symbolication,
+        name='stats_symbolication'
+    ),
+    path(
         'tokens/',
         views.tokens,
         name='tokens'

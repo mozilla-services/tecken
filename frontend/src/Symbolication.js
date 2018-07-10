@@ -1,5 +1,6 @@
 import React from 'react'
-import { Loading } from './Common'
+import { Loading, thousandFormat } from './Common'
+import Fetch from './Fetch'
 import store from './Store'
 
 class Symbolication extends React.PureComponent {
@@ -11,6 +12,7 @@ class Symbolication extends React.PureComponent {
     return (
       <div className="content">
         <h1 className="title">{this.pageTitle}</h1>
+
         <p>
           Symbolication is when you send names of symbol file and stacks that
           refer to addresses. What you get back is the stack addresses converted
@@ -23,6 +25,7 @@ class Symbolication extends React.PureComponent {
           help you understand the API and sample it.
         </p>
         <Form />
+        <Stats />
       </div>
     )
   }
@@ -400,6 +403,73 @@ class StackForm extends React.PureComponent {
           </p>
         </div>
       </form>
+    )
+  }
+}
+
+class Stats extends React.PureComponent {
+  state = {
+    loading: true,
+    stats: null
+  }
+
+  async componentDidMount() {
+    const response = await Fetch('/api/stats/symbolication', {
+      credentials: 'same-origin'
+    })
+    this.setState({ loading: false })
+    if (response.ok) {
+      if (store.fetchError) {
+        store.fetchError = null
+      }
+      const data = await response.json()
+      this.setState({
+        stats: data.symbolications
+      })
+    } else {
+      store.fetchError = response
+    }
+  }
+
+  render() {
+    return (
+      <div style={{ marginTop: 40 }}>
+        <h2 className="title">Symbolication Stats</h2>
+        {this.state.loading ? <Loading /> : null}
+
+        {this.state.stats && <StatsTable data={this.state.stats} />}
+      </div>
+    )
+  }
+}
+
+class StatsTable extends React.PureComponent {
+  render() {
+    const { data } = this.props
+    return (
+      <table className="table">
+        <thead>
+          <tr>
+            <th />
+            <th>v5</th>
+            <th>
+              v4 <small>(legacy)</small>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Today</th>
+            <td>{thousandFormat(data.v5.today)}</td>
+            <td>{thousandFormat(data.v4.today)}</td>
+          </tr>
+          <tr>
+            <th>Yesterday</th>
+            <td>{thousandFormat(data.v5.yesterday)}</td>
+            <td>{thousandFormat(data.v4.yesterday)}</td>
+          </tr>
+        </tbody>
+      </table>
     )
   }
 }
