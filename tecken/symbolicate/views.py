@@ -592,7 +592,7 @@ class SymbolicateJSON:
             symbol_offsets = many.get(cache_key)
             if symbol_offsets is None:  # not existant in cache
                 # Need to download this from the Internet.
-                metrics.incr('symbolicate_cache_miss', 1)
+                metrics.incr('symbolicate_symbol_key', tags=["cache:miss"])
                 # If the symbols weren't in the cache, this will be dealt
                 # with later by this method's caller.
                 # XXX I don't like this! That would can be done here instead.
@@ -614,7 +614,7 @@ class SymbolicateJSON:
                     information['symbol_offsets'] = []
                     information['found'] = False
                 else:
-                    metrics.incr('symbolicate_cache_hit', 1)
+                    metrics.incr('symbolicate_symbol_key', tags=["cache:hit"])
                     # If it was in cache, that means it was originally found.
                     information['symbol_offsets'] = symbol_offsets
                     information['found'] = True
@@ -864,7 +864,7 @@ def validate_stacks(stacks):
 @set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
-@metrics.timer_decorator('symbolicate_json')
+@metrics.timer_decorator('symbolicate_json', tags=['version:v4'])
 @json_post
 def symbolicate_v4_json(request, json_body):
 
@@ -914,7 +914,7 @@ def symbolicate_v4_json(request, json_body):
         )
 
     increment_symbolication_count('v4')
-    metrics.incr('symbolicate_symbolication', tags=['v4'])
+    metrics.incr('symbolicate_symbolication', tags=['version:v4'])
 
     for i, stack in enumerate(result['symbolicatedStacks']):
         result['symbolicatedStacks'][i] = [
@@ -926,7 +926,7 @@ def symbolicate_v4_json(request, json_body):
 @set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
-@metrics.timer_decorator('symbolicate_json')
+@metrics.timer_decorator('symbolicate_json', tags=['version:v5'])
 @json_post
 def symbolicate_v5_json(request, json_body):
     """The sent in JSON body is expected to be a dict that looks like this:
@@ -1030,8 +1030,12 @@ def symbolicate_v5_json(request, json_body):
         return frames
 
     increment_symbolication_count('v5')
-    metrics.incr('symbolicate_symbolication', tags=['v5'])
-    metrics.incr('symbolicate_symbolication_jobs', len(json_body['jobs']))
+    metrics.incr('symbolicate_symbolication', tags=['version:v5'])
+    metrics.incr(
+        'symbolicate_symbolication_jobs',
+        len(json_body['jobs']),
+        tags=['version:v5']
+    )
 
     try:
         for job in json_body['jobs']:

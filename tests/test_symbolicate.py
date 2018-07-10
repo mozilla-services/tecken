@@ -280,16 +280,16 @@ def test_client_happy_path_v5(
     metrics_records = metricsmock.get_records()
     metricsmock.print_records()
     assert metrics_records[0] == (
-        INCR, 'tecken.symbolicate_symbolication', 1, ['v5']
+        INCR, 'tecken.symbolicate_symbolication', 1, ['version:v5']
     )
     assert metrics_records[1] == (
-        INCR, 'tecken.symbolicate_symbolication_jobs', 1, None
+        INCR, 'tecken.symbolicate_symbolication_jobs', 1, ['version:v5']
     )
     assert metrics_records[2] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
     assert metrics_records[3] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
 
     # The reason these numbers are hardcoded is because we know
@@ -498,10 +498,10 @@ def test_client_happy_path_v4(
 
     metrics_records = metricsmock.get_records()
     assert metrics_records[0] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
     assert metrics_records[1] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
 
     # The reason these numbers are hardcoded is because we know
