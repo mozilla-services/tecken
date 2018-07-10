@@ -1595,3 +1595,25 @@ def test_file_upload_microsoft_download(client):
     assert data['microsoft_download']['url'] == (
         'https://msdn.example.com/foo.sym'
     )
+
+
+@pytest.mark.django_db
+def test_stats_symbolication(client):
+    url = reverse('api:stats_symbolication')
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user.set_password('secret')
+    user.save()
+    assert client.login(username='peterbe', password='secret')
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert 'v4' in data['symbolications']
+    assert 'v5' in data['symbolications']
+    assert 'today' in data['symbolications']['v4']
+    assert 'yesterday' in data['symbolications']['v4']
+    assert 'today' in data['symbolications']['v5']
+    assert 'yesterday' in data['symbolications']['v5']
