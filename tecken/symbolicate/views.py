@@ -914,6 +914,7 @@ def symbolicate_v4_json(request, json_body):
         )
 
     increment_symbolication_count('v4')
+    metrics.incr('symbolicate_symbolication', tags=['v4'])
 
     for i, stack in enumerate(result['symbolicatedStacks']):
         result['symbolicatedStacks'][i] = [
@@ -1029,6 +1030,8 @@ def symbolicate_v5_json(request, json_body):
         return frames
 
     increment_symbolication_count('v5')
+    metrics.incr('symbolicate_symbolication', tags=['v5'])
+    metrics.incr('symbolicate_symbolication_jobs', len(json_body['jobs']))
 
     try:
         for job in json_body['jobs']:
