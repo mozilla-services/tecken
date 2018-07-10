@@ -548,7 +548,6 @@ def test_missing_symbols_csv(client, settings):
     assert expect_filename in response['Content-Disposition']
 
     lines = response.content.splitlines()
-    print(lines)
     assert lines == [b'debug_file,debug_id,code_file,code_id']
 
     # Log at least one line

@@ -297,7 +297,6 @@ def log_symbol_get_404(
     """
     if settings.ENABLE_STORE_MISSING_SYMBOLS:
         try:
-            print(repr(code_file))
             return store_missing_symbol(
                 symbol,
                 debugid,
