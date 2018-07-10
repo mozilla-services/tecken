@@ -169,7 +169,6 @@ def test_has_private_caching_and_invalidation(botomock):
 
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == 'ListObjectsV2'
-        print(api_params['Prefix'])
         mock_calls.append(api_params['Prefix'])
         return {
             'Contents': [{
