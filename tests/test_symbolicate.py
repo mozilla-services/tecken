@@ -164,6 +164,29 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
     assert response.status_code == 400
     assert response.json()['error']
 
+    # stacks is not a list of lists of lists
+    response = json_poster(url, {'jobs': [{
+        'stacks': [[0, 8057492], [1, 391014], [0, 52067355]],
+        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+    }]})
+    assert response.status_code == 400
+    assert response.json()['error']
+    # Same, but you're not using 'jobs'.
+    response = json_poster(url, {
+        'stacks': [[0, 8057492], [1, 391014], [0, 52067355]],
+        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+    })
+    assert response.status_code == 400
+    assert response.json()['error']
+
+    # Stacks is a list of lists of lists of 3 items.
+    response = json_poster(url, {'jobs': [{
+        'stacks': [[[0, 8057492, 10000]]],
+        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+    }]})
+    assert response.status_code == 400
+    assert response.json()['error']
+
 
 def test_symbolicate_v4_json_bad_inputs(client, json_poster):
     url = reverse('symbolicate:symbolicate_v4_json')
@@ -255,11 +278,18 @@ def test_client_happy_path_v5(
     assert response['Access-Control-Allow-Origin'] == '*'
 
     metrics_records = metricsmock.get_records()
+    metricsmock.print_records()
     assert metrics_records[0] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbolication', 1, ['version:v5']
     )
     assert metrics_records[1] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbolication_jobs', 1, ['version:v5']
+    )
+    assert metrics_records[2] == (
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
+    )
+    assert metrics_records[3] == (
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
 
     # The reason these numbers are hardcoded is because we know
@@ -373,6 +403,58 @@ def test_client_happy_path_v5_with_m_prefix(
     assert stack2['function'] == 'KiUserCallbackDispatcher'
 
 
+def test_v5_first_download_address_missing(
+    json_poster,
+    clear_redis_store,
+    botomock,
+    metricsmock,
+):
+    reload_downloader('https://s3.example.com/public/prefix/')
+    url = reverse('symbolicate:symbolicate_v5_json')
+    with botomock(default_mock_api_call):
+        job = {
+            'stacks': [[[0, 65648], [1, 11723767], [0, 65907]]],
+            'memoryMap': [
+                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
+                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            ],
+        }
+        response = json_poster(url, {'jobs': [job]})
+    assert response.status_code == 200
+    result = response.json()
+    assert len(result['results']) == 1
+    result1 = result['results'][0]
+    assert result1['stacks'] == [
+        [
+            {
+                'frame': 0,
+                'function': 'KiUserCallbackExceptionHandler',
+                'function_offset': '0x0',
+                'module': 'wntdll.pdb',
+                'module_offset': '0x10070'
+            },
+            {
+                'frame': 1,
+                'function': 'XREMain::XRE_mainRun()',
+                'function_offset': '0x0',
+                'module': 'xul.pdb',
+                'module_offset': '0xb2e3f7'
+            },
+            {
+                'frame': 2,
+                'function': 'KiUserExceptionDispatcher',
+                'function_offset': '0x4f',
+                'module': 'xul.pdb',
+                'module_offset': '0x10173'
+            }
+        ]
+    ]
+    assert result1['found_modules'] == {
+        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
+        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': True,
+    }
+
+
 def test_client_happy_path_v4(
     json_poster,
     clear_redis_store,
@@ -416,10 +498,10 @@ def test_client_happy_path_v4(
 
     metrics_records = metricsmock.get_records()
     assert metrics_records[0] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
     assert metrics_records[1] == (
-        INCR, 'tecken.symbolicate_cache_miss', 1, None
+        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
     )
 
     # The reason these numbers are hardcoded is because we know
@@ -622,13 +704,8 @@ def test_symbolicate_v4_json_bad_module_offset(
             'version': 4,
         })
     result = response.json()
-    assert result['knownModules'] == [None, True]
-    assert result['symbolicatedStacks'] == [
-        [
-            f'{str(1.0000000)} (in wntdll.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)'
-        ]
-    ]
+    assert response.status_code == 400
+    assert result['error']
 
 
 def test_symbolicate_v5_json_bad_module_offset(
@@ -647,10 +724,9 @@ def test_symbolicate_v5_json_bad_module_offset(
                 ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
             ],
         })
+    assert response.status_code == 400
     result = response.json()
-    result1, = result['results']
-    frame1 = result1['stacks'][0][0]
-    assert frame1['module_offset'] == str(1.0)
+    assert result['error']
 
 
 def test_symbolicate_v4_json_happy_path_with_debug(

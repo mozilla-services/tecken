@@ -385,6 +385,8 @@ def upload_archive(request, upload_dir):
         completed_at=timezone.now(),
     )
 
+    metrics.incr('upload_uploads', tags=[f'try:{is_try_upload}'])
+
     return http.JsonResponse(
         {'upload': _serialize_upload(upload_obj)},
         status=201,

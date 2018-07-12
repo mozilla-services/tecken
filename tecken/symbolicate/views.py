@@ -250,6 +250,8 @@ class SymbolicateJSON:
                 symbol_offset_list = _symbol_offset_list_cache.get(
                     module_index
                 )
+
+                # First time we encounter this module_index?
                 if symbol_offset_list is None:
                     symbol_filename, debug_id = memory_map[module_index]
                     symbol_key = (symbol_filename, debug_id)
@@ -263,15 +265,20 @@ class SymbolicateJSON:
 
                 if symbol_offset_list:
                     # There exists a list of offsets for this module!
-                    lookups[symbol_key].append(self._get_nearest(
+
+                    symbol_key = tuple(memory_map[module_index])
+                    nearest = self._get_nearest(
                         symbol_offset_list,
                         module_offset
-                    ))
+                    )
+                    if nearest not in lookups[symbol_key]:
+                        lookups[symbol_key].append(nearest)
 
         # Now we know which lookups we need to do. I.e. Redis store queries.
         # Actually look them up.
         signatures = {}
         redis_store_connection = get_redis_connection('store')
+
         for symbol_key, keys in lookups.items():
             signatures[symbol_key] = {}
             if symbol_key in self.all_symbol_maps:
@@ -347,6 +354,7 @@ class SymbolicateJSON:
                 # what the signature is.
                 function = None
                 if symbol_offset_list:
+                    symbol_key = tuple(memory_map[module_index])
                     # Even if our module offset isn't in that list,
                     # there is still hope to be able to find the
                     # nearest signature.
@@ -584,7 +592,7 @@ class SymbolicateJSON:
             symbol_offsets = many.get(cache_key)
             if symbol_offsets is None:  # not existant in cache
                 # Need to download this from the Internet.
-                metrics.incr('symbolicate_cache_miss', 1)
+                metrics.incr('symbolicate_symbol_key', tags=["cache:miss"])
                 # If the symbols weren't in the cache, this will be dealt
                 # with later by this method's caller.
                 # XXX I don't like this! That would can be done here instead.
@@ -606,7 +614,7 @@ class SymbolicateJSON:
                     information['symbol_offsets'] = []
                     information['found'] = False
                 else:
-                    metrics.incr('symbolicate_cache_hit', 1)
+                    metrics.incr('symbolicate_symbol_key', tags=["cache:hit"])
                     # If it was in cache, that means it was originally found.
                     information['symbol_offsets'] = symbol_offsets
                     information['found'] = True
@@ -830,15 +838,45 @@ def json_post(view_function):
     return inner
 
 
+class InvalidStacks(Exception):
+    """Happens when the input stacks does not confirm to the standard."""
+    # XXX This would perhaps be best replaced with a JSON Schema solution.
+
+
+def validate_stacks(stacks):
+    if not isinstance(stacks, list):
+        raise InvalidStacks("Must be a list")
+
+    for stack in stacks:
+        if not isinstance(stack, list):
+            raise InvalidStacks("Must be a list of lists")
+        for frame in stack:
+            if not isinstance(frame, list):
+                raise InvalidStacks("Must be a list of lists of lists")
+            if len(frame) != 2:
+                raise InvalidStacks(
+                    "List of lists of frames must be 2 numbers"
+                )
+            if not (isinstance(frame[0], int) and isinstance(frame[1], int)):
+                raise InvalidStacks("Frame must be two integers")
+
+
 @set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
-@metrics.timer_decorator('symbolicate_json')
+@metrics.timer_decorator('symbolicate_json', tags=['version:v4'])
 @json_post
 def symbolicate_v4_json(request, json_body):
 
     try:
         stacks = json_body['stacks']
+        try:
+            validate_stacks(stacks)
+        except InvalidStacks as exception:
+            return JsonResponse(
+                {'error': str(exception)},
+                status=400
+            )
         memory_map = json_body['memoryMap']
         if json_body.get('version') != 4:
             return JsonResponse({'error': 'Expect version==4'}, status=400)
@@ -876,6 +914,7 @@ def symbolicate_v4_json(request, json_body):
         )
 
     increment_symbolication_count('v4')
+    metrics.incr('symbolicate_symbolication', tags=['version:v4'])
 
     for i, stack in enumerate(result['symbolicatedStacks']):
         result['symbolicatedStacks'][i] = [
@@ -887,7 +926,7 @@ def symbolicate_v4_json(request, json_body):
 @set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
-@metrics.timer_decorator('symbolicate_json')
+@metrics.timer_decorator('symbolicate_json', tags=['version:v5'])
 @json_post
 def symbolicate_v5_json(request, json_body):
     """The sent in JSON body is expected to be a dict that looks like this:
@@ -991,9 +1030,22 @@ def symbolicate_v5_json(request, json_body):
         return frames
 
     increment_symbolication_count('v5')
+    metrics.incr('symbolicate_symbolication', tags=['version:v5'])
+    metrics.incr(
+        'symbolicate_symbolication_jobs',
+        len(json_body['jobs']),
+        tags=['version:v5']
+    )
 
     try:
         for job in json_body['jobs']:
+            try:
+                validate_stacks(job['stacks'])
+            except InvalidStacks as exception:
+                return JsonResponse(
+                    {'error': str(exception)},
+                    status=400
+                )
             result = symbolicator.symbolicate(
                 job['stacks'],
                 job['memoryMap'],
