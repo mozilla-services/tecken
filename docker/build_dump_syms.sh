@@ -10,7 +10,7 @@ set -v -e -x
 git clone --recurse-submodules https://github.com/luser/dump_syms.git
 cd dump_syms
 
-export CXX="g++-4.8" CC="gcc-4.8"
+export CXX="g++-6" CC="gcc-6"
 
 CXXFLAGS=-O2 gyp -f ninja --depth=. ./dump_syms.gyp
 ninja -C out/Default

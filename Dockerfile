@@ -13,7 +13,7 @@ COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
 
-FROM python:3.6-slim@sha256:6f39e7dfc5158b351cfea004541fc85898452c2e4cbeb2b36f00c286fc957a88
+FROM python:3.6-slim@sha256:6ffa941edd18cb97cb3beaed8670e404732a657d62f6a032868d2b7b410839e5
 MAINTAINER Peter Bengtsson <peterbe@mozilla.com>
 
 ENV PYTHONUNBUFFERED=1 \
@@ -39,7 +39,7 @@ RUN apt-get update && \
 # Install dump_syms
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends \
-        gyp ninja-build binutils-gold gcc-4.8 g++-4.8 pkg-config cabextract
+        gyp ninja-build binutils-gold gcc-6 g++-6 pkg-config cabextract
 COPY ./docker/build_dump_syms.sh /tmp
 RUN /tmp/build_dump_syms.sh
 
