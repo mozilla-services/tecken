@@ -187,6 +187,26 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
     assert response.status_code == 400
     assert response.json()['error']
 
+    # The module name is too longself.
+    response = json_poster(url, {'jobs': [{
+        'stacks': [[[0, 11723767]]],
+        'memoryMap': [
+            ['0' * 1025, '44E4EC8C2F41492B9369D6B9A059577C2'],
+        ],
+    }]})
+    assert response.status_code == 400
+    assert response.json()['error']
+
+    # Valid JSON but empty/missing debugID
+    response = json_poster(url, {'jobs': [{
+        'stacks': [[[0, 11723767]]],
+        'memoryMap': [
+            ['xul.pdb', ''],
+        ],
+    }]})
+    assert response.status_code == 400
+    assert response.json()['error']
+
 
 def test_symbolicate_v4_json_bad_inputs(client, json_poster):
     url = reverse('symbolicate:symbolicate_v4_json')

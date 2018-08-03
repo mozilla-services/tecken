@@ -861,6 +861,24 @@ def validate_stacks(stacks):
                 raise InvalidStacks("Frame must be two integers")
 
 
+class InvalidMemoryMap(Exception):
+    """Happens when the input memoryMap does not confirm to the standard."""
+
+
+def validate_memory_map(memory_map):
+    if not isinstance(memory_map, list):
+        raise InvalidMemoryMap("Must be a list")
+
+    for each in memory_map:
+        if not isinstance(each, list) or len(each) != 2:
+            raise InvalidMemoryMap("Must be a list of lists of size 2")
+        module_name, debug_id = each
+        if len(module_name) > 1024:
+            raise InvalidMemoryMap("module name too long")
+        if not debug_id:
+            raise InvalidMemoryMap("debugID empty or missing")
+
+
 @set_cors_headers(origin='*', methods='POST')
 @csrf_exempt
 @set_request_debug
@@ -982,16 +1000,7 @@ def symbolicate_v5_json(request, json_body):
                 raise TypeError(
                     f"Stack number {i + 1} is 'memoryMap' not a list"
                 )
-            # Each one should be a list of two items
-            for i, mm in enumerate(stack['memoryMap']):
-                if not isinstance(mm, list):
-                    raise TypeError(
-                        f"Memory map number {i + 1} is not a list"
-                    )
-                if len(mm) != 2:
-                    raise TypeError(
-                        f"Memory map number {i + 1} isn't a list of 2 strings"
-                    )
+            # Should be a list of two items.
             if not isinstance(stack['stacks'], list):
                 raise TypeError(
                     f"Stack number {i + 1} is 'stacks' not a list"
@@ -1046,6 +1055,14 @@ def symbolicate_v5_json(request, json_body):
                     {'error': str(exception)},
                     status=400
                 )
+            try:
+                validate_memory_map(job['memoryMap'])
+            except InvalidMemoryMap as exception:
+                return JsonResponse(
+                    {'error': str(exception)},
+                    status=400
+                )
+
             result = symbolicator.symbolicate(
                 job['stacks'],
                 job['memoryMap'],
