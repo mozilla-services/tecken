@@ -877,6 +877,8 @@ def validate_memory_map(memory_map):
             raise InvalidMemoryMap("module name too long")
         if not debug_id:
             raise InvalidMemoryMap("debugID empty or missing")
+        if '\x00' in module_name:
+            raise InvalidMemoryMap("module_name contains null-byte")
 
 
 @set_cors_headers(origin='*', methods='POST')
