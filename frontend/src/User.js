@@ -239,7 +239,9 @@ const ExplainGroups = ({ groups }) => {
                 <td>{group.name}</td>
                 <td>
                   <ul style={{ marginTop: 0 }}>
-                    {group.permissions.map(p => <li key={p.id}>{p.name}</li>)}
+                    {group.permissions.map(p => (
+                      <li key={p.id}>{p.name}</li>
+                    ))}
                   </ul>
                 </td>
               </tr>

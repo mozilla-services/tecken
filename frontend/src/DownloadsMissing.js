@@ -227,7 +227,9 @@ class DisplayMissingSymbols extends React.PureComponent {
           <thead>
             <tr>
               <th>
-                Symbol/DebugID/Filename<br />CodeFile/CodeID
+                Symbol/DebugID/Filename
+                <br />
+                CodeFile/CodeID
               </th>
               <th title="A missing symbol is only counted once per every 24 hours">
                 Count

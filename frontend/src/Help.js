@@ -27,7 +27,8 @@ class Help extends PureComponent {
             href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
           >
             The best way to do that is to file a bug
-          </a>.
+          </a>
+          .
         </p>
 
         <h2>API Tokens</h2>
@@ -51,11 +52,12 @@ class Help extends PureComponent {
           </li>
           <li>
             Inside the archive file, each symbol file is supposed to be in a
-            directory that is the <b>module name</b> (e.g <code>xul.pdb</code>),
-            and that directory should contain a directory that is the{' '}
-            <b>debug ID</b> (e.g. <code>014BB0B098DC4244BCFC9F76ED2FA5302</code>)
-            and in that directory the <b>symbol file</b> (e.g.{' '}
-            <code>xul.sym</code>).
+            directory that is the <b>module name</b> (e.g <code>xul.pdb</code>
+            ), and that directory should contain a directory that is the{' '}
+            <b>debug ID</b> (e.g. <code>014BB0B098DC4244BCFC9F76ED2FA5302</code>
+            ) and in that directory the <b>symbol file</b> (e.g.{' '}
+            <code>xul.sym</code>
+            ).
           </li>
           <li>
             Any other structures, except the above, will be rejected with a
@@ -73,7 +75,8 @@ class Help extends PureComponent {
             href="https://tecken.readthedocs.io/en/latest/upload.html#checks-and-validations"
           >
             main documentation on uploading
-          </a>.
+          </a>
+          .
         </p>
       </div>
     )

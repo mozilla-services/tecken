@@ -307,7 +307,9 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
           {this.state.invalidMemoryMaps.length ? (
             <p className="help is-danger">
               {this.state.invalidMemoryMaps.length} invalid lines:{' '}
-              {this.state.invalidMemoryMaps.map(x => <code key={x}>{x}</code>)}
+              {this.state.invalidMemoryMaps.map(x => (
+                <code key={x}>{x}</code>
+              ))}
             </p>
           ) : null}
         </div>
