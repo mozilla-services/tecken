@@ -604,8 +604,12 @@ const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
           uploaded any time during this day (in UTC).
         </li>
         <li>
-          <b>Uploaded:</b> <code>&gt;={todayFullStr}</code> to filter all
-          uploads uploaded after this ISO date (in UTC).
+          <b>Uploaded:</b>{' '}
+          <code>
+            &gt;=
+            {todayFullStr}
+          </code>{' '}
+          to filter all uploads uploaded after this ISO date (in UTC).
         </li>
         <li>
           <b>Uploaded:</b> <code>today</code> (or <code>yesterday</code>) to

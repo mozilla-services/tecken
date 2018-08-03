@@ -255,7 +255,8 @@ const EnvironmentTile = ({
         rel="noopener noreferrer"
       >
         see the source code
-      </a>.
+      </a>
+      .
     </p>
 
     {loadingVersions ? (
@@ -296,8 +297,7 @@ const YouTile = ({ user }) => (
   <article className="tile is-child box">
     <p className="title">Authenticated</p>
     <p>
-      You are signed in as <b>{user.email}</b>.
-      <br />
+      You are signed in as <b>{user.email}</b>.<br />
       {user.is_superuser && (
         <span>
           You are a <b>superuser</b>.

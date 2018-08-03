@@ -257,7 +257,9 @@ export const ShowUploadMetadata = ({ upload }) => (
             {upload.redirect_urls.length ? (
               <ol start="0" className="redirect-urls">
                 <li>{URLTag(upload.download_url)}</li>
-                {upload.redirect_urls.map(url => <li>{URLTag(url)}</li>)}
+                {upload.redirect_urls.map(url => (
+                  <li>{URLTag(url)}</li>
+                ))}
               </ol>
             ) : null}
           </td>
@@ -304,7 +306,8 @@ export const ShowUploadMetadata = ({ upload }) => (
               <DisplayDateDifference
                 from={upload.created_at}
                 to={upload.completed_at}
-              />)
+              />
+              )
             </small>
           ) : null}
         </td>
@@ -357,7 +360,8 @@ export const ShowFileMetadata = ({ file }) => (
               <DisplayDateDifference
                 from={file.created_at}
                 to={file.completed_at}
-              />)
+              />
+              )
             </small>
           ) : null}
         </td>
@@ -404,7 +408,8 @@ export const ShowMicrosoftDownloadMetadata = ({ download }) => (
               <DisplayDateDifference
                 from={download.created_at}
                 to={download.completed_at}
-              />)
+              />
+              )
             </small>
           ) : null}
         </td>
