@@ -189,7 +189,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
 
     # The module name is too longself.
     response = json_poster(url, {'jobs': [{
-        'stacks': [[[0, 11723767],]],
+        'stacks': [[[0, 11723767]]],
         'memoryMap': [
             ['0' * 1025, '44E4EC8C2F41492B9369D6B9A059577C2'],
         ],

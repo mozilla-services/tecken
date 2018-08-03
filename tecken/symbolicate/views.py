@@ -1000,16 +1000,7 @@ def symbolicate_v5_json(request, json_body):
                 raise TypeError(
                     f"Stack number {i + 1} is 'memoryMap' not a list"
                 )
-            # Each one should be a list of two items
-            for i, mm in enumerate(stack['memoryMap']):
-                if not isinstance(mm, list):
-                    raise TypeError(
-                        f"Memory map number {i + 1} is not a list"
-                    )
-                if len(mm) != 2:
-                    raise TypeError(
-                        f"Memory map number {i + 1} isn't a list of 2 strings"
-                    )
+            # Should be a list of two items.
             if not isinstance(stack['stacks'], list):
                 raise TypeError(
                     f"Stack number {i + 1} is 'stacks' not a list"
