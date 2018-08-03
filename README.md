@@ -43,6 +43,8 @@ keeping track how it does things.
 
 [Tecken Redis](https://app.datadoghq.com/screen/190509/tecken-redis)
 
+[Redis Store Prod](https://app.datadoghq.com/dash/857077?live=true&page=0&is_auto=false&from_ts=1533210569870&to_ts=1533296969870&tile_size=m)
+
 [Symbols RDS](https://app.datadoghq.com/screen/280710/symbols-rds)
 
 
