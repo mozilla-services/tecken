@@ -3,7 +3,6 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import copy
-import re
 from io import BytesIO
 
 import botocore
@@ -32,6 +31,7 @@ FILE 3 c:/program files (x86)/microsoft visual studio 10.0/vc/include/vadefs.h
 FUNC 0 junkline
 FUNC 26791a 592 4 XREMain::XRE_mainRun()
 FUNC b2e3f7 2b4 4 XREMain::XRE_mainRun()
+FILE 3 FUNC and PUBLIC here but should be ignored
     """,
     'wntdll.sym': """
 MODULE windows x86 D74F79EB1F8D4A45ABCD2F476CCABACC2 wntdll.pdb
@@ -396,7 +396,13 @@ def test_client_happy_path_v5_with_m_prefix(
     def mock_api_call(self, operation_name, api_params):
         """Hack the fixture (strings) so they contain the 'm' prefix."""
         def replace(s):
-            return re.sub(r'^FUNC [^m] ', 'FUNC m ', s, flags=re.M)
+            return s.replace(
+                'FUNC 26791a 592 4 XREMain::XRE_mainRun()',
+                'FUNC m 26791a 592 4 XREMain::XRE_mainRun()',
+            ).replace(
+                'PUBLIC 100dc c KiUserCallbackDispatcher',
+                'PUBLIC m 100dc c KiUserCallbackDispatcher'
+            )
 
         content = copy.deepcopy(SAMPLE_SYMBOL_CONTENT)
         content['xul.sym'] = replace(content['xul.sym'])

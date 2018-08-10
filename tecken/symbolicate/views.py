@@ -724,8 +724,9 @@ class SymbolicateJSON:
         t0 = time.time()
         stream = self.get_download_symbol_stream(filename, debug_id)
 
-        # We are only interested in lines that match this regex.
-        # The 'm' is special. It's an extra *optional* prefix which,
+        # We are only interested in lines start with "FUNC" or "PUBLIC" or
+        # "PUBLIC m.
+        # The "m" special. It's an extra *optional* prefix which,
         # we currently omit.
         # Origin: https://bugs.chromium.org/p/google-breakpad/issues/detail?id=751
         # Note, as pointed out in
@@ -733,7 +734,6 @@ class SymbolicateJSON:
         # some day we might actually extract and use the presence of this 'm'
         # as a potential factor of the symbolication.
         # As of June 2018, we deliberately omit it.
-        starts_regex = re.compile(r'^(FUNC|PUBLIC) (m )?')
 
         # Need to parse it by line and make a dict of of offset->function
         public_symbols = {}
@@ -746,15 +746,22 @@ class SymbolicateJSON:
             total_size += len(line)
             line_number += 1
 
-            try:
-                found, = starts_regex.findall(line)
-                prefix = found[0]
-            except ValueError:
-                # If it didn't match anything at the start, don't bother
-                # with this line.
+            # Using `str1 in str2` is empirically the fastest operator there
+            # is.
+            # See https://github.com/mozilla-services/tecken/issue_comments#issuecomment-412142517
+            # But it's inaccurate so we use this fast operator as a first
+            # step. Then later, do we check that it really is a valid prefix.
+            if 'FUNC ' in line or 'PUBLIC ' in line:
+                prefix, rest = line.split(None, 1)
+                # Perhaps the line was "Bbla bla FUNC bla bla"
+                # and not "FUNC bla bla".
+                if prefix not in ('FUNC', 'PUBLIC'):
+                    continue
+                if rest.startswith('m '):
+                    rest = rest[2:]
+            else:
                 continue
 
-            rest = starts_regex.sub('', line)
             if prefix == 'PUBLIC':
                 fields = rest.strip().split(None, 2)
                 if len(fields) != 3:
