@@ -47,6 +47,16 @@ keeping track how it does things.
 
 [Symbols RDS](https://app.datadoghq.com/screen/280710/symbols-rds)
 
+New Relic
+---------
+
+This requires you have access to the 
+[Mozilla_25 New Relic account](https://rpm.newrelic.com/accounts/1402187/applications).
+
+[symbols-prod](https://rpm.newrelic.com/accounts/1402187/applications/62681492)
+
+[symbols-stage](https://rpm.newrelic.com/accounts/1402187/applications/52227224)
+
 
 Whatsdeployed
 -------------

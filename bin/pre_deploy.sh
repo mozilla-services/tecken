@@ -14,6 +14,6 @@ else
 fi
 
 echo "-----> PRE-DEPLOY: Running Django migration..."
-./manage.py migrate --noinput
+newrelic-admin run-program ./manage.py migrate --noinput
 
 echo "-----> PRE-DEPLOY: Complete!"

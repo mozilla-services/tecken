@@ -45,7 +45,7 @@ case $1 in
     exec python manage.py runserver 0.0.0.0:${PORT}
     ;;
   worker)
-    exec celery -A tecken.celery:app worker -l info
+    exec newrelic-admin run-program celery -A tecken.celery:app worker -l info
     ;;
   worker-purge)
     # Start worker but first purge ALL old stale tasks.
