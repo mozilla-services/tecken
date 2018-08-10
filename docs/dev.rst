@@ -632,3 +632,23 @@ Another important thing is that on the Django side, caching and cookies work.
 If you have trouble authenticating you can start the server and go to:
 ``http://localhost:8000/__auth_debug__``.  It will check that the cache
 can work between requests and that session cookies can be set and read.
+
+
+How to make a Zip file
+======================
+
+Suppose you have a file like ``libxul.so.sym``. Suppose also that you have
+multiple files you want to put into the zip, but for now we'll just make
+a zip of one file but use the ``-r`` flag to demonstrate how to do it
+if there were multiple files:
+
+.. code-block:: shell
+
+    $ mkdir zipthis
+    $ mkdir zipthis/libxul.so
+    $ mkdir zipthis/libxul.so/13E87871A778CDBAF11B298FD05E2DBA0
+    $ cp libxul.so.sym zipthis/libxul.so/13E87871A778CDBAF11B298FD05E2DBA0/
+    $ cd zipthis
+    $ zip mysymbols -r *
+    $ ls -l mysymbols.zip
+    -rw-r--r--  1 peterbe  staff  40945250 Aug 10 14:54 mysymbols.zip
