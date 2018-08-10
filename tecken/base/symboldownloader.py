@@ -296,15 +296,18 @@ class SymbolDownloader:
                 )
 
                 try:
-                    response = source.s3_client.get_object(
-                        Bucket=source.name,
-                        Key=key,
-                    )
+                    with metrics.timer('symboldownloader_get_object'):
+                        response = source.s3_client.get_object(
+                            Bucket=source.name,
+                            Key=key,
+                        )
                     stream = response['Body']
                     # But if the content encoding is gzip we have
                     # re-wrap the stream.
                     if response.get('ContentEncoding') == 'gzip':
-                        bytestream = BytesIO(response['Body'].read())
+                        with metrics.timer('symboldownloader_get_object_read'):
+                            body = response['Body'].read()
+                        bytestream = BytesIO(body)
                         stream = GzipFile(None, 'rb', fileobj=bytestream)
                     yield (source.name, key)
                     try:
