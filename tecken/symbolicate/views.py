@@ -748,7 +748,7 @@ class SymbolicateJSON:
 
             # Using `str1 in str2` is empirically the fastest operator there
             # is.
-            # See https://github.com/mozilla-services/tecken/issue_comments#issuecomment-412142517
+            # See https://github.com/mozilla-services/tecken/issues/983#issuecomment-412142517
             # But it's inaccurate so we use this fast operator as a first
             # step. Then later, do we check that it really is a valid prefix.
             if 'FUNC ' in line or 'PUBLIC ' in line:
