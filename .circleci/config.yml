@@ -2,7 +2,7 @@ version: 2
 jobs:
   checkout_code:
     docker:
-      - image: ubuntu:16.04@sha256:da6fba872ef36657a66384ffb2c2b5b5dc1672ec5f3b310a613c0ceb6f9b299a
+      - image: ubuntu:18.04
     working_directory: ~/tecken
     steps:
       - run:
@@ -17,7 +17,7 @@ jobs:
 
   build_test_and_deploy:
     docker:
-      - image: ubuntu:16.04@sha256:da6fba872ef36657a66384ffb2c2b5b5dc1672ec5f3b310a613c0ceb6f9b299a
+      - image: ubuntu:18.04
     working_directory: ~/tecken
     steps:
       - run:
@@ -91,7 +91,7 @@ jobs:
 
   run_lintcheck:
     docker:
-      - image: ubuntu:16.04@sha256:da6fba872ef36657a66384ffb2c2b5b5dc1672ec5f3b310a613c0ceb6f9b299a
+      - image: ubuntu:18.04
     working_directory: ~/tecken
     steps:
       - run:
