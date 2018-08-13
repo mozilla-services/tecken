@@ -1,4 +1,4 @@
-FROM redis:3.2.12@sha256:3c0c3e7f95e48de257e3c5377dc0a3c16f8cb3b4e281a4e9f63bd29c6c31f43e
+FROM redis:3.2.12@sha256:b0e0e30549716e5a53d455c7cde800578358ed7cfd9686113433597cea56d899
 
 COPY redis.conf /usr/local/etc/redis/redis.conf
 CMD [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
