@@ -30,6 +30,7 @@ jobs:
             mv ~/docker-compose /usr/local/bin/docker-compose
 
       - setup_remote_docker:
+          docker_layer_caching: true
           version: 17.09.0-ce
 
       - run:
