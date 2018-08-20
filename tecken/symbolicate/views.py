@@ -28,7 +28,7 @@ from .utils import make_symbol_key_cache_key
 
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics( 'tecken' )
+metrics = markus.get_metrics("tecken")
 store = caches["store"]
 
 downloader = SymbolDownloader(
