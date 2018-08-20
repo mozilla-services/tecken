@@ -9,7 +9,7 @@ set -eo pipefail
 : "${GUNICORN_TIMEOUT:=300}"
 
 usage() {
-  echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|superuser"
+  echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|blackfix|lintcheck|superuser"
   exit 1
 }
 
@@ -55,13 +55,22 @@ case $1 in
     # the docker container.
     exec celery -A tecken.celery:app worker -l info --purge
     ;;
+  blackfix)
+    # This exclude is ugly because it's not additive
+    # See https://github.com/ambv/black/issues/65
+    black tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
+    ;;
+  lintcheck)
+    flake8 tecken tests
+    black --check tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
+    ;;
   superuser)
     exec python manage.py superuser "${@:2}"
     ;;
   test)
     # python manage.py collectstatic --noinput
     coverage erase
-    coverage run -m py.test --flake8 "${@:2}"
+    coverage run -m py.test "${@:2}"
     coverage report -m
     if [[ -z ${CI+check} ]]; then  # when doing local `make test`
       # generate code coverage to disk

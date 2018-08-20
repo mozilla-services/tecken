@@ -14,17 +14,17 @@ from markus.testing import MetricsMock
 from django.core.cache import caches
 from django.contrib.auth.models import User
 
-pytest_plugins = ['blockade']
+pytest_plugins = ["blockade"]
 
 
 @pytest.fixture
 def clear_redis_store():
-    caches['store'].clear()
+    caches["store"].clear()
 
 
 @pytest.fixture(autouse=True)
 def clear_cache():
-    caches['default'].clear()
+    caches["default"].clear()
 
 
 @pytest.fixture
@@ -33,14 +33,16 @@ def json_poster(client):
     Uses the client instance to make a client.post() call with the 'data'
     as a valid JSON string with the right header.
     """
+
     def inner(url, data, **extra):
-        debug = extra.pop('debug', None)
+        debug = extra.pop("debug", None)
         if not isinstance(data, str):
             data = json.dumps(data)
-        extra['content_type'] = 'application/json'
+        extra["content_type"] = "application/json"
         if debug is not None:
-            extra['HTTP_DEBUG'] = str(debug)
+            extra["HTTP_DEBUG"] = str(debug)
         return client.post(url, data, **extra)
+
     return inner
 
 
@@ -83,9 +85,9 @@ def requestsmock():
 @pytest.fixture
 def celery_config():
     return {
-        'broker_url': 'redis://redis-cache:6379/0',
-        'result_backend': 'redis://redis-cache:6379/0',
-        'task_always_eager': True,
+        "broker_url": "redis://redis-cache:6379/0",
+        "result_backend": "redis://redis-cache:6379/0",
+        "task_always_eager": True,
     }
 
 
@@ -143,21 +145,19 @@ def botomock():
     """
 
     class BotoMock:
-
         def __init__(self):
             self.calls = []
 
         def __call__(self, mock_function):
-
             def wrapper(f):
                 def inner(*args, **kwargs):
                     self.calls.append(args[1:])
                     return f(*args, **kwargs)
+
                 return inner
 
             return mock.patch(
-                'botocore.client.BaseClient._make_api_call',
-                new=wrapper(mock_function)
+                "botocore.client.BaseClient._make_api_call", new=wrapper(mock_function)
             )
 
         def orig(self, *args, **kwargs):
@@ -168,10 +168,7 @@ def botomock():
 
 @pytest.fixture
 def fakeuser():
-    return User.objects.create(
-        username='peterbe',
-        email='peterbe@example.com',
-    )
+    return User.objects.create(username="peterbe", email="peterbe@example.com")
 
 
 @pytest.fixture
@@ -220,6 +217,6 @@ def upload_mock_invalidate_symbolicate_cache():
 
     fake_task = FakeTask()
 
-    _mock_function = 'tecken.upload.views.invalidate_symbolicate_cache_task'
+    _mock_function = "tecken.upload.views.invalidate_symbolicate_cache_task"
     with mock.patch(_mock_function, new=fake_task):
         yield fake_task

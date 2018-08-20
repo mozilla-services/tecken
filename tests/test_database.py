@@ -11,12 +11,7 @@ from django.core.management import call_command
 def test_for_missing_migrations():
     output = StringIO()
     try:
-        call_command(
-            'makemigrations',
-            interactive=False,
-            check=True,
-            stdout=output,
-        )
+        call_command("makemigrations", interactive=False, check=True, stdout=output)
     except SystemExit as exc:
         # The exit code will be 0 when there are no missing migrations
         assert exc.code == 1

@@ -26,19 +26,15 @@ from tecken.base.decorators import (
 )
 from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
-from tecken.download.tasks import (
-    download_microsoft_symbol,
-    store_missing_symbol_task
-)
+from tecken.download.tasks import download_microsoft_symbol, store_missing_symbol_task
 from tecken.download.forms import DownloadForm
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 
 normal_downloader = SymbolDownloader(
-    settings.SYMBOL_URLS,
-    file_prefix=settings.SYMBOL_FILE_PREFIX,
+    settings.SYMBOL_URLS, file_prefix=settings.SYMBOL_FILE_PREFIX
 )
 try_downloader = SymbolDownloader(
     settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
@@ -53,9 +49,9 @@ file_extensions_whitelist = tuple(settings.DOWNLOAD_FILE_EXTENSIONS_WHITELIST)
 def _ignore_symbol(symbol, debugid, filename):
     # The MS debugger will always try to look up these files. We
     # never have them in our symbol stores. So it can be safely ignored.
-    if filename == 'file.ptr':
+    if filename == "file.ptr":
         return True
-    if debugid == '000000000000000000000000000000000':
+    if debugid == "000000000000000000000000000000000":
         return True
 
     if not filename.endswith(file_extensions_whitelist):
@@ -69,18 +65,14 @@ def _ignore_symbol(symbol, debugid, filename):
 # is because we need tight control of what the cache key becomes. That
 # way we can cache invalidate it later.
 def download_from_microsoft(
-    symbol,
-    debugid,
-    code_file=None,
-    code_id=None,
-    missing_symbol_hash=None
+    symbol, debugid, code_file=None, code_id=None, missing_symbol_hash=None
 ):
     """Only kick off the 'download_microsoft_symbol' background task
     if we haven't already done so recently."""
 
-    cache_key = hashlib.md5(force_bytes(
-        f'microsoft-download:{symbol}:{debugid}'
-    )).hexdigest()
+    cache_key = hashlib.md5(
+        force_bytes(f"microsoft-download:{symbol}:{debugid}")
+    ).hexdigest()
     if not cache.get(cache_key):
         # Commence the background task to try to download from Microsoft
         download_microsoft_symbol.delay(
@@ -88,36 +80,26 @@ def download_from_microsoft(
             debugid,
             code_file=code_file,
             code_id=code_id,
-            missing_symbol_hash=missing_symbol_hash or None
+            missing_symbol_hash=missing_symbol_hash or None,
         )
-        cache.set(
-            cache_key,
-            True,
-            settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS
-        )
+        cache.set(cache_key, True, settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS)
 
 
 def download_symbol_legacy(request, legacyproduct, symbol, debugid, filename):
     if legacyproduct not in settings.DOWNLOAD_LEGACY_PRODUCTS_PREFIXES:
-        raise http.Http404('Invalid legacy product prefix')
-    metrics.incr('download_legacyproduct')
+        raise http.Http404("Invalid legacy product prefix")
+    metrics.incr("download_legacyproduct")
     return download_symbol(request, symbol, debugid, filename)
 
 
 def download_symbol_try(request, symbol, debugid, filename):
-    return download_symbol(
-        request,
-        symbol,
-        debugid,
-        filename,
-        try_symbols=True,
-    )
+    return download_symbol(request, symbol, debugid, filename, try_symbols=True)
 
 
-@metrics.timer_decorator('download_symbol')
+@metrics.timer_decorator("download_symbol")
 @set_request_debug
-@api_require_http_methods(['GET', 'HEAD'])
-@set_cors_headers(origin='*', methods='GET')
+@api_require_http_methods(["GET", "HEAD"])
+@set_cors_headers(origin="*", methods="GET")
 def download_symbol(request, symbol, debugid, filename, try_symbols=False):
     # First there's an opportunity to do some basic pattern matching on
     # the symbol, debugid, and filename parameters to determine
@@ -125,46 +107,39 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
     # Not only can we avoid doing a SymbolDownloader call, we also
     # don't have to bother logging that it could not be found.
     if _ignore_symbol(symbol, debugid, filename):
-        logger.debug(f'Ignoring symbol {symbol}/{debugid}/{filename}')
-        response = http.HttpResponseNotFound('Symbol Not Found (and ignored)')
+        logger.debug(f"Ignoring symbol {symbol}/{debugid}/{filename}")
+        response = http.HttpResponseNotFound("Symbol Not Found (and ignored)")
         if request._request_debug:
-            response['Debug-Time'] = 0
+            response["Debug-Time"] = 0
         return response
 
     if invalid_s3_key_name_characters(symbol + filename):
-        logger.debug(f'Invalid character {symbol!r}/{debugid}/{filename!r}')
+        logger.debug(f"Invalid character {symbol!r}/{debugid}/{filename!r}")
         response = http.HttpResponseBadRequest(
-            'Symbol name lookup contains invalid characters and will never '
-            'be found.'
+            "Symbol name lookup contains invalid characters and will never " "be found."
         )
         if request._request_debug:
-            response['Debug-Time'] = 0
+            response["Debug-Time"] = 0
         return response
 
-    refresh_cache = '_refresh' in request.GET
+    refresh_cache = "_refresh" in request.GET
 
-    if 'try' in request.GET or try_symbols:
+    if "try" in request.GET or try_symbols:
         downloader = try_downloader
     else:
         downloader = normal_downloader
 
-    if request.method == 'HEAD':
+    if request.method == "HEAD":
         if downloader.has_symbol(
-            symbol,
-            debugid,
-            filename,
-            refresh_cache=refresh_cache,
+            symbol, debugid, filename, refresh_cache=refresh_cache
         ):
             response = http.HttpResponse()
             if request._request_debug:
-                response['Debug-Time'] = downloader.time_took
+                response["Debug-Time"] = downloader.time_took
             return response
     else:
         url = downloader.get_symbol_url(
-            symbol,
-            debugid,
-            filename,
-            refresh_cache=refresh_cache,
+            symbol, debugid, filename, refresh_cache=refresh_cache
         )
         if url:
             # If doing local development, with Docker, you're most likely
@@ -174,21 +149,21 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             # we'll rewrite the URL to one that is possible to reach
             # from the host.
             if (
-                settings.DEBUG and
-                'http://minio:9000' in url and
-                request.get_host() == 'localhost:8000'
+                settings.DEBUG
+                and "http://minio:9000" in url
+                and request.get_host() == "localhost:8000"
             ):  # pragma: no cover
-                url = url.replace('minio:9000', 'localhost:9000')
+                url = url.replace("minio:9000", "localhost:9000")
             response = http.HttpResponseRedirect(url)
             if request._request_debug:
-                response['Debug-Time'] = downloader.time_took
+                response["Debug-Time"] = downloader.time_took
             return response
 
     # Assume that we don't do a delayed (background task) lookup and
     # have not done one recently either.
     delayed_lookup = False
 
-    if request.method == 'GET':
+    if request.method == "GET":
         # Only bother looking at the query string if the request was GET.
         form = DownloadForm(request.GET)
         if not form.is_valid():
@@ -197,29 +172,22 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             # all the errors if there is at least one.
             for key in form.errors:
                 for message in form.errors[key]:
-                    return http.HttpResponseBadRequest(
-                        f'{key}: {message}'
-                    )
+                    return http.HttpResponseBadRequest(f"{key}: {message}")
         else:
-            code_file = form.cleaned_data['code_file']
-            code_id = form.cleaned_data['code_id']
+            code_file = form.cleaned_data["code_file"]
+            code_id = form.cleaned_data["code_id"]
 
         # Only bother logging it if the client used GET.
         # Otherwise it won't be possible to pick up the extra
         # query string parameters.
         missing_symbol_hash = log_symbol_get_404(
-            symbol,
-            debugid,
-            filename,
-            code_file=code_file,
-            code_id=code_id,
+            symbol, debugid, filename, code_file=code_file, code_id=code_id
         )
 
         if (
-            settings.ENABLE_DOWNLOAD_FROM_MICROSOFT and
-            symbol.lower().endswith('.pdb') and
-            filename.lower().endswith('.sym')
-
+            settings.ENABLE_DOWNLOAD_FROM_MICROSOFT
+            and symbol.lower().endswith(".pdb")
+            and filename.lower().endswith(".sym")
         ):
             # The log_symbol_get_404() function is protected by a cache
             # that "guards" it with a memoize decorator. That memoize
@@ -254,10 +222,10 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             delayed_lookup = True
 
     response = http.HttpResponseNotFound(
-        'Symbol Not Found Yet' if delayed_lookup else 'Symbol Not Found'
+        "Symbol Not Found Yet" if delayed_lookup else "Symbol Not Found"
     )
     if request._request_debug:
-        response['Debug-Time'] = downloader.time_took
+        response["Debug-Time"] = downloader.time_took
     return response
 
 
@@ -267,14 +235,8 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
     # executing more than once.
     store_result=False,
 )
-@metrics.timer('download_log_symbol_get_404')
-def log_symbol_get_404(
-    symbol,
-    debugid,
-    filename,
-    code_file='',
-    code_id='',
-):
+@metrics.timer("download_log_symbol_get_404")
+def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
     """Store the fact that a symbol could not be found.
 
     The purpose of this is be able to answer "What symbol fetches have
@@ -298,11 +260,7 @@ def log_symbol_get_404(
     if settings.ENABLE_STORE_MISSING_SYMBOLS:
         try:
             return store_missing_symbol(
-                symbol,
-                debugid,
-                filename,
-                code_file=code_file,
-                code_id=code_id,
+                symbol, debugid, filename, code_file=code_file, code_id=code_id
             )
         except OperationalError as exception:
             # Note that this doesn't return. The reason is because it's
@@ -323,11 +281,7 @@ def log_symbol_get_404(
             # that it *just* now got written down. And that's useful to know
             # when we attempt to automatically download it from Microsoft.
             store_missing_symbol_task.delay(
-                symbol,
-                debugid,
-                filename,
-                code_file=code_file,
-                code_id=code_id,
+                symbol, debugid, filename, code_file=code_file, code_id=code_id
             )
 
 
@@ -352,42 +306,34 @@ def missing_symbols_csv(request):
     """
 
     date = timezone.now()
-    if not request.GET.get('today'):
+    if not request.GET.get("today"):
         # By default we want to look at keys inserted yesterday, but
         # it's useful (for debugging for example) to be able to see what
         # keys have been inserted today.
         date -= datetime.timedelta(days=1)
 
-    response = http.HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = (
-        'attachment; filename="missing-symbols-{}.csv"'.format(
-            date.strftime('%Y-%m-%d')
-        )
+    response = http.HttpResponse(content_type="text/csv")
+    response[
+        "Content-Disposition"
+    ] = 'attachment; filename="missing-symbols-{}.csv"'.format(
+        date.strftime("%Y-%m-%d")
     )
     writer = csv.writer(response)
-    writer.writerow([
-        'debug_file',
-        'debug_id',
-        'code_file',
-        'code_id',
-    ])
+    writer.writerow(["debug_file", "debug_id", "code_file", "code_id"])
 
     # By default, only do those updated in the last 24h
     qs = MissingSymbol.objects.filter(
         modified_at__gte=date,
         # This is a trick to immediately limit the symbols that could
         # be gotten from a Microsoft download.
-        symbol__iendswith='.pdb',
-        filename__iendswith='.sym',
+        symbol__iendswith=".pdb",
+        filename__iendswith=".sym",
     )
 
-    only = ('symbol', 'debugid', 'code_file', 'code_id')
+    only = ("symbol", "debugid", "code_file", "code_id")
     for missing in qs.only(*only):
-        writer.writerow([
-            missing.symbol,
-            missing.debugid,
-            missing.code_file,
-            missing.code_id,
-        ])
+        writer.writerow(
+            [missing.symbol, missing.debugid, missing.code_file, missing.code_id]
+        )
 
     return response

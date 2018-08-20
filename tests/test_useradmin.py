@@ -16,125 +16,96 @@ from django.urls import reverse
 @pytest.mark.django_db
 def test_superuser_command():
     stdout = StringIO()
-    call_command(
-        'superuser',
-        'foo@example.com',
-        stdout=stdout,
-    )
+    call_command("superuser", "foo@example.com", stdout=stdout)
     output = stdout.getvalue()
-    assert 'User created' in output
-    assert 'PROMOTED to superuser' in output
-    assert User.objects.get(email='foo@example.com', is_superuser=True)
+    assert "User created" in output
+    assert "PROMOTED to superuser" in output
+    assert User.objects.get(email="foo@example.com", is_superuser=True)
 
     # all it a second time
     stdout = StringIO()
-    call_command(
-        'superuser',
-        'foo@example.com',
-        stdout=stdout,
-    )
+    call_command("superuser", "foo@example.com", stdout=stdout)
     output = stdout.getvalue()
-    assert 'User created' not in output
-    assert 'DEMOTED to superuser' in output
-    assert User.objects.get(email='foo@example.com', is_superuser=False)
+    assert "User created" not in output
+    assert "DEMOTED to superuser" in output
+    assert User.objects.get(email="foo@example.com", is_superuser=False)
 
     with pytest.raises(CommandError):
         stdout = StringIO()
-        call_command(
-            'superuser',
-            'gibberish',
-            stdout=stdout,
-        )
+        call_command("superuser", "gibberish", stdout=stdout)
 
 
 @pytest.mark.django_db
 def test_is_blocked_in_auth0_command(requestsmock):
     requestsmock.post(
-        'https://auth.example.com/oauth/token',
-        json={'access_token': 'whatever'},
+        "https://auth.example.com/oauth/token",
+        json={"access_token": "whatever"},
         status_code=200,
     )
 
     requestsmock.get(
-        'https://auth.example.com/api/v2/users?q=email%3A%22'
-        'not%40example.com%22',
-        json=[{'name': 'Not'}],
-        status_code=200,
-    )
-
-    stdout = StringIO()
-    call_command(
-        'is-blocked-in-auth0',
-        'not@example.com',
-        stdout=stdout,
-    )
-    output = stdout.getvalue()
-    assert 'NOT blocked' in output
-
-    requestsmock.get(
-        'https://auth.example.com/api/v2/users?q=email%3A%22'
-        'blocked%40example.com%22',
-        json=[{'name': 'Something', 'blocked': True}],
+        "https://auth.example.com/api/v2/users?q=email%3A%22" "not%40example.com%22",
+        json=[{"name": "Not"}],
         status_code=200,
     )
 
     stdout = StringIO()
-    call_command(
-        'is-blocked-in-auth0',
-        'blocked@example.com',
-        stdout=stdout,
-    )
+    call_command("is-blocked-in-auth0", "not@example.com", stdout=stdout)
     output = stdout.getvalue()
-    assert 'BLOCKED!' in output
+    assert "NOT blocked" in output
 
     requestsmock.get(
-        'https://auth.example.com/api/v2/users?q=email%3A%22'
-        'notfound%40example.com%22',
+        "https://auth.example.com/api/v2/users?q=email%3A%22"
+        "blocked%40example.com%22",
+        json=[{"name": "Something", "blocked": True}],
+        status_code=200,
+    )
+
+    stdout = StringIO()
+    call_command("is-blocked-in-auth0", "blocked@example.com", stdout=stdout)
+    output = stdout.getvalue()
+    assert "BLOCKED!" in output
+
+    requestsmock.get(
+        "https://auth.example.com/api/v2/users?q=email%3A%22"
+        "notfound%40example.com%22",
         json=[],
         status_code=200,
     )
     stdout = StringIO()
-    call_command(
-        'is-blocked-in-auth0',
-        'notfound@example.com',
-        stdout=stdout,
-    )
+    call_command("is-blocked-in-auth0", "notfound@example.com", stdout=stdout)
     output = stdout.getvalue()
-    assert 'could not be found' in output
+    assert "could not be found" in output
 
     with pytest.raises(CommandError):
         stdout = StringIO()
-        call_command(
-            'is-blocked-in-auth0',
-            'gibberish',
-            stdout=stdout,
-        )
+        call_command("is-blocked-in-auth0", "gibberish", stdout=stdout)
 
 
 @pytest.mark.django_db
 def test_not_blocked_in_auth0(client, requestsmock, settings, metricsmock):
     settings.ENABLE_AUTH0_BLOCKED_CHECK = True
 
-    url = reverse('api:auth')
+    url = reverse("api:auth")
     response = client.get(url)
     # No requestsmocking needed yet because the client is anonymous
     assert response.status_code == 200
 
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
-    user.set_password('secret')
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
     user.save()
-    assert client.login(username='peterbe', password='secret')
+    assert client.login(username="peterbe", password="secret")
 
     requestsmock.post(
-        'https://auth.example.com/oauth/token',
-        json={'access_token': 'whatever'},
+        "https://auth.example.com/oauth/token",
+        json={"access_token": "whatever"},
         status_code=200,
     )
 
     requestsmock.get(
-        'https://auth.example.com/api/v2/users?q=email%3A%22'
-        'peterbe%40example.com%22',
-        json=[{'name': 'Fine', 'blocked': False}],
+        "https://auth.example.com/api/v2/users?q=email%3A%22"
+        "peterbe%40example.com%22",
+        json=[{"name": "Fine", "blocked": False}],
         status_code=200,
     )
 
@@ -150,22 +121,22 @@ def test_not_blocked_in_auth0(client, requestsmock, settings, metricsmock):
 def test_blocked_in_auth0(client, requestsmock, settings, clear_redis_store):
     settings.ENABLE_AUTH0_BLOCKED_CHECK = True
 
-    url = reverse('api:auth')
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
-    user.set_password('secret')
+    url = reverse("api:auth")
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
     user.save()
-    assert client.login(username='peterbe', password='secret')
+    assert client.login(username="peterbe", password="secret")
 
     requestsmock.post(
-        'https://auth.example.com/oauth/token',
-        json={'access_token': 'whatever'},
+        "https://auth.example.com/oauth/token",
+        json={"access_token": "whatever"},
         status_code=200,
     )
 
     requestsmock.get(
-        'https://auth.example.com/api/v2/users?q=email%3A%22'
-        'peterbe%40example.com%22',
-        json=[{'name': 'Fine', 'blocked': True}],
+        "https://auth.example.com/api/v2/users?q=email%3A%22"
+        "peterbe%40example.com%22",
+        json=[{"name": "Fine", "blocked": True}],
         status_code=200,
     )
 

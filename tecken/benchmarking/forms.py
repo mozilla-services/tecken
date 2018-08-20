@@ -11,27 +11,24 @@ class CachingVsBotoForm(forms.Form):
     measure = forms.MultipleChoiceField(required=False)
 
     def __init__(self, *args, **kwargs):
-        self.all_measure = kwargs.pop('all_measure')
+        self.all_measure = kwargs.pop("all_measure")
         super().__init__(*args, **kwargs)
-        self.fields['measure'].choices = [(x, x) for x in self.all_measure]
+        self.fields["measure"].choices = [(x, x) for x in self.all_measure]
 
     def clean_iterations(self):
         try:
-            value = int(self.cleaned_data['iterations'] or '10')
+            value = int(self.cleaned_data["iterations"] or "10")
         except ValueError:
-            raise forms.ValidationError('not an integer')
+            raise forms.ValidationError("not an integer")
         if value <= 0:
-            raise forms.ValidationError('must be >0')
+            raise forms.ValidationError("must be >0")
         return value
 
     def clean_symbol_path(self):
-        value = self.cleaned_data['symbol_path']
-        if (
-            not value.count('/') == 2 or
-            value.startswith('/') or value.endswith('/')
-        ):
-            raise forms.ValidationError('Not valid')
+        value = self.cleaned_data["symbol_path"]
+        if not value.count("/") == 2 or value.startswith("/") or value.endswith("/"):
+            raise forms.ValidationError("Not valid")
         return value.strip()
 
     def clean_measure(self):
-        return self.cleaned_data['measure'] or self.all_measure
+        return self.cleaned_data["measure"] or self.all_measure

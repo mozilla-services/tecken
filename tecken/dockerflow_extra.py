@@ -11,7 +11,7 @@ from dockerflow.health import (
     ERROR_CANNOT_CONNECT_REDIS,
     ERROR_MISSING_REDIS_CLIENT,
     ERROR_MISCONFIGURED_REDIS,
-    ERROR_REDIS_PING_FAILED
+    ERROR_REDIS_PING_FAILED,
 )
 from tecken.s3 import S3Bucket
 
@@ -23,16 +23,17 @@ def check_redis_store_connected(app_configs, **kwargs):
     """
     import redis
     from django_redis import get_redis_connection
+
     errors = []
 
     try:
         # Note! This name 'store' is specific only to tecken
-        connection = get_redis_connection('store')
+        connection = get_redis_connection("store")
     except redis.ConnectionError as e:
-        msg = 'Could not connect to redis: {!s}'.format(e)
+        msg = "Could not connect to redis: {!s}".format(e)
         errors.append(checks.Error(msg, id=ERROR_CANNOT_CONNECT_REDIS))
     except NotImplementedError as e:
-        msg = 'Redis client not available: {!s}'.format(e)
+        msg = "Redis client not available: {!s}".format(e)
         errors.append(checks.Error(msg, id=ERROR_MISSING_REDIS_CLIENT))
     except ImproperlyConfigured as e:
         msg = 'Redis misconfigured: "{!s}"'.format(e)
@@ -40,7 +41,7 @@ def check_redis_store_connected(app_configs, **kwargs):
     else:
         result = connection.ping()
         if not result:
-            msg = 'Redis ping failed'
+            msg = "Redis ping failed"
             errors.append(checks.Error(msg, id=ERROR_REDIS_PING_FAILED))
     return errors
 
@@ -58,28 +59,32 @@ def check_s3_urls(app_configs, **kwargs):
         try:
             bucket.s3_client.head_bucket(Bucket=bucket.name)
         except ClientError as exception:
-            if exception.response['Error']['Code'] in ('403', '404'):
-                errors.append(checks.Error(
-                    f'Unable to connect to {url} (bucket={bucket.name!r}, '
-                    f'found in settings.{setting_key}) due to '
-                    f'ClientError ({exception.response!r})',
-                    id='tecken.health.E002'
-                ))
+            if exception.response["Error"]["Code"] in ("403", "404"):
+                errors.append(
+                    checks.Error(
+                        f"Unable to connect to {url} (bucket={bucket.name!r}, "
+                        f"found in settings.{setting_key}) due to "
+                        f"ClientError ({exception.response!r})",
+                        id="tecken.health.E002",
+                    )
+                )
             else:
                 raise
         except EndpointConnectionError:
-            errors.append(checks.Error(
-                f'Unable to connect to {url} (bucket={bucket.name!r}, '
-                f'found in settings.{setting_key}) due to '
-                f'EndpointConnectionError',
-                id='tecken.health.E001'
-            ))
+            errors.append(
+                checks.Error(
+                    f"Unable to connect to {url} (bucket={bucket.name!r}, "
+                    f"found in settings.{setting_key}) due to "
+                    f"EndpointConnectionError",
+                    id="tecken.health.E001",
+                )
+            )
         else:
             checked.append(url)
 
     for url in settings.SYMBOL_URLS:
-        check_url(url, 'SYMBOL_URLS')
+        check_url(url, "SYMBOL_URLS")
     for url in settings.UPLOAD_URL_EXCEPTIONS.values():
-        check_url(url, 'UPLOAD_URL_EXCEPTIONS')
+        check_url(url, "UPLOAD_URL_EXCEPTIONS")
 
     return errors

@@ -39,15 +39,15 @@ class Command(BaseCommand):
     """
 
     help = (
-        'One-off script (that you can run repeatedly) for importing '
-        'symbol uploader users from crash-stats.mozilla.com'
+        "One-off script (that you can run repeatedly) for importing "
+        "symbol uploader users from crash-stats.mozilla.com"
     )
 
     def add_arguments(self, parser):
-        parser.add_argument('jsonfile', nargs='?')
+        parser.add_argument("jsonfile", nargs="?")
 
     def handle(self, *args, **options):
-        jsonfile = options['jsonfile']
+        jsonfile = options["jsonfile"]
         if jsonfile:
             with open(jsonfile) as f:
                 users = json.load(f)
@@ -56,32 +56,22 @@ class Command(BaseCommand):
             # docker don't necessary share filesystem.
             users = json.load(sys.stdin)
 
-        self.stdout.write(self.style.SUCCESS(
-            f'Import {len(users)} users'
-        ))
-        uploaders = Group.objects.get(name='Uploaders')
+        self.stdout.write(self.style.SUCCESS(f"Import {len(users)} users"))
+        uploaders = Group.objects.get(name="Uploaders")
 
         count_creations = 0
         for email in users:
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
-                username_algo = import_from_settings(
-                    'OIDC_USERNAME_ALGO',
-                    None
-                )
+                username_algo = import_from_settings("OIDC_USERNAME_ALGO", None)
                 if username_algo:
                     username = username_algo(email)
                 else:
                     username = default_username_algo(email)
-                user = User.objects.create(
-                    username=username,
-                    email=email,
-                )
+                user = User.objects.create(username=username, email=email)
                 user.set_unusable_password()
-                self.stdout.write(self.style.SUCCESS(
-                    f'User created ({user.email})'
-                ))
+                self.stdout.write(self.style.SUCCESS(f"User created ({user.email})"))
 
                 # Put the user in the Uploaders group so they can have
                 # the right permissions they need when they generate
@@ -90,20 +80,18 @@ class Command(BaseCommand):
 
             tokens = users[email]
             if not tokens:
-                self.stdout.write(self.style.WARNING(
-                    f'{user.email} has no active API tokens'
-                ))
+                self.stdout.write(
+                    self.style.WARNING(f"{user.email} has no active API tokens")
+                )
             for token in tokens:
-                if Token.objects.filter(user=user, key=token['key']):
+                if Token.objects.filter(user=user, key=token["key"]):
                     continue
                 Token.objects.create(
                     user=user,
-                    key=token['key'],
-                    notes=token['notes'],
-                    expires_at=token['expires']
+                    key=token["key"],
+                    notes=token["notes"],
+                    expires_at=token["expires"],
                 )
                 count_creations += 1
 
-        self.stdout.write(self.style.SUCCESS(
-            f'Created {count_creations} API tokens'
-        ))
+        self.stdout.write(self.style.SUCCESS(f"Created {count_creations} API tokens"))

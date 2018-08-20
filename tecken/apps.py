@@ -15,11 +15,11 @@ from django.apps import AppConfig
 from tecken.s3 import S3Bucket
 
 
-logger = logging.getLogger('django')
+logger = logging.getLogger("django")
 
 
 class TeckenAppConfig(AppConfig):
-    name = 'tecken'
+    name = "tecken"
 
     def ready(self):
         # The app is now ready.
@@ -44,9 +44,7 @@ class TeckenAppConfig(AppConfig):
         DATABASES with CONN_MAX_AGE. So let's fix it here.
         """
         if settings.CONN_MAX_AGE:
-            settings.DATABASES['default']['CONN_MAX_AGE'] = (
-                settings.CONN_MAX_AGE
-            )
+            settings.DATABASES["default"]["CONN_MAX_AGE"] = settings.CONN_MAX_AGE
 
     @staticmethod
     def _configure_markus():
@@ -65,8 +63,8 @@ class TeckenAppConfig(AppConfig):
            'REDIS_CLIENT_CLASS'
         )
         """
-        if 'LocMemCache' not in settings.CACHES['default']['BACKEND']:
-            connection = get_redis_connection('default')
+        if "LocMemCache" not in settings.CACHES["default"]["BACKEND"]:
+            connection = get_redis_connection("default")
             connection.info()
 
     @staticmethod
@@ -78,17 +76,15 @@ class TeckenAppConfig(AppConfig):
         In DEBUG mode (i.e. local Docker development), we can actually
         set it here and now.
         """
-        connection = get_redis_connection('store')
-        maxmemory_policy = connection.info()['maxmemory_policy']
-        if maxmemory_policy != 'allkeys-lru':  # pragma: no cover
+        connection = get_redis_connection("store")
+        maxmemory_policy = connection.info()["maxmemory_policy"]
+        if maxmemory_policy != "allkeys-lru":  # pragma: no cover
             if settings.DEBUG:
-                connection.config_set('maxmemory-policy', 'allkeys-lru')
+                connection.config_set("maxmemory-policy", "allkeys-lru")
                 logger.warning(
                     "The 'store' Redis cache was not configured to be an "
                     "LRU cache because the maxmemory-policy was set to '{}'. "
-                    "Now changed to 'allkeys-lru'.".format(
-                        maxmemory_policy,
-                    )
+                    "Now changed to 'allkeys-lru'.".format(maxmemory_policy)
                 )
             else:
                 logger.error(
@@ -106,22 +102,20 @@ class TeckenAppConfig(AppConfig):
         real production S3 buckets.
         """
         _all_possible_urls = set(
-            list(settings.SYMBOL_URLS) +
-            [settings.UPLOAD_DEFAULT_URL, settings.UPLOAD_TRY_SYMBOLS_URL] +
-            list(settings.UPLOAD_URL_EXCEPTIONS.values())
+            list(settings.SYMBOL_URLS)
+            + [settings.UPLOAD_DEFAULT_URL, settings.UPLOAD_TRY_SYMBOLS_URL]
+            + list(settings.UPLOAD_URL_EXCEPTIONS.values())
         )
         for url in _all_possible_urls:
-            if not url or 'minio' not in urlparse(url).netloc:
+            if not url or "minio" not in urlparse(url).netloc:
                 continue
             bucket = S3Bucket(url)
             try:
                 bucket.s3_client.head_bucket(Bucket=bucket.name)
             except ClientError as exception:
-                if exception.response['Error']['Code'] == '404':
-                    bucket.s3_client.create_bucket(
-                        Bucket=bucket.name
-                    )
-                    logger.info(f'Created minio bucket {bucket.name!r}')
+                if exception.response["Error"]["Code"] == "404":
+                    bucket.s3_client.create_bucket(Bucket=bucket.name)
+                    logger.info(f"Created minio bucket {bucket.name!r}")
                 else:
                     # The most comment problem is that the S3 doesn't match
                     # the AWS credentials configured.
@@ -132,16 +126,12 @@ class TeckenAppConfig(AppConfig):
     @staticmethod
     def _check_mandatory_settings():
         """You *have* have set the following settings..."""
-        mandatory = (
-            'SYMBOL_URLS',
-            'UPLOAD_DEFAULT_URL',
-            'UPLOAD_TRY_SYMBOLS_URL',
-        )
+        mandatory = ("SYMBOL_URLS", "UPLOAD_DEFAULT_URL", "UPLOAD_TRY_SYMBOLS_URL")
         for key in mandatory:
             if not getattr(settings, key):
                 raise ValueError(
-                    f'You have to set settings.{key} '
-                    f'(environment variable DJANGO_{key})'
+                    f"You have to set settings.{key} "
+                    f"(environment variable DJANGO_{key})"
                 )
 
     @staticmethod
@@ -152,7 +142,7 @@ class TeckenAppConfig(AppConfig):
         """
         if settings.UPLOAD_DEFAULT_URL not in settings.SYMBOL_URLS:
             raise ValueError(
-                f'The settings.UPLOAD_DEFAULT_URL '
-                f'({settings.UPLOAD_DEFAULT_URL!r}) has to be one of the URLs '
-                f'in settings.SYMBOL_URLS ({settings.SYMBOL_URLS!r})'
+                f"The settings.UPLOAD_DEFAULT_URL "
+                f"({settings.UPLOAD_DEFAULT_URL!r}) has to be one of the URLs "
+                f"in settings.SYMBOL_URLS ({settings.SYMBOL_URLS!r})"
             )

@@ -31,33 +31,26 @@ class MissingSymbol(models.Model):
 
     def __repr__(self):
         return (
-            f'<{self.__class__.__name__} id={self.id} '
-            f'{self.symbol!r} / '
-            f'{self.debugid!r} / '
-            f'{self.filename!r}>'
+            f"<{self.__class__.__name__} id={self.id} "
+            f"{self.symbol!r} / "
+            f"{self.debugid!r} / "
+            f"{self.filename!r}>"
         )
 
     @classmethod
     def make_md5_hash(cls, *strings):
         return hashlib.md5(
-            force_bytes(':'.join(x for x in strings if x is not None))
+            force_bytes(":".join(x for x in strings if x is not None))
         ).hexdigest()
 
 
 class MicrosoftDownload(models.Model):
     # Leverage this so we don't have to repeat the symbold, debugid, etc.
-    missing_symbol = models.ForeignKey(
-        MissingSymbol,
-        on_delete=models.CASCADE,
-    )
+    missing_symbol = models.ForeignKey(MissingSymbol, on_delete=models.CASCADE)
     url = models.URLField(max_length=500)
     error = models.TextField(null=True)
     # Null in case it could never fully be turned into a file upload.
-    file_upload = models.ForeignKey(
-        FileUpload,
-        null=True,
-        on_delete=models.SET_NULL,
-    )
+    file_upload = models.ForeignKey(FileUpload, null=True, on_delete=models.SET_NULL)
     # When created but turns out we already had it in the S3 destination.
     # Make this Null if it was never even attempted to upload.
     skipped = models.NullBooleanField()

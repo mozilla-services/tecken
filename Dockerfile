@@ -14,7 +14,6 @@ WORKDIR /app
 RUN bin/build_frontend.sh
 
 FROM python:3.6-slim@sha256:5a96684a1729acd0680b39a3c24ef33f36bb6951873f77cde1e227b059a0f881
-MAINTAINER Peter Bengtsson <peterbe@mozilla.com>
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
@@ -33,13 +32,13 @@ RUN mkdir /app && \
 # install a few essentials and clean apt caches afterwards
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        apt-transport-https build-essential curl git libpq-dev \
-        gettext libffi-dev jed
+    apt-transport-https build-essential curl git libpq-dev \
+    gettext libffi-dev jed
 
 # Install dump_syms
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get install -y --no-install-recommends \
-        gyp ninja-build binutils-gold gcc-6 g++-6 pkg-config cabextract
+    gyp ninja-build binutils-gold gcc-6 g++-6 pkg-config cabextract
 COPY ./docker/build_dump_syms.sh /tmp
 RUN /tmp/build_dump_syms.sh
 
@@ -50,6 +49,7 @@ RUN apt-get autoremove -y && \
 
 # Install Python dependencies
 COPY requirements.txt /tmp/
+COPY requirements-constraints.txt /tmp/
 # Switch to /tmp to install dependencies outside home dir
 WORKDIR /tmp
 RUN pip install --no-cache-dir -r requirements.txt

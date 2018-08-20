@@ -16,40 +16,39 @@ class UploadByDownloadForm(forms.Form):
     url = forms.URLField()
 
     def clean_url(self):
-        url = self.cleaned_data['url']
+        url = self.cleaned_data["url"]
         # The URL has to be https:// to start with
         parsed = urlparse(url)
         if not settings.ALLOW_UPLOAD_BY_ANY_DOMAIN:
-            if parsed.scheme != 'https':
-                raise forms.ValidationError('Insecure URL')
+            if parsed.scheme != "https":
+                raise forms.ValidationError("Insecure URL")
         self._check_url_domain(url)
         return url
 
     @staticmethod
     def _check_url_domain(url):
-        netloc_wo_port = urlparse(url).netloc.split(':')[0]
+        netloc_wo_port = urlparse(url).netloc.split(":")[0]
         if not settings.ALLOW_UPLOAD_BY_ANY_DOMAIN:
             if netloc_wo_port not in settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS:
                 raise forms.ValidationError(
-                    f'Not an allowed domain ({netloc_wo_port!r}) '
-                    'to download from.'
+                    f"Not an allowed domain ({netloc_wo_port!r}) " "to download from."
                 )
 
     def clean(self):
         cleaned_data = super().clean()
-        if 'url' in cleaned_data:
+        if "url" in cleaned_data:
             # In the main view code where the download actually happens,
             # it'll follow any redirects automatically, but we want to
             # do "recursive HEADs" to find out the size of the file.
             # It also gives us an opportunity to record the redirect trail.
-            url = cleaned_data['url']
+            url = cleaned_data["url"]
             parsed = urlparse(url)
             response, redirect_urls = self.get_final_response(url)
-            content_length = response.headers['content-length']
-            cleaned_data['upload'] = {
-                'name': os.path.basename(parsed.path),
-                'size': int(content_length),
-                'redirect_urls': redirect_urls,
+            content_length = response.headers["content-length"]
+            cleaned_data["upload"] = {
+                "name": os.path.basename(parsed.path),
+                "size": int(content_length),
+                "redirect_urls": redirect_urls,
             }
         return cleaned_data
 
@@ -64,24 +63,18 @@ class UploadByDownloadForm(forms.Form):
                 response = requests.head(url)
                 status_code = response.status_code
             except ConnectionError:
-                raise forms.ValidationError(
-                    f'ConnectionError trying to open {url}'
-                )
+                raise forms.ValidationError(f"ConnectionError trying to open {url}")
             if status_code >= 500:
-                raise forms.ValidationError(
-                    f"{url} errored ({status_code})"
-                )
+                raise forms.ValidationError(f"{url} errored ({status_code})")
             if status_code >= 400:
-                raise forms.ValidationError(
-                    f"{url} can't be found ({status_code})"
-                )
+                raise forms.ValidationError(f"{url} can't be found ({status_code})")
             if status_code >= 300 and status_code < 400:
-                redirect_url = response.headers['location']
+                redirect_url = response.headers["location"]
                 redirect_urls.append(redirect_url)
                 # Only do this if we haven't done it "too much" yet.
                 if len(redirect_urls) > max_redirects:
                     raise forms.ValidationError(
-                        f'Too many redirects trying to open {initial_url}'
+                        f"Too many redirects trying to open {initial_url}"
                     )
                 return get_response(redirect_url)
             assert status_code >= 200 and status_code < 300, status_code

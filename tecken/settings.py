@@ -29,7 +29,7 @@ class AWS:
 class Celery:
 
     # Use the django_celery_results cache backend.
-    CELERY_RESULT_BACKEND = 'django-cache'
+    CELERY_RESULT_BACKEND = "django-cache"
 
     # Throw away task results after 1 hour, for debugging purposes.
     CELERY_RESULT_EXPIRES = datetime.timedelta(minutes=60)
@@ -73,27 +73,24 @@ class Core(AWS, Configuration, Celery, S3):
 
     INSTALLED_APPS = [
         # Django apps
-        'django.contrib.sites',
-        'django.contrib.auth',
-        'django.contrib.contenttypes',
-        'django.contrib.sessions',
-
+        "django.contrib.sites",
+        "django.contrib.auth",
+        "django.contrib.contenttypes",
+        "django.contrib.sessions",
         # Project specific apps
-        'tecken.apps.TeckenAppConfig',
-        'tecken.symbolicate',
-        'tecken.download',
-        'tecken.upload',
-        'tecken.tokens',
-        'tecken.api',
-        'tecken.useradmin',
-        'tecken.benchmarking',
-
+        "tecken.apps.TeckenAppConfig",
+        "tecken.symbolicate",
+        "tecken.download",
+        "tecken.upload",
+        "tecken.tokens",
+        "tecken.api",
+        "tecken.useradmin",
+        "tecken.benchmarking",
         # Third party apps
-        'dockerflow.django',
-        'django_celery_results',  # Is this still necessary?
-
+        "dockerflow.django",
+        "django_celery_results",  # Is this still necessary?
         # Third party apps, that need to be listed last
-        'mozilla_django_oidc',
+        "mozilla_django_oidc",
     ]
 
     # June 2017: Notice that we're NOT adding
@@ -108,74 +105,70 @@ class Core(AWS, Configuration, Celery, S3):
     # So if that's "disabled", that's why we have rather short session
     # cookie age.
     MIDDLEWARE = (
-        'dockerflow.django.middleware.DockerflowMiddleware',
+        "dockerflow.django.middleware.DockerflowMiddleware",
         # 'django.middleware.csrf.CsrfViewMiddleware',
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'django.middleware.common.CommonMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'tecken.tokens.middleware.APITokenAuthenticationMiddleware',
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "tecken.tokens.middleware.APITokenAuthenticationMiddleware",
         # Important that this comes after APITokenAuthenticationMiddleware
-        'tecken.useradmin.middleware.NotBlockedInAuth0Middleware',
-        'whitenoise.middleware.WhiteNoiseMiddleware',
+        "tecken.useradmin.middleware.NotBlockedInAuth0Middleware",
+        "whitenoise.middleware.WhiteNoiseMiddleware",
     )
 
-    ROOT_URLCONF = 'tecken.urls'
+    ROOT_URLCONF = "tecken.urls"
 
-    WSGI_APPLICATION = 'tecken.wsgi.application'
+    WSGI_APPLICATION = "tecken.wsgi.application"
 
     # Add the django-allauth authentication backend.
     AUTHENTICATION_BACKENDS = (
-        'django.contrib.auth.backends.ModelBackend',
-        'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
+        "django.contrib.auth.backends.ModelBackend",
+        "mozilla_django_oidc.auth.OIDCAuthenticationBackend",
     )
 
     # Internationalization
     # https://docs.djangoproject.com/en/1.9/topics/i18n/
-    LANGUAGE_CODE = 'en-us'
-    TIME_ZONE = 'UTC'
+    LANGUAGE_CODE = "en-us"
+    TIME_ZONE = "UTC"
     USE_I18N = False
     USE_L10N = False
     USE_TZ = True
-    DATETIME_FORMAT = 'Y-m-d H:i'  # simplified ISO format since we assume UTC
+    DATETIME_FORMAT = "Y-m-d H:i"  # simplified ISO format since we assume UTC
 
-    STATIC_ROOT = values.Value(
-        default=os.path.join(BASE_DIR, 'frontend/build')
-    )
+    STATIC_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build"))
 
-    STATIC_URL = '/'
+    STATIC_URL = "/"
 
     # The default Cache-Control max-age used,
     WHITENOISE_MAX_AGE = values.IntegerValue(60 * 60)
 
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-    SESSION_CACHE_ALIAS = 'default'
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
 
     # System Checks
     # Override certain builtin Django system checks because we know
     # with confidence we do these good deeds in Nginx.
     # https://docs.djangoproject.com/en/1.11/ref/checks/#security
     SILENCED_SYSTEM_CHECKS = [
-        'security.W001',  # Dealt with using Nginx headers
-        'security.W002',  # Dealt with using Nginx headers
-        'security.W003',  # CSRF is explicit only on the views that need it
+        "security.W001",  # Dealt with using Nginx headers
+        "security.W002",  # Dealt with using Nginx headers
+        "security.W003",  # CSRF is explicit only on the views that need it
         # We can't set SECURE_HSTS_INCLUDE_SUBDOMAINS since this runs under a
         # mozilla.org subdomain
-        'security.W005',
-        'security.W004',  # Strict-Transport-Security is set in Nginx
+        "security.W005",
+        "security.W004",  # Strict-Transport-Security is set in Nginx
     ]
 
     OIDC_RP_CLIENT_ID = values.SecretValue()
     OIDC_RP_CLIENT_SECRET = values.SecretValue()
 
     OIDC_OP_AUTHORIZATION_ENDPOINT = values.URLValue(
-        'https://auth.mozilla.auth0.com/authorize'
+        "https://auth.mozilla.auth0.com/authorize"
     )
     OIDC_OP_TOKEN_ENDPOINT = values.URLValue(
-        'https://auth.mozilla.auth0.com/oauth/token'
+        "https://auth.mozilla.auth0.com/oauth/token"
     )
-    OIDC_OP_USER_ENDPOINT = values.URLValue(
-        'https://auth.mozilla.auth0.com/userinfo'
-    )
+    OIDC_OP_USER_ENDPOINT = values.URLValue("https://auth.mozilla.auth0.com/userinfo")
 
     # Feature flag for the Auth0 Management API check that checks if users
     # are still valid and not blocked in Auth0's user database.
@@ -191,8 +184,8 @@ class Core(AWS, Configuration, Celery, S3):
     SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 365)
 
     # Where users get redirected after successfully signing in
-    LOGIN_REDIRECT_URL = '/?signedin=true'
-    LOGIN_REDIRECT_URL_FAILURE = '/?signin=failed'
+    LOGIN_REDIRECT_URL = "/?signedin=true"
+    LOGIN_REDIRECT_URL_FAILURE = "/?signin=failed"
 
     # API Token authentication is off by default until Tecken has
     # gone through a security checklist.
@@ -235,7 +228,7 @@ class Core(AWS, Configuration, Celery, S3):
     ENABLE_STORE_MISSING_SYMBOLS = values.BooleanValue(True)
 
     # The prefix used when generating directories in the temp directory.
-    UPLOAD_TEMPDIR_PREFIX = values.Value('raw-uploads')
+    UPLOAD_TEMPDIR_PREFIX = values.Value("raw-uploads")
 
     # When doing local development, especially load testing, it's sometimes
     # useful to be able to bypass all URL checks for Upload by Download.
@@ -246,13 +239,13 @@ class Core(AWS, Configuration, Celery, S3):
     SYNCHRONOUS_UPLOAD_FILE_UPLOAD = False
 
     DOWNLOAD_LEGACY_PRODUCTS_PREFIXES = [
-        'firefox',
-        'seamonkey',
-        'sunbird',
-        'thunderbird',
-        'xulrunner',
-        'fennec',
-        'b2g'
+        "firefox",
+        "seamonkey",
+        "sunbird",
+        "thunderbird",
+        "xulrunner",
+        "fennec",
+        "b2g",
     ]
 
 
@@ -269,12 +262,12 @@ class Base(Core):
         # right after the bucket name.
         if not cls.UPLOAD_TRY_SYMBOLS_URL:
             default_url = urlparse(cls.UPLOAD_DEFAULT_URL)
-            path = default_url.path.split('/')
+            path = default_url.path.split("/")
             # Since it always start with '/', the point after the bucket
             # name is the 3rd one.
-            path.insert(2, 'try')
+            path.insert(2, "try")
             # Note `._replace` is actually not a private method.
-            try_url = default_url._replace(path='/'.join(path))
+            try_url = default_url._replace(path="/".join(path))
             cls.UPLOAD_TRY_SYMBOLS_URL = try_url.geturl()
 
     SECRET_KEY = values.SecretValue()
@@ -284,11 +277,11 @@ class Base(Core):
 
     ALLOWED_HOSTS = values.ListValue([])
 
-    DATABASES = values.DatabaseURLValue('postgres://postgres@db/postgres')
+    DATABASES = values.DatabaseURLValue("postgres://postgres@db/postgres")
     CONN_MAX_AGE = values.IntegerValue(60)
 
-    REDIS_URL = values.Value('redis://redis-cache:6379/0')
-    REDIS_STORE_URL = values.Value('redis://redis-store:6379/0')
+    REDIS_URL = values.Value("redis://redis-cache:6379/0")
+    REDIS_STORE_URL = values.Value("redis://redis-store:6379/0")
 
     # Use redis as the Celery broker.
     @property
@@ -298,123 +291,113 @@ class Base(Core):
     @property
     def CACHES(self):
         return {
-            'default': {
-                'BACKEND': 'django_redis.cache.RedisCache',
-                'LOCATION': self.REDIS_URL,
-                'OPTIONS': {
-                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # noqa
-                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',  # noqa
+            "default": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": self.REDIS_URL,
+                "OPTIONS": {
+                    "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
+                    "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
                 },
             },
-            'store': {
-                'BACKEND': 'django_redis.cache.RedisCache',
-                'LOCATION': self.REDIS_STORE_URL,
-                'OPTIONS': {
-                    'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',  # noqa
-                    'SERIALIZER': 'django_redis.serializers.msgpack.MSGPackSerializer',  # noqa
+            "store": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": self.REDIS_STORE_URL,
+                "OPTIONS": {
+                    "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
+                    "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
                 },
             },
         }
 
     LOGGING_USE_JSON = values.BooleanValue(False)
 
-    LOGGING_DEFAULT_LEVEL = values.Value('INFO')
+    LOGGING_DEFAULT_LEVEL = values.Value("INFO")
 
     def LOGGING(self):
         return {
-            'version': 1,
-            'disable_existing_loggers': False,
-            'formatters': {
-                'json': {
-                    '()': 'dockerflow.logging.JsonLogFormatter',
-                    'logger_name': 'tecken',
+            "version": 1,
+            "disable_existing_loggers": False,
+            "formatters": {
+                "json": {
+                    "()": "dockerflow.logging.JsonLogFormatter",
+                    "logger_name": "tecken",
                 },
-                'verbose': {
-                    'format': '%(levelname)s %(asctime)s %(name)s %(message)s',
-                },
+                "verbose": {"format": "%(levelname)s %(asctime)s %(name)s %(message)s"},
             },
-            'handlers': {
-                'console': {
-                    'level': self.LOGGING_DEFAULT_LEVEL,
-                    'class': 'logging.StreamHandler',
-                    'formatter': (
-                        'json' if self.LOGGING_USE_JSON else 'verbose'
+            "handlers": {
+                "console": {
+                    "level": self.LOGGING_DEFAULT_LEVEL,
+                    "class": "logging.StreamHandler",
+                    "formatter": ("json" if self.LOGGING_USE_JSON else "verbose"),
+                },
+                "sentry": {
+                    "level": "ERROR",
+                    "class": (
+                        "raven.contrib.django.raven_compat.handlers" ".SentryHandler"
                     ),
                 },
-                'sentry': {
-                    'level': 'ERROR',
-                    'class': (
-                        'raven.contrib.django.raven_compat.handlers'
-                        '.SentryHandler'
-                    ),
-                },
-                'null': {
-                    'class': 'logging.NullHandler',
-                },
+                "null": {"class": "logging.NullHandler"},
             },
-            'root': {
-                'level': 'INFO',
-                'handlers': ['sentry', 'console'],
-            },
-            'loggers': {
-                'django': {
-                    'level': 'WARNING',
-                    'handlers': ['console'],
-                    'propagate': False,
+            "root": {"level": "INFO", "handlers": ["sentry", "console"]},
+            "loggers": {
+                "django": {
+                    "level": "WARNING",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'django.db.backends': {
-                    'level': 'ERROR',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "django.db.backends": {
+                    "level": "ERROR",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'django.request': {
-                    'level': 'ERROR',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "django.request": {
+                    "level": "ERROR",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'raven': {
-                    'level': 'DEBUG',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "raven": {
+                    "level": "DEBUG",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'sentry.errors': {
-                    'level': 'DEBUG',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "sentry.errors": {
+                    "level": "DEBUG",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'tecken': {
-                    'level': 'DEBUG',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "tecken": {
+                    "level": "DEBUG",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'mozilla_django_oidc': {
-                    'level': 'DEBUG',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "mozilla_django_oidc": {
+                    "level": "DEBUG",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'celery.task': {
-                    'level': 'DEBUG',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "celery.task": {
+                    "level": "DEBUG",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'markus': {
-                    'level': 'INFO',
-                    'handlers': ['console'],
-                    'propagate': False,
+                "markus": {
+                    "level": "INFO",
+                    "handlers": ["console"],
+                    "propagate": False,
                 },
-                'request.summary': {
-                    'handlers': ['console'],
-                    'level': 'DEBUG',
-                    'propagate': False,
+                "request.summary": {
+                    "handlers": ["console"],
+                    "level": "DEBUG",
+                    "propagate": False,
                 },
-                'django.security.DisallowedHost': {
-                    'handlers': ['null'],
-                    'propagate': False,
+                "django.security.DisallowedHost": {
+                    "handlers": ["null"],
+                    "propagate": False,
                 },
             },
         }
 
-    CSRF_FAILURE_VIEW = 'tecken.views.csrf_failure'
+    CSRF_FAILURE_VIEW = "tecken.views.csrf_failure"
     CSRF_USE_SESSIONS = values.BooleanValue(True)
 
     # The order here matters. Symbol download goes through these one
@@ -474,21 +457,19 @@ class Base(Core):
     # can be shared between the webapp and the Celery worker.
     # In production-like environments this can't be a local filesystem
     # path but needs to one that is shared across servers. E.g. EFS.
-    UPLOAD_INBOX_DIRECTORY = values.Value('./upload-inbox')
+    UPLOAD_INBOX_DIRECTORY = values.Value("./upload-inbox")
 
     # The default prefix for locating all symbols
-    SYMBOL_FILE_PREFIX = values.Value('v1')
+    SYMBOL_FILE_PREFIX = values.Value("v1")
 
     # During upload, for each file in the archive, if the extension
     # matches this list, the file gets gzip compressed before uploading.
-    COMPRESS_EXTENSIONS = values.ListValue(['sym'])
+    COMPRESS_EXTENSIONS = values.ListValue(["sym"])
 
     # For specific file uploads, override the mimetype.
     # For .sym files, for example, if S3 knows them as 'text/plain'
     # they become really handy to open in a browser and view directly.
-    MIME_OVERRIDES = values.DictValue({
-        'sym': 'text/plain',
-    })
+    MIME_OVERRIDES = values.DictValue({"sym": "text/plain"})
 
     # Number of seconds to wait for a symbol download. If this
     # trips, no error will be raised and we'll just skip using it
@@ -498,17 +479,19 @@ class Base(Core):
 
     # Individual strings that can't be allowed in any of the lines in the
     # content of a symbols archive file.
-    DISALLOWED_SYMBOLS_SNIPPETS = values.ListValue([
-        # https://bugzilla.mozilla.org/show_bug.cgi?id=1012672
-        'qcom/proprietary',
-    ])
+    DISALLOWED_SYMBOLS_SNIPPETS = values.ListValue(
+        [
+            # https://bugzilla.mozilla.org/show_bug.cgi?id=1012672
+            "qcom/proprietary"
+        ]
+    )
 
     DOCKERFLOW_CHECKS = [
-        'dockerflow.django.checks.check_database_connected',
-        'dockerflow.django.checks.check_migrations_applied',
-        'dockerflow.django.checks.check_redis_connected',
-        'tecken.dockerflow_extra.check_redis_store_connected',
-        'tecken.dockerflow_extra.check_s3_urls',
+        "dockerflow.django.checks.check_database_connected",
+        "dockerflow.django.checks.check_migrations_applied",
+        "dockerflow.django.checks.check_redis_connected",
+        "tecken.dockerflow_extra.check_redis_store_connected",
+        "tecken.dockerflow_extra.check_s3_urls",
     ]
 
     # We can cache quite aggressively here because the SymbolDownloader
@@ -528,13 +511,13 @@ class Base(Core):
 
     # cabextract is installed by Docker and used to unpack .pd_ files to .pdb
     # It's assumed to be installed on $PATH.
-    CABEXTRACT_PATH = values.Value('cabextract')
+    CABEXTRACT_PATH = values.Value("cabextract")
 
     # dump_syms is downloaded and installed by docker/build_dump_syms.sh
     # and by default gets to put this specific location.
     # If you change this, please make sure it works with
     # how docker/build_dump_syms.sh works.
-    DUMP_SYMS_PATH = values.Value('/dump_syms/dump_syms')
+    DUMP_SYMS_PATH = values.Value("/dump_syms/dump_syms")
 
     # How many uploads to display per page when paginating through
     # past uploads.
@@ -557,9 +540,7 @@ class Base(Core):
     # When you "upload by download", the URL's domain needs to be in this
     # whitelist. This is to double-check that we don't allow downloads from
     # domains we don't fully trust.
-    ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue([
-        'queue.taskcluster.net',
-    ])
+    ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue(["queue.taskcluster.net"])
 
     # A list of file extensions that if a file is NOT one of these extensions
     # we can immediately return 404 and not bother to process for anything
@@ -567,9 +548,9 @@ class Base(Core):
     # It's case sensitive and has to be lower case.
     # As a way to get marginal optimization of this, make sure '.sym' is
     # first in the list since it's the most common.
-    DOWNLOAD_FILE_EXTENSIONS_WHITELIST = values.ListValue([
-        '.sym', '.dl_', '.ex_', '.pd_', '.dbg.gz', '.tar.bz2',
-    ])
+    DOWNLOAD_FILE_EXTENSIONS_WHITELIST = values.ListValue(
+        [".sym", ".dl_", ".ex_", ".pd_", ".dbg.gz", ".tar.bz2"]
+    )
 
 
 class Localdev(Base):
@@ -584,14 +565,10 @@ class Localdev(Base):
     # When doing localdev, these defaults will suffice. The minio
     # one forces you to use/test boto3 and the old public symbols URL
     # forces you to use/test the symbol downloader based on requests.get().
-    SYMBOL_URLS = values.ListValue([
-        'http://minio:9000/testbucket',
-    ])
+    SYMBOL_URLS = values.ListValue(["http://minio:9000/testbucket"])
 
     # By default, upload all symbols to this when in local dev.
-    UPLOAD_DEFAULT_URL = values.Value(
-        'http://minio:9000/testbucket'
-    )
+    UPLOAD_DEFAULT_URL = values.Value("http://minio:9000/testbucket")
 
     # Note! By default the value for 'UPLOAD_TRY_SYMBOLS_URL' becomes
     # the value of 'UPLOAD_DEFAULT_URL' but with a '/try' prefix added.
@@ -604,12 +581,10 @@ class Localdev(Base):
         super().post_setup()
         # in case we don't find these AWS config variables in the environment
         # we load them from the .env file
-        for param in ('ACCESS_KEY_ID', 'SECRET_ACCESS_KEY', 'DEFAULT_REGION'):
+        for param in ("ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "DEFAULT_REGION"):
             if param not in os.environ:
                 os.environ[param] = values.Value(
-                    default='',
-                    environ_name=param,
-                    environ_prefix='AWS',
+                    default="", environ_name=param, environ_prefix="AWS"
                 )
 
     @property
@@ -619,10 +594,10 @@ class Localdev(Base):
         output = subprocess.check_output(
             # Use the absolute path of 'git' here to avoid 'git'
             # not being the git we expect in Docker.
-            ['/usr/bin/git', 'describe', '--tags', '--always', '--abbrev=0']
+            ["/usr/bin/git", "describe", "--tags", "--always", "--abbrev=0"]
         )  # nosec
         if output:
-            return {'version': output.decode().strip()}
+            return {"version": output.decode().strip()}
         else:
             return {}
 
@@ -633,16 +608,14 @@ class Localdev(Base):
         #     'class': 'markus.backends.logging.LoggingMetrics',
         # },
         {
-            'class': 'markus.backends.datadog.DatadogMetrics',
-            'options': {
-                'statsd_host': 'statsd',
-                'statsd_port': 8125,
-                'statsd_namespace': ''
-            }
+            "class": "markus.backends.datadog.DatadogMetrics",
+            "options": {
+                "statsd_host": "statsd",
+                "statsd_port": 8125,
+                "statsd_namespace": "",
+            },
         },
-        {
-            'class': 'tecken.markus_extra.LogAllMetricsKeys',
-        },
+        {"class": "tecken.markus_extra.LogAllMetricsKeys"},
         # {
         #     'class': 'markus.backends.logging.LoggingRollupMetrics',
         #     'options': {
@@ -651,7 +624,6 @@ class Localdev(Base):
         #         'flush_interval': 60
         #     }
         # },
-
     ]
 
     # Set these to smaller numbers for the sake of more easily testing
@@ -662,6 +634,7 @@ class Localdev(Base):
 
 class Test(Localdev):
     """Configuration to be used during testing"""
+
     DEBUG = False
 
     # Like Celery's old ALWAYS_EAGER option, this tells the code to
@@ -685,56 +658,48 @@ class Test(Localdev):
     # that switch it back on to test the Auth0 blocked middleware.
     ENABLE_AUTH0_BLOCKED_CHECK = False
 
-    SECRET_KEY = values.Value('not-so-secret-after-all')
+    SECRET_KEY = values.Value("not-so-secret-after-all")
     SESSION_COOKIE_SECURE = True
 
-    OIDC_RP_CLIENT_ID = values.Value('not-so-secret-after-all')
-    OIDC_RP_CLIENT_SECRET = values.Value('not-so-secret-after-all')
+    OIDC_RP_CLIENT_ID = values.Value("not-so-secret-after-all")
+    OIDC_RP_CLIENT_SECRET = values.Value("not-so-secret-after-all")
 
     # nosec
     # Only used for testing to log users in during unit tests
-    PASSWORD_HASHERS = (
-        'django.contrib.auth.hashers.MD5PasswordHasher',
-    )
+    PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 
     SYMBOL_URLS = [
-        'https://s3.example.com/public/prefix/?access=public',
-        'https://s3.example.com/private/prefix/',
+        "https://s3.example.com/public/prefix/?access=public",
+        "https://s3.example.com/private/prefix/",
     ]
 
-    AUTHENTICATION_BACKENDS = (
-        'django.contrib.auth.backends.ModelBackend',
-    )
+    AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
 
     # This makes sure this is never a real valud
-    OIDC_OP_USER_ENDPOINT = (
-        'https://auth.example.com/authorize'
-    )
+    OIDC_OP_USER_ENDPOINT = "https://auth.example.com/authorize"
 
-    SYMBOL_FILE_PREFIX = 'v0'
-    UPLOAD_DEFAULT_URL = 'https://s3.example.com/private/prefix/'
-    UPLOAD_TRY_SYMBOLS_URL = 'https://s3.example.com/try/prefix'
-    UPLOAD_URL_EXCEPTIONS = {
-        '*@peterbe.com': 'https://s3.example.com/peterbe-com',
-    }
+    SYMBOL_FILE_PREFIX = "v0"
+    UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
+    UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
+    UPLOAD_URL_EXCEPTIONS = {"*@peterbe.com": "https://s3.example.com/peterbe-com"}
 
     @property
     def CACHES(self):
         parent = super(Test, self).CACHES
-        parent['default'] = {
-            'BACKEND': 'tecken.cache_extra.RedisLocMemCache',
-            'LOCATION': 'unique-snowflake',
+        parent["default"] = {
+            "BACKEND": "tecken.cache_extra.RedisLocMemCache",
+            "LOCATION": "unique-snowflake",
         }
         return parent
 
     MARKUS_BACKENDS = [
         {
-            'class': 'markus.backends.datadog.DatadogMetrics',
-            'options': {
-                'statsd_host': 'statsd',
-                'statsd_port': 8125,
-                'statsd_namespace': ''
-            }
+            "class": "markus.backends.datadog.DatadogMetrics",
+            "options": {
+                "statsd_host": "statsd",
+                "statsd_port": 8125,
+                "statsd_namespace": "",
+            },
         },
         # {
         #     'class': 'tecken.markus_extra.LogAllMetricsKeys',
@@ -747,12 +712,12 @@ class Dev(Base):
 
     LOGGING_USE_JSON = True
 
-    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
     SECURE_SSL_REDIRECT = True
     # Mark session and CSRF cookies as being HTTPS-only.
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     # This is needed to get a CRSF token in /admin
     ANON_ALWAYS = True
 
@@ -760,54 +725,47 @@ class Dev(Base):
     def DATABASES(self):
         "require encrypted connections to Postgres"
         DATABASES = super().DATABASES.value.copy()
-        DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'require'
+        DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
         return DATABASES
 
     # Sentry setup
     SENTRY_DSN = values.Value(environ_prefix=None)
 
     MIDDLEWARE = (
-        'raven.contrib.django.raven_compat.middleware'
-        '.SentryResponseErrorIdMiddleware',
+        "raven.contrib.django.raven_compat.middleware"
+        ".SentryResponseErrorIdMiddleware",
     ) + Base.MIDDLEWARE
 
-    INSTALLED_APPS = Base.INSTALLED_APPS + [
-        'raven.contrib.django.raven_compat',
-    ]
+    INSTALLED_APPS = Base.INSTALLED_APPS + ["raven.contrib.django.raven_compat"]
 
     SENTRY_CELERY_LOGLEVEL = logging.INFO
 
     @property
     def RAVEN_CONFIG(self):
-        config = {
-            'dsn': self.SENTRY_DSN,
-            'transport': RequestsHTTPTransport,
-        }
+        config = {"dsn": self.SENTRY_DSN, "transport": RequestsHTTPTransport}
         if self.VERSION:
-            config['release'] = (
-                self.VERSION.get('version') or
-                self.VERSION.get('commit') or
-                ''
+            config["release"] = (
+                self.VERSION.get("version") or self.VERSION.get("commit") or ""
             )
         return config
 
     # Defaulting to 'localhost' here because that's where the Datadog
     # agent is expected to run in production.
-    STATSD_HOST = values.Value('localhost')
+    STATSD_HOST = values.Value("localhost")
     STATSD_PORT = values.Value(8125)
-    STATSD_NAMESPACE = values.Value('')
+    STATSD_NAMESPACE = values.Value("")
 
     @property
     def MARKUS_BACKENDS(self):
         return [
             {
-                'class': 'markus.backends.datadog.DatadogMetrics',
-                'options': {
-                    'statsd_host': self.STATSD_HOST,
-                    'statsd_port': self.STATSD_PORT,
-                    'statsd_namespace': self.STATSD_NAMESPACE,
-                }
-            },
+                "class": "markus.backends.datadog.DatadogMetrics",
+                "options": {
+                    "statsd_host": self.STATSD_HOST,
+                    "statsd_port": self.STATSD_PORT,
+                    "statsd_namespace": self.STATSD_NAMESPACE,
+                },
+            }
         ]
 
 
@@ -836,7 +794,7 @@ class Prodlike(Prod):
     def DATABASES(self):
         "Don't require encrypted connections to Postgres"
         DATABASES = super().DATABASES.copy()
-        DATABASES['default'].setdefault('OPTIONS', {})['sslmode'] = 'disable'
+        DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "disable"
         return DATABASES
 
     MARKUS_BACKENDS = []
@@ -845,10 +803,10 @@ class Prodlike(Prod):
     # have to use a self-signed SSL cert.
     SECURE_HSTS_SECONDS = 60
 
-    if os.environ.get('DJANGO_RUN_INSECURELY', False):  # hackish, but works
+    if os.environ.get("DJANGO_RUN_INSECURELY", False):  # hackish, but works
         # When running with DJANGO_CONFIGURATION=Prodlike, if you don't want
         # to have to use HTTPS, uncomment these lines:
-        ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http'
+        ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
         SECURE_SSL_REDIRECT = False
         SECURE_HSTS_SECONDS = 0
         SECURE_HSTS_PRELOAD = False
@@ -856,4 +814,5 @@ class Prodlike(Prod):
 
 class Build(Prod):
     """Configuration to be used in build (!) environment"""
-    SECRET_KEY = values.Value('not-so-secret-after-all')
+
+    SECRET_KEY = values.Value("not-so-secret-after-all")

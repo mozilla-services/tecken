@@ -16,7 +16,7 @@ from tecken.boto_extra import (
 def test_pickle_OwnEndpointConnectionError():
     """test that it's possible to pickle, and unpickle an instance
     of a OwnEndpointConnectionError exception class."""
-    exception = OwnEndpointConnectionError(endpoint_url='http://example.com')
+    exception = OwnEndpointConnectionError(endpoint_url="http://example.com")
     pickled = pickle.dumps(exception)
     exception = pickle.loads(pickled)
     # They can't be compared, but...
@@ -28,7 +28,7 @@ def test_pickle_OwnEndpointConnectionError():
 def test_pickle_OwnClientError():
     """test that it's possible to pickle, and unpickle an instance
     of a OwnClientError exception class."""
-    exception = OwnClientError({'Error': {'Code': '123'}}, 'PutObject')
+    exception = OwnClientError({"Error": {"Code": "123"}}, "PutObject")
     pickled = pickle.dumps(exception)
     exception = pickle.loads(pickled)
     # They can't be compared, but...
@@ -37,10 +37,9 @@ def test_pickle_OwnClientError():
 
 
 def test_reraise_endpointconnectionerrors_decorator():
-
     @reraise_endpointconnectionerrors
     def foo(name, age=100):
-        raise EndpointConnectionError(endpoint_url='http://example.com')
+        raise EndpointConnectionError(endpoint_url="http://example.com")
 
     with pytest.raises(OwnEndpointConnectionError):
-        foo('peter')
+        foo("peter")

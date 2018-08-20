@@ -22,8 +22,8 @@ from tecken.upload.models import FileUpload
 from tecken.base.symboldownloader import SymbolDownloader
 
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 downloader = SymbolDownloader(settings.SYMBOL_URLS)
 
@@ -35,7 +35,7 @@ class UnrecognizedArchiveFileExtension(ValueError):
 
 def get_file_md5_hash(fn, blocksize=65536):
     hasher = hashlib.md5()
-    with open(fn, 'rb') as f:
+    with open(fn, "rb") as f:
         buf = f.read(blocksize)
         while len(buf) > 0:
             hasher.update(buf)
@@ -43,30 +43,28 @@ def get_file_md5_hash(fn, blocksize=65536):
     return hasher.hexdigest()
 
 
-@metrics.timer_decorator('upload_dump_and_extract')
+@metrics.timer_decorator("upload_dump_and_extract")
 def dump_and_extract(root_dir, file_buffer, name):
     """Given a directory and an open compressed file and its filename,
     extract all the files in the file and return a list of FileMember
     objects.
     The FileMember objects is only ever files. Not the directories.
     """
-    if name.lower().endswith('.zip'):
+    if name.lower().endswith(".zip"):
         zf = zipfile.ZipFile(file_buffer)
         zf.extractall(root_dir)
     else:
         raise UnrecognizedArchiveFileExtension(os.path.splitext(name)[1])
 
     return [
-        FileMember(
-            os.path.join(root_dir, filename),
-            filename
-        ) for filename in zf.namelist()
+        FileMember(os.path.join(root_dir, filename), filename)
+        for filename in zf.namelist()
         if os.path.isfile(os.path.join(root_dir, filename))
     ]
 
 
 class FileMember:
-    __slots__ = ['path', 'name']
+    __slots__ = ["path", "name"]
 
     def __init__(self, path, name):
         self.path = path
@@ -78,21 +76,21 @@ class FileMember:
 
 
 def _key_existing_miss(client, bucket, key):
-    logger.debug(f'key_existing cache miss on {bucket}:{key}')
+    logger.debug(f"key_existing cache miss on {bucket}:{key}")
 
 
 def _key_existing_hit(client, bucket, key):
-    logger.debug(f'key_existing cache hit on {bucket}:{key}')
+    logger.debug(f"key_existing cache hit on {bucket}:{key}")
 
 
 @cache_memoize(
     settings.MEMOIZE_KEY_EXISTING_SIZE_SECONDS,
-    prefix='key_existing',
-    args_rewrite=lambda client, bucket, key: (f'{bucket}:{key}',),
+    prefix="key_existing",
+    args_rewrite=lambda client, bucket, key: (f"{bucket}:{key}",),
     miss_callable=_key_existing_miss,
     hit_callable=_key_existing_hit,
 )
-@metrics.timer_decorator('upload_file_exists')
+@metrics.timer_decorator("upload_file_exists")
 def key_existing(client, bucket, key):
     """return a tuple of (
         key's size if it exists or 0,
@@ -102,19 +100,16 @@ def key_existing(client, bucket, key):
     """
     # Return 0 if the key can't be found so the memoize cache can cope
     try:
-        response = client.head_object(
-            Bucket=bucket,
-            Key=key,
-        )
-        return response['ContentLength'], response.get('Metadata')
+        response = client.head_object(Bucket=bucket, Key=key)
+        return response["ContentLength"], response.get("Metadata")
     except ClientError as exception:
-        if exception.response['Error']['Code'] == '404':
+        if exception.response["Error"]["Code"] == "404":
             return 0, None
         raise
     except (ReadTimeout, socket.timeout) as exception:
         logger.info(
-            f'ReadTimeout trying to list_objects_v2 for {bucket}:'
-            f'{key} ({exception})'
+            f"ReadTimeout trying to list_objects_v2 for {bucket}:"
+            f"{key} ({exception})"
         )
         return 0, None
 
@@ -132,7 +127,7 @@ def get_key_content_type(key_name):
     return settings.MIME_OVERRIDES.get(key_extension)
 
 
-@metrics.timer_decorator('upload_file_upload')
+@metrics.timer_decorator("upload_file_upload")
 def upload_file_upload(
     s3_client,
     bucket_name,
@@ -152,9 +147,7 @@ def upload_file_upload(
     # to take too long. Because if it times out, it's safe to just
     # assume the file doesn't already exist.
     existing_size, existing_metadata = key_existing(
-        s3_client_lookup or s3_client,
-        bucket_name,
-        key_name
+        s3_client_lookup or s3_client, bucket_name, key_name
     )
 
     size = os.stat(file_path).st_size
@@ -163,7 +156,7 @@ def upload_file_upload(
         # It's easy when you don't have to compare compressed files.
         if existing_size and existing_size == size:
             # Then don't bother!
-            metrics.incr('upload_skip_early_uncompressed', 1)
+            metrics.incr("upload_skip_early_uncompressed", 1)
             return
 
     metadata = {}
@@ -179,26 +172,26 @@ def upload_file_upload(
         # metadata and see if it's an opportunity for an early exit.
         existing_metadata = existing_metadata or {}
         if (
-            existing_metadata.get('original_size') == str(original_size) and
-            existing_metadata.get('original_md5_hash') == original_md5_hash
+            existing_metadata.get("original_size") == str(original_size)
+            and existing_metadata.get("original_md5_hash") == original_md5_hash
         ):
             # An upload existed with the exact same original size
             # and the exact same md5 hash.
             # Then we can definitely exit early here.
-            metrics.incr('upload_skip_early_compressed', 1)
+            metrics.incr("upload_skip_early_compressed", 1)
             return
 
         # At this point, we can't exit early by comparing the original.
         # So we're going to have to assume that we'll upload this file.
-        metadata['original_size'] = str(original_size)  # has to be string
-        metadata['original_md5_hash'] = original_md5_hash
+        metadata["original_size"] = str(original_size)  # has to be string
+        metadata["original_md5_hash"] = original_md5_hash
 
-        with metrics.timer('upload_gzip_payload'):
-            with open(file_path, 'rb') as f_in:
-                with gzip.open(file_path + '.gz', 'wb') as f_out:
+        with metrics.timer("upload_gzip_payload"):
+            with open(file_path, "rb") as f_in:
+                with gzip.open(file_path + ".gz", "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
                     # Change it from now on to this new file name
-                    file_path = file_path + '.gz'
+                    file_path = file_path + ".gz"
             # The new 'size' is the size of the file after being compressed.
             size = os.stat(file_path).st_size
 
@@ -210,7 +203,7 @@ def upload_file_upload(
             # there is one last possibility to compare the size of the
             # exising file in S3 when this local file has been compressed
             # too.
-            metrics.incr('upload_skip_early_compressed_legacy', 1)
+            metrics.incr("upload_skip_early_compressed_legacy", 1)
             return
 
     update = bool(existing_size)
@@ -238,29 +231,19 @@ def upload_file_upload(
     # really real.
     extras = {}
     if content_type:
-        extras['ContentType'] = content_type
+        extras["ContentType"] = content_type
     if compressed:
-        extras['ContentEncoding'] = 'gzip'
+        extras["ContentEncoding"] = "gzip"
     if metadata:
-        extras['Metadata'] = metadata
+        extras["Metadata"] = metadata
 
-    logger.debug('Uploading file {!r} into {!r}'.format(
-        key_name,
-        bucket_name,
-    ))
-    with metrics.timer('upload_put_object'):
-        with open(file_path, 'rb') as f:
-            s3_client.put_object(
-                Bucket=bucket_name,
-                Key=key_name,
-                Body=f,
-                **extras,
-            )
-    FileUpload.objects.filter(id=file_upload.id).update(
-        completed_at=timezone.now(),
-    )
-    logger.info(f'Uploaded key {key_name}')
-    metrics.incr('upload_file_upload_upload', 1)
+    logger.debug("Uploading file {!r} into {!r}".format(key_name, bucket_name))
+    with metrics.timer("upload_put_object"):
+        with open(file_path, "rb") as f:
+            s3_client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
+    FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
+    logger.info(f"Uploaded key {key_name}")
+    metrics.incr("upload_file_upload_upload", 1)
 
     # If we managed to upload a file, different or not,
     # cache invalidate the key_existing_size() lookup.
@@ -269,26 +252,20 @@ def upload_file_upload(
     except Exception as exception:  # pragma: no cover
         if settings.DEBUG:
             raise
-        logger.error(
-            f'Unable to invalidate key size {key_name}',
-            exc_info=True
-        )
+        logger.error(f"Unable to invalidate key size {key_name}", exc_info=True)
 
     # Take this opportunity to inform possible caches that the file,
     # if before wasn't the case, is now stored in S3.
-    symbol, debugid, filename = key_name.split(
-        settings.SYMBOL_FILE_PREFIX + '/'
-    )[1].split('/')
+    symbol, debugid, filename = key_name.split(settings.SYMBOL_FILE_PREFIX + "/")[
+        1
+    ].split("/")
     try:
-        downloader.invalidate_cache(
-            symbol, debugid, filename
-        )
+        downloader.invalidate_cache(symbol, debugid, filename)
     except Exception as exception:  # pragma: no cover
         if settings.DEBUG:
             raise
         logger.error(
-            f'Unable to invalidate symbol {symbol}/{debugid}/{filename}',
-            exc_info=True
+            f"Unable to invalidate symbol {symbol}/{debugid}/{filename}", exc_info=True
         )
 
     return file_upload

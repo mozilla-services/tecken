@@ -3,9 +3,9 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 from .celery import app as celery_app
 
-default_app_config = 'tecken.apps.TeckenAppConfig'
+default_app_config = "tecken.apps.TeckenAppConfig"
 
 
 # This will make sure the app is always imported when
 # Django starts so that shared_task will use this app.
-__all__ = ['celery_app', 'default_app_config']
+__all__ = ["celery_app", "default_app_config"]

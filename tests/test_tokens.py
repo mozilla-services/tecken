@@ -16,38 +16,38 @@ from tecken.tokens.models import Token
 
 @pytest.mark.django_db
 def test_client_homepage_with_valid_token(client):
-    url = reverse('api:auth')
+    url = reverse("api:auth")
     response = client.get(url)
     assert response.status_code == 200
-    assert 'sign_in_url' in response.json()
+    assert "sign_in_url" in response.json()
 
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
     assert not user.last_login
     token = Token.objects.create(user=user)
 
     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
     assert response.status_code == 200
-    assert 'sign_in_url' not in response.json()['user']
-    assert response.json()['user']['email'] == user.email
+    assert "sign_in_url" not in response.json()["user"]
+    assert response.json()["user"]["email"] == user.email
     user.refresh_from_db()
     assert user.last_login
 
 
 @pytest.mark.django_db
 def test_client_homepage_with_invalid_token(client):
-    url = reverse('api:auth')
-    response = client.get(url, HTTP_AUTH_TOKEN='junk')
+    url = reverse("api:auth")
+    response = client.get(url, HTTP_AUTH_TOKEN="junk")
     assert response.status_code == 403
-    assert b'API Token not matched' in response.content
+    assert b"API Token not matched" in response.content
 
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
     token = Token.objects.create(user=user)
     token.expires_at = timezone.now()
     token.save()
 
     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
     assert response.status_code == 403
-    assert b'API Token found but expired' in response.content
+    assert b"API Token found but expired" in response.content
 
     token.expires_at += datetime.timedelta(days=1)
     token.save()
@@ -57,29 +57,25 @@ def test_client_homepage_with_invalid_token(client):
 
     response = client.get(url, HTTP_AUTH_TOKEN=token.key)
     assert response.status_code == 403
-    assert b'API Token matched but user not active' in response.content
+    assert b"API Token matched but user not active" in response.content
 
 
 @pytest.mark.django_db
 def test_token_permission_signal():
-    content_type = ContentType.objects.get(app_label='tokens')
+    content_type = ContentType.objects.get(app_label="tokens")
     permission = Permission.objects.create(
-        name='Do',
-        content_type=content_type,
-        codename='do',
+        name="Do", content_type=content_type, codename="do"
     )
     other_permission = Permission.objects.create(
-        name='Do Not',
-        content_type=content_type,
-        codename='donot',
+        name="Do Not", content_type=content_type, codename="donot"
     )
 
-    user = User.objects.create(username='peterbe', email='peterbe@example.com')
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
     token = Token.objects.create(user=user)
     token.permissions.add(permission)
     token.permissions.add(other_permission)
 
-    users = Group.objects.create(name='Users')
+    users = Group.objects.create(name="Users")
     user.groups.add(users)
     users.permissions.add(permission)
     users.permissions.add(other_permission)

@@ -9,29 +9,22 @@ import logging
 
 import markus
 from celery import shared_task
-from botocore.exceptions import (
-    EndpointConnectionError,
-    ConnectionError,
-    ClientError,
-)
+from botocore.exceptions import EndpointConnectionError, ConnectionError, ClientError
 
 from django.conf import settings
 from django.utils import timezone
 from django.db import OperationalError
 
 from tecken.s3 import S3Bucket
-from tecken.boto_extra import (
-    reraise_clienterrors,
-    reraise_endpointconnectionerrors
-)
+from tecken.boto_extra import reraise_clienterrors, reraise_endpointconnectionerrors
 from tecken.base.utils import requests_retry_session
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.download.utils import store_missing_symbol
 from tecken.upload.utils import upload_file_upload
 from tecken.symbolicate.utils import invalidate_symbolicate_cache
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 
 @shared_task(autoretry_for=(OperationalError,))
@@ -51,29 +44,19 @@ class DumpSymsError(Exception):
     """happens when dump_syms only spits something out on stderr"""
 
 
-@shared_task(autoretry_for=(
-    EndpointConnectionError,
-    ConnectionError,
-    ClientError,
-))
+@shared_task(autoretry_for=(EndpointConnectionError, ConnectionError, ClientError))
 @reraise_clienterrors
 @reraise_endpointconnectionerrors
 def download_microsoft_symbol(
-    symbol,
-    debugid,
-    code_file=None,
-    code_id=None,
-    missing_symbol_hash=None
+    symbol, debugid, code_file=None, code_id=None, missing_symbol_hash=None
 ):
-    MS_URL = 'https://msdl.microsoft.com/download/symbols/'
-    MS_USER_AGENT = 'Microsoft-Symbol-Server/6.3.0.0'
-    url = MS_URL + '/'.join([symbol, debugid, symbol[:-1] + '_'])
+    MS_URL = "https://msdl.microsoft.com/download/symbols/"
+    MS_USER_AGENT = "Microsoft-Symbol-Server/6.3.0.0"
+    url = MS_URL + "/".join([symbol, debugid, symbol[:-1] + "_"])
     session = requests_retry_session()
-    response = session.get(url, headers={'User-Agent': MS_USER_AGENT})
+    response = session.get(url, headers={"User-Agent": MS_USER_AGENT})
     if response.status_code != 200:
-        logger.info(
-            f'Symbol {symbol}/{debugid} does not exist on msdl.microsoft.com'
-        )
+        logger.info(f"Symbol {symbol}/{debugid} does not exist on msdl.microsoft.com")
         return
 
     # The fact that the file does exist on Microsoft's server means
@@ -82,7 +65,7 @@ def download_microsoft_symbol(
         missing_symbol_hash = store_missing_symbol(
             symbol,
             debugid,
-            os.path.splitext(symbol)[0] + '.sym',
+            os.path.splitext(symbol)[0] + ".sym",
             code_file=code_file,
             code_id=code_id,
         )
@@ -90,18 +73,15 @@ def download_microsoft_symbol(
         assert isinstance(missing_symbol_hash, str), missing_symbol_hash
     missing_symbol = MissingSymbol.objects.get(hash=missing_symbol_hash)
     download_obj = MicrosoftDownload.objects.create(
-        missing_symbol=missing_symbol,
-        url=url,
+        missing_symbol=missing_symbol, url=url
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         filepath = os.path.join(tmpdirname, os.path.basename(url))
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             content = response.content
-            if not content.startswith(b'MSCF'):
-                error_msg = (
-                    f"Beginning of content in {url} did not start with 'MSCF'"
-                )
+            if not content.startswith(b"MSCF"):
+                error_msg = f"Beginning of content in {url} did not start with 'MSCF'"
                 logger.info(error_msg)
                 download_obj.error = error_msg
                 download_obj.save()
@@ -110,44 +90,32 @@ def download_microsoft_symbol(
 
         cmd = [
             settings.CABEXTRACT_PATH,
-            '--quiet',
+            "--quiet",
             # Important so that the extract .pdb filename is predictable.
-            '--lowercase',
-            '--directory', tmpdirname,
+            "--lowercase",
+            "--directory",
+            tmpdirname,
             filepath,
         ]
-        logger.debug(' '.join(cmd))
-        pipe = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        with metrics.timer('download_cabextract'):
+        logger.debug(" ".join(cmd))
+        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with metrics.timer("download_cabextract"):
             std_out, std_err = pipe.communicate()
             if std_err:
-                error_msg = (
-                    f'cabextract failed for {url}. Error: {std_err!r}'
-                )
+                error_msg = f"cabextract failed for {url}. Error: {std_err!r}"
                 logger.warning(error_msg)
                 download_obj.error = error_msg
                 download_obj.save()
                 return
 
         # Running cabextract creates a file 'foo.pdb' from 'foo.pd_'
-        pdb_filepath = filepath.lower().replace('.pd_', '.pdb')
+        pdb_filepath = filepath.lower().replace(".pd_", ".pdb")
         assert pdb_filepath != filepath
         assert os.path.isfile(pdb_filepath), pdb_filepath
-        cmd = [
-            settings.DUMP_SYMS_PATH,
-            pdb_filepath,
-        ]
-        logger.debug(' '.join(cmd))
-        pipe = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        with metrics.timer('download_dump_syms'):
+        cmd = [settings.DUMP_SYMS_PATH, pdb_filepath]
+        logger.debug(" ".join(cmd))
+        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with metrics.timer("download_dump_syms"):
             std_out, std_err = pipe.communicate()
             # Note! It's expected, even if the dump_syms call works,
             # that the stderr contains something like:
@@ -155,8 +123,7 @@ def download_microsoft_symbol(
             # which is fine and can be ignored.
             if std_err and not std_out:
                 error_msg = (
-                    f'dump_syms extraction failed for {url}. '
-                    f'Error: {std_err!r}'
+                    f"dump_syms extraction failed for {url}. " f"Error: {std_err!r}"
                 )
                 download_obj.error = error_msg
                 download_obj.save()
@@ -165,23 +132,17 @@ def download_microsoft_symbol(
         # Let's go ahead and upload it now, if it hasn't been uploaded
         # before.
         file_path = os.path.join(
-            tmpdirname,
-            os.path.splitext(os.path.basename(filepath))[0] + '.sym'
+            tmpdirname, os.path.splitext(os.path.basename(filepath))[0] + ".sym"
         )
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             f.write(std_out)
-        upload_microsoft_symbol(
-            symbol,
-            debugid,
-            file_path,
-            download_obj,
-        )
+        upload_microsoft_symbol(symbol, debugid, file_path, download_obj)
 
 
-@metrics.timer('download_upload_microsoft_symbol')
+@metrics.timer("download_upload_microsoft_symbol")
 def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
     filename = os.path.splitext(symbol)[0]
-    uri = f'{symbol}/{debugid}/{filename}.sym'
+    uri = f"{symbol}/{debugid}/{filename}.sym"
     key_name = os.path.join(settings.SYMBOL_FILE_PREFIX, uri)
 
     bucket_info = S3Bucket(settings.UPLOAD_DEFAULT_URL)
@@ -190,11 +151,7 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
 
     # The upload_file_upload creates an instance but doesn't save it
     file_upload = upload_file_upload(
-        s3_client,
-        bucket_name,
-        key_name,
-        file_path,
-        microsoft_download=True,
+        s3_client, bucket_name, key_name, file_path, microsoft_download=True
     )
 
     # The _create_file_upload() function might return None
@@ -203,11 +160,11 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
     if file_upload:
         download_obj.skipped = False
         download_obj.file_upload = file_upload
-        metrics.incr('download_microsoft_download_file_upload_upload', 1)
+        metrics.incr("download_microsoft_download_file_upload_upload", 1)
     else:
         download_obj.skipped = True
-        logger.info(f'Skipped key {key_name}')
-        metrics.incr('download_microsoft_download_file_upload_skip', 1)
+        logger.info(f"Skipped key {key_name}")
+        metrics.incr("download_microsoft_download_file_upload_skip", 1)
     download_obj.completed_at = timezone.now()
     download_obj.save()
 

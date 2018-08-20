@@ -7,7 +7,7 @@ import logging
 from django.apps import AppConfig
 from django.db.models.signals import post_migrate
 
-logger = logging.getLogger('django')
+logger = logging.getLogger("django")
 
 
 def create_default_groups(sender, **kwargs):
@@ -16,37 +16,31 @@ def create_default_groups(sender, **kwargs):
     # permission.
     from django.contrib.auth.models import Group, Permission
 
-    name = 'Uploaders'
+    name = "Uploaders"
     try:
         group = Group.objects.get(name=name)
     except Group.DoesNotExist:
         group = Group.objects.create(name=name)
-        group.permissions.add(
-            Permission.objects.get(codename='upload_symbols')
-        )
+        group.permissions.add(Permission.objects.get(codename="upload_symbols"))
         logger.info(f'Group "{name}" created')
 
     # This new permission was added late, and it belongs to the Uploaders
     # group.
-    if not group.permissions.filter(codename='upload_try_symbols').exists():
-        group.permissions.add(
-            Permission.objects.get(codename='upload_try_symbols')
-        )
+    if not group.permissions.filter(codename="upload_try_symbols").exists():
+        group.permissions.add(Permission.objects.get(codename="upload_try_symbols"))
         logger.info(f'Adding "upload_try_symbols" to group {name}')
 
-    name = 'Upload Auditors'
+    name = "Upload Auditors"
     try:
         group = Group.objects.get(name=name)
     except Group.DoesNotExist:
         group = Group.objects.create(name=name)
-        group.permissions.add(
-            Permission.objects.get(codename='view_all_uploads')
-        )
+        group.permissions.add(Permission.objects.get(codename="view_all_uploads"))
         logger.info(f'Group "{name}" created')
 
 
 class UploadAppConfig(AppConfig):
-    name = 'tecken.upload'
+    name = "tecken.upload"
 
     def ready(self):
         post_migrate.connect(create_default_groups, sender=self)

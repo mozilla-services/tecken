@@ -9,9 +9,7 @@ import boto3
 from botocore.config import Config
 
 
-ALL_POSSIBLE_S3_REGIONS = tuple(
-    boto3.session.Session().get_available_regions('s3')
-)
+ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
 
 
 class S3Bucket:
@@ -37,35 +35,35 @@ class S3Bucket:
 
     """
 
-    def __init__(self, url, try_symbols=False, file_prefix=''):
+    def __init__(self, url, try_symbols=False, file_prefix=""):
         parsed = urlparse(url)
         self.scheme = parsed.scheme
         self.netloc = parsed.netloc
         try:
-            name, prefix = parsed.path[1:].split('/', 1)
-            if prefix.endswith('/'):
+            name, prefix = parsed.path[1:].split("/", 1)
+            if prefix.endswith("/"):
                 prefix = prefix[:-1]
         except ValueError:
-            prefix = ''
+            prefix = ""
             name = parsed.path[1:]
         self.name = name
         if file_prefix:
             if prefix:
-                prefix += f'/{file_prefix}'
+                prefix += f"/{file_prefix}"
             else:
                 prefix = file_prefix
         self.prefix = prefix
-        self.private = 'access=public' not in parsed.query
+        self.private = "access=public" not in parsed.query
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
-        if not parsed.netloc.endswith('.amazonaws.com'):
+        if not parsed.netloc.endswith(".amazonaws.com"):
             # the endpoint_url will be all but the path
-            self.endpoint_url = f'{parsed.scheme}://{parsed.netloc}'
-        region = re.findall(r's3-(.*)\.amazonaws\.com', parsed.netloc)
+            self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
+        region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
         if region:
             if region[0] not in ALL_POSSIBLE_S3_REGIONS:
-                raise ValueError(f'Not valid S3 region {region[0]}')
+                raise ValueError(f"Not valid S3 region {region[0]}")
             self.region = region[0]
 
         # This is only created if/when needed
@@ -74,16 +72,12 @@ class S3Bucket:
     @property
     def base_url(self):
         """Return the URL by its domain and bucket name"""
-        return '{}://{}/{}'.format(
-            self.scheme,
-            self.netloc,
-            self.name,
-        )
+        return "{}://{}/{}".format(self.scheme, self.netloc, self.name)
 
     def __repr__(self):
         return (
-            f'<{self.__class__.__name__} name={self.name!r} '
-            f'endpoint_url={self.endpoint_url!r} region={self.region!r}>'
+            f"<{self.__class__.__name__} name={self.name!r} "
+            f"endpoint_url={self.endpoint_url!r} region={self.region!r}>"
         )
 
     @property
@@ -91,32 +85,27 @@ class S3Bucket:
         """return a boto3 session client based on 'self'"""
         if not self._s3_client:
             self._s3_client = get_s3_client(
-                endpoint_url=self.endpoint_url,
-                region_name=self.region,
+                endpoint_url=self.endpoint_url, region_name=self.region
             )
         return self._s3_client
 
     def get_s3_client(self, **config_params):
         """return a boto3 session client with different config parameters"""
         return get_s3_client(
-            endpoint_url=self.endpoint_url,
-            region_name=self.region,
-            **config_params,
+            endpoint_url=self.endpoint_url, region_name=self.region, **config_params
         )
 
 
 def get_s3_client(endpoint_url=None, region_name=None, **config_params):
-    options = {
-        'config': Config(**config_params),
-    }
+    options = {"config": Config(**config_params)}
     if endpoint_url:
         # By default, if you don't specify an endpoint_url
         # boto3 will automatically assume AWS's S3.
         # For local development we are running a local S3
         # fake service with minio. Then we need to
         # specify the endpoint_url.
-        options['endpoint_url'] = endpoint_url
+        options["endpoint_url"] = endpoint_url
     if region_name:
-        options['region_name'] = region_name
+        options["region_name"] = region_name
     session = boto3.session.Session()
-    return session.client('s3', **options)
+    return session.client("s3", **options)

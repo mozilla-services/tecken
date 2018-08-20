@@ -1,9 +1,10 @@
 [flake8]
+max-line-length = 88
 exclude=
     # ignore the migrations since they are created faulty by default
     tecken/*/migrations/*,
     # No use in checking the Node modules
-    node_modules/*/*/*,
+    frontend/node_modules/*/*/*,
     # No need to traverse our git directory
     .git,
     # There's no value in checking cache directories
@@ -11,3 +12,4 @@ exclude=
     # Sphinx docs is best left as is
     docs/conf.py,
     hack.*py,
+    tecken/wsgi.py,

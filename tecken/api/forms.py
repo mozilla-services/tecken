@@ -18,30 +18,24 @@ class TokenForm(forms.Form):
     expires = forms.CharField()
 
     def clean_expires(self):
-        value = self.cleaned_data['expires']
+        value = self.cleaned_data["expires"]
         try:
             return int(value)
         except ValueError:
-            raise forms.ValidationError(
-                f'Invalid number of days ({value!r})'
-            )
+            raise forms.ValidationError(f"Invalid number of days ({value!r})")
 
     def clean_permissions(self):
-        value = self.cleaned_data['permissions']
+        value = self.cleaned_data["permissions"]
         permissions = []
-        for pk in value.split(','):
-            permissions.append(
-                Permission.objects.get(id=pk)
-            )
+        for pk in value.split(","):
+            permissions.append(Permission.objects.get(id=pk))
 
         # Due to how we use permissions to route uploads, as a rule
         # you can not have an Token containing BOTH of these permissions.
-        p1 = Permission.objects.get(codename='upload_symbols')
-        p2 = Permission.objects.get(codename='upload_try_symbols')
+        p1 = Permission.objects.get(codename="upload_symbols")
+        p2 = Permission.objects.get(codename="upload_try_symbols")
         if p1 in permissions and p2 in permissions:
-            raise forms.ValidationError(
-                'Invalid combination of permissions'
-            )
+            raise forms.ValidationError("Invalid combination of permissions")
 
         return permissions
 
@@ -50,11 +44,9 @@ class TokensForm(forms.Form):
     state = forms.CharField(required=False)
 
     def clean_state(self):
-        value = self.cleaned_data['state']
-        if value and value not in ('expired', 'all'):
-            raise forms.ValidationError(
-                f'Unrecognized state value {value!r}'
-            )
+        value = self.cleaned_data["state"]
+        if value and value not in ("expired", "all"):
+            raise forms.ValidationError(f"Unrecognized state value {value!r}")
         return value
 
 
@@ -64,16 +56,16 @@ class UserEditForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ('is_active', 'is_superuser')
+        fields = ("is_active", "is_superuser")
 
     def clean_groups(self):
-        value = self.cleaned_data['groups']
+        value = self.cleaned_data["groups"]
         groups = []
-        for pk in [x for x in value.split(',') if x.strip()]:
+        for pk in [x for x in value.split(",") if x.strip()]:
             try:
                 groups.append(Group.objects.get(id=pk))
             except ValueError:
-                raise forms.ValidationError('Invalid group ID')
+                raise forms.ValidationError("Invalid group ID")
         return groups
 
 
@@ -81,11 +73,11 @@ class PaginationForm(forms.Form):
     page = forms.CharField(required=False)
 
     def clean_page(self):
-        value = self.cleaned_data['page']
+        value = self.cleaned_data["page"]
         try:
             value = int(value or 1)
         except ValueError:
-            raise forms.ValidationError(f'Not a number {value!r}')
+            raise forms.ValidationError(f"Not a number {value!r}")
         if value < 1:
             value = 1
         return value
@@ -97,7 +89,7 @@ class BaseFilteringForm(forms.Form):
     reverse = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
-        self.valid_sorts = kwargs.pop('valid_sorts', None)
+        self.valid_sorts = kwargs.pop("valid_sorts", None)
         super().__init__(*args, **kwargs)
 
     def _clean_dates(self, values):
@@ -106,25 +98,25 @@ class BaseFilteringForm(forms.Form):
         if not values:
             return []
         dates = []
-        operators = re.compile('<=|>=|<|>|=')
-        for block in [x.strip() for x in values.split(',') if x.strip()]:
+        operators = re.compile("<=|>=|<|>|=")
+        for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(block):
                 operator, = operators.findall(block)
             else:
-                operator = '='
-            rest = operators.sub('', block).strip()
-            if rest.lower() in ('null', 'incomplete'):
+                operator = "="
+            rest = operators.sub("", block).strip()
+            if rest.lower() in ("null", "incomplete"):
                 date_obj = None
-            elif rest.lower() == 'today':
+            elif rest.lower() == "today":
                 date_obj = timezone.now().replace(hour=0, minute=0, second=0)
-            elif rest.lower() == 'yesterday':
+            elif rest.lower() == "yesterday":
                 date_obj = timezone.now().replace(hour=0, minute=0, second=0)
                 date_obj -= datetime.timedelta(days=1)
             else:
                 try:
                     date_obj = dateutil.parser.parse(rest)
                 except ValueError:
-                    raise forms.ValidationError(f'Unable to parse {rest!r}')
+                    raise forms.ValidationError(f"Unable to parse {rest!r}")
                 if timezone.is_naive(date_obj):
                     date_obj = timezone.make_aware(date_obj)
             dates.append((operator, date_obj))
@@ -132,22 +124,22 @@ class BaseFilteringForm(forms.Form):
         return dates
 
     def clean_sort(self):
-        value = self.cleaned_data['sort']
+        value = self.cleaned_data["sort"]
         if value and self.valid_sorts and value not in self.valid_sorts:
             raise forms.ValidationError(f"Invalid sort '{value}'")
         return value
 
     def clean_reverse(self):
-        value = self.cleaned_data['reverse']
+        value = self.cleaned_data["reverse"]
         if value:
-            return True if value == 'true' else False
+            return True if value == "true" else False
 
     def clean(self):
         cleaned = super().clean()
-        if cleaned.get('sort'):
-            cleaned['order_by'] = {
-                'sort': cleaned.pop('sort'),
-                'reverse': cleaned.pop('reverse')
+        if cleaned.get("sort"):
+            cleaned["order_by"] = {
+                "sort": cleaned.pop("sort"),
+                "reverse": cleaned.pop("reverse"),
             }
         return cleaned
 
@@ -159,10 +151,10 @@ class UploadsForm(BaseFilteringForm):
     completed_at = forms.CharField(required=False)
 
     def clean_user(self):
-        value = self.cleaned_data['user']
-        operator = '='  # default
-        if value.startswith('!'):
-            operator = '!'
+        value = self.cleaned_data["user"]
+        operator = "="  # default
+        if value.startswith("!"):
+            operator = "!"
             value = value[1:].strip()
         if value:
             # If it can be converted to an object, use that!
@@ -174,45 +166,45 @@ class UploadsForm(BaseFilteringForm):
                 return [operator, value]
 
     def clean_size(self):
-        values = self.cleaned_data['size']
+        values = self.cleaned_data["size"]
         if not values:
             return []
         sizes = []
-        operators = re.compile('<=|>=|<|>|=')
-        multipliers = re.compile('gb|mb|kb|g|m|k|b', re.I)
+        operators = re.compile("<=|>=|<|>|=")
+        multipliers = re.compile("gb|mb|kb|g|m|k|b", re.I)
         multiplier_aliases = {
-            'gb': 1024 * 1024 * 1024,
-            'g': 1024 * 1024 * 1024,
-            'mb': 1024 * 1024,
-            'm': 1024 * 1024,
-            'kb': 1024,
-            'k': 1024,
-            'b': 1,
+            "gb": 1024 * 1024 * 1024,
+            "g": 1024 * 1024 * 1024,
+            "mb": 1024 * 1024,
+            "m": 1024 * 1024,
+            "kb": 1024,
+            "k": 1024,
+            "b": 1,
         }
-        for block in [x.strip() for x in values.split(',') if x.strip()]:
+        for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(block):
                 operator, = operators.findall(block)
             else:
-                operator = '='
-            rest = operators.sub('', block)
+                operator = "="
+            rest = operators.sub("", block)
             if multipliers.findall(rest):
                 multiplier, = multipliers.findall(rest)
             else:
-                multiplier = 'b'
-            rest = multipliers.sub('', rest)
+                multiplier = "b"
+            rest = multipliers.sub("", rest)
             try:
                 rest = float(rest)
             except ValueError:
-                raise forms.ValidationError(f'{rest!r} is not numeric')
+                raise forms.ValidationError(f"{rest!r} is not numeric")
             rest = multiplier_aliases[multiplier.lower()] * rest
             sizes.append((operator, rest))
         return sizes
 
     def clean_created_at(self):
-        return self._clean_dates(self.cleaned_data['created_at'])
+        return self._clean_dates(self.cleaned_data["created_at"])
 
     def clean_completed_at(self):
-        return self._clean_dates(self.cleaned_data['completed_at'])
+        return self._clean_dates(self.cleaned_data["completed_at"])
 
 
 class FileUploadsForm(UploadsForm):
@@ -226,32 +218,30 @@ class FileUploadsForm(UploadsForm):
     bucket_name = forms.CharField(required=False)
 
     def clean_key(self):
-        values = self.cleaned_data['key']
+        values = self.cleaned_data["key"]
         if not values:
             return []
-        return [x.strip() for x in values.split(',') if x.strip()]
+        return [x.strip() for x in values.split(",") if x.strip()]
 
     def clean_download(self):
-        value = self.cleaned_data['download']
+        value = self.cleaned_data["download"]
         if value:
-            if value not in ('microsoft',):
-                raise forms.ValidationError(
-                    f'Unrecognized download value {value!r}'
-                )
+            if value not in ("microsoft",):
+                raise forms.ValidationError(f"Unrecognized download value {value!r}")
         return value
 
     def clean_bucket_name(self):
-        values = self.cleaned_data['bucket_name']
+        values = self.cleaned_data["bucket_name"]
         if not values:
             return []
         cleaned = []
-        for value in values.split(','):
+        for value in values.split(","):
             if value.strip():
-                if value.startswith('!'):
-                    operator = '!'
+                if value.startswith("!"):
+                    operator = "!"
                     value = value[1:].strip()
                 else:
-                    operator = '='
+                    operator = "="
                 cleaned.append((operator, value))
         return cleaned
 
@@ -266,24 +256,24 @@ class DownloadsMissingForm(BaseFilteringForm):
     count = forms.CharField(required=False)
 
     def clean_modified_at(self):
-        return self._clean_dates(self.cleaned_data['modified_at'])
+        return self._clean_dates(self.cleaned_data["modified_at"])
 
     def clean_count(self):
-        values = self.cleaned_data['count']
+        values = self.cleaned_data["count"]
         if not values:
             return []
-        operators = re.compile('<=|>=|<|>|=')
+        operators = re.compile("<=|>=|<|>|=")
         counts = []
-        for block in [x.strip() for x in values.split(',') if x.strip()]:
+        for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(values):
                 operator, = operators.findall(block)
             else:
-                operator = '='
-            rest = operators.sub('', block)
+                operator = "="
+            rest = operators.sub("", block)
             try:
                 rest = int(rest)
             except ValueError:
-                raise forms.ValidationError(f'{rest!r} is not a number')
+                raise forms.ValidationError(f"{rest!r} is not a number")
             counts.append((operator, rest))
         return counts
 
@@ -294,4 +284,4 @@ class DownloadsMicrosoftForm(DownloadsMissingForm):
     error = forms.CharField(required=False)
 
     def clean_created_at(self):
-        return self._clean_dates(self.cleaned_data['created_at'])
+        return self._clean_dates(self.cleaned_data["created_at"])

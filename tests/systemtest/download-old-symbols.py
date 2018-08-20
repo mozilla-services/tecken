@@ -21,8 +21,7 @@ import requests
 # This is the URL were we can expect to download all the symbols that
 # the systemtests require.
 LEGACY_S3_URL = (
-    'https://s3-us-west-2.amazonaws.com/'
-    'org.mozilla.crash-stats.symbols-public/'
+    "https://s3-us-west-2.amazonaws.com/" "org.mozilla.crash-stats.symbols-public/"
 )
 
 
@@ -47,34 +46,30 @@ def run():
     urls = [
         x.strip()
         for x in URLS.strip().splitlines()
-        if x.strip() and not x.strip().startswith('#')
+        if x.strip() and not x.strip().startswith("#")
     ]
 
-    with tempfile.TemporaryDirectory(prefix='symbols') as tmpdirname:
+    with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
         downloaded = download_all(urls, tmpdirname)
-        save_filepath = 'symbols-for-systemtests.zip'
+        save_filepath = "symbols-for-systemtests.zip"
         total_time_took = 0.0
         total_size = 0
-        with zipfile.ZipFile(save_filepath, mode='w') as zf:
+        with zipfile.ZipFile(save_filepath, mode="w") as zf:
             for uri, (fullpath, time_took, size) in downloaded.items():
                 total_time_took += time_took
                 total_size += size
                 if fullpath:
-                    path = uri.replace('v1/', '')
+                    path = uri.replace("v1/", "")
                     assert os.path.isfile(fullpath)
-                    zf.write(
-                        fullpath,
-                        arcname=path,
-                        compress_type=zipfile.ZIP_DEFLATED,
-                    )
+                    zf.write(fullpath, arcname=path, compress_type=zipfile.ZIP_DEFLATED)
 
 
-def sizeof_fmt(num, suffix='B'):
-    for unit in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']:
+def sizeof_fmt(num, suffix="B"):
+    for unit in ["", "K", "M", "G", "T", "P", "E", "Z"]:
         if abs(num) < 1024.0:
-            return '%3.1f%s%s' % (num, unit, suffix)
+            return "%3.1f%s%s" % (num, unit, suffix)
         num /= 1024.0
-    return '%.1f%s%s' % (num, 'Yi', suffix)
+    return "%.1f%s%s" % (num, "Yi", suffix)
 
 
 def download(uri, save_dir, store):
@@ -88,20 +83,20 @@ def download(uri, save_dir, store):
     fullpath = os.path.join(dirname, basename)
     print(
         response.status_code,
-        sizeof_fmt(int(response.headers['Content-Length'])).ljust(10),
+        sizeof_fmt(int(response.headers["Content-Length"])).ljust(10),
         url,
     )
-    with open(fullpath, 'wb') as f:
+    with open(fullpath, "wb") as f:
         f.write(response.content)
 
 
 def download_all(urls, save_dir):
-    print('Downloading into...', save_dir)
+    print("Downloading into...", save_dir)
     downloaded = {x: False for x in urls}
     for url in urls:
         download(url, save_dir, downloaded)
     return downloaded
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

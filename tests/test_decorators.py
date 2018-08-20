@@ -13,22 +13,21 @@ from tecken.base import decorators
 
 
 def test_set_request_debug():
-
     @decorators.set_request_debug
     def myview(request):
-        return http.HttpResponse('debug={}'.format(request._request_debug))
+        return http.HttpResponse("debug={}".format(request._request_debug))
 
-    request = RequestFactory().get('/')
+    request = RequestFactory().get("/")
     response = myview(request)
-    assert response.content == b'debug=False'
+    assert response.content == b"debug=False"
 
-    request = RequestFactory(HTTP_DEBUG='true').get('/')
+    request = RequestFactory(HTTP_DEBUG="true").get("/")
     response = myview(request)
-    assert response.content == b'debug=True'
+    assert response.content == b"debug=True"
 
-    request = RequestFactory(HTTP_DEBUG='0').get('/')
+    request = RequestFactory(HTTP_DEBUG="0").get("/")
     response = myview(request)
-    assert response.content == b'debug=False'
+    assert response.content == b"debug=False"
 
 
 def test_set_cors_headers(rf):
@@ -36,45 +35,43 @@ def test_set_cors_headers(rf):
     # Happy patch
     @decorators.set_cors_headers()
     def view_function(request):
-        return http.HttpResponse('hello world')
+        return http.HttpResponse("hello world")
 
-    request = rf.get('/')
+    request = rf.get("/")
     response = view_function(request)
-    assert response['Access-Control-Allow-Origin'] == '*'
-    assert response['Access-Control-Allow-Methods'] == 'GET'
+    assert response["Access-Control-Allow-Origin"] == "*"
+    assert response["Access-Control-Allow-Methods"] == "GET"
 
     # Overrides
-    @decorators.set_cors_headers(origin='example.com', methods=['HEAD', 'GET'])
+    @decorators.set_cors_headers(origin="example.com", methods=["HEAD", "GET"])
     def view_function(request):
-        return http.HttpResponse('hello world')
+        return http.HttpResponse("hello world")
+
     response = view_function(request)
-    assert response['Access-Control-Allow-Origin'] == 'example.com'
-    assert response['Access-Control-Allow-Methods'] == 'HEAD,GET'
+    assert response["Access-Control-Allow-Origin"] == "example.com"
+    assert response["Access-Control-Allow-Methods"] == "HEAD,GET"
 
 
 def test_make_tempdir():
 
     mutable = []
 
-    @decorators.make_tempdir(
-        prefix='PREFIX',
-        suffix='SUFFIX',
-    )
+    @decorators.make_tempdir(prefix="PREFIX", suffix="SUFFIX")
     def view_function(request, tmpdir, foo=None):
         assert os.path.isdir(tmpdir)
         basename = os.path.basename(tmpdir)
-        assert 'PREFIX' in basename
-        assert 'SUFFIX' in basename
+        assert "PREFIX" in basename
+        assert "SUFFIX" in basename
         mutable.append(tmpdir)
 
-        if foo == 'ERROR':
-            raise NameError('anything')
+        if foo == "ERROR":
+            raise NameError("anything")
 
-    view_function('somerequest', foo='bar')
+    view_function("somerequest", foo="bar")
     assert not os.path.isdir(mutable[0])
 
     # Let it fail this time
     with pytest.raises(NameError):
-        view_function('somerequest', foo='ERROR')
+        view_function("somerequest", foo="ERROR")
 
     assert not os.path.isdir(mutable[1])

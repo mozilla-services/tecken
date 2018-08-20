@@ -12,9 +12,7 @@ from django.template.defaultfilters import filesizeformat as dj_filesizeformat
 
 
 def requests_retry_session(
-    retries=3,
-    backoff_factor=0.3,
-    status_forcelist=(500, 502, 504),
+    retries=3, backoff_factor=0.3, status_forcelist=(500, 502, 504)
 ):
     """Opinionated wrapper that creates a requests session with a
     HTTPAdapter that sets up a Retry policy that includes connection
@@ -44,8 +42,8 @@ def requests_retry_session(
         status_forcelist=status_forcelist,
     )
     adapter = HTTPAdapter(max_retries=retry)
-    session.mount('http://', adapter)
-    session.mount('https://', adapter)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
     return session
 
 
@@ -54,7 +52,7 @@ def filesizeformat(bytes):
     nifty but it's meant for displaying in templates so it uses a
     whitespace-looking character instead of a space so it doesn't
     break in display. We don't need that here in this context."""
-    return dj_filesizeformat(bytes).replace('\xa0', ' ')
+    return dj_filesizeformat(bytes).replace("\xa0", " ")
 
 
 # See the docstring in invalid_s3_key_name_characters for an explanation

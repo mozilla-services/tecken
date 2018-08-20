@@ -22,7 +22,7 @@ class LogAllMetricsKeys(BackendBase):  # pragma: no cover
     """
 
     def notice_use(self, state, type, *args, **kwargs):
-        filename = 'all-metrics-keys.json'
+        filename = "all-metrics-keys.json"
         try:
             with open(filename) as f:
                 all_keys = json.load(f)
@@ -31,18 +31,18 @@ class LogAllMetricsKeys(BackendBase):  # pragma: no cover
             # so sometimes the file is all messed up. Pretend
             # it didn't exist if the exception was a JSONDecodeError.
             all_keys = {
-                '_documentation': (
-                    'This file was created so you can see all metrics '
+                "_documentation": (
+                    "This file was created so you can see all metrics "
                     "keys that get used. It won't delete keys that are no "
                     "longer used. Feel free to delete this file and run again."
                 )
             }
         all_keys[state] = {
-            'type': type,
-            'timestamp': time.time(),
-            'count': all_keys.get(state, {}).get('count', 0) + 1,
+            "type": type,
+            "timestamp": time.time(),
+            "count": all_keys.get(state, {}).get("count", 0) + 1,
         }
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             json.dump(all_keys, f, sort_keys=True, indent=3)
 
     incr = partialmethod(notice_use, type=INCR)
