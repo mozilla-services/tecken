@@ -27,3 +27,4 @@ test-upload-inbox/
 upload-inbox/
 miniodata/
 .pytest_cache/
+.cache/
