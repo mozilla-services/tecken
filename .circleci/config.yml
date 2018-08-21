@@ -82,6 +82,32 @@ jobs:
               bin/ci/deploy-dockerhub.sh "$CIRCLE_TAG"
             fi
 
+  docs:
+    docker:
+      - image: circleci/python:3.6
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "docs-requirements.txt" }}
+      - run:
+          name: Create virtualenv
+          command: |
+            python3 -m venv ~/venv
+            echo "source ~/venv/bin/activate" >> $BASH_ENV
+      - run:
+          name: Install requirements
+          command: pip install -r docs-requirements.txt
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "docs-requirements.txt" }}
+          paths:
+            - "~/venv"
+      - run:
+          name: Build docs
+          command: |
+            cd docs
+            make html
+
 workflows:
   version: 2
   main:
@@ -90,3 +116,4 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - docs
