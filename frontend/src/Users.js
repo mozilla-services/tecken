@@ -11,7 +11,9 @@ class Users extends PureComponent {
     this.pageTitle = 'User Management'
     this.state = {
       loading: true,
-      users: null
+      users: null,
+      displayUsers: null,
+      showInactiveUsers: false
     }
   }
   componentWillMount() {
@@ -41,12 +43,27 @@ class Users extends PureComponent {
         return r.json().then(response => {
           this.setState({
             users: response.users,
+            displayUsers: this.state.showInactiveUsers
+              ? response.users
+              : this._filterInActiveUsers(response.users),
             loading: false
           })
         })
       } else {
         store.fetchError = r
       }
+    })
+  }
+
+  _filterInActiveUsers = users => {
+    return users.filter(user => {
+      if (!user.is_active) {
+        return false
+      }
+      if (!user.last_login) {
+        return false
+      }
+      return true
     })
   }
 
@@ -57,14 +74,50 @@ class Users extends PureComponent {
         {this.state.loading ? (
           <Loading />
         ) : (
-          <DisplayUsers users={this.state.users} />
+          <ShowActiveUsersToggle
+            on={this.state.showInactiveUsers}
+            change={() => {
+              this.setState(
+                {
+                  showInactiveUsers: !this.state.showInactiveUsers
+                },
+                () => {
+                  this.setState({
+                    displayUsers: this.state.showInactiveUsers
+                      ? this.state.users
+                      : this._filterInActiveUsers(this.state.users)
+                  })
+                }
+              )
+            }}
+          />
         )}
+        {this.state.displayUsers !== null ? (
+          <DisplayUsers users={this.state.displayUsers} />
+        ) : null}
       </div>
     )
   }
 }
 
 export default Users
+
+class ShowActiveUsersToggle extends React.PureComponent {
+  render() {
+    return (
+      <p>
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={this.props.on}
+            onChange={this.props.change}
+          />{' '}
+          Show inactive users
+        </label>
+      </p>
+    )
+  }
+}
 
 class DisplayUsers extends PureComponent {
   state = {
