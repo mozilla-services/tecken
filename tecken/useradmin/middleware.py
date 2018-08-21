@@ -15,15 +15,15 @@ from django.contrib import auth
 from tecken.base.utils import requests_retry_session
 
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 
 class Auth0ManagementAPIError(Exception):
     """happens if the Auth0 management API can't be reached"""
 
 
-@metrics.timer_decorator('useradmin_is_blocked_in_auth0')
+@metrics.timer_decorator("useradmin_is_blocked_in_auth0")
 def is_blocked_in_auth0(email):
     session = requests_retry_session(retries=5)
     users = find_users(
@@ -34,38 +34,34 @@ def is_blocked_in_auth0(email):
         session,
     )
     for user in users:
-        if user.get('blocked'):
+        if user.get("blocked"):
             return True
     return False
 
 
 def _get_access_token(client_id, client_secret, domain, session):
-    url = 'https://{}/oauth/token'.format(domain)
-    audience = 'https://{}/api/v2/'.format(domain)
+    url = "https://{}/oauth/token".format(domain)
+    audience = "https://{}/api/v2/".format(domain)
     payload = {
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'grant_type': 'client_credentials',
-        'audience': audience,
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "grant_type": "client_credentials",
+        "audience": audience,
     }
     response = session.post(url, json=payload)
     if response.status_code != 200:
         raise Auth0ManagementAPIError(response.status_code)
-    return response.json()['access_token']
+    return response.json()["access_token"]
 
 
 def find_users(client_id, client_secret, domain, email, session):
-    access_token = _get_access_token(
-        client_id, client_secret, domain, session,
-    )
+    access_token = _get_access_token(client_id, client_secret, domain, session)
 
-    url = 'https://{}/api/v2/users'.format(domain)
-    query = {
-        'q': 'email:"{}"'.format(email),
-    }
-    response = session.get(url, params=query, headers={
-        'Authorization': 'Bearer {}'.format(access_token),
-    })
+    url = "https://{}/api/v2/users".format(domain)
+    query = {"q": 'email:"{}"'.format(email)}
+    response = session.get(
+        url, params=query, headers={"Authorization": "Bearer {}".format(access_token)}
+    )
     if response.status_code != 200:
         raise Auth0ManagementAPIError(response.status_code)
     return response.json()
@@ -90,7 +86,7 @@ class NotBlockedInAuth0Middleware:
 
     def __init__(self, get_response=None):
         if not settings.ENABLE_AUTH0_BLOCKED_CHECK:  # pragma: no cover
-            logger.warning('Auth0 blocked check disabled')
+            logger.warning("Auth0 blocked check disabled")
             raise MiddlewareNotUsed
         self.get_response = get_response
 
@@ -103,7 +99,7 @@ class NotBlockedInAuth0Middleware:
     def process_request(self, request):
         if not request.user.is_active or not request.user.email:
             return
-        cache_key = f'NotBlockedInAuth0Middleware:${request.user.id}'
+        cache_key = f"NotBlockedInAuth0Middleware:${request.user.id}"
         if cache.get(cache_key) is None:
             # We have to do the check
             if is_blocked_in_auth0(request.user.email):
@@ -111,19 +107,11 @@ class NotBlockedInAuth0Middleware:
                 request.user.is_active = False
                 request.user.save()
                 logger.warning(
-                    f'User {request.user.email} is blocked in Auth0 '
-                    f'and now made inactive'
+                    f"User {request.user.email} is blocked in Auth0 "
+                    f"and now made inactive"
                 )
                 auth.logout(request)
-                raise PermissionDenied(
-                    'User is blocked in Auth0 and made inactive.'
-                )
+                raise PermissionDenied("User is blocked in Auth0 and made inactive.")
             else:
-                logger.info(
-                    f'User {request.user.email} is NOT blocked in Auth0'
-                )
-            cache.set(
-                cache_key,
-                True,
-                settings.NOT_BLOCKED_IN_AUTH0_INTERVAL_SECONDS
-            )
+                logger.info(f"User {request.user.email} is NOT blocked in Auth0")
+            cache.set(cache_key, True, settings.NOT_BLOCKED_IN_AUTH0_INTERVAL_SECONDS)

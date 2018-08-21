@@ -16,8 +16,8 @@ def make_symbol_key_cache_key_default_prefix():
     only use this one function throughout or you might end up
     generating different prefixes from different angles and not notice.
     """
-    symbol_urls = ''.join(settings.SYMBOL_URLS)
-    hash_ = hashlib.md5(symbol_urls.encode('utf-8')).hexdigest()
+    symbol_urls = "".join(settings.SYMBOL_URLS)
+    hash_ = hashlib.md5(symbol_urls.encode("utf-8")).hexdigest()
     # Because this is going to be used in every key, it behoves use
     # to shorten it a little.
     return hash_[:5]
@@ -37,7 +37,7 @@ def make_symbol_key_cache_key(symbol_key, prefix=None):
     assert prefix, prefix
     assert isinstance(symbol_key, (tuple, list)), symbol_key
     assert len(symbol_key) == 2, symbol_key
-    return 'symbol:{}:{}/{}'.format(prefix, *symbol_key)
+    return "symbol:{}:{}/{}".format(prefix, *symbol_key)
 
 
 def invalidate_symbolicate_cache(symbol_keys, prefix=None):
@@ -51,7 +51,7 @@ def invalidate_symbolicate_cache(symbol_keys, prefix=None):
         # 2) symbol_key (as hashmap)
         cache_key = make_symbol_key_cache_key(symbol_key, prefix=prefix)
         all_keys.append(cache_key)  # the hashmap
-        all_keys.append(cache_key + ':keys')  # the list of all offsets
+        all_keys.append(cache_key + ":keys")  # the list of all offsets
 
-    store = caches['store']
+    store = caches["store"]
     store.delete_many(all_keys)

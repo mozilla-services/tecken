@@ -40,11 +40,11 @@ from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
 
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 
-_not_hex_characters = re.compile(r'[^a-f0-9]', re.I)
+_not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
 
 
 def check_symbols_archive_file_listing(file_listings):
@@ -61,26 +61,24 @@ def check_symbols_archive_file_listing(file_listings):
         # 2. Or, /<name>-symbols.txt
         # Anything else should be considered and unrecognized file pattern
         # and thus rejected.
-        split = file_listing.name.split('/')
+        split = file_listing.name.split("/")
         if len(split) == 3:
             # Check the symbol and the filename part of it to make sure
             # it doesn't contain any, considered, invalid S3 characters
             # when it'd become a key.
             if invalid_s3_key_name_characters(split[0] + split[2]):
-                return (
-                    f'Invalid character in filename {file_listing.name!r}'
-                )
+                return f"Invalid character in filename {file_listing.name!r}"
             # Check that the middle part is only hex characters.
             if not _not_hex_characters.findall(split[1]):
                 continue
         elif len(split) == 1:
-            if file_listing.name.lower().endswith('-symbols.txt'):
+            if file_listing.name.lower().endswith("-symbols.txt"):
                 continue
         # If it didn't get "continued" above, it's an unrecognized file
         # pattern.
         return (
-            'Unrecognized file pattern. Should only be <module>/<hex>/<file> '
-            'or <name>-symbols.txt and nothing else.'
+            "Unrecognized file pattern. Should only be <module>/<hex>/<file> "
+            "or <name>-symbols.txt and nothing else."
         )
 
 
@@ -104,7 +102,7 @@ def get_bucket_info(user, try_symbols=None):
         # a checkbox that is off by default. If doing so, the user isn't
         # using an API token, so the user might have BOTH permissions.
         # Then the default falls on this NOT being a Try upload.
-        try_symbols = not user.has_perm('upload.upload_symbols')
+        try_symbols = not user.has_perm("upload.upload_symbols")
 
     if try_symbols:
         url = settings.UPLOAD_TRY_SYMBOLS_URL
@@ -121,9 +119,7 @@ def get_bucket_info(user, try_symbols=None):
         for email_or_wildcard in settings.UPLOAD_URL_EXCEPTIONS:
             if fnmatch.fnmatch(user.email.lower(), email_or_wildcard.lower()):
                 # a match!
-                exception = settings.UPLOAD_URL_EXCEPTIONS[
-                    email_or_wildcard
-                ]
+                exception = settings.UPLOAD_URL_EXCEPTIONS[email_or_wildcard]
                 break
 
     if exception:
@@ -139,19 +135,16 @@ def _ignore_member_file(filename):
     At the moment the list is "whitelist based", meaning all files are
     processed and uploaded to S3 unless it meets certain checks.
     """
-    if filename.lower().endswith('-symbols.txt'):
+    if filename.lower().endswith("-symbols.txt"):
         return True
     return False
 
 
-@metrics.timer_decorator('upload_archive')
+@metrics.timer_decorator("upload_archive")
 @api_require_POST
 @csrf_exempt
 @api_login_required
-@api_any_permission_required(
-    'upload.upload_symbols',
-    'upload.upload_try_symbols',
-)
+@api_any_permission_required("upload.upload_symbols", "upload.upload_try_symbols")
 @make_tempdir(settings.UPLOAD_TEMPDIR_PREFIX)
 def upload_archive(request, upload_dir):
     try:
@@ -163,32 +156,24 @@ def upload_archive(request, upload_dir):
             redirect_urls = None
             break
         else:
-            if request.POST.get('url'):
+            if request.POST.get("url"):
                 form = UploadByDownloadForm(request.POST)
                 if form.is_valid():
-                    url = form.cleaned_data['url']
-                    name = form.cleaned_data['upload']['name']
-                    size = form.cleaned_data['upload']['size']
+                    url = form.cleaned_data["url"]
+                    name = form.cleaned_data["upload"]["name"]
+                    size = form.cleaned_data["upload"]["size"]
                     size_fmt = filesizeformat(size)
-                    logger.info(
-                        f'Download to upload {url} ({size_fmt})'
-                    )
-                    redirect_urls = (
-                        form.cleaned_data['upload']['redirect_urls'] or None
-                    )
+                    logger.info(f"Download to upload {url} ({size_fmt})")
+                    redirect_urls = form.cleaned_data["upload"]["redirect_urls"] or None
                     download_name = os.path.join(upload_dir, name)
-                    with metrics.timer('upload_download_by_url'):
+                    with metrics.timer("upload_download_by_url"):
                         response_stream = requests.get(
-                            url,
-                            stream=True,
-                            timeout=(5, 300)
+                            url, stream=True, timeout=(5, 300)
                         )
-                        with open(download_name, 'wb') as f:
+                        with open(download_name, "wb") as f:
                             # Read 1MB at a time
                             chunk_size = 1024 * 1024
-                            stream = response_stream.iter_content(
-                                chunk_size=chunk_size
-                            )
+                            stream = response_stream.iter_content(chunk_size=chunk_size)
                             count_chunks = 0
                             start = time.time()
                             for chunk in stream:
@@ -199,50 +184,40 @@ def upload_archive(request, upload_dir):
                             total_size = chunk_size * count_chunks
                             download_speed = size / (end - start)
                             logger.info(
-                                f'Read {count_chunks} chunks of '
-                                f'{filesizeformat(chunk_size)} each '
-                                f'totalling {filesizeformat(total_size)} '
-                                f'({filesizeformat(download_speed)}/s).'
+                                f"Read {count_chunks} chunks of "
+                                f"{filesizeformat(chunk_size)} each "
+                                f"totalling {filesizeformat(total_size)} "
+                                f"({filesizeformat(download_speed)}/s)."
                             )
-                    file_listing = dump_and_extract(
-                        upload_dir,
-                        download_name,
-                        name
-                    )
+                    file_listing = dump_and_extract(upload_dir, download_name, name)
                     os.remove(download_name)
                 else:
                     for key, errors in form.errors.as_data().items():
                         return http.JsonResponse(
-                            {'error': errors[0].message},
-                            status=400,
+                            {"error": errors[0].message}, status=400
                         )
             else:
                 return http.JsonResponse(
                     {
-                        'error': (
-                            'Must be multipart form data with at '
-                            'least one file'
+                        "error": (
+                            "Must be multipart form data with at " "least one file"
                         )
                     },
                     status=400,
                 )
     except zipfile.BadZipfile as exception:
-        return http.JsonResponse(
-            {'error': str(exception)},
-            status=400,
-        )
+        return http.JsonResponse({"error": str(exception)}, status=400)
     except UnrecognizedArchiveFileExtension as exception:
         return http.JsonResponse(
-            {'error': f'Unrecognized archive file extension "{exception}"'},
-            status=400,
+            {"error": f'Unrecognized archive file extension "{exception}"'}, status=400
         )
     error = check_symbols_archive_file_listing(file_listing)
     if error:
-        return http.JsonResponse({'error': error.strip()}, status=400)
+        return http.JsonResponse({"error": error.strip()}, status=400)
 
     # If you pass an extract argument, independent of value, with key 'try'
     # then we definitely knows this is a Try symbols upload.
-    is_try_upload = request.POST.get('try')
+    is_try_upload = request.POST.get("try")
 
     bucket_info = get_bucket_info(request.user, try_symbols=is_try_upload)
     if is_try_upload is None:
@@ -270,17 +245,15 @@ def upload_archive(request, upload_dir):
     try:
         lookup_client.head_bucket(Bucket=bucket_info.name)
     except ClientError as exception:
-        if exception.response['Error']['Code'] == '404':
+        if exception.response["Error"]["Code"] == "404":
             # This warning message hopefully makes it easier to see what
             # you need to do to your configuration.
             # XXX Is this the best exception for runtime'y type of
             # bad configurations.
             raise ImproperlyConfigured(
                 "S3 bucket '{}' can not be found. "
-                'Connected with region={!r} endpoint_url={!r}'.format(
-                    bucket_info.name,
-                    bucket_info.region,
-                    bucket_info.endpoint_url,
+                "Connected with region={!r} endpoint_url={!r}".format(
+                    bucket_info.name, bucket_info.region, bucket_info.endpoint_url
                 )
             )
         else:  # pragma: no cover
@@ -290,20 +263,18 @@ def upload_archive(request, upload_dir):
     # prefix that first :)
     prefix = settings.SYMBOL_FILE_PREFIX
     if bucket_info.prefix:
-        prefix = f'{bucket_info.prefix}/{prefix}'
+        prefix = f"{bucket_info.prefix}/{prefix}"
 
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
 
-    content = '\n'.join(
-        '{}:{}'.format(x.name, x.size)
+    content = "\n".join(
+        "{}:{}".format(x.name, x.size)
         for x in sorted(file_listing, key=lambda x: x.name)
     )
     # The MD5 is just used to make the temporary S3 file unique in name
     # if the client uploads with the same filename in quick succession.
-    content_hash = hashlib.md5(
-        content.encode('utf-8')
-    ).hexdigest()[:30]  # nosec
+    content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()[:30]  # nosec
 
     # Always create the Upload object no matter what happens next.
     # If all individual file uploads work out, we say this is complete.
@@ -339,13 +310,11 @@ def upload_archive(request, upload_dir):
             if _ignore_member_file(member.name):
                 ignored_keys.append(member.name)
                 continue
-            key_name = os.path.join(
-                prefix, member.name
-            )
+            key_name = os.path.join(prefix, member.name)
             # We need to know and remember, for every file attempted,
             # what that name corresponds to as a "symbol key".
             # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
-            symbol_key = tuple(member.name.split('/')[:2])
+            symbol_key = tuple(member.name.split("/")[:2])
             key_to_symbol_keys[key_name] = symbol_key
             future_to_key[
                 executor.submit(
@@ -364,20 +333,18 @@ def upload_archive(request, upload_dir):
             file_upload = future.result()
             if file_upload:
                 file_uploads_created += 1
-                uploaded_symbol_keys.append(
-                    key_to_symbol_keys[file_upload.key]
-                )
+                uploaded_symbol_keys.append(key_to_symbol_keys[file_upload.key])
             else:
                 skipped_keys.append(future_to_key[future])
-                metrics.incr('upload_file_upload_skip', 1)
+                metrics.incr("upload_file_upload_skip", 1)
 
     if file_uploads_created:
-        logger.info(f'Created {file_uploads_created} FileUpload objects')
+        logger.info(f"Created {file_uploads_created} FileUpload objects")
         # If there were some file uploads, there will be some symbol keys
         # that we can send to a background task to invalidate.
         invalidate_symbolicate_cache_task.delay(uploaded_symbol_keys)
     else:
-        logger.info(f'No file uploads created for {upload_obj!r}')
+        logger.info(f"No file uploads created for {upload_obj!r}")
 
     Upload.objects.filter(id=upload_obj.id).update(
         skipped_keys=skipped_keys or None,
@@ -385,26 +352,23 @@ def upload_archive(request, upload_dir):
         completed_at=timezone.now(),
     )
 
-    metrics.incr('upload_uploads', tags=[f'try:{is_try_upload}'])
+    metrics.incr("upload_uploads", tags=[f"try:{is_try_upload}"])
 
-    return http.JsonResponse(
-        {'upload': _serialize_upload(upload_obj)},
-        status=201,
-    )
+    return http.JsonResponse({"upload": _serialize_upload(upload_obj)}, status=201)
 
 
 def _serialize_upload(upload):
     return {
-        'id': upload.id,
-        'size': upload.size,
-        'filename': upload.filename,
-        'bucket': upload.bucket_name,
-        'region': upload.bucket_region,
-        'download_url': upload.download_url,
-        'try_symbols': upload.try_symbols,
-        'redirect_urls': upload.redirect_urls or [],
-        'completed_at': upload.completed_at,
-        'created_at': upload.created_at,
-        'user': upload.user.email,
-        'skipped_keys': upload.skipped_keys or [],
+        "id": upload.id,
+        "size": upload.size,
+        "filename": upload.filename,
+        "bucket": upload.bucket_name,
+        "region": upload.bucket_region,
+        "download_url": upload.download_url,
+        "try_symbols": upload.try_symbols,
+        "redirect_urls": upload.redirect_urls or [],
+        "completed_at": upload.completed_at,
+        "created_at": upload.created_at,
+        "user": upload.user.email,
+        "skipped_keys": upload.skipped_keys or [],
     }

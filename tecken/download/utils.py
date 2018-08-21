@@ -11,51 +11,29 @@ from django.db import connection
 from tecken.download.models import MissingSymbol
 
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 
-@metrics.timer_decorator('download_store_missing_symbol')
-def store_missing_symbol(
-    symbol,
-    debugid,
-    filename,
-    code_file=None,
-    code_id=None,
-):
+@metrics.timer_decorator("download_store_missing_symbol")
+def store_missing_symbol(symbol, debugid, filename, code_file=None, code_id=None):
     # Ignore it if it's clearly some junk or too weird.
     if len(symbol) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (symbol ${len(symbol)} chars)'
-        )
+        logger.info(f"Ignoring log missing symbol (symbol ${len(symbol)} chars)")
         return
     if len(debugid) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (debugid ${len(debugid)} chars)'
-        )
+        logger.info(f"Ignoring log missing symbol (debugid ${len(debugid)} chars)")
         return
     if len(filename) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (filename ${len(filename)} chars)'
-        )
+        logger.info(f"Ignoring log missing symbol (filename ${len(filename)} chars)")
         return
     if code_file and len(code_file) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (code_file ${len(code_file)} chars)'
-        )
+        logger.info(f"Ignoring log missing symbol (code_file ${len(code_file)} chars)")
         return
     if code_id and len(code_id) > 150:
-        logger.info(
-            f'Ignoring log missing symbol (code_file ${len(code_id)} chars)'
-        )
+        logger.info(f"Ignoring log missing symbol (code_file ${len(code_id)} chars)")
         return
-    hash_ = MissingSymbol.make_md5_hash(
-        symbol,
-        debugid,
-        filename,
-        code_file,
-        code_id,
-    )
+    hash_ = MissingSymbol.make_md5_hash(symbol, debugid, filename, code_file, code_id)
     with connection.cursor() as cursor:
         cursor.execute(
             """
@@ -73,9 +51,13 @@ def store_missing_symbol(
             WHERE download_missingsymbol.hash = %s
             """,
             [
-                hash_, symbol, debugid, filename,
-                code_file or None, code_id or None,
-                hash_
-            ]
+                hash_,
+                symbol,
+                debugid,
+                filename,
+                code_file or None,
+                code_id or None,
+                hash_,
+            ],
         )
     return hash_

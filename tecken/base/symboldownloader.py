@@ -18,8 +18,8 @@ from django.conf import settings
 from tecken.s3 import S3Bucket
 
 
-logger = logging.getLogger('tecken')
-metrics = markus.get_metrics('tecken')
+logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 ITER_CHUNK_SIZE = 512
 
@@ -44,7 +44,7 @@ def iter_lines(stream, chunk_size=ITER_CHUNK_SIZE):
 
     pending = None
 
-    for chunk in iter(lambda: stream.read(chunk_size), b''):
+    for chunk in iter(lambda: stream.read(chunk_size), b""):
 
         if pending is not None:
             chunk = pending + chunk
@@ -64,7 +64,6 @@ def iter_lines(stream, chunk_size=ITER_CHUNK_SIZE):
 
 
 def set_time_took(method):
-
     @wraps(method)
     def wrapper(self, *args, **kwargs):
         t0 = time.time()
@@ -79,21 +78,14 @@ def set_time_took(method):
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     args_rewrite=lambda source, key: (source.name, key),
-    hit_callable=lambda *a, **k: metrics.incr(
-        'symboldownloader_exists_cache_hit', 1
-    ),
-    miss_callable=lambda *a, **k: metrics.incr(
-        'symboldownloader_exists_cache_miss', 1
-    ),
+    hit_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_hit", 1),
+    miss_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_miss", 1),
 )
-@metrics.timer_decorator('symboldownloader_exists')
+@metrics.timer_decorator("symboldownloader_exists")
 def exists_in_source(source, key):
-    response = source.s3_client.list_objects_v2(
-        Bucket=source.name,
-        Prefix=key,
-    )
-    for obj in response.get('Contents', []):
-        if obj['Key'] == key:
+    response = source.s3_client.list_objects_v2(Bucket=source.name, Prefix=key)
+    for obj in response.get("Contents", []):
+        if obj["Key"] == key:
             # It exists!
             return True
     return False
@@ -102,13 +94,13 @@ def exists_in_source(source, key):
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
     hit_callable=lambda *a, **k: metrics.incr(
-        'symboldownloader_public_exists_cache_hit', 1
+        "symboldownloader_public_exists_cache_hit", 1
     ),
     miss_callable=lambda *a, **k: metrics.incr(
-        'symboldownloader_public_exists_cache_miss', 1
+        "symboldownloader_public_exists_cache_miss", 1
     ),
 )
-@metrics.timer_decorator('symboldownloader_public_exists')
+@metrics.timer_decorator("symboldownloader_public_exists")
 def check_url_head(url):
     return requests.head(url).status_code == 200
 
@@ -169,7 +161,7 @@ class SymbolDownloader:
         self.file_prefix = file_prefix
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} urls={self.urls}>'
+        return f"<{self.__class__.__name__} urls={self.urls}>"
 
     def _get_sources(self):
         for url in self.urls:
@@ -197,24 +189,17 @@ class SymbolDownloader:
                 # But that function is wrapped and now has an extra
                 # function to "undoing" it.
                 exists_in_source.invalidate(
-                    source,
-                    self._make_key(prefix, symbol, debugid, filename),
+                    source, self._make_key(prefix, symbol, debugid, filename)
                 )
             else:
-                file_url = '{}/{}'.format(
-                    source.base_url,
-                    self._make_key(
-                        prefix,
-                        symbol,
-                        debugid,
-                        filename,
-                    )
+                file_url = "{}/{}".format(
+                    source.base_url, self._make_key(prefix, symbol, debugid, filename)
                 )
                 check_url_head.invalidate(file_url)
 
     @staticmethod
     def _make_key(prefix, symbol, debugid, filename):
-        return '{}/{}/{}/{}'.format(
+        return "{}/{}/{}/{}".format(
             prefix,
             symbol,
             # The are some legacy use case where the debug ID might
@@ -240,38 +225,22 @@ class SymbolDownloader:
                 # If it's a private bucket we use boto3.
 
                 key = self._make_key(prefix, symbol, debugid, filename)
-                if not exists_in_source(
-                    source, key, _refresh=refresh_cache
-                ):
+                if not exists_in_source(source, key, _refresh=refresh_cache):
                     continue
 
-                logger.debug(
-                    f'Looking for symbol file {key!r} in bucket {source.name}'
-                )
+                logger.debug(f"Looking for symbol file {key!r} in bucket {source.name}")
 
                 # It exists if we're still here
-                return {
-                    'bucket_name': source.name,
-                    'key': key,
-                    'source': source,
-                }
+                return {"bucket_name": source.name, "key": key, "source": source}
 
             else:
                 # We'll put together the URL manually
-                file_url = '{}/{}'.format(
-                    source.base_url,
-                    self._make_key(
-                        prefix,
-                        symbol,
-                        debugid,
-                        filename,
-                    )
+                file_url = "{}/{}".format(
+                    source.base_url, self._make_key(prefix, symbol, debugid, filename)
                 )
-                logger.debug(
-                    f'Looking for symbol file by URL {file_url!r}'
-                )
+                logger.debug(f"Looking for symbol file by URL {file_url!r}")
                 if check_url_head(file_url, _refresh=refresh_cache):
-                    return {'url': file_url, 'source': source}
+                    return {"url": file_url, "source": source}
 
     def _get_stream(self, symbol, debugid, filename):
         for source in self.sources:
@@ -282,7 +251,7 @@ class SymbolDownloader:
             if source.private:
                 # If it's a private bucket we use boto3.
 
-                key = '{}/{}/{}/{}'.format(
+                key = "{}/{}/{}/{}".format(
                     prefix,
                     symbol,
                     # The are some legacy use case where the debug ID might
@@ -291,38 +260,31 @@ class SymbolDownloader:
                     debugid.upper(),
                     filename,
                 )
-                logger.debug(
-                    f'Looking for symbol file {key!r} in bucket {source.name}'
-                )
+                logger.debug(f"Looking for symbol file {key!r} in bucket {source.name}")
 
                 try:
-                    with metrics.timer('symboldownloader_get_object'):
+                    with metrics.timer("symboldownloader_get_object"):
                         response = source.s3_client.get_object(
-                            Bucket=source.name,
-                            Key=key,
+                            Bucket=source.name, Key=key
                         )
-                    stream = response['Body']
+                    stream = response["Body"]
                     # But if the content encoding is gzip we have
                     # re-wrap the stream.
-                    if response.get('ContentEncoding') == 'gzip':
-                        with metrics.timer('symboldownloader_get_object_read'):
-                            body = response['Body'].read()
+                    if response.get("ContentEncoding") == "gzip":
+                        with metrics.timer("symboldownloader_get_object_read"):
+                            body = response["Body"].read()
                         bytestream = BytesIO(body)
-                        stream = GzipFile(None, 'rb', fileobj=bytestream)
+                        stream = GzipFile(None, "rb", fileobj=bytestream)
                     yield (source.name, key)
                     try:
                         for line in iter_lines(stream):
-                            yield line.decode('utf-8')
+                            yield line.decode("utf-8")
                         return
                     except OSError as exception:
-                        if 'Not a gzipped file' in str(exception):
+                        if "Not a gzipped file" in str(exception):
                             logger.warning(
-                                'OSError ({!r}) when downloading {}/{}'
-                                ''.format(
-                                    str(exception),
-                                    source.name,
-                                    key,
-                                )
+                                "OSError ({!r}) when downloading {}/{}"
+                                "".format(str(exception), source.name, key)
                             )
                             continue
                         # Who knows what other OSErrors might happen when
@@ -330,7 +292,7 @@ class SymbolDownloader:
                         raise  # pragma: no cover
 
                 except ClientError as exception:
-                    if exception.response['Error']['Code'] == 'NoSuchKey':
+                    if exception.response["Error"]["Code"] == "NoSuchKey":
                         # basically, a convuluted way of saying 404
                         continue
                     # Any other errors we're not yet aware of, proceeed
@@ -341,16 +303,10 @@ class SymbolDownloader:
                 # to download via HTTP.
 
                 # We'll put together the URL manually
-                file_url = '{}/{}/{}/{}/{}'.format(
-                    source.base_url,
-                    prefix,
-                    symbol,
-                    debugid.upper(),
-                    filename,
+                file_url = "{}/{}/{}/{}/{}".format(
+                    source.base_url, prefix, symbol, debugid.upper(), filename
                 )
-                logger.debug(
-                    f'Looking for symbol file by URL {file_url!r}'
-                )
+                logger.debug(f"Looking for symbol file by URL {file_url!r}")
                 response = requests.get(file_url, stream=True)
                 if response.status_code == 404:
                     # logger.warning('{} 404 Not Found'.format(file_url))
@@ -365,31 +321,26 @@ class SymbolDownloader:
                     # can't assume any encoding so it will be returned
                     # as a bytestring.
                     if not response.encoding:
-                        response.encoding = 'utf-8'
+                        response.encoding = "utf-8"
                     yield file_url
                     try:
                         for line in response.iter_lines():
                             # filter out keep-alive newlines
                             if line:
-                                line = line.decode('utf-8')
+                                line = line.decode("utf-8")
                                 yield line
                         # Stop the iterator
                         return
                     except requests.exceptions.ContentDecodingError as exc:
-                        logger.warning(
-                            f'{exc!r} when downloading {source}'
-                        )
+                        logger.warning(f"{exc!r} when downloading {source}")
                         continue
                 else:
-                    logger.warning('{} {} ({})'.format(
-                        source,
-                        response.status_code,
-                        response.content,
-                    ))
-                    raise SymbolDownloadError(
-                        response.status_code,
-                        str(source)
+                    logger.warning(
+                        "{} {} ({})".format(
+                            source, response.status_code, response.content
+                        )
                     )
+                    raise SymbolDownloadError(response.status_code, str(source))
 
         # All URLs exhausted
         raise SymbolNotFound(symbol, debugid, filename)
@@ -398,33 +349,26 @@ class SymbolDownloader:
     def has_symbol(self, symbol, debugid, filename, refresh_cache=False):
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
-        return bool(self._get(
-            symbol, debugid, filename, refresh_cache=refresh_cache,
-        ))
+        return bool(self._get(symbol, debugid, filename, refresh_cache=refresh_cache))
 
     @set_time_took
     def get_symbol_url(self, symbol, debugid, filename, refresh_cache=False):
         """return the redirect URL or None. If we return None
         it means we can't find the object in any of the URLs provided."""
-        found = self._get(
-            symbol, debugid, filename, refresh_cache=refresh_cache
-        )
+        found = self._get(symbol, debugid, filename, refresh_cache=refresh_cache)
         if found:
-            if 'url' in found:
-                return found['url']
+            if "url" in found:
+                return found["url"]
 
             # If a URL wasn't returned, the bucket it was found in
             # was not public.
-            bucket_name = found['bucket_name']
-            key = found['key']
+            bucket_name = found["bucket_name"]
+            key = found["key"]
             # generate_presigned_url() actually works for both private
             # and public buckets.
-            return found['source'].s3_client.generate_presigned_url(
-                'get_object',
-                Params={
-                    'Bucket': bucket_name,
-                    'Key': key,
-                },
+            return found["source"].s3_client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": bucket_name, "Key": key},
                 # Left commented-in to remind us of what the default is
                 # ExpiresIn=3600
             )

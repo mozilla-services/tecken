@@ -7,12 +7,6 @@ from django.urls import path
 from . import views
 
 
-app_name = 'upload'
+app_name = "upload"
 
-urlpatterns = [
-    path(
-        '',
-        views.upload_archive,
-        name='upload_archive'
-    ),
-]
+urlpatterns = [path("", views.upload_archive, name="upload_archive")]

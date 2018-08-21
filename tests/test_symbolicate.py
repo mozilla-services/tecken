@@ -21,7 +21,7 @@ from tecken.symbolicate.tasks import invalidate_symbolicate_cache
 
 
 SAMPLE_SYMBOL_CONTENT = {
-    'xul.sym': """
+    "xul.sym": """
 MODULE windows x86 44E4EC8C2F41492B9369D6B9A059577C2 xul.pdb
 INFO CODE_ID 54AF957E1B34000 xul.dll
 
@@ -33,7 +33,7 @@ FUNC 26791a 592 4 XREMain::XRE_mainRun()
 FUNC b2e3f7 2b4 4 XREMain::XRE_mainRun()
 FILE 3 FUNC and PUBLIC here but should be ignored
     """,
-    'wntdll.sym': """
+    "wntdll.sym": """
 MODULE windows x86 D74F79EB1F8D4A45ABCD2F476CCABACC2 wntdll.pdb
 
 PUBLIC 10070 10 KiUserCallbackExceptionHandler
@@ -43,7 +43,7 @@ PUBLIC 10174 0 KiRaiseUserExceptionDispatcher
 PUBLIC junk
 
     """,
-    'firefox.sym': """
+    "firefox.sym": """
 MODULE windows x86 9A8C8930C5E935E3B441CC9D6E72BB990 firefox.pdb
 
 FUNC eb0 699 0 main
@@ -84,7 +84,7 @@ PUBLIC 3330 0 _ZL4sTop
 PUBLIC 3338 0 _ZL10do_preload
 PUBLIC 3340 0 _ZL14xpcomFunctions
 
-    """
+    """,
 }
 
 
@@ -101,280 +101,289 @@ def reload_downloader(urls):
 
 def default_mock_api_call(self, operation_name, api_params):
     """Use when nothing weird with the boto gets is expected"""
-    if operation_name == 'GetObject':
-        filename = api_params['Key'].split('/')[-1]
+    if operation_name == "GetObject":
+        filename = api_params["Key"].split("/")[-1]
         if filename in SAMPLE_SYMBOL_CONTENT:
-            return {
-                'Body': BytesIO(
-                    SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
-                )
-            }
+            return {"Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))}
         raise NotImplementedError(api_params)
 
     raise NotImplementedError(operation_name)
 
 
 def test_symbolicate_v5_json_bad_inputs(client, json_poster):
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     response = client.get(url)
     assert response.status_code == 405
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # No request.body JSON at all
     response = client.post(url)
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Some request.body JSON but broken
-    response = json_poster(url, '{sqrt:-1}')
+    response = json_poster(url, "{sqrt:-1}")
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Technically valid JSON but not a dict
     response = json_poster(url, True)
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # A dict but empty
     response = json_poster(url, {})
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # A dict but 'jobs' key empty
-    response = json_poster(url, {'jobs': []})
+    response = json_poster(url, {"jobs": []})
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Not empty but the job lacks the required keys
-    response = json_poster(url, {'jobs': [{'stacks': []}]})
+    response = json_poster(url, {"jobs": [{"stacks": []}]})
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Both keys in the job but not lists
-    response = json_poster(url, {'jobs': [{
-        'stacks': 'string',
-        'memoryMap': [],
-    }]})
+    response = json_poster(url, {"jobs": [{"stacks": "string", "memoryMap": []}]})
     assert response.status_code == 400
-    assert response.json()['error']
-    response = json_poster(url, {'jobs': [{
-        'stacks': [],
-        'memoryMap': 'string',
-    }]})
+    assert response.json()["error"]
+    response = json_poster(url, {"jobs": [{"stacks": [], "memoryMap": "string"}]})
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # stacks is not a list of lists of lists
-    response = json_poster(url, {'jobs': [{
-        'stacks': [[0, 8057492], [1, 391014], [0, 52067355]],
-        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
-    }]})
+    response = json_poster(
+        url,
+        {
+            "jobs": [
+                {
+                    "stacks": [[0, 8057492], [1, 391014], [0, 52067355]],
+                    "memoryMap": [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+                }
+            ]
+        },
+    )
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
     # Same, but you're not using 'jobs'.
-    response = json_poster(url, {
-        'stacks': [[0, 8057492], [1, 391014], [0, 52067355]],
-        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
-    })
+    response = json_poster(
+        url,
+        {
+            "stacks": [[0, 8057492], [1, 391014], [0, 52067355]],
+            "memoryMap": [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+        },
+    )
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Stacks is a list of lists of lists of 3 items.
-    response = json_poster(url, {'jobs': [{
-        'stacks': [[[0, 8057492, 10000]]],
-        'memoryMap': [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
-    }]})
+    response = json_poster(
+        url,
+        {
+            "jobs": [
+                {
+                    "stacks": [[[0, 8057492, 10000]]],
+                    "memoryMap": [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
+                }
+            ]
+        },
+    )
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # The module name is too longself.
-    response = json_poster(url, {'jobs': [{
-        'stacks': [[[0, 11723767]]],
-        'memoryMap': [
-            ['0' * 1025, '44E4EC8C2F41492B9369D6B9A059577C2'],
-        ],
-    }]})
+    response = json_poster(
+        url,
+        {
+            "jobs": [
+                {
+                    "stacks": [[[0, 11723767]]],
+                    "memoryMap": [["0" * 1025, "44E4EC8C2F41492B9369D6B9A059577C2"]],
+                }
+            ]
+        },
+    )
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Valid JSON but empty/missing debugID
-    response = json_poster(url, {'jobs': [{
-        'stacks': [[[0, 11723767]]],
-        'memoryMap': [
-            ['xul.pdb', ''],
-        ],
-    }]})
+    response = json_poster(
+        url, {"jobs": [{"stacks": [[[0, 11723767]]], "memoryMap": [["xul.pdb", ""]]}]}
+    )
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Module name contains null byte.
-    response = json_poster(url, {'jobs': [{
-        'stacks': [[[0, 11723767]]],
-        'memoryMap': [
-            ['firefox\x00', '44E4EC8C2F41492B9369D6B9A059577C2'],
-        ],
-    }]})
+    response = json_poster(
+        url,
+        {
+            "jobs": [
+                {
+                    "stacks": [[[0, 11723767]]],
+                    "memoryMap": [["firefox\x00", "44E4EC8C2F41492B9369D6B9A059577C2"]],
+                }
+            ]
+        },
+    )
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
 
 def test_symbolicate_v4_json_bad_inputs(client, json_poster):
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     response = client.get(url)
     assert response.status_code == 405
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # No request.body JSON at all
     response = client.post(url)
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Some request.body JSON but broken
-    response = json_poster(url, '{sqrt:-1}')
+    response = json_poster(url, "{sqrt:-1}")
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Technically valid JSON but not a dict
     response = json_poster(url, True)
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # A dict but empty
     response = json_poster(url, {})
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
     # Valid JSON input but wrong version number
-    response = json_poster(url, {
-        'stacks': [],
-        'memoryMap': [],
-        'version': 999,
-    })
+    response = json_poster(url, {"stacks": [], "memoryMap": [], "version": 999})
     assert response.status_code == 400
-    assert response.json()['error']
+    assert response.json()["error"]
 
 
-def test_client_happy_path_v5(
-    json_poster,
-    clear_redis_store,
-    botomock,
-    metricsmock,
-):
-    reload_downloader('https://s3.example.com/public/prefix/')
+def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsmock):
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    count_cache_key = views.get_symbolication_count_key(
-        'v5',
-        timezone.now(),
-    )
+    count_cache_key = views.get_symbolication_count_key("v5", timezone.now())
     symbolication_count = cache.get(count_cache_key, 0)
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
         job = {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
             ],
         }
-        response = json_poster(url, {'jobs': [job]})
+        response = json_poster(url, {"jobs": [job]})
     assert response.status_code == 200
     result = response.json()
-    assert len(result['results']) == 1
-    result1 = result['results'][0]
-    assert result1['stacks'] == [
+    assert len(result["results"]) == 1
+    result1 = result["results"][0]
+    assert result1["stacks"] == [
         [
             {
                 "module_offset": "0xb2e3f7",
                 "module": "xul.pdb",
                 "frame": 0,
                 "function": "XREMain::XRE_mainRun()",
-                "function_offset": "0x0"
+                "function_offset": "0x0",
             },
             {
                 "module_offset": "0x1010a",
                 "module": "wntdll.pdb",
                 "frame": 1,
                 "function": "KiUserCallbackDispatcher",
-                "function_offset": "0x2e"
-            }
+                "function_offset": "0x2e",
+            },
         ]
     ]
-    assert result1['found_modules'] == {
-        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
-        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': True,
+    assert result1["found_modules"] == {
+        "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
+        "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": True,
     }
 
-    assert response['Access-Control-Allow-Origin'] == '*'
+    assert response["Access-Control-Allow-Origin"] == "*"
 
     metrics_records = metricsmock.get_records()
     metricsmock.print_records()
     assert metrics_records[0] == (
-        INCR, 'tecken.symbolicate_symbolication', 1, ['version:v5']
+        INCR,
+        "tecken.symbolicate_symbolication",
+        1,
+        ["version:v5"],
     )
     assert metrics_records[1] == (
-        INCR, 'tecken.symbolicate_symbolication_jobs', 1, ['version:v5']
+        INCR,
+        "tecken.symbolicate_symbolication_jobs",
+        1,
+        ["version:v5"],
     )
     assert metrics_records[2] == (
-        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
+        INCR,
+        "tecken.symbolicate_symbol_key",
+        1,
+        ["cache:miss"],
     )
     assert metrics_records[3] == (
-        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
+        INCR,
+        "tecken.symbolicate_symbol_key",
+        1,
+        ["cache:miss"],
     )
 
     # The reason these numbers are hardcoded is because we know
     # predictable that the size of the pickled symbol map strings.
-    metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 76)
-    metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 165)
+    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 76)
+    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 165)
 
     # Since the amount of memory configured and used in the Redis
     # store, we can't use metricsmock.has_record()
     memory_gauges = [
-        record for record in metrics_records
-        if record[0] == GAUGE and 'used_memory' in record[1]
+        record
+        for record in metrics_records
+        if record[0] == GAUGE and "used_memory" in record[1]
     ]
     assert len(memory_gauges) == 2
 
     # Called the first time it had to do a symbol store
-    metricsmock.has_record(GAUGE, 'tecken.store_keys', 1, None)
+    metricsmock.has_record(GAUGE, "tecken.store_keys", 1, None)
     # Called twice because this test depends on downloading two symbols
-    metricsmock.has_record(GAUGE, 'tecken.store_keys', 2, None)
+    metricsmock.has_record(GAUGE, "tecken.store_keys", 2, None)
 
     symbolication_count_after = cache.get(count_cache_key)
     assert symbolication_count_after == symbolication_count + 1
 
 
 def test_client_happy_path_v5_with_debug(
-    json_poster,
-    clear_redis_store,
-    botomock,
-    metricsmock,
+    json_poster, clear_redis_store, botomock, metricsmock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
         job = {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
             ],
         }
-        response = json_poster(url, {'jobs': [job]}, debug=True)
+        response = json_poster(url, {"jobs": [job]}, debug=True)
     result = response.json()
-    assert len(result['results']) == 1
-    result1 = result['results'][0]
+    assert len(result["results"]) == 1
+    result1 = result["results"][0]
     # There are other tests that do a better job of testing the debug
     # content.
-    assert result1['debug']
+    assert result1["debug"]
 
 
 def test_client_happy_path_v5_with_m_prefix(
-    json_poster,
-    clear_redis_store,
-    botomock,
-    metricsmock,
+    json_poster, clear_redis_store, botomock, metricsmock
 ):
     """The origins of this is that in
     https://bugzilla.mozilla.org/show_bug.cgi?id=1470092 a change was made
@@ -391,225 +400,225 @@ def test_client_happy_path_v5_with_m_prefix(
 
     We need to make sure we support both.
     """
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
         """Hack the fixture (strings) so they contain the 'm' prefix."""
+
         def replace(s):
             return s.replace(
-                'FUNC 26791a 592 4 XREMain::XRE_mainRun()',
-                'FUNC m 26791a 592 4 XREMain::XRE_mainRun()',
+                "FUNC 26791a 592 4 XREMain::XRE_mainRun()",
+                "FUNC m 26791a 592 4 XREMain::XRE_mainRun()",
             ).replace(
-                'PUBLIC 100dc c KiUserCallbackDispatcher',
-                'PUBLIC m 100dc c KiUserCallbackDispatcher'
+                "PUBLIC 100dc c KiUserCallbackDispatcher",
+                "PUBLIC m 100dc c KiUserCallbackDispatcher",
             )
 
         content = copy.deepcopy(SAMPLE_SYMBOL_CONTENT)
-        content['xul.sym'] = replace(content['xul.sym'])
-        content['wntdll.sym'] = replace(content['wntdll.sym'])
+        content["xul.sym"] = replace(content["xul.sym"])
+        content["wntdll.sym"] = replace(content["wntdll.sym"])
 
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
             if filename in content:
-                return {
-                    'Body': BytesIO(
-                        content[filename].encode('utf-8')
-                    )
-                }
+                return {"Body": BytesIO(content[filename].encode("utf-8"))}
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(mock_api_call):
         job = {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
             ],
         }
-        response = json_poster(url, {'jobs': [job]})
+        response = json_poster(url, {"jobs": [job]})
     result = response.json()
-    assert len(result['results']) == 1
-    result1 = result['results'][0]
-    assert list(result1['found_modules'].values()) == [True, True]
-    stack1, stack2 = result1['stacks'][0]
-    assert stack1['function'] == 'XREMain::XRE_mainRun()'
-    assert stack2['function'] == 'KiUserCallbackDispatcher'
+    assert len(result["results"]) == 1
+    result1 = result["results"][0]
+    assert list(result1["found_modules"].values()) == [True, True]
+    stack1, stack2 = result1["stacks"][0]
+    assert stack1["function"] == "XREMain::XRE_mainRun()"
+    assert stack2["function"] == "KiUserCallbackDispatcher"
 
 
 def test_v5_first_download_address_missing(
-    json_poster,
-    clear_redis_store,
-    botomock,
-    metricsmock,
+    json_poster, clear_redis_store, botomock, metricsmock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
-    url = reverse('symbolicate:symbolicate_v5_json')
+    reload_downloader("https://s3.example.com/public/prefix/")
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
         job = {
-            'stacks': [[[0, 65648], [1, 11723767], [0, 65907]]],
-            'memoryMap': [
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2'],
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
+            "stacks": [[[0, 65648], [1, 11723767], [0, 65907]]],
+            "memoryMap": [
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
             ],
         }
-        response = json_poster(url, {'jobs': [job]})
+        response = json_poster(url, {"jobs": [job]})
     assert response.status_code == 200
     result = response.json()
-    assert len(result['results']) == 1
-    result1 = result['results'][0]
-    assert result1['stacks'] == [
+    assert len(result["results"]) == 1
+    result1 = result["results"][0]
+    assert result1["stacks"] == [
         [
             {
-                'frame': 0,
-                'function': 'KiUserCallbackExceptionHandler',
-                'function_offset': '0x0',
-                'module': 'wntdll.pdb',
-                'module_offset': '0x10070'
+                "frame": 0,
+                "function": "KiUserCallbackExceptionHandler",
+                "function_offset": "0x0",
+                "module": "wntdll.pdb",
+                "module_offset": "0x10070",
             },
             {
-                'frame': 1,
-                'function': 'XREMain::XRE_mainRun()',
-                'function_offset': '0x0',
-                'module': 'xul.pdb',
-                'module_offset': '0xb2e3f7'
+                "frame": 1,
+                "function": "XREMain::XRE_mainRun()",
+                "function_offset": "0x0",
+                "module": "xul.pdb",
+                "module_offset": "0xb2e3f7",
             },
             {
-                'frame': 2,
-                'function': 'KiUserExceptionDispatcher',
-                'function_offset': '0x4f',
-                'module': 'xul.pdb',
-                'module_offset': '0x10173'
-            }
+                "frame": 2,
+                "function": "KiUserExceptionDispatcher",
+                "function_offset": "0x4f",
+                "module": "xul.pdb",
+                "module_offset": "0x10173",
+            },
         ]
     ]
-    assert result1['found_modules'] == {
-        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
-        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': True,
+    assert result1["found_modules"] == {
+        "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
+        "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": True,
     }
 
 
 def test_client_happy_path_v4(
-    json_poster,
-    clear_redis_store,
-    requestsmock,
-    metricsmock,
+    json_poster, clear_redis_store, requestsmock, metricsmock
 ):
     # XXX Stop using the public downloader.
-    reload_downloader(
-        'https://s3.example.com/public/prefix/?access=public',
+    reload_downloader("https://s3.example.com/public/prefix/?access=public")
+    requestsmock.get(
+        "https://s3.example.com/public/prefix/v0/xul.pdb/"
+        "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        text=SAMPLE_SYMBOL_CONTENT["xul.sym"],
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/xul.pdb/'
-        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
-    )
-    requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
-        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+        "https://s3.example.com/public/prefix/v0/wntdll.pdb/"
+        "D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym",
+        text=SAMPLE_SYMBOL_CONTENT["wntdll.sym"],
     )
 
-    url = reverse('symbolicate:symbolicate_v4_json')
-    response = json_poster(url, {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-        ],
-        'version': 4,
-    })
+    url = reverse("symbolicate:symbolicate_v4_json")
+    response = json_poster(
+        url,
+        {
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+            "version": 4,
+        },
+    )
     result = response.json()
-    assert result['knownModules'] == [True, True]
-    assert result['symbolicatedStacks'] == [
+    assert result["knownModules"] == [True, True]
+    assert result["symbolicatedStacks"] == [
         [
-            'XREMain::XRE_mainRun() (in xul.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)'
+            "XREMain::XRE_mainRun() (in xul.pdb)",
+            "KiUserCallbackDispatcher (in wntdll.pdb)",
         ]
     ]
 
-    assert response['Access-Control-Allow-Origin'] == '*'
+    assert response["Access-Control-Allow-Origin"] == "*"
 
     metrics_records = metricsmock.get_records()
     assert metrics_records[0] == (
-        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
+        INCR,
+        "tecken.symbolicate_symbol_key",
+        1,
+        ["cache:miss"],
     )
     assert metrics_records[1] == (
-        INCR, 'tecken.symbolicate_symbol_key', 1, ['cache:miss']
+        INCR,
+        "tecken.symbolicate_symbol_key",
+        1,
+        ["cache:miss"],
     )
 
     # The reason these numbers are hardcoded is because we know
     # predictable that the size of the pickled symbol map strings.
-    metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 76)
-    metricsmock.has_record(GAUGE, 'tecken.storing_symbol', 165)
+    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 76)
+    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 165)
 
     # Since the amount of memory configured and used in the Redis
     # store, we can't use metricsmock.has_record()
     memory_gauges = [
-        record for record in metrics_records
-        if record[0] == GAUGE and 'used_memory' in record[1]
+        record
+        for record in metrics_records
+        if record[0] == GAUGE and "used_memory" in record[1]
     ]
     assert len(memory_gauges) == 2
 
     # Called the first time it had to do a symbol store
-    metricsmock.has_record(GAUGE, 'tecken.store_keys', 1, None)
+    metricsmock.has_record(GAUGE, "tecken.store_keys", 1, None)
     # Called twice because this test depends on downloading two symbols
-    metricsmock.has_record(GAUGE, 'tecken.store_keys', 2, None)
+    metricsmock.has_record(GAUGE, "tecken.store_keys", 2, None)
 
 
 def test_symbolicate_through_root_gone(json_poster):
     # You *used* to be able to do a v4 symbolication using /.
     # That's deprecated now.
     # Because of a legacy we want this to be possible on the / endpoint
-    response = json_poster(reverse('dashboard'), {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-        ],
-        'version': 4,
-    })
+    response = json_poster(
+        reverse("dashboard"),
+        {
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+            "version": 4,
+        },
+    )
     assert response.status_code == 410  # Gone
 
 
-def test_symbolicate_v4_json_one_cache_lookup(
-    json_poster,
-    clear_redis_store,
-    botomock,
-):
-    reload_downloader('https://s3.example.com/public/prefix/')
+def test_symbolicate_v4_json_one_cache_lookup(json_poster, clear_redis_store, botomock):
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     with botomock(default_mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802], [1, 55802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        }, debug=True)
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802], [1, 55802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+            debug=True,
+        )
     result = response.json()
-    assert result['knownModules'] == [True, True]
-    assert result['symbolicatedStacks'] == [
+    assert result["knownModules"] == [True, True]
+    assert result["symbolicatedStacks"] == [
         [
-            'XREMain::XRE_mainRun() (in xul.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)',
-            'KiRaiseUserExceptionDispatcher (in wntdll.pdb)',
+            "XREMain::XRE_mainRun() (in xul.pdb)",
+            "KiUserCallbackDispatcher (in wntdll.pdb)",
+            "KiRaiseUserExceptionDispatcher (in wntdll.pdb)",
         ]
     ]
-    assert result['debug']['downloads']['count'] == 2
+    assert result["debug"]["downloads"]["count"] == 2
     # 'xul.pdb' is needed once, 'wntdll.pdb' is needed twice
     # but it should only require 1 cache lookup.
-    assert result['debug']['cache_lookups']['count'] == 2
+    assert result["debug"]["cache_lookups"]["count"] == 2
 
 
 def test_symbolicate_v4_json_lru_causing_mischief(
-    json_poster,
-    clear_redis_store,
-    requestsmock
+    json_poster, clear_redis_store, requestsmock
 ):
     """Warning! This test is quite fragile.
     It runs the symbolication twice. After the first run, the test
@@ -620,56 +629,63 @@ def test_symbolicate_v4_json_lru_causing_mischief(
     """
 
     # XXX Stop using the public downloader.
-    reload_downloader(
-        'https://s3.example.com/public/prefix/?access=public',
+    reload_downloader("https://s3.example.com/public/prefix/?access=public")
+    requestsmock.get(
+        "https://s3.example.com/public/prefix/v0/xul.pdb/"
+        "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        text=SAMPLE_SYMBOL_CONTENT["xul.sym"],
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/xul.pdb/'
-        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        "https://s3.example.com/public/prefix/v0/wntdll.pdb/"
+        "D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym",
+        text=SAMPLE_SYMBOL_CONTENT["wntdll.sym"],
     )
-    requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
-        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    url = reverse("symbolicate:symbolicate_v4_json")
+    response = json_poster(
+        url,
+        {
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+            "version": 4,
+        },
+        debug=True,
     )
-    url = reverse('symbolicate:symbolicate_v4_json')
-    response = json_poster(url, {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-        ],
-        'version': 4,
-    }, debug=True)
     result = response.json()
-    assert result['knownModules'] == [True, True]
-    assert result['symbolicatedStacks'] == [
+    assert result["knownModules"] == [True, True]
+    assert result["symbolicatedStacks"] == [
         [
-            'XREMain::XRE_mainRun() (in xul.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)',
+            "XREMain::XRE_mainRun() (in xul.pdb)",
+            "KiUserCallbackDispatcher (in wntdll.pdb)",
         ]
     ]
-    assert result['debug']['downloads']['count'] == 2
-    assert result['debug']['cache_lookups']['count'] == 2
+    assert result["debug"]["downloads"]["count"] == 2
+    assert result["debug"]["cache_lookups"]["count"] == 2
 
     # Pretend the LRU evicted the 'xul.pdb/...' hashmap.
-    store = caches['store']
+    store = caches["store"]
     hashmap_key, = [
-        key for key in store.iter_keys('*')
-        if not key.endswith(':keys') and 'xul.pdb' in key
+        key
+        for key in store.iter_keys("*")
+        if not key.endswith(":keys") and "xul.pdb" in key
     ]
     assert store.delete(hashmap_key)
 
     # Same symbolication one more time
-    response = json_poster(url, {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-        ],
-        'version': 4,
-    }, debug=True)
+    response = json_poster(
+        url,
+        {
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+            "version": 4,
+        },
+        debug=True,
+    )
     result_second = response.json()
     # symbolicator = views.SymbolicateJSON(debug=True)
     # result_second = symbolicator.symbolicate(
@@ -681,654 +697,621 @@ def test_symbolicate_v4_json_lru_causing_mischief(
     #     ],
     # )
     # Because the xul.pdb symbol had to be downloaded again
-    assert result_second['debug']['downloads']['count'] == 1
+    assert result_second["debug"]["downloads"]["count"] == 1
 
 
 def test_symbolicate_v4_json_bad_module_indexes(
-    json_poster,
-    clear_redis_store,
-    requestsmock
+    json_poster, clear_redis_store, requestsmock
 ):
     # XXX Stop using the public downloader.
-    reload_downloader(
-        'https://s3.example.com/public/prefix/?access=public',
+    reload_downloader("https://s3.example.com/public/prefix/?access=public")
+    requestsmock.get(
+        "https://s3.example.com/public/prefix/v0/xul.pdb/"
+        "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        text=SAMPLE_SYMBOL_CONTENT["xul.sym"],
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/xul.pdb/'
-        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        "https://s3.example.com/public/prefix/v0/wntdll.pdb/"
+        "D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym",
+        text=SAMPLE_SYMBOL_CONTENT["wntdll.sym"],
     )
-    requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
-        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-        text=SAMPLE_SYMBOL_CONTENT['wntdll.sym']
+    url = reverse("symbolicate:symbolicate_v4_json")
+    response = json_poster(
+        url,
+        {
+            "stacks": [[[-1, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+            "version": 4,
+        },
     )
-    url = reverse('symbolicate:symbolicate_v4_json')
-    response = json_poster(url, {
-        'stacks': [[[-1, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-        ],
-        'version': 4,
-    })
     result = response.json()
-    assert result['knownModules'] == [None, True]
-    assert result['symbolicatedStacks'] == [
-        [
-            f'{hex(11723767)} (in wntdll.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)'
-        ]
+    assert result["knownModules"] == [None, True]
+    assert result["symbolicatedStacks"] == [
+        [f"{hex(11723767)} (in wntdll.pdb)", "KiUserCallbackDispatcher (in wntdll.pdb)"]
     ]
 
 
 def test_symbolicate_v4_json_bad_module_offset(
-    json_poster,
-    clear_redis_store,
-    botomock
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     with botomock(default_mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[-1, 1.00000000], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        })
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[-1, 1.00000000], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+        )
     result = response.json()
     assert response.status_code == 400
-    assert result['error']
+    assert result["error"]
 
 
 def test_symbolicate_v5_json_bad_module_offset(
-    json_poster,
-    clear_redis_store,
-    botomock
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[-1, 1.00000000], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        })
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[-1, 1.00000000], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+            },
+        )
     assert response.status_code == 400
     result = response.json()
-    assert result['error']
+    assert result["error"]
 
 
 def test_symbolicate_v4_json_happy_path_with_debug(
-    json_poster,
-    clear_redis_store,
-    botomock,
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     with botomock(default_mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        }, debug=True)
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+            debug=True,
+        )
     result = response.json()
-    assert result['knownModules'] == [True, True]
-    assert result['symbolicatedStacks'] == [
+    assert result["knownModules"] == [True, True]
+    assert result["symbolicatedStacks"] == [
         [
-            'XREMain::XRE_mainRun() (in xul.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)'
+            "XREMain::XRE_mainRun() (in xul.pdb)",
+            "KiUserCallbackDispatcher (in wntdll.pdb)",
         ]
     ]
-    assert result['debug']['stacks']['count'] == 2
-    assert result['debug']['stacks']['real'] == 2
-    assert result['debug']['time'] > 0.0
+    assert result["debug"]["stacks"]["count"] == 2
+    assert result["debug"]["stacks"]["real"] == 2
+    assert result["debug"]["time"] > 0.0
     # One cache lookup was attempted
-    assert result['debug']['cache_lookups']['count'] == 2
-    assert result['debug']['cache_lookups']['time'] > 0.0
-    assert result['debug']['downloads']['count'] == 2
-    assert result['debug']['downloads']['size'] > 0.0
-    assert result['debug']['downloads']['time'] > 0.0
-    assert result['debug']['modules']['count'] == 2
-    assert result['debug']['modules']['stacks_per_module'] == {
-        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': 1,
-        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': 1,
+    assert result["debug"]["cache_lookups"]["count"] == 2
+    assert result["debug"]["cache_lookups"]["time"] > 0.0
+    assert result["debug"]["downloads"]["count"] == 2
+    assert result["debug"]["downloads"]["size"] > 0.0
+    assert result["debug"]["downloads"]["time"] > 0.0
+    assert result["debug"]["modules"]["count"] == 2
+    assert result["debug"]["modules"]["stacks_per_module"] == {
+        "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": 1,
+        "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": 1,
     }
 
     # Look it up again, and this time the debug should indicate that
     # we drew from the cache.
     with botomock(default_mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        }, debug=True)
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+            debug=True,
+        )
     result = response.json()
-    assert result['knownModules'] == [True, True]
-    assert result['symbolicatedStacks'] == [
+    assert result["knownModules"] == [True, True]
+    assert result["symbolicatedStacks"] == [
         [
-            'XREMain::XRE_mainRun() (in xul.pdb)',
-            'KiUserCallbackDispatcher (in wntdll.pdb)'
+            "XREMain::XRE_mainRun() (in xul.pdb)",
+            "KiUserCallbackDispatcher (in wntdll.pdb)",
         ]
     ]
-    assert result['debug']['stacks']['real'] == 2
-    assert result['debug']['stacks']['count'] == 2
-    assert result['debug']['time'] > 0.0
-    assert result['debug']['cache_lookups']['count'] == 5
-    assert result['debug']['cache_lookups']['time'] > 0.0
-    assert result['debug']['downloads']['count'] == 0
-    assert result['debug']['downloads']['size'] == 0.0
-    assert result['debug']['downloads']['time'] == 0.0
+    assert result["debug"]["stacks"]["real"] == 2
+    assert result["debug"]["stacks"]["count"] == 2
+    assert result["debug"]["time"] > 0.0
+    assert result["debug"]["cache_lookups"]["count"] == 5
+    assert result["debug"]["cache_lookups"]["time"] > 0.0
+    assert result["debug"]["downloads"]["count"] == 0
+    assert result["debug"]["downloads"]["size"] == 0.0
+    assert result["debug"]["downloads"]["time"] == 0.0
 
 
 def test_symbolicate_v4_json_one_symbol_not_found_with_debug(
-    json_poster,
-    clear_redis_store,
-    botomock,
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
-            if filename == 'wntdll.sym':
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
+            if filename == "wntdll.sym":
                 parsed_response = {
-                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                    "Error": {"Code": "NoSuchKey", "Message": "Not found"}
                 }
                 raise ClientError(parsed_response, operation_name)
             if filename in SAMPLE_SYMBOL_CONTENT:
                 return {
-                    'Body': BytesIO(
-                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
-                    )
+                    "Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))
                 }
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     with botomock(mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        }, debug=True)
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+            debug=True,
+        )
     result = response.json()
     # It should work but because only 1 file could be downloaded,
     # there'll be no measurement of the one that 404 failed.
-    assert result['debug']['downloads']['count'] == 1
+    assert result["debug"]["downloads"]["count"] == 1
 
 
 def test_symbolicate_v5_json_one_symbol_not_found(
-    json_poster,
-    clear_redis_store,
-    botomock,
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
-            if filename == 'wntdll.sym':
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
+            if filename == "wntdll.sym":
                 parsed_response = {
-                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                    "Error": {"Code": "NoSuchKey", "Message": "Not found"}
                 }
                 raise ClientError(parsed_response, operation_name)
             if filename in SAMPLE_SYMBOL_CONTENT:
                 return {
-                    'Body': BytesIO(
-                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
-                    )
+                    "Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))
                 }
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        })
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+            },
+        )
     result = response.json()
-    result1, = result['results']
-    assert result1['found_modules'] == {
-        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
-        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': False,
+    result1, = result["results"]
+    assert result1["found_modules"] == {
+        "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
+        "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": False,
     }
 
 
 def test_symbolicate_v5_json_one_symbol_never_looked_up(
-    json_poster,
-    clear_redis_store,
-    botomock,
+    json_poster, clear_redis_store, botomock
 ):
     """What if you say you have 2 modules in your memory map but you never
     reference one of them. In that case the module is neither found or
     not found."""
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
-            if filename == 'wntdll.sym':
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
+            if filename == "wntdll.sym":
                 parsed_response = {
-                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                    "Error": {"Code": "NoSuchKey", "Message": "Not found"}
                 }
                 raise ClientError(parsed_response, operation_name)
             if filename in SAMPLE_SYMBOL_CONTENT:
                 return {
-                    'Body': BytesIO(
-                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
-                    )
+                    "Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))
                 }
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(mock_api_call):
-        response = json_poster(url, {
-            # Note! We never use a module index of 1 to point to the
-            # second module in the memoryMap.
-            'stacks': [[[0, 11723767], [0, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-        })
+        response = json_poster(
+            url,
+            {
+                # Note! We never use a module index of 1 to point to the
+                # second module in the memoryMap.
+                "stacks": [[[0, 11723767], [0, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+            },
+        )
     result = response.json()
-    result1, = result['results']
-    assert result1['found_modules'] == {
-        'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2': True,
-        'wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2': None,
+    result1, = result["results"]
+    assert result1["found_modules"] == {
+        "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
+        "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": None,
     }
 
 
-def test_symbolicate_v4_json_one_symbol_empty(
-    json_poster,
-    clear_redis_store,
-    botomock,
-):
-    reload_downloader('https://s3.example.com/public/prefix/')
+def test_symbolicate_v4_json_one_symbol_empty(json_poster, clear_redis_store, botomock):
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
-            if filename == 'wntdll.sym':
-                return {
-                    'Body': BytesIO(b'')
-                }
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
+            if filename == "wntdll.sym":
+                return {"Body": BytesIO(b"")}
             if filename in SAMPLE_SYMBOL_CONTENT:
                 return {
-                    'Body': BytesIO(
-                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
-                    )
+                    "Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))
                 }
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     with botomock(mock_api_call):
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        }, debug=True)
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+            debug=True,
+        )
     result = response.json()
-    assert result['knownModules'] == [True, False]
-    assert result['symbolicatedStacks'] == [
-        [
-            'XREMain::XRE_mainRun() (in xul.pdb)',
-            '0x1010a (in wntdll.pdb)'
-        ]
+    assert result["knownModules"] == [True, False]
+    assert result["symbolicatedStacks"] == [
+        ["XREMain::XRE_mainRun() (in xul.pdb)", "0x1010a (in wntdll.pdb)"]
     ]
-    assert result['debug']['downloads']['count'] == 2
+    assert result["debug"]["downloads"]["count"] == 2
 
     # Run it again, and despite that we failed to cache the second
     # symbol failed, that failure should be "cached".
-    response = json_poster(url, {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-        ],
-        'version': 4,
-    }, debug=True)
+    response = json_poster(
+        url,
+        {
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+            "version": 4,
+        },
+        debug=True,
+    )
     result = response.json()
-    assert result['debug']['downloads']['count'] == 0
+    assert result["debug"]["downloads"]["count"] == 0
 
 
 def test_symbolicate_public_bucket_one_symbol_500_error(
-    json_poster,
-    clear_redis_store,
-    requestsmock,
+    json_poster, clear_redis_store, requestsmock
 ):
-    reload_downloader(
-        'https://s3.example.com/public/prefix/?access=public',
-    )
+    reload_downloader("https://s3.example.com/public/prefix/?access=public")
 
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/xul.pdb/'
-        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        "https://s3.example.com/public/prefix/v0/xul.pdb/"
+        "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        text=SAMPLE_SYMBOL_CONTENT["xul.sym"],
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
-        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-        text='Interval Server Error',
-        status_code=500
+        "https://s3.example.com/public/prefix/v0/wntdll.pdb/"
+        "D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym",
+        text="Interval Server Error",
+        status_code=500,
     )
-    url = reverse('symbolicate:symbolicate_v4_json')
+    url = reverse("symbolicate:symbolicate_v4_json")
     with pytest.raises(SymbolDownloadError):
-        json_poster(url, {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
-            ],
-            'version': 4,
-        })
+        json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767], [1, 65802]]],
+                "memoryMap": [
+                    ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                    ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ],
+                "version": 4,
+            },
+        )
 
 
 def test_symbolicate_public_bucket_one_symbol_sslerror(
-    json_poster,
-    clear_redis_store,
-    requestsmock,
+    json_poster, clear_redis_store, requestsmock
 ):
-    reload_downloader(
-        'https://s3.example.com/public/prefix/?access=public',
+    reload_downloader("https://s3.example.com/public/prefix/?access=public")
+    requestsmock.get(
+        "https://s3.example.com/public/prefix/v0/xul.pdb/"
+        "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        text=SAMPLE_SYMBOL_CONTENT["xul.sym"],
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/xul.pdb/'
-        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        "https://s3.example.com/public/prefix/v0/wntdll.pdb/"
+        "D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym",
+        exc=requests.exceptions.SSLError,
     )
-    requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
-        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-        exc=requests.exceptions.SSLError
-    )
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     job = {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        "stacks": [[[0, 11723767], [1, 65802]]],
+        "memoryMap": [
+            ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+            ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
         ],
     }
-    response = json_poster(url, {'jobs': [job]})
+    response = json_poster(url, {"jobs": [job]})
     assert response.status_code == 503
 
-    url = reverse('symbolicate:symbolicate_v4_json')
-    job['version'] = 4
+    url = reverse("symbolicate:symbolicate_v4_json")
+    job["version"] = 4
     response = json_poster(url, job)
     assert response.status_code == 503
 
 
 def test_symbolicate_public_bucket_one_symbol_readtimeout(
-    json_poster,
-    clear_redis_store,
-    requestsmock
+    json_poster, clear_redis_store, requestsmock
 ):
-    reload_downloader(
-        'https://s3.example.com/public/prefix/?access=public',
+    reload_downloader("https://s3.example.com/public/prefix/?access=public")
+    requestsmock.get(
+        "https://s3.example.com/public/prefix/v0/xul.pdb/"
+        "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        text=SAMPLE_SYMBOL_CONTENT["xul.sym"],
     )
     requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/xul.pdb/'
-        '44E4EC8C2F41492B9369D6B9A059577C2/xul.sym',
-        text=SAMPLE_SYMBOL_CONTENT['xul.sym']
+        "https://s3.example.com/public/prefix/v0/wntdll.pdb/"
+        "D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym",
+        exc=requests.exceptions.ReadTimeout,
     )
-    requestsmock.get(
-        'https://s3.example.com/public/prefix/v0/wntdll.pdb/'
-        'D74F79EB1F8D4A45ABCD2F476CCABACC2/wntdll.sym',
-        exc=requests.exceptions.ReadTimeout
-    )
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     job = {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        "stacks": [[[0, 11723767], [1, 65802]]],
+        "memoryMap": [
+            ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+            ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
         ],
     }
-    response = json_poster(url, {'jobs': [job]})
+    response = json_poster(url, {"jobs": [job]})
     assert response.status_code == 503
 
-    url = reverse('symbolicate:symbolicate_v4_json')
-    job['version'] = 4
+    url = reverse("symbolicate:symbolicate_v4_json")
+    job["version"] = 4
     response = json_poster(url, job)
     assert response.status_code == 503
 
 
 def test_symbolicate_private_bucket_one_symbol_connectionerror(
-    json_poster,
-    clear_redis_store,
-    botomock,
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
-            if filename == 'wntdll.sym':
-                raise botocore.exceptions.ConnectionError('so much hard!')
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
+            if filename == "wntdll.sym":
+                raise botocore.exceptions.ConnectionError("so much hard!")
             if filename in SAMPLE_SYMBOL_CONTENT:
                 return {
-                    'Body': BytesIO(
-                        SAMPLE_SYMBOL_CONTENT[filename].encode('utf-8')
-                    )
+                    "Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))
                 }
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
     with botomock(mock_api_call):
-        url = reverse('symbolicate:symbolicate_v5_json')
+        url = reverse("symbolicate:symbolicate_v5_json")
         job = {
-            'stacks': [[[0, 11723767], [1, 65802]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-                ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+            "stacks": [[[0, 11723767], [1, 65802]]],
+            "memoryMap": [
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
             ],
         }
-        response = json_poster(url, {'jobs': [job]})
+        response = json_poster(url, {"jobs": [job]})
         assert response.status_code == 503
 
-        url = reverse('symbolicate:symbolicate_v4_json')
-        job['version'] = 4
+        url = reverse("symbolicate:symbolicate_v4_json")
+        job["version"] = 4
         response = json_poster(url, job)
         assert response.status_code == 503
 
 
 def test_symbolicate_v5_json_reused_memory_maps(
-    json_poster,
-    clear_redis_store,
-    botomock,
+    json_poster, clear_redis_store, botomock
 ):
-    reload_downloader('https://s3.example.com/public/prefix/')
+    reload_downloader("https://s3.example.com/public/prefix/")
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     job1 = {
-        'stacks': [[[0, 11723767], [1, 65802]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ['wntdll.pdb', 'D74F79EB1F8D4A45ABCD2F476CCABACC2']
+        "stacks": [[[0, 11723767], [1, 65802]]],
+        "memoryMap": [
+            ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+            ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
         ],
     }
     job2 = {
-        'stacks': [[[0, 10613656]]],
-        'memoryMap': [
-            ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'],
-        ],
+        "stacks": [[[0, 10613656]]],
+        "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
     }
     job3 = {
-        'stacks': [[[0, 100]]],
-        'memoryMap': [
-            ['firefox.pdb', '9A8C8930C5E935E3B441CC9D6E72BB990'],
-        ],
-        'version': 4,
+        "stacks": [[[0, 100]]],
+        "memoryMap": [["firefox.pdb", "9A8C8930C5E935E3B441CC9D6E72BB990"]],
+        "version": 4,
     }
     with botomock(default_mock_api_call):
-        response = json_poster(url, {'jobs': [job1, job2, job3]}, debug=True)
+        response = json_poster(url, {"jobs": [job1, job2, job3]}, debug=True)
     result = response.json()
 
-    result1 = result['results'][0]
-    assert result1['debug']['downloads']['count'] == 2
-    assert result1['debug']['cache_lookups']['count'] == 2
+    result1 = result["results"][0]
+    assert result1["debug"]["downloads"]["count"] == 2
+    assert result1["debug"]["cache_lookups"]["count"] == 2
 
-    result2 = result['results'][1]
-    assert result2['debug']['downloads']['count'] == 0
-    assert result2['debug']['cache_lookups']['count'] == 0
+    result2 = result["results"][1]
+    assert result2["debug"]["downloads"]["count"] == 0
+    assert result2["debug"]["cache_lookups"]["count"] == 0
 
-    result3 = result['results'][2]
-    assert result3['debug']['downloads']['count'] == 1
-    assert result3['debug']['cache_lookups']['count'] == 2
+    result3 = result["results"][2]
+    assert result3["debug"]["downloads"]["count"] == 1
+    assert result3["debug"]["cache_lookups"]["count"] == 2
 
 
 def test_invalidate_symbols_invalidates_cache(
-    clear_redis_store,
-    botomock,
-    json_poster,
-    settings
+    clear_redis_store, botomock, json_poster, settings
 ):
-    settings.SYMBOL_URLS = ['https://s3.example.com/private/prefix/']
-    reload_downloader('https://s3.example.com/private/prefix/')
+    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
+    reload_downloader("https://s3.example.com/private/prefix/")
 
     mock_api_calls = []
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'GetObject'
+        assert operation_name == "GetObject"
         if mock_api_calls:
             # This means you're here for the second time.
             # Pretend we have the symbol this time.
             mock_api_calls.append((operation_name, api_params))
-            return {
-                'Body': BytesIO(
-                    bytes(SAMPLE_SYMBOL_CONTENT['xul.sym'], 'utf-8')
-                )
-            }
+            return {"Body": BytesIO(bytes(SAMPLE_SYMBOL_CONTENT["xul.sym"], "utf-8"))}
         else:
             mock_api_calls.append((operation_name, api_params))
-            if api_params['Key'].endswith('xul.sym'):
+            if api_params["Key"].endswith("xul.sym"):
                 parsed_response = {
-                    'Error': {'Code': 'NoSuchKey', 'Message': 'Not found'},
+                    "Error": {"Code": "NoSuchKey", "Message": "Not found"}
                 }
                 raise ClientError(parsed_response, operation_name)
             raise NotImplementedError(api_params)
 
     with botomock(mock_api_call):
-        url = reverse('symbolicate:symbolicate_v5_json')
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
-            ],
-        })
+        url = reverse("symbolicate:symbolicate_v5_json")
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767]]],
+                "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
+            },
+        )
         result = response.json()
-        result1 = result['results'][0]
-        stack1 = result1['stacks'][0]
+        result1 = result["results"][0]
+        stack1 = result1["stacks"][0]
         frame1 = stack1[0]
-        assert 'function' not in frame1  # module couldn't be found
+        assert "function" not in frame1  # module couldn't be found
         assert len(mock_api_calls) == 1
 
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
-            ],
-        })
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767]]],
+                "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
+            },
+        )
         result = response.json()
-        result1 = result['results'][0]
-        stack1 = result1['stacks'][0]
+        result1 = result["results"][0]
+        stack1 = result1["stacks"][0]
         frame1 = stack1[0]
-        assert 'function' not in frame1  # module still couldn't be found
+        assert "function" not in frame1  # module still couldn't be found
         # Expected because the cache stores that the file can't be found.
         assert len(mock_api_calls) == 1
 
         # Pretend an upload comes in and stores those symbols.
-        invalidate_symbolicate_cache([
-            ('xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2'),
-        ])
-        response = json_poster(url, {
-            'stacks': [[[0, 11723767]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
-            ],
-        })
+        invalidate_symbolicate_cache([("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2")])
+        response = json_poster(
+            url,
+            {
+                "stacks": [[[0, 11723767]]],
+                "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
+            },
+        )
         result = response.json()
-        result1 = result['results'][0]
-        stack1 = result1['stacks'][0]
+        result1 = result["results"][0]
+        stack1 = result1["stacks"][0]
         frame1 = stack1[0]
-        assert frame1['function']
-        assert frame1['function'] == 'XREMain::XRE_mainRun()'
+        assert frame1["function"]
+        assert frame1["function"] == "XREMain::XRE_mainRun()"
         assert len(mock_api_calls) == 2
 
 
 def test_change_symbols_urls_invalidates_cache(
-    clear_redis_store,
-    botomock,
-    json_poster,
-    settings
+    clear_redis_store, botomock, json_poster, settings
 ):
     # Initial configuration
-    settings.SYMBOL_URLS = ['https://s3.example.com/private/prefix/']
-    reload_downloader('https://s3.example.com/private/prefix/')
+    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
+    reload_downloader("https://s3.example.com/private/prefix/")
 
     mock_api_calls = []
 
     def mock_api_call(self, operation_name, api_params):
-        assert operation_name == 'GetObject'
+        assert operation_name == "GetObject"
         mock_api_calls.append((operation_name, api_params))
-        assert api_params['Key'].endswith(
-            'xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym'
+        assert api_params["Key"].endswith(
+            "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
         )
-        content = SAMPLE_SYMBOL_CONTENT['xul.sym']
+        content = SAMPLE_SYMBOL_CONTENT["xul.sym"]
         if len(mock_api_calls) > 1:
             # This is the second time! Mess with it a bit.
             content = content.upper()
-        return {
-            'Body': BytesIO(content.encode('utf-8'))
-        }
+        return {"Body": BytesIO(content.encode("utf-8"))}
 
     with botomock(mock_api_call):
-        url = reverse('symbolicate:symbolicate_v5_json')
+        url = reverse("symbolicate:symbolicate_v5_json")
         job = {
-            'stacks': [[[0, 11723767]]],
-            'memoryMap': [
-                ['xul.pdb', '44E4EC8C2F41492B9369D6B9A059577C2']
-            ],
+            "stacks": [[[0, 11723767]]],
+            "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
         }
         response = json_poster(url, job, debug=True)
         result = response.json()
-        result1, = result['results']
-        stack1, = result1['stacks']
+        result1, = result["results"]
+        stack1, = result1["stacks"]
         frame1, = stack1
-        assert frame1['function'] == 'XREMain::XRE_mainRun()'
-        assert result1['debug']['downloads']['count'] == 1
+        assert frame1["function"] == "XREMain::XRE_mainRun()"
+        assert result1["debug"]["downloads"]["count"] == 1
 
         # Now, in the middle of everything, change the SYMBOL_URLS.
         # This should cause the exact same symbolication request to
@@ -1336,24 +1319,20 @@ def test_change_symbols_urls_invalidates_cache(
         # noticing this is the second download, it messes with the
         # fixture content.
         settings.SYMBOL_URLS = [
-            'https://s3.example.com/private/prefix/',
-            'https://s3.example.com/different',
+            "https://s3.example.com/private/prefix/",
+            "https://s3.example.com/different",
         ]
         response = json_poster(url, job, debug=True)
         result = response.json()
-        result1, = result['results']
-        stack1, = result1['stacks']
+        result1, = result["results"]
+        stack1, = result1["stacks"]
         frame1, = stack1
-        assert frame1['function'] == 'XREMAIN::XRE_MAINRUN()'
-        assert result1['debug']['downloads']['count'] == 1
+        assert frame1["function"] == "XREMAIN::XRE_MAINRUN()"
+        assert result1["debug"]["downloads"]["count"] == 1
 
 
 def test_symbolicate_huge_symbol_file(
-    json_poster,
-    clear_redis_store,
-    botomock,
-    metricsmock,
-    settings,
+    json_poster, clear_redis_store, botomock, metricsmock, settings
 ):
     """This test is a variation on test_client_happy_path_v5 where the
     symbol file that gets downloaded from S3 is so big that it has more
@@ -1363,50 +1342,44 @@ def test_symbolicate_huge_symbol_file(
     This test verifies that the "batch HMSET" code in the load_symbols()
     function really works.
     """
-    settings.SYMBOL_URLS = ['https://s3.example.com/private/prefix/']
-    reload_downloader('https://s3.example.com/public/prefix/')
+    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
+    reload_downloader("https://s3.example.com/public/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
         """Use when nothing weird with the boto gets is expected"""
-        if operation_name == 'GetObject':
-            filename = api_params['Key'].split('/')[-1]
-            if filename == 'libxul.so.sym':
+        if operation_name == "GetObject":
+            filename = api_params["Key"].split("/")[-1]
+            if filename == "libxul.so.sym":
                 monster = []
                 for i in range(75_0000):
                     address = hex(i)
-                    signature = format(i, ',')
-                    monster.append(
-                        f'FUNC {address} 000 X {signature}'
-                    )
-                content = '\n'.join(monster)
-                return {
-                    'Body': BytesIO(content.encode('utf-8'))
-                }
+                    signature = format(i, ",")
+                    monster.append(f"FUNC {address} 000 X {signature}")
+                content = "\n".join(monster)
+                return {"Body": BytesIO(content.encode("utf-8"))}
             raise NotImplementedError(api_params)
 
         raise NotImplementedError(operation_name)
 
-    url = reverse('symbolicate:symbolicate_v5_json')
+    url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(mock_api_call):
         job = {
-            'stacks': [[[0, 75_000]]],
-            'memoryMap': [
-                ['libxul.so', '44E4EC8C2F41492B9369D6B9A059577C2'],
-            ],
+            "stacks": [[[0, 75_000]]],
+            "memoryMap": [["libxul.so", "44E4EC8C2F41492B9369D6B9A059577C2"]],
         }
-        response = json_poster(url, {'jobs': [job]})
+        response = json_poster(url, {"jobs": [job]})
     assert response.status_code == 200
     result = response.json()
-    assert len(result['results']) == 1
-    result1 = result['results'][0]
-    assert result1['stacks'] == [
+    assert len(result["results"]) == 1
+    result1 = result["results"][0]
+    assert result1["stacks"] == [
         [
             {
                 "module_offset": "0x124f8",  # hex(75_000)
                 "module": "libxul.so",
                 "frame": 0,
                 "function": "75,000",  # format(75_000, ',')
-                "function_offset": "0x0"  # hex(0)
+                "function_offset": "0x0",  # hex(0)
             }
         ]
     ]

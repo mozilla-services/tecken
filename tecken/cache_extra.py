@@ -32,11 +32,11 @@ class RedisLocMemCache(LocMemCache):
     beyond the default cache but as if it was backed by Redis"""
 
     def iter_keys(self, search_term):
-        regex = re.compile(search_term.replace('*', '.'))
+        regex = re.compile(search_term.replace("*", "."))
         for key in self._cache:
             if regex.findall(key):
                 # the "raw key" will always be "<PREFIX>:<VERSION>:<KEY>"
-                yield key.split(':', 2)[2]
+                yield key.split(":", 2)[2]
 
     @property
     def client(self):

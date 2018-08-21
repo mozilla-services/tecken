@@ -13,15 +13,15 @@ from tecken.useradmin.middleware import find_users
 
 
 class Command(BaseCommand):
-    help = 'Find out if a user is blocked in Auth0 on the command line'
+    help = "Find out if a user is blocked in Auth0 on the command line"
 
     def add_arguments(self, parser):
-        parser.add_argument('email')
+        parser.add_argument("email")
 
     def handle(self, *args, **options):
-        email = options['email']
-        if ' ' in email or email.count('@') != 1:
-            raise CommandError(f'Invalid email {email!r}')
+        email = options["email"]
+        if " " in email or email.count("@") != 1:
+            raise CommandError(f"Invalid email {email!r}")
         users = find_users(
             settings.OIDC_RP_CLIENT_ID,
             settings.OIDC_RP_CLIENT_SECRET,
@@ -30,12 +30,12 @@ class Command(BaseCommand):
             requests,
         )
         for user in users:
-            if user.get('blocked'):
-                self.stdout.write(self.style.ERROR('BLOCKED!'))
+            if user.get("blocked"):
+                self.stdout.write(self.style.ERROR("BLOCKED!"))
             else:
-                self.stdout.write(self.style.SUCCESS('NOT blocked!'))
+                self.stdout.write(self.style.SUCCESS("NOT blocked!"))
             break
         else:
-            self.stdout.write(self.style.WARNING(
-                f'{email} could not be found in Auth0'
-            ))
+            self.stdout.write(
+                self.style.WARNING(f"{email} could not be found in Auth0")
+            )

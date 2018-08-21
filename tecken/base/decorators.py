@@ -10,26 +10,22 @@ from django import http
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import available_attrs
-from django.contrib.auth.decorators import (
-    permission_required,
-    user_passes_test,
-)
+from django.contrib.auth.decorators import permission_required, user_passes_test
 
-logger = logging.getLogger('tecken')
+logger = logging.getLogger("tecken")
 
 
 def api_login_required(view_func):
     """similar to django.contrib.auth.decorators.login_required
     except instead of redirecting it returns a 403 message if not
     authenticated."""
+
     @wraps(view_func)
     def inner(request, *args, **kwargs):
         if not request.user.is_active:
-            error_msg = (
-                'This requires an Auth-Token to authenticate the request'
-            )
+            error_msg = "This requires an Auth-Token to authenticate the request"
             if not settings.ENABLE_TOKENS_AUTHENTICATION:  # pragma: no cover
-                error_msg += ' (ENABLE_TOKENS_AUTHENTICATION is False)'
+                error_msg += " (ENABLE_TOKENS_AUTHENTICATION is False)"
             raise PermissionDenied(error_msg)
         return view_func(request, *args, **kwargs)
 
@@ -51,12 +47,14 @@ def api_any_permission_required(*perms):
     in this one we hardcode it to raise PermissionDenied if the
     any-permission check fails.
     """
+
     def check_perms(user):
         # First check if the user has the permission (even anon users)
         for perm in perms:
             if user.has_perm(perm):
                 return True
         raise PermissionDenied
+
     return user_passes_test(check_perms)
 
 
@@ -65,12 +63,11 @@ def api_superuser_required(view_func):
     is *not* a superuser.
     Use this decorator *after* others like api_login_required.
     """
+
     @wraps(view_func)
     def inner(request, *args, **kwargs):
         if not request.user.is_superuser:
-            error_msg = (
-                'Must be superuser to access this view.'
-            )
+            error_msg = "Must be superuser to access this view."
             raise PermissionDenied(error_msg)
         return view_func(request, *args, **kwargs)
 
@@ -94,8 +91,8 @@ def set_request_debug(view_func):
 
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
-        trueish = ('1', 'true', 'yes')
-        debug = request.META.get('HTTP_DEBUG', '').lower() in trueish
+        trueish = ("1", "true", "yes")
+        debug = request.META.get("HTTP_DEBUG", "").lower() in trueish
         request._request_debug = debug
         return view_func(request, *args, **kwargs)
 
@@ -107,7 +104,7 @@ class JsonHttpResponseNotAllowed(http.JsonResponse):
 
     def __init__(self, permitted_methods, data, *args, **kwargs):
         super(JsonHttpResponseNotAllowed, self).__init__(data, *args, **kwargs)
-        self['Allow'] = ', '.join(permitted_methods)
+        self["Allow"] = ", ".join(permitted_methods)
 
 
 def api_require_http_methods(request_method_list):
@@ -118,22 +115,20 @@ def api_require_http_methods(request_method_list):
     when the request method is not allowed.
     Also, it's changed to use the f'' string format.
     """
+
     def decorator(func):
         @wraps(func, assigned=available_attrs(func))
         def inner(request, *args, **kwargs):
             if request.method not in request_method_list:
-                message = (
-                    f'Method Not Allowed ({request.method}): {request.path}'
+                message = f"Method Not Allowed ({request.method}): {request.path}"
+                logger.warning(message, extra={"status_code": 405, "request": request})
+                return JsonHttpResponseNotAllowed(
+                    request_method_list, {"error": message}
                 )
-                logger.warning(
-                    message,
-                    extra={'status_code': 405, 'request': request}
-                )
-                return JsonHttpResponseNotAllowed(request_method_list, {
-                    'error': message,
-                })
             return func(request, *args, **kwargs)
+
         return inner
+
     return decorator
 
 
@@ -153,18 +148,17 @@ api_require_safe.__doc__ = (
 )
 
 
-def set_cors_headers(origin='*', methods='GET'):
+def set_cors_headers(origin="*", methods="GET"):
     """Decorator function that sets CORS headers on the response."""
     if isinstance(methods, str):
         methods = [methods]
 
     def decorator(func):
-
         @wraps(func)
         def inner(*args, **kwargs):
             response = func(*args, **kwargs)
-            response['Access-Control-Allow-Origin'] = origin
-            response['Access-Control-Allow-Methods'] = ','.join(methods)
+            response["Access-Control-Allow-Origin"] = origin
+            response["Access-Control-Allow-Methods"] = ",".join(methods)
             return response
 
         return inner
@@ -185,7 +179,6 @@ def make_tempdir(prefix=None, suffix=None):
     """
 
     def decorator(func):
-
         @wraps(func)
         def inner(*args, **kwargs):
             with TemporaryDirectory(prefix=prefix, suffix=suffix) as f:

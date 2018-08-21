@@ -31,47 +31,45 @@ def block_http(whitelist):
             # python3
             string_type = str
         if isinstance(host, string_type) and host not in whitelist:
-            logger.warning('Denied HTTP connection to: %s' % host)
+            logger.warning("Denied HTTP connection to: %s" % host)
             raise MockHttpCall(host)
-        logger.debug('Allowed HTTP connection to: %s' % host)
+        logger.debug("Allowed HTTP connection to: %s" % host)
         return self.old(host, *args, **kwargs)
 
     whitelisted.blockade = True
 
-    if not getattr(httplib.HTTPConnection, 'blockade', False):
-        logger.debug('Monkey patching httplib')
+    if not getattr(httplib.HTTPConnection, "blockade", False):
+        logger.debug("Monkey patching httplib")
         httplib.HTTPConnection.old = httplib.HTTPConnection.__init__
         httplib.HTTPConnection.__init__ = whitelisted
 
 
 def pytest_addoption(parser):
-    group = parser.getgroup('blockade')
-    group.addoption('--blockade', action='store_true',
-                    help='Block network requests during test run')
+    group = parser.getgroup("blockade")
+    group.addoption(
+        "--blockade", action="store_true", help="Block network requests during test run"
+    )
 
-    parser.addini(
-        'blockade', 'Block network requests during test run', default=False)
+    parser.addini("blockade", "Block network requests during test run", default=False)
 
     group.addoption(
-        '--blockade-http-whitelist',
-        action='store',
-        help='Do not block HTTP requests to this comma separated list of '
-             'hostnames',
-        default=''
+        "--blockade-http-whitelist",
+        action="store",
+        help="Do not block HTTP requests to this comma separated list of " "hostnames",
+        default="",
     )
     parser.addini(
-        'blockade-http-whitelist',
-        'Do not block HTTP requests to this comma separated list of hostnames',
-        default=''
+        "blockade-http-whitelist",
+        "Do not block HTTP requests to this comma separated list of hostnames",
+        default="",
     )
 
 
 def pytest_sessionstart(session):
     config = session.config
-    if config.option.blockade or config.getini('blockade'):
-        http_whitelist_str = (
-            config.option.blockade_http_whitelist or
-            config.getini('blockade-http-whitelist')
+    if config.option.blockade or config.getini("blockade"):
+        http_whitelist_str = config.option.blockade_http_whitelist or config.getini(
+            "blockade-http-whitelist"
         )
-        http_whitelist = http_whitelist_str.split(',')
+        http_whitelist = http_whitelist_str.split(",")
         block_http(http_whitelist)

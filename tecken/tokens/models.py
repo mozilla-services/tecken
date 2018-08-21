@@ -22,10 +22,7 @@ def get_future():
 
 
 class Token(models.Model):
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     key = models.CharField(max_length=32, default=make_key)
     expires_at = models.DateTimeField(default=get_future)
     permissions = models.ManyToManyField(Permission)
@@ -33,12 +30,10 @@ class Token(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        permissions = (
-            ('manage_tokens', 'Manage Your API Tokens'),
-        )
+        permissions = (("manage_tokens", "Manage Your API Tokens"),)
 
     def __repr__(self):
-        return f'<{self.__class__.__name__} {self.key[:2]}...{self.key[-2]}>'
+        return f"<{self.__class__.__name__} {self.key[:2]}...{self.key[-2]}>"
 
     @property
     def is_expired(self):
@@ -47,17 +42,15 @@ class Token(models.Model):
 
 @receiver(models.signals.m2m_changed, sender=Group.permissions.through)
 def drop_permissions_on_group_change(sender, instance, action, **kwargs):
-    if action == 'post_remove':
+    if action == "post_remove":
         # A permission was removed from a group.
         # Every Token that had this permission needs to be re-evaluated
         # because, had the user created this token now, they might
         # no longer have access to that permission due to their
         # group memberships.
-        permissions = Permission.objects.filter(id__in=kwargs['pk_set'])
+        permissions = Permission.objects.filter(id__in=kwargs["pk_set"])
         for permission in permissions:
             for token in Token.objects.filter(permissions=permission):
-                user_permissions = Permission.objects.filter(
-                    group__user=token.user
-                )
+                user_permissions = Permission.objects.filter(group__user=token.user)
                 if permission not in user_permissions:
                     token.permissions.remove(permission)

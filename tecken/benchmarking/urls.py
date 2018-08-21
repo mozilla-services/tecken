@@ -7,18 +7,10 @@ from django.urls import path
 from . import views
 
 
-app_name = 'benchmarking'
+app_name = "benchmarking"
 
 
 urlpatterns = [
-    path(
-        'caching-vs-boto/',
-        views.caching_vs_boto,
-        name='caching_vs_boto'
-    ),
-    path(
-        'timeouts/',
-        views.timeouts,
-        name='timeouts'
-    ),
+    path("caching-vs-boto/", views.caching_vs_boto, name="caching_vs_boto"),
+    path("timeouts/", views.timeouts, name="timeouts"),
 ]

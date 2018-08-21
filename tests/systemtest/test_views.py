@@ -5,25 +5,25 @@
 import os
 import requests
 
-BASE_URL = os.environ.get('BASE_URL')
+BASE_URL = os.environ.get("BASE_URL")
 assert BASE_URL
 
 
 def test_task_tester():
-    url = BASE_URL + '/__task_tester__'
+    url = BASE_URL + "/__task_tester__"
     response = requests.post(url)
     assert response.status_code == 201
     response = requests.get(url)
     assert response.status_code == 200
-    assert b'It works!' in response.content
+    assert b"It works!" in response.content
 
 
 def test_contribute_json():
     # Good use case to test that 405 errors are always valid JSON responses
-    url = BASE_URL + '/contribute.json'
+    url = BASE_URL + "/contribute.json"
     response = requests.post(url)
     assert response.status_code == 405
-    assert response.json()['error']
+    assert response.json()["error"]
 
     response = requests.get(url)
     assert response.status_code == 200

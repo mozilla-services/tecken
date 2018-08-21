@@ -59,6 +59,11 @@ jobs:
             make test
 
       - run:
+          name: Run lint check
+          command: |
+            docker-compose run test-ci lintcheck
+
+      - run:
           name: Linting check for frontend
           command: |
             # touch .env

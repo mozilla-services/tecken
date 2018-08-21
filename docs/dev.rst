@@ -21,14 +21,13 @@ It will exit non-zero if there are files lacking the preamble. It only
 checks git checked in files.
 
 PEP8 is nice. All files are expected to be PEP8 and pyflakes compliant
-and the PEP8 rules (and exceptions) are defined in ``setup.cfg`` under
+and the PEP8 rules (and exceptions) are defined in ``.flake8`` under
 the ``[flake8]`` heading.
-
-The tests use ``py.test`` with a plugin called ``flake8`` which will
-check files according to the flake8 rules as it runs tests.
 
 If you hit issues, instead of re-writing the rules consider
 appending a comment on the end of the line that says ``# noqa``.
+
+All Python code is and should be formatted with `black <https://github.com/ambv/black>`_.
 
 Local development
 =================
@@ -652,3 +651,24 @@ if there were multiple files:
     $ zip mysymbols -r *
     $ ls -l mysymbols.zip
     -rw-r--r--  1 peterbe  staff  40945250 Aug 10 14:54 mysymbols.zip
+
+
+``black``
+=========
+
+`black <https://github.com/ambv/black>`_. is the Python code formatting tool we use
+to format all non-generated Python code. In CI, we test that all code passes
+``black --check ...``. When doing local development, consider setting up either
+some sort of "format on save" in your editor or a git pre-commit hook.
+
+To check that all code is formatted correctly, run:
+
+.. code-block:: shell
+
+    $ docker-compose run web lintcheck
+
+If you have a bunch of formatting complaints you can automatically fix them all with:
+
+.. code-block:: shell
+
+    $ docker-compose run web blackfix

@@ -20,11 +20,9 @@ class Upload(models.Model):
     The primary use case for using different buckets is security. Some
     symbols should be publicly available, others not.
     """
+
     # Who uploaded it
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     # The filename it was called when uploaded as an archive
     filename = models.CharField(max_length=100)
     # The name of the bucket where it was placed temporarily
@@ -52,17 +50,17 @@ class Upload(models.Model):
 
     class Meta:
         permissions = (
-            ('upload_symbols', 'Upload Symbols Files'),
-            ('upload_try_symbols', 'Upload Try Symbols Files'),
-            ('view_all_uploads', 'View All Symbols Uploads'),
+            ("upload_symbols", "Upload Symbols Files"),
+            ("upload_try_symbols", "Upload Try Symbols Files"),
+            ("view_all_uploads", "View All Symbols Uploads"),
         )
 
     def __repr__(self):
         return (
-            f'<{self.__class__.__name__} id={self.id} '
-            f'filename={self.filename!r} '
-            f'bucket_name={self.bucket_name!r}'
-            f'>'
+            f"<{self.__class__.__name__} id={self.id} "
+            f"filename={self.filename!r} "
+            f"bucket_name={self.bucket_name!r}"
+            f">"
         )
 
 
@@ -71,6 +69,7 @@ class FileUpload(models.Model):
     Each Upload is a .zip file containing other files. Each of those
     files are uploaded individually to the same bucket.
     """
+
     upload = models.ForeignKey(Upload, null=True, on_delete=models.SET_NULL)
     bucket_name = models.CharField(max_length=100)
     key = models.CharField(max_length=300)
@@ -86,6 +85,6 @@ class FileUpload(models.Model):
 
     def __repr__(self):
         return (
-            f'<{self.__class__.__name__} bucket_name={self.bucket_name!r} '
-            f'key={self.key!r} size={self.size}>'
+            f"<{self.__class__.__name__} bucket_name={self.bucket_name!r} "
+            f"key={self.key!r} size={self.size}>"
         )

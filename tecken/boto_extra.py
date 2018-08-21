@@ -4,10 +4,7 @@
 
 from functools import wraps
 
-from botocore.exceptions import (
-    EndpointConnectionError,
-    ClientError,
-)
+from botocore.exceptions import EndpointConnectionError, ClientError
 
 
 class OwnEndpointConnectionError(EndpointConnectionError):
@@ -27,7 +24,7 @@ class OwnEndpointConnectionError(EndpointConnectionError):
         self.msg = msg
 
     def __reduce__(self):
-        return (self.__class__, (self.msg,), {'kwargs': self.kwargs})
+        return (self.__class__, (self.msg,), {"kwargs": self.kwargs})
 
 
 class OwnClientError(ClientError):  # XXX Replace "Own" with "Picklable" ?
@@ -39,11 +36,7 @@ class OwnClientError(ClientError):  # XXX Replace "Own" with "Picklable" ?
     """
 
     def __reduce__(self):
-        return (
-            self.__class__,
-            (self.response, self.operation_name),
-            {},
-        )
+        return (self.__class__, (self.response, self.operation_name), {})
 
 
 def reraise_endpointconnectionerrors(f):
@@ -61,6 +54,7 @@ def reraise_endpointconnectionerrors(f):
             return f(*args, **kwargs)
         except EndpointConnectionError as exception:
             raise OwnEndpointConnectionError(**exception.kwargs)
+
     return wrapper
 
 
@@ -79,4 +73,5 @@ def reraise_clienterrors(f):
             return f(*args, **kwargs)
         except ClientError as exception:
             raise OwnClientError(exception.response, exception.operation_name)
+
     return wrapper
