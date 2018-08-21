@@ -92,7 +92,7 @@ build-frontend:
 
 lintcheck: .env .docker-build
 	docker-compose run web lintcheck
-	docker-compose run frontend lintcheck
+	docker-compose run frontend lint
 
 lintfix: .env .docker-build
 	docker-compose run web blackfix
