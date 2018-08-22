@@ -273,6 +273,11 @@ class SymbolDownloader:
                     if response.get("ContentEncoding") == "gzip":
                         with metrics.timer("symboldownloader_get_object_read"):
                             body = response["Body"].read()
+                        metrics.incr(
+                            "symboldownloader_download_bytes",
+                            len(body),
+                            tags=["encoding:gzip"],
+                        )
                         bytestream = BytesIO(body)
                         stream = GzipFile(None, "rb", fileobj=bytestream)
                     yield (source.name, key)
