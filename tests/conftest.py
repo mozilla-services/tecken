@@ -220,3 +220,26 @@ def upload_mock_invalidate_symbolicate_cache():
     _mock_function = "tecken.upload.views.invalidate_symbolicate_cache_task"
     with mock.patch(_mock_function, new=fake_task):
         yield fake_task
+
+
+@pytest.fixture
+def upload_mock_update_uploads_created_task():
+    """Yields an object that is the mocking substitute of some task
+    functions that are imported by the views.
+    If a view function (that you know your test will execute) depends
+    on 'tecken.upload.tasks.update_uploads_created_task', add
+    this fixture to your test. Then you can access all the arguments
+    sent to it as `.delay()` arguments and keyword arguments.
+    """
+
+    class FakeTask:
+        all_delay_arguments = []
+
+        def delay(self, *args, **kwargs):
+            self.all_delay_arguments.append((args, kwargs))
+
+    fake_task = FakeTask()
+
+    _mock_function = "tecken.upload.views.update_uploads_created_task"
+    with mock.patch(_mock_function, new=fake_task):
+        yield fake_task

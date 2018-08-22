@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload
+from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.api.views import filter_uploads
 from tecken.api.forms import UploadsForm, BaseFilteringForm
@@ -905,7 +905,6 @@ def test_upload_files(client, settings):
 
 @pytest.mark.django_db
 def test_stats(client):
-    # This view isn't super important so we'll just make sure it runs at all
     url = reverse("api:stats")
     response = client.get(url)
     assert response.status_code == 403
@@ -931,6 +930,62 @@ def test_stats(client):
     data = response.json()
     assert data["stats"]["users"]
     assert data["stats"]["uploads"]["all_uploads"]
+
+
+@pytest.mark.django_db
+def test_stats_uploads(client):
+    url = reverse("api:stats_uploads")
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["uploads"]["today"]["count"] == 0
+    assert data["uploads"]["today"]["files"] == 0
+    assert data["uploads"]["today"]["total_size"] == 0
+    assert data["uploads"]["today"]["total_size_human"] == "0 bytes"
+    assert data["uploads"]["yesterday"]["count"] == 0
+    assert data["uploads"]["yesterday"]["files"] == 0
+    assert data["uploads"]["yesterday"]["total_size"] == 0
+    assert data["uploads"]["yesterday"]["total_size_human"] == "0 bytes"
+    assert data["uploads"]["this_month"]["count"] == 0
+    assert data["uploads"]["this_month"]["files"] == 0
+    assert data["uploads"]["this_month"]["total_size"] == 0
+    assert data["uploads"]["this_month"]["total_size_human"] == "0 bytes"
+
+    UploadsCreated.objects.create(
+        date=timezone.now().date(),
+        count=3,
+        size=123456789,
+        size_avg=500000,
+        files=100,
+        skipped=1,
+        ignored=2,
+    )
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["uploads"]["today"]["count"] == 3
+    assert data["uploads"]["today"]["files"] == 100
+    assert data["uploads"]["today"]["total_size"] == 123456789
+    assert data["uploads"]["today"]["total_size_human"] == "117.7 MB"
+    assert data["uploads"]["yesterday"]["count"] == 0
+    assert data["uploads"]["yesterday"]["files"] == 0
+    assert data["uploads"]["yesterday"]["total_size"] == 0
+    assert data["uploads"]["yesterday"]["total_size_human"] == "0 bytes"
+    assert data["uploads"]["this_month"]["count"] == 3
+    assert data["uploads"]["this_month"]["files"] == 100
+    assert data["uploads"]["this_month"]["total_size"] == 123456789
+    assert data["uploads"]["this_month"]["total_size_human"] == "117.7 MB"
 
 
 @pytest.mark.django_db

@@ -1,10 +1,18 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
+import datetime
 
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
+from django.db.models import Aggregate, Count, Sum, Avg
+from django.utils import timezone
 from django.contrib.postgres.fields import ArrayField
+from django.template.defaultfilters import filesizeformat
+
+
+class SumCardinality(Aggregate):
+    template = "SUM(CARDINALITY(%(expressions)s))"
 
 
 class Upload(models.Model):
@@ -88,3 +96,62 @@ class FileUpload(models.Model):
             f"<{self.__class__.__name__} bucket_name={self.bucket_name!r} "
             f"key={self.key!r} size={self.size}>"
         )
+
+
+class UploadsCreated(models.Model):
+    """Count of the number of Uploads per day."""
+
+    # Always in UTC
+    date = models.DateField(db_index=True, unique=True)
+    count = models.PositiveIntegerField()
+    files = models.PositiveIntegerField()
+    skipped = models.PositiveIntegerField()
+    ignored = models.PositiveIntegerField()
+    size = models.PositiveIntegerField()
+    size_avg = models.PositiveIntegerField()
+    modified_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __repr__(self):
+        return (
+            f"<{self.__class__.__name__} date={self.date} "
+            f"count={format(self.count, ',')} "
+            f"files={format(self.files, ',')} "
+            f"skipped={format(self.skipped, ',')} "
+            f"ignored={format(self.ignored, ',')} "
+            f"size={filesizeformat(self.size)}>"
+        )
+
+    @classmethod
+    def update(cls, date):
+        assert isinstance(date, datetime.date), type(date)
+        date_datetime = timezone.make_aware(
+            datetime.datetime.combine(date, datetime.datetime.min.time())
+        )
+        qs = Upload.objects.filter(
+            created_at__gte=date_datetime,
+            created_at__lt=date_datetime + datetime.timedelta(days=1),
+        )
+        aggregates_numbers = qs.aggregate(
+            count=Count("id"),
+            size_avg=Avg("size"),
+            size_sum=Sum("size"),
+            skipped_sum=SumCardinality("skipped_keys"),
+            ignored_sum=SumCardinality("ignored_keys"),
+        )
+        file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+        files = file_uploads_qs.count()
+
+        with transaction.atomic():
+            cls.objects.filter(date=date).delete()
+            cls.objects.create(
+                date=date,
+                count=aggregates_numbers["count"],
+                files=files,
+                skipped=aggregates_numbers["skipped_sum"] or 0,
+                ignored=aggregates_numbers["ignored_sum"] or 0,
+                size=aggregates_numbers["size_sum"] or 0,
+                size_avg=aggregates_numbers["size_avg"]
+                and int(aggregates_numbers["size_avg"])
+                or 0,
+            )

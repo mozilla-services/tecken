@@ -36,6 +36,7 @@ from tecken.upload.utils import (
 )
 from tecken.symbolicate.tasks import invalidate_symbolicate_cache_task
 from tecken.upload.models import Upload
+from tecken.upload.tasks import update_uploads_created_task
 from tecken.upload.forms import UploadByDownloadForm
 from tecken.s3 import S3Bucket
 
@@ -351,6 +352,9 @@ def upload_archive(request, upload_dir):
         ignored_keys=ignored_keys or None,
         completed_at=timezone.now(),
     )
+
+    # Re-calculate the UploadsCreated for today.
+    update_uploads_created_task.delay()
 
     metrics.incr("upload_uploads", tags=[f"try:{is_try_upload}"])
 

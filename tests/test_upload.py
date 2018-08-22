@@ -4,8 +4,6 @@
 
 import gzip
 import os
-
-# import zipfile
 from io import BytesIO
 
 import pytest
@@ -15,9 +13,10 @@ from requests.exceptions import ConnectionError
 from django.urls import reverse
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ImproperlyConfigured
+from django.utils import timezone
 
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload
+from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload import utils
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.upload.views import get_bucket_info
@@ -28,6 +27,7 @@ from tecken.upload.utils import (
     should_compressed_key,
     get_key_content_type,
 )
+from tecken.upload.tasks import update_uploads_created_task
 
 
 _here = os.path.dirname(__file__)
@@ -83,7 +83,12 @@ def test_get_key_content_type(settings):
 
 @pytest.mark.django_db
 def test_upload_archive_happy_path(
-    client, botomock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -167,6 +172,8 @@ def test_upload_archive_happy_path(
         assert upload.skipped_keys is None
         assert upload.ignored_keys == ["build-symbols.txt"]
 
+    assert len(upload_mock_update_uploads_created_task.all_delay_arguments) == 1
+
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
@@ -189,6 +196,18 @@ def test_upload_archive_happy_path(
         size__lt=1156,
         completed_at__isnull=False,
     )
+
+    # Manually execute 'update_uploads_created_task' because it's mocked
+    # in the context of the view function.
+    update_uploads_created_task()
+    uploads_created = UploadsCreated.objects.all().get()
+    assert uploads_created.date == timezone.now().date()
+    assert uploads_created.count == 1
+    assert uploads_created.files == 2
+    assert uploads_created.skipped == 0
+    assert uploads_created.ignored == 1
+    assert uploads_created.size == 69812
+    assert uploads_created.size_avg > 0
 
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
@@ -224,7 +243,12 @@ def test_upload_archive_happy_path(
 
 @pytest.mark.django_db
 def test_upload_try_symbols_happy_path(
-    client, botomock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_try_symbols")
@@ -308,6 +332,8 @@ def test_upload_try_symbols_happy_path(
         assert upload.ignored_keys == ["build-symbols.txt"]
         assert upload.try_symbols
 
+    assert len(upload_mock_update_uploads_created_task.all_delay_arguments) == 1
+
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
@@ -334,7 +360,12 @@ def test_upload_try_symbols_happy_path(
 
 @pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_skipped(
-    client, botomock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -482,7 +513,12 @@ def test_key_existing_size_caching_not_found(botomock, metricsmock):
 
 @pytest.mark.django_db
 def test_upload_archive_key_lookup_cached(
-    client, botomock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -562,7 +598,12 @@ def test_upload_archive_key_lookup_cached(
 
 @pytest.mark.django_db
 def test_upload_archive_key_lookup_cached_without_metadata(
-    client, botomock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
     """Same as test_upload_archive_key_lookup_cached() but without
     any metadata."""
@@ -643,7 +684,12 @@ def test_upload_archive_key_lookup_cached_without_metadata(
 
 @pytest.mark.django_db
 def test_upload_archive_key_lookup_cached_by_different_hashes(
-    client, botomock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client,
+    botomock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -766,6 +812,7 @@ def test_upload_archive_with_cache_invalidation(
     metricsmock,
     settings,
     upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
 
     settings.SYMBOL_URLS = ["https://s3.example.com/mybucket"]
@@ -848,7 +895,9 @@ def test_upload_archive_with_cache_invalidation(
 
 
 @pytest.mark.django_db
-def test_upload_archive_both_skipped(client, botomock, fakeuser, metricsmock):
+def test_upload_archive_both_skipped(
+    client, botomock, fakeuser, metricsmock, upload_mock_update_uploads_created_task
+):
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -911,6 +960,7 @@ def test_upload_archive_by_url(
     settings,
     requestsmock,
     upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
 ):
 
     requestsmock.head(
@@ -1361,3 +1411,20 @@ def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):
     assert not form.is_valid()
     validation_errors, = form.errors.as_data().values()
     assert "Too many redirects" in validation_errors[0].message
+
+
+@pytest.mark.django_db
+def test_update_uploads_created_task_empty():
+    update_uploads_created_task()
+    uploads_created = UploadsCreated.objects.all().get()
+    assert uploads_created.date == timezone.now().date()
+    assert uploads_created.count == 0
+    assert uploads_created.files == 0
+    assert uploads_created.skipped == 0
+    assert uploads_created.ignored == 0
+    assert uploads_created.size == 0
+    assert uploads_created.size_avg == 0
+
+    # Just to be sure, execute again and nothing should change.
+    update_uploads_created_task()
+    assert UploadsCreated.objects.all().count() == 1

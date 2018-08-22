@@ -15,8 +15,7 @@ from django import get_version
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User, Group
-from django.db.models import Count, Q, Sum, Avg, F
-from django.db.models import Aggregate
+from django.db.models import Aggregate, Count, Q, Sum, Avg, F
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_protect
@@ -25,7 +24,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload
+from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.symbolicate.views import get_symbolication_count_key
 from tecken.base.decorators import (
@@ -34,6 +33,7 @@ from tecken.base.decorators import (
     api_require_http_methods,
     api_superuser_required,
 )
+from tecken.base.utils import filesizeformat
 from . import forms
 
 logger = logging.getLogger("tecken")
@@ -700,9 +700,6 @@ def upload_file(request, id):
 
 @api_login_required
 def stats(request):
-    # XXX Perhaps we should have some stats coming from Redis about the
-    # state of the LRU cache.
-
     numbers = {}
 
     all_uploads = request.user.has_perm("upload.can_view_all")
@@ -714,7 +711,6 @@ def stats(request):
 
     def count_and_size(qs, start, end):
         sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-
         return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
 
     today = timezone.now()
@@ -776,6 +772,39 @@ def stats(request):
         }
 
     context = {"stats": numbers}
+    return http.JsonResponse(context)
+
+
+@api_login_required
+def stats_uploads(request):
+    context = {}
+
+    today = timezone.now().date()
+    yesterday = today - datetime.timedelta(days=1)
+
+    start_month = today
+    while start_month.day != 1:
+        start_month -= datetime.timedelta(days=1)
+
+    def count_uploads(date, end=None):
+        qs = UploadsCreated.objects.filter(date__gte=date)
+        if end is not None:
+            qs = qs.filter(date__lt=end)
+        aggregates = qs.aggregate(
+            count=Sum("count"), total_size=Sum("size"), files=Sum("files")
+        )
+        return {
+            "count": aggregates["count"] or 0,
+            "total_size": aggregates["total_size"] or 0,
+            "total_size_human": filesizeformat(aggregates["total_size"] or 0),
+            "files": aggregates["files"] or 0,
+        }
+
+    context["uploads"] = {
+        "today": count_uploads(today),
+        "yesterday": count_uploads(yesterday, end=today),
+        "this_month": count_uploads(start_month),
+    }
     return http.JsonResponse(context)
 
 
