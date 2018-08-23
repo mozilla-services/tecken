@@ -2,7 +2,7 @@ version: '2'
 
 services:
   db:
-    image: postgres:9.6@sha256:1c8703dc1b113d8bceeeb6d4309113bc73464fe189c5ff342d9950e9145200bb
+    image: postgres:9.6@sha256:04ad0a2d50660c0015857fff091171ab997f47fc9423feaadb7712ec71b4d8c9
   redis-store:
     build: ./docker/images/redis
   redis-cache:
