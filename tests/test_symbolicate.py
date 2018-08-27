@@ -341,15 +341,6 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
     metricsmock.has_record(GAUGE, "tecken.storing_symbol", 76)
     metricsmock.has_record(GAUGE, "tecken.storing_symbol", 165)
 
-    # Since the amount of memory configured and used in the Redis
-    # store, we can't use metricsmock.has_record()
-    memory_gauges = [
-        record
-        for record in metrics_records
-        if record[0] == GAUGE and "used_memory" in record[1]
-    ]
-    assert len(memory_gauges) == 2
-
     # Called the first time it had to do a symbol store
     metricsmock.has_record(GAUGE, "tecken.store_keys", 1, None)
     # Called twice because this test depends on downloading two symbols
@@ -551,15 +542,6 @@ def test_client_happy_path_v4(
     # predictable that the size of the pickled symbol map strings.
     metricsmock.has_record(GAUGE, "tecken.storing_symbol", 76)
     metricsmock.has_record(GAUGE, "tecken.storing_symbol", 165)
-
-    # Since the amount of memory configured and used in the Redis
-    # store, we can't use metricsmock.has_record()
-    memory_gauges = [
-        record
-        for record in metrics_records
-        if record[0] == GAUGE and "used_memory" in record[1]
-    ]
-    assert len(memory_gauges) == 2
 
     # Called the first time it had to do a symbol store
     metricsmock.has_record(GAUGE, "tecken.store_keys", 1, None)
