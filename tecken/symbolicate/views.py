@@ -659,7 +659,8 @@ class SymbolicateJSON:
                 # so we don't need to do this every time we're asked to
                 # look up this symbol.
                 metrics.incr("symbolicate_download_fail", 1)
-                store.set(cache_key, [], settings.DEBUG and 60 or 60 * 60)
+
+                store.set(cache_key, [], settings.DEBUG and 6 or 60)
                 # If nothing could be downloaded, keep it anyway but
                 # to avoid having to check if 'symbol_map' is None, just
                 # turn it into a dict.
