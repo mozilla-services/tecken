@@ -672,3 +672,26 @@ If you have a bunch of formatting complaints you can automatically fix them all 
 .. code-block:: shell
 
     $ docker-compose run web blackfix
+
+
+Debugging ``minio`` container
+=============================
+
+``minio`` is used in ``docker-compose`` as a local substitute for AWS S3.
+If it fails to start, it could be because of an upgrade of the image on
+Dockerhub. If it fails to start, try first to run:
+
+.. code-block:: shell
+
+    $ docker-compose build minio
+    $ docker-compose up minio
+
+If you get an error that looks like this:
+
+    You are running an older version of Minio released 7 months ago
+
+The simplest solution is to delete the ``miniodata`` directory. E.g:
+
+.. code-block:: shell
+
+    $ rm -fr miniodata
