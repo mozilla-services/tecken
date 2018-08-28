@@ -249,15 +249,9 @@ vine==1.1.4 \
 django_celery_results==1.0.1 \
     --hash=sha256:dfa240fb535a1a2d01c9e605ad71629909318eae6b893c5009eafd7265fde10b \
     --hash=sha256:8bca2605eeff4418be7ce428a6958d64bee0f5bdf1f8e563fbc09a9e2f3d990f
-mozilla-django-oidc==0.5.0 \
-    --hash=sha256:ab6dcccf4841472c1e82244d66503e87ffae0ad7d38d6187fcca54810eceb7a6 \
-    --hash=sha256:56d72b3a35cbe9b313e4ec19a01943d4ca698562476d3387c3ab30e66d33bcf8
-python-jose==2.0.2 \
-    --hash=sha256:391f860dbe274223d73dd87de25e4117bf09e8fe5f93a417663b1f2d7b591165 \
-    --hash=sha256:3b35cdb0e55a88581ff6d3f12de753aa459e940b50fe7ca5aa25149bc94cb37b
-ecdsa==0.13 \
-    --hash=sha256:40d002cf360d0e035cf2cb985e1308d41aaa087cbfc135b2dc2d844296ea546c \
-    --hash=sha256:64cf1ee26d1cde3c73c6d7d107f835fed7c6a2904aef9eac223d57ad800c43fa
+mozilla-django-oidc==1.1.2 \
+    --hash=sha256:0da273be7753c3775f8893bc228acf4d1dfffdc58c073a0df044917796ad5e0d \
+    --hash=sha256:efd9df9d8d3b58f84cdedf548387afa31146facaac11945e53f67314f57244af
 urllib3==1.23 \
     --hash=sha256:a68ac5e15e76e7e5dd2b8f94007233e01effe3e50e8daddf69acfd81cb686baf \
     --hash=sha256:b5725a0bd4ba422ab0e66e89e030c806576753ea3ee08554382c14e685d117b5
@@ -267,9 +261,6 @@ certifi==2018.8.24 \
 chardet==3.0.4 \
     --hash=sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae \
     --hash=sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691
-josepy==1.1.0 \
-    --hash=sha256:1309a25aac3caeff5239729c58ff9b583f7d022ffdb1553406ddfc8e5b52b76e \
-    --hash=sha256:fb5c62c77d26e04df29cb5ecd01b9ce69b6fcc9e521eb1ca193b7faa2afa7086
 pyOpenSSL==18.0.0 \
     --hash=sha256:26ff56a6b5ecaf3a2a59f132681e2a80afcc76b4f902f612f518f92c2a1bf854 \
     --hash=sha256:6488f1423b00f73b7ad5167885312bb0ce410d3312eb212393795b53c8caa580
@@ -300,11 +291,6 @@ msgpack==0.5.1 \
     --hash=sha256:81cdd29e3849b5772ffdee4dee1c83054716f395ff78f502bf0949d1e1409a83 \
     --hash=sha256:1dc60a4cfa9433876c4b6e5ab4dc91a2337b2b88fb1d20c54910b0a3f25219bc \
     --hash=sha256:f5ebef2049f25da6d7ea53c3f95b4ba175ea9d96fadb60add80fc501a522bcc9
-
-#
-# Non-runtime-requirements only needed for test running etc.
-#
-
 flake8==3.5.0 \
     --hash=sha256:c7841163e2b576d435799169b78703ad6ac1bbb0f199994fc05f700b2a90ea37 \
     --hash=sha256:7253265f7abd8b313e3892944044a365e3f4ac3fcdcfb4298f55ee9ddf188ba0
