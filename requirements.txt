@@ -101,12 +101,9 @@ configparser==3.5.0 \
 pycodestyle==2.3.1 \
     --hash=sha256:6c4245ade1edfad79c3446fadfc96b0de2759662dc29d07d80a6f27ad1ca6ba9 \
     --hash=sha256:682256a5b318149ca0d2a9185d365d8864a768a28db66a84a2ea946bcc426766
-django-configurations==2.0 \
-    --hash=sha256:b4a4eb3ed631c2abbeb7008b5cc5d8d04b190df838e7b613731d728f674f3a2f \
-    --hash=sha256:be47e25d070fd005cc8fbd6c913c9ec37e83d04686937afe18ca6c579b2cdedb
-django-cache-url==2.0.0 \
-    --hash=sha256:f0009452c4d63468714c7ff59266085947f3f3cc0947b3b2e87121bb27538d6c \
-    --hash=sha256:d7e7d3f3fadaa38ab7c655afafc85c2a1b06a3ddc0002af4ae021c1948307f8b
+django-configurations==2.1 \
+    --hash=sha256:71d9acdff33aa034f0157b0b3d23629fe0cd499bf4d0b6d699b9ca0701d952e8 \
+    --hash=sha256:e70433eeed10549d30bf5ca386c962505ff9f492893dd2483c52af536347adce
 cryptography==2.3.1 \
     --hash=sha256:02602e1672b62e803e08617ec286041cc453e8d43f093a5f4162095506bc0beb \
     --hash=sha256:10b48e848e1edb93c1d3b797c83c72b4c387ab0eb4330aaa26da8049a6cbede0 \
