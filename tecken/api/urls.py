@@ -24,6 +24,7 @@ urlpatterns = [
     path("tokens/", views.tokens, name="tokens"),
     path("tokens/token/<int:id>", views.delete_token, name="delete_token"),
     path("uploads/", views.uploads, name="uploads"),
+    path("uploads/created/", views.uploads_created, name="uploads_created"),
     path("uploads/files/", views.upload_files, name="upload_files"),
     path("uploads/files/file/<int:id>", views.upload_file, name="upload_file"),
     path("uploads/upload/<int:id>", views.upload, name="upload"),

@@ -522,6 +522,7 @@ class Base(Core):
     # How many uploads to display per page when paginating through
     # past uploads.
     API_UPLOADS_BATCH_SIZE = 20
+    API_UPLOADS_CREATED_BATCH_SIZE = 20
     API_FILES_BATCH_SIZE = 40
     API_DOWNLOADS_MISSING_BATCH_SIZE = 20
     API_DOWNLOADS_MICROSOFT_BATCH_SIZE = 20

@@ -92,9 +92,12 @@ class BaseFilteringForm(forms.Form):
         self.valid_sorts = kwargs.pop("valid_sorts", None)
         super().__init__(*args, **kwargs)
 
-    def _clean_dates(self, values):
+    def _clean_dates(self, values, date=False):
         """return a list of either a datetime, date or None.
-        Each one can have an operator."""
+        Each one can have an operator.
+
+        If @date is True, the values haves to be datetime.date instances only.
+        """
         if not values:
             return []
         dates = []
@@ -119,6 +122,8 @@ class BaseFilteringForm(forms.Form):
                     raise forms.ValidationError(f"Unable to parse {rest!r}")
                 if timezone.is_naive(date_obj):
                     date_obj = timezone.make_aware(date_obj)
+            if date:
+                date_obj = date_obj.date()
             dates.append((operator, date_obj))
 
         return dates
@@ -144,27 +149,7 @@ class BaseFilteringForm(forms.Form):
         return cleaned
 
 
-class UploadsForm(BaseFilteringForm):
-    user = forms.CharField(required=False)
-    size = forms.CharField(required=False)
-    created_at = forms.CharField(required=False)
-    completed_at = forms.CharField(required=False)
-
-    def clean_user(self):
-        value = self.cleaned_data["user"]
-        operator = "="  # default
-        if value.startswith("!"):
-            operator = "!"
-            value = value[1:].strip()
-        if value:
-            # If it can be converted to an object, use that!
-            try:
-                return [operator, User.objects.get(email__icontains=value)]
-            except (User.DoesNotExist, User.MultipleObjectsReturned):
-                # Send the whole string which will result in a regex match
-                # later.
-                return [operator, value]
-
+class CleanSizeMixin:
     def clean_size(self):
         values = self.cleaned_data["size"]
         if not values:
@@ -200,11 +185,41 @@ class UploadsForm(BaseFilteringForm):
             sizes.append((operator, rest))
         return sizes
 
+
+class UploadsForm(BaseFilteringForm, CleanSizeMixin):
+    user = forms.CharField(required=False)
+    size = forms.CharField(required=False)
+    created_at = forms.CharField(required=False)
+    completed_at = forms.CharField(required=False)
+
+    def clean_user(self):
+        value = self.cleaned_data["user"]
+        operator = "="  # default
+        if value.startswith("!"):
+            operator = "!"
+            value = value[1:].strip()
+        if value:
+            # If it can be converted to an object, use that!
+            try:
+                return [operator, User.objects.get(email__icontains=value)]
+            except (User.DoesNotExist, User.MultipleObjectsReturned):
+                # Send the whole string which will result in a regex match
+                # later.
+                return [operator, value]
+
     def clean_created_at(self):
         return self._clean_dates(self.cleaned_data["created_at"])
 
     def clean_completed_at(self):
         return self._clean_dates(self.cleaned_data["completed_at"])
+
+
+class UploadsCreatedForm(BaseFilteringForm, CleanSizeMixin):
+    date = forms.CharField(required=False)
+    size = forms.CharField(required=False)
+
+    def clean_date(self):
+        return self._clean_dates(self.cleaned_data["date"], date=True)
 
 
 class FileUploadsForm(UploadsForm):
