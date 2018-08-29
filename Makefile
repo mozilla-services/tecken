@@ -91,9 +91,9 @@ build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
 
 lintcheck: .env .docker-build
-	docker-compose run web lintcheck
+	docker-compose run linting lintcheck
 	docker-compose run frontend lint
 
 lintfix: .env .docker-build
-	docker-compose run web blackfix
+	docker-compose run linting blackfix
 	docker-compose run frontend lintfix

@@ -32,6 +32,7 @@ from tecken.base.decorators import (
 from tecken.upload.utils import (
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
+    DuplicateFileDifferentSize,
     upload_file_upload,
 )
 from tecken.symbolicate.tasks import invalidate_symbolicate_cache_task
@@ -212,6 +213,8 @@ def upload_archive(request, upload_dir):
         return http.JsonResponse(
             {"error": f'Unrecognized archive file extension "{exception}"'}, status=400
         )
+    except DuplicateFileDifferentSize as exception:
+        return http.JsonResponse({"error": str(exception)}, status=400)
     error = check_symbols_archive_file_listing(file_listing)
     if error:
         return http.JsonResponse({"error": error.strip()}, status=400)

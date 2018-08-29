@@ -30,11 +30,16 @@ from tecken.upload.utils import (
 from tecken.upload.tasks import update_uploads_created_task
 
 
-_here = os.path.dirname(__file__)
-ZIP_FILE = os.path.join(_here, "sample.zip")
-INVALID_ZIP_FILE = os.path.join(_here, "invalid.zip")
-INVALID_CHARACTERS_ZIP_FILE = os.path.join(_here, "invalid-characters.zip")
-ACTUALLY_NOT_ZIP_FILE = os.path.join(_here, "notazipdespiteitsname.zip")
+def _join(x):
+    return os.path.join(os.path.dirname(__file__), x)
+
+
+ZIP_FILE = _join("sample.zip")
+INVALID_ZIP_FILE = _join("invalid.zip")
+INVALID_CHARACTERS_ZIP_FILE = _join("invalid-characters.zip")
+ACTUALLY_NOT_ZIP_FILE = _join("notazipdespiteitsname.zip")
+DUPLICATED_SAME_SIZE_ZIP_FILE = _join("duplicated-same-size.zip")
+DUPLICATED_DIFFERENT_SIZE_ZIP_FILE = _join("duplicated-different-size.zip")
 
 
 class FakeUser:
@@ -65,6 +70,13 @@ def test_dump_and_extract(tmpdir):
     assert os.path.isdir(os.path.join(tmpdir, "xpcshell.dbg"))
     assert os.path.isdir(os.path.join(tmpdir, "south-africa-flag"))
     assert os.path.isfile(os.path.join(tmpdir, "build-symbols.txt"))
+
+
+def test_dump_and_extract_duplicate_name_same_size(tmpdir):
+    with open(DUPLICATED_SAME_SIZE_ZIP_FILE, "rb") as f:
+        file_listings = dump_and_extract(tmpdir, f, DUPLICATED_SAME_SIZE_ZIP_FILE)
+    # Even though the file contains 2 files.
+    assert len(file_listings) == 1
 
 
 def test_should_compressed_key(settings):
@@ -1182,6 +1194,25 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         assert response.status_code == 400
         error_msg = (
             "Invalid character in filename " "'xpcfoo.dbg/A7D6F1BB18CD4CB48/p%eter.sym'"
+        )
+        assert response.json()["error"] == error_msg
+
+
+@pytest.mark.django_db
+def test_upload_duplicate_files_in_zip_different_name(fakeuser, client, settings):
+    url = reverse("upload:upload_archive")
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename="upload_symbols")
+    token.permissions.add(permission)
+
+    # Upload a file whose members have some repeated name AND different size
+    with open(DUPLICATED_DIFFERENT_SIZE_ZIP_FILE, "rb") as f:
+        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
+        assert response.status_code == 400
+        error_msg = (
+            "The zipfile buffer contains two files both called "
+            "foo.pdb/50FEB8DBDC024C66B42193D881CE80E12/ntdll.sym and they have "
+            "difference sizes (24 != 39)"
         )
         assert response.json()["error"] == error_msg
 

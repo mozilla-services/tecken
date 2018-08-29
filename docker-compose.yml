@@ -48,6 +48,19 @@ services:
       - $PWD:/app
     command: web-dev
 
+  linting:
+    extends:
+      service: base
+    volumes:
+      - $PWD:/app
+    command: lintcheck
+
+  # Same as linting but without volume mounts for CI.
+  linting-ci:
+    extends:
+      service: base
+    command: lintcheck
+
   # Container specifically for running tests.
   test:
     extends:

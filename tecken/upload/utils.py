@@ -33,6 +33,11 @@ class UnrecognizedArchiveFileExtension(ValueError):
     to extract."""
 
 
+class DuplicateFileDifferentSize(ValueError):
+    """When a zip file contains two identically named files whose file size is
+    different."""
+
+
 def get_file_md5_hash(fn, blocksize=65536):
     hasher = hashlib.md5()
     with open(fn, "rb") as f:
@@ -53,12 +58,28 @@ def dump_and_extract(root_dir, file_buffer, name):
     if name.lower().endswith(".zip"):
         zf = zipfile.ZipFile(file_buffer)
         zf.extractall(root_dir)
+        namelist = zf.namelist()
+        # If there are repeated names in the namelist, dig deeper!
+        if len(set(namelist)) != len(namelist):
+            # It's only a problem any of the files within are of different size
+            sizes = {}
+            for info in zf.infolist():
+                if info.filename in sizes:
+                    if info.file_size != sizes[info.filename]:
+                        raise DuplicateFileDifferentSize(
+                            "The zipfile buffer contains two files both called "
+                            f"{info.filename} and they have difference sizes "
+                            "({} != {})".format(info.file_size, sizes[info.filename])
+                        )
+                sizes[info.filename] = info.file_size
+        namelist = set(namelist)
+
     else:
         raise UnrecognizedArchiveFileExtension(os.path.splitext(name)[1])
 
     return [
         FileMember(os.path.join(root_dir, filename), filename)
-        for filename in zf.namelist()
+        for filename in namelist
         if os.path.isfile(os.path.join(root_dir, filename))
     ]
 
