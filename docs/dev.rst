@@ -665,13 +665,13 @@ To check that all code is formatted correctly, run:
 
 .. code-block:: shell
 
-    $ docker-compose run web lintcheck
+    $ docker-compose run linting lintcheck
 
 If you have a bunch of formatting complaints you can automatically fix them all with:
 
 .. code-block:: shell
 
-    $ docker-compose run web blackfix
+    $ docker-compose run linting blackfix
 
 
 Debugging ``minio`` container
