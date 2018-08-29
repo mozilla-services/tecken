@@ -40,7 +40,7 @@ jobs:
       - run:
           name: Run lint check
           command: |
-            docker-compose run linting lintcheck
+            docker-compose run linting-ci lintcheck
 
       - run:
           name: Linting check for frontend
