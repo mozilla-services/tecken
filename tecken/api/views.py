@@ -52,7 +52,11 @@ def _filter_form_dates(qs, form, keys):
             if value is None:
                 orm_operator = f"{key}__isnull"
                 qs = qs.filter(**{orm_operator: True})
-            elif operator == "=" and value.hour == 0 and value.minute == 0:
+            elif operator == "=" and (
+                not isinstance(value, datetime.datetime)
+                or value.hour == 0
+                and value.minute == 0
+            ):
                 # When querying on a specific day, make it a little easier
                 qs = qs.filter(
                     **{
@@ -519,6 +523,87 @@ def upload(request, id):
 
     context = {"upload": upload_dict}
     return http.JsonResponse(context)
+
+
+@api_login_required
+@api_permission_required("upload.view_all_uploads")
+def uploads_created(request):
+    context = {"uploads_created": []}
+
+    form = forms.UploadsCreatedForm(request.GET, valid_sorts=("size", "date"))
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+
+    pagination_form = forms.PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
+
+    qs = UploadsCreated.objects.all()
+    qs = filter_uploads_created(qs, form)
+
+    batch_size = settings.API_UPLOADS_CREATED_BATCH_SIZE
+
+    page = pagination_form.cleaned_data["page"]
+    start = (page - 1) * batch_size
+    end = start + batch_size
+
+    aggregates_numbers = qs.aggregate(
+        count=Sum("count"),
+        total=Count("id"),
+        size_avg=Avg("size"),
+        size=Sum("size"),
+        files=Sum("files"),
+        skipped=Sum("skipped"),
+        ignored=Sum("ignored"),
+    )
+    context["aggregates"] = {
+        "uploads_created": {
+            "count": aggregates_numbers["count"],
+            "files": aggregates_numbers["files"],
+            "size": aggregates_numbers["size"],
+            "size_avg": aggregates_numbers["size_avg"],
+            "skipped": aggregates_numbers["skipped"],
+            "ignored": aggregates_numbers["ignored"],
+        }
+    }
+
+    if form.cleaned_data.get("order_by"):
+        order_by = form.cleaned_data["order_by"]
+    else:
+        order_by = {"sort": "date", "reverse": True}
+
+    rows = []
+    order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
+    for created in qs.order_by(order_by_string)[start:end]:
+        rows.append(
+            {
+                "id": created.id,
+                "date": created.date,
+                "count": created.count,
+                "files": created.files,
+                "skipped": created.skipped,
+                "ignored": created.ignored,
+                "size": created.size,
+                "size_avg": created.size_avg,
+                "created_at": created.created_at,
+                # "modified_at": created.modified_at,
+            }
+        )
+
+    context["uploads_created"] = rows
+    context["total"] = aggregates_numbers["total"]
+    context["batch_size"] = batch_size
+    context["order_by"] = order_by
+
+    return http.JsonResponse(context)
+
+
+def filter_uploads_created(qs, form):
+    for operator, value in form.cleaned_data["size"]:
+        orm_operator = "size__{}".format(ORM_OPERATORS[operator])
+        qs = qs.filter(**{orm_operator: value})
+    qs = _filter_form_dates(qs, form, ("date",))
+    return qs
 
 
 @api_login_required

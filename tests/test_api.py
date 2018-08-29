@@ -692,6 +692,88 @@ def test_uploads_second_increment(client):
 
 
 @pytest.mark.django_db
+def test_uploads_created(client):
+    url = reverse("api:uploads_created")
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.get(url)
+    assert response.status_code == 403
+
+    permission = Permission.objects.get(codename="view_all_uploads")
+    user.user_permissions.add(permission)
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["uploads_created"] == []
+
+    # Don't mess with the 'page' key
+    response = client.get(url, {"page": "notanumber"})
+    assert response.status_code == 400
+    # If you make it 0 or less, it just sends you to page 1
+    response = client.get(url, {"page": "0"})
+    assert response.status_code == 200
+
+    now = timezone.now()
+    upload_created = UploadsCreated.objects.create(
+        date=now.date(),
+        count=12,
+        files=1000,
+        skipped=10,
+        ignored=5,
+        size=500_000_000,
+        size_avg=500_000,
+    )
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["uploads_created"][0]["id"] == upload_created.id
+    assert data["uploads_created"][0]["date"] == now.strftime("%Y-%m-%d")
+    assert data["uploads_created"][0]["count"] == 12
+    assert data["uploads_created"][0]["files"] == 1000
+    assert data["uploads_created"][0]["skipped"] == 10
+    assert data["uploads_created"][0]["ignored"] == 5
+    assert data["uploads_created"][0]["size"] == 500_000_000
+    assert data["uploads_created"][0]["size_avg"] == 500_000
+
+    # Filter incorrectly
+    response = client.get(url, {"size": ">= xxx"})
+    assert response.status_code == 400
+    assert response.json()["errors"]["size"]
+
+    # Let's filter on size
+    response = client.get(url, {"size": ">= 10KB"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["uploads_created"][0]["id"] == upload_created.id
+    assert data["total"] == 1
+
+    response = client.get(url, {"size": "< 1000"})
+    assert response.status_code == 200
+    data = response.json()
+    assert not data["uploads_created"]
+    assert data["total"] == 0
+
+    # Filter on "multiple sizes"
+    response = client.get(url, {"size": ">= 10KB, < 1g"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["uploads_created"][0]["id"] == upload_created.id
+
+    # Let's filter on dates
+    response = client.get(url, {"date": ">=" + now.strftime("%Y-%m-%d")})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["uploads_created"][0]["id"] == upload_created.id
+
+
+@pytest.mark.django_db
 def test_upload(client):
     url = reverse("api:upload", args=(9999999,))
     response = client.get(url)
