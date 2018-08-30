@@ -4,4 +4,4 @@ requirements:
   - requirements.txt
   - tests/systemtest/requirements.txt
   - docs-requirements.txt:
-    pin: False
+      pin: False
