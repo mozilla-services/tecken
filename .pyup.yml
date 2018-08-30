@@ -2,6 +2,8 @@ search: False
 label_prs: update
 requirements:
   - requirements.txt
+  - requirements-constraints.txt:
+      update: insecure
   - tests/systemtest/requirements.txt
   - docs-requirements.txt:
       pin: False
