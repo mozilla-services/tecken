@@ -3,7 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 import datetime
 
-from django.db import models, transaction
+from django.db import models
 from django.conf import settings
 from django.db.models import Aggregate, Count, Sum, Avg
 from django.utils import timezone
