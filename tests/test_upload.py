@@ -11,7 +11,7 @@ from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError
 
 from django.urls import reverse
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, User
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 
@@ -1460,3 +1460,30 @@ def test_update_uploads_created_task_empty():
     # Just to be sure, execute again and nothing should change.
     update_uploads_created_task()
     assert UploadsCreated.objects.all().count() == 1
+
+
+@pytest.mark.django_db
+def test_uploads_created_update():
+    today = timezone.now().date()
+    instance = UploadsCreated.update(today)
+    assert instance.date == today
+    assert instance.count == 0
+
+    user = User.objects.create(email="her@example.com")
+    for i in range(10):
+        upload = Upload.objects.create(
+            user=user,
+            # Make it a huge number to make sure it's (when x10) bigger than
+            # the max size of a regular 'integer' in postgres.
+            size=250_000_000,
+            skipped_keys=["foo"],
+            ignored_keys=["bar"],
+        )
+        FileUpload.objects.create(upload=upload, size=123499, key="foo.sym")
+
+    old_instance = instance
+    instance = UploadsCreated.update(today)
+    assert old_instance.id == instance.id
+    assert instance.date == today
+    assert instance.count == 10
+    assert instance.size == 2_500_000_000

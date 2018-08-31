@@ -774,6 +774,37 @@ def test_uploads_created(client):
 
 
 @pytest.mark.django_db
+def test_uploads_created_backfilled(client):
+    url = reverse("api:uploads_created_backfilled")
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    # Create some fake uploads
+    Upload.objects.create(user=user, size=10_000_000)
+
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user.is_superuser = True
+    user.save()
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert not data["backfilled"]
+
+    response = client.post(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["updated"]
+    assert data["backfilled"]
+
+
+@pytest.mark.django_db
 def test_upload(client):
     url = reverse("api:upload", args=(9999999,))
     response = client.get(url)
