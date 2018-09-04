@@ -625,11 +625,12 @@ def uploads_created_backfilled(request):
 
     if request.method == "POST":
         days = int(request.POST.get("days", 2))
+        force = request.POST.get("force", "no") not in ("no", "0", "false")
         start = min_uploads.date()
         today = timezone.now().date()
         context["updated"] = []
         while start <= today:
-            if not UploadsCreated.objects.filter(date=start).exists():
+            if force or not UploadsCreated.objects.filter(date=start).exists():
                 record = UploadsCreated.update(start)
                 context["updated"].append({"date": record.date, "count": record.count})
                 if len(context["updated"]) >= days:
