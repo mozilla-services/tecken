@@ -4,7 +4,6 @@
 """
 Django settings for tecken project.
 """
-import datetime
 import logging
 import subprocess
 import os
