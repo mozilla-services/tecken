@@ -97,7 +97,7 @@ def task_tester(request):
             )
         for i in range(3):
             value = cache.get("marco")
-            if value == "polo":
+            if value:
                 return http.HttpResponse("It works!\n")
             time.sleep(1)
 

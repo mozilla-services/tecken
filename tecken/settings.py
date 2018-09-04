@@ -28,15 +28,6 @@ class AWS:
 
 class Celery:
 
-    # Use the django_celery_results cache backend.
-    CELERY_RESULT_BACKEND = "django-cache"
-
-    # Throw away task results after 1 hour, for debugging purposes.
-    CELERY_RESULT_EXPIRES = datetime.timedelta(minutes=60)
-
-    # Track if a task has been started, not only pending etc.
-    CELERY_TASK_TRACK_STARTED = True
-
     # Add a 5 minute soft timeout to all Celery tasks.
     CELERY_TASK_SOFT_TIME_LIMIT = 60 * 5
 
@@ -88,7 +79,6 @@ class Core(AWS, Configuration, Celery, S3):
         "tecken.benchmarking",
         # Third party apps
         "dockerflow.django",
-        "django_celery_results",  # Is this still necessary?
         # Third party apps, that need to be listed last
         "mozilla_django_oidc",
     ]
