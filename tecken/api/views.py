@@ -15,7 +15,7 @@ from django import get_version
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User, Group
-from django.db.models import Aggregate, Count, Q, Sum, Avg, F
+from django.db.models import Aggregate, Count, Q, Sum, Avg, F, Min
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_protect
@@ -599,11 +599,45 @@ def uploads_created(request):
 
 
 def filter_uploads_created(qs, form):
-    for operator, value in form.cleaned_data["size"]:
-        orm_operator = "size__{}".format(ORM_OPERATORS[operator])
-        qs = qs.filter(**{orm_operator: value})
+    for key in ("size", "count"):
+        for operator, value in form.cleaned_data[key]:
+            orm_operator = "{}__{}".format(key, ORM_OPERATORS[operator])
+            qs = qs.filter(**{orm_operator: value})
     qs = _filter_form_dates(qs, form, ("date",))
     return qs
+
+
+@api_login_required
+@api_superuser_required
+def uploads_created_backfilled(request):
+    """Temporary function that serves two purposes. Ability to see if all the
+    UploadsCreated have been backfilled and actually do some backfill."""
+
+    context = {}
+    min_uploads = Upload.objects.aggregate(min=Min("created_at"))["min"]
+    days_till_today = (timezone.now() - min_uploads).days
+    uploads_created_count = UploadsCreated.objects.all().count()
+    context["uploads_created_count"] = uploads_created_count
+    context["days_till_today"] = days_till_today
+    context["backfilled"] = bool(
+        uploads_created_count and days_till_today + 1 == uploads_created_count
+    )
+
+    if request.method == "POST":
+        days = int(request.POST.get("days", 2))
+        force = request.POST.get("force", "no") not in ("no", "0", "false")
+        start = min_uploads.date()
+        today = timezone.now().date()
+        context["updated"] = []
+        while start <= today:
+            if force or not UploadsCreated.objects.filter(date=start).exists():
+                record = UploadsCreated.update(start)
+                context["updated"].append({"date": record.date, "count": record.count})
+                if len(context["updated"]) >= days:
+                    break
+            start += datetime.timedelta(days=1)
+        context["backfilled"] = True
+    return http.JsonResponse(context)
 
 
 @api_login_required

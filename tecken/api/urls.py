@@ -25,6 +25,11 @@ urlpatterns = [
     path("tokens/token/<int:id>", views.delete_token, name="delete_token"),
     path("uploads/", views.uploads, name="uploads"),
     path("uploads/created/", views.uploads_created, name="uploads_created"),
+    path(
+        "uploads/created/backfilled/",
+        views.uploads_created_backfilled,
+        name="uploads_created_backfilled",
+    ),
     path("uploads/files/", views.upload_files, name="upload_files"),
     path("uploads/files/file/<int:id>", views.upload_file, name="upload_file"),
     path("uploads/upload/<int:id>", views.upload, name="upload"),

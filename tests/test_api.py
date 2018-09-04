@@ -772,6 +772,59 @@ def test_uploads_created(client):
     data = response.json()
     assert data["uploads_created"][0]["id"] == upload_created.id
 
+    # Filter on count (negative)
+    response = client.get(url, {"count": "-1"})
+    assert response.status_code == 400
+    data = response.json()
+    assert data["errors"]["count"]
+
+    # Filter on count (not an integer)
+    response = client.get(url, {"count": "notanumber"})
+    assert response.status_code == 400
+    data = response.json()
+    assert data["errors"]["count"]
+
+    response = client.get(url, {"count": ">1"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["uploads_created"]
+
+    response = client.get(url, {"count": ">12"})
+    assert response.status_code == 200
+    data = response.json()
+    assert not data["uploads_created"]
+
+
+@pytest.mark.django_db
+def test_uploads_created_backfilled(client):
+    url = reverse("api:uploads_created_backfilled")
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    # Create some fake uploads
+    Upload.objects.create(user=user, size=10_000_000)
+
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user.is_superuser = True
+    user.save()
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert not data["backfilled"]
+
+    response = client.post(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["updated"]
+    assert data["backfilled"]
+
 
 @pytest.mark.django_db
 def test_upload(client):

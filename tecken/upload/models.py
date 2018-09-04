@@ -3,7 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 import datetime
 
-from django.db import models, transaction
+from django.db import models
 from django.conf import settings
 from django.db.models import Aggregate, Count, Sum, Avg
 from django.utils import timezone
@@ -107,7 +107,7 @@ class UploadsCreated(models.Model):
     files = models.PositiveIntegerField()
     skipped = models.PositiveIntegerField()
     ignored = models.PositiveIntegerField()
-    size = models.PositiveIntegerField()
+    size = models.BigIntegerField()
     size_avg = models.PositiveIntegerField()
     modified_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -142,16 +142,33 @@ class UploadsCreated(models.Model):
         file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
         files = file_uploads_qs.count()
 
-        with transaction.atomic():
-            cls.objects.filter(date=date).delete()
-            cls.objects.create(
+        count = aggregates_numbers["count"]
+        skipped = aggregates_numbers["skipped_sum"] or 0
+        ignored = aggregates_numbers["ignored_sum"] or 0
+        size = aggregates_numbers["size_sum"] or 0
+        size_avg = (
+            aggregates_numbers["size_avg"] and int(aggregates_numbers["size_avg"]) or 0
+        )
+        # XXX Can we just use update_or_create?? Probably wait till Django 2.1.1
+        if cls.objects.filter(date=date).exists():
+            # Update!
+            cls.objects.filter(date=date).update(
                 date=date,
-                count=aggregates_numbers["count"],
+                count=count,
                 files=files,
-                skipped=aggregates_numbers["skipped_sum"] or 0,
-                ignored=aggregates_numbers["ignored_sum"] or 0,
-                size=aggregates_numbers["size_sum"] or 0,
-                size_avg=aggregates_numbers["size_avg"]
-                and int(aggregates_numbers["size_avg"])
-                or 0,
+                skipped=skipped,
+                ignored=ignored,
+                size=size,
+                size_avg=size_avg,
+            )
+            return cls.objects.get(date=date)
+        else:
+            return cls.objects.create(
+                date=date,
+                count=count,
+                files=files,
+                skipped=skipped,
+                ignored=ignored,
+                size=size,
+                size_avg=size_avg,
             )
