@@ -81,20 +81,6 @@ services:
       - redis-store
       - redis-cache
 
-  # Container specifically for running system tests against a remote.
-  # Python based but distinct from the 'web' container.
-  systemtest:
-    build:
-      context: .
-      dockerfile: tests/systemtest/Dockerfile
-    volumes:
-      - $PWD:/app
-    environment:
-      - BASE_URL=http://web:8000
-    links:
-      - web
-      # - worker
-
   # Web container is a prod-like fully-functioning container.
   gunicorn:
     extends:
