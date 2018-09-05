@@ -101,6 +101,33 @@ class Tokens extends PureComponent {
     })
   }
 
+  extendToken = (id, days = null) => {
+    const formData = new FormData()
+    formData.append('days', days)
+    return Fetch(`/api/tokens/token/${id}/extend`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'same-origin',
+      headers: new Headers({
+        'X-CSRFToken': this.props.csrfToken
+      })
+    }).then(r => {
+      if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null
+        }
+        return r.json().then(response => {
+          store.setNotificationMessage(
+            `API Token extended ${response.days} days`
+          )
+          return this._fetchTokens()
+        })
+      } else {
+        store.fetchError = r
+      }
+    })
+  }
+
   render() {
     return (
       <div>
@@ -133,6 +160,7 @@ class Tokens extends PureComponent {
               totals={this.state.totals}
               filter={this.state.filter}
               deleteToken={this.deleteToken}
+              extendToken={this.extendToken}
               updateFilter={this.updateFilter}
             />
           </div>
@@ -309,6 +337,9 @@ class CreateTokenForm extends PureComponent {
 }
 
 class DisplayTokens extends PureComponent {
+  state = {
+    extend: null
+  }
   onDelete = (event, id, expired) => {
     event.preventDefault()
     if (expired || window.confirm('Are you sure?')) {
@@ -392,15 +423,38 @@ class DisplayTokens extends PureComponent {
                   </td>
                   <td style={{ maxWidth: 450 }}>{token.notes}</td>
                   <td>
-                    <button
-                      type="button"
-                      className="button is-danger is-small"
-                      onClick={event =>
-                        this.onDelete(event, token.id, token.is_expired)
-                      }
-                    >
-                      Delete
-                    </button>
+                    {!this.state.extend || this.state.extend !== token.id ? (
+                      <button
+                        type="button"
+                        className="button is-danger is-small"
+                        onClick={event =>
+                          this.onDelete(event, token.id, token.is_expired)
+                        }
+                      >
+                        Delete
+                      </button>
+                    ) : null}{' '}
+                    {this.state.extend && this.state.extend === token.id ? (
+                      <ExtendForm
+                        onSubmit={days => {
+                          this.props.extendToken(token.id, days).then(() => {
+                            this.setState({ extend: null })
+                          })
+                        }}
+                        onCancel={() => {
+                          this.setState({ extend: null })
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="button is-warning is-small"
+                        title="Extend when this token expires"
+                        onClick={() => this.setState({ extend: token.id })}
+                      >
+                        Extend
+                      </button>
+                    )}
                   </td>
                 </tr>
               )
@@ -408,6 +462,54 @@ class DisplayTokens extends PureComponent {
           </tbody>
         </table>
       </div>
+    )
+  }
+}
+
+class ExtendForm extends React.PureComponent {
+  state = {
+    loading: false
+  }
+  onSubmit = event => {
+    event.preventDefault()
+    this.setState({ loading: true }, () => {
+      this.props.onSubmit(this.refs.days.value)
+    })
+  }
+  render() {
+    return (
+      <form onSubmit={this.onSubmit}>
+        <span className="select">
+          <select ref="days" defaultValue={365}>
+            <option value={1}>1 day</option>
+            <option value={7}>1 week</option>
+            <option value={30}>1 month</option>
+            <option value={365}>1 year</option>
+            <option value={365 * 10}>10 years</option>
+          </select>
+        </span>{' '}
+        <button
+          type="submit"
+          className={
+            this.state.loading
+              ? 'button is-small is-primary is-loading'
+              : 'button is-small is-primary'
+          }
+        >
+          Extend
+        </button>{' '}
+        {!this.state.loading ? (
+          <button
+            type="button"
+            className="button is-small"
+            onClick={event => {
+              this.props.onCancel()
+            }}
+          >
+            Cancel
+          </button>
+        ) : null}
+      </form>
     )
   }
 }
@@ -450,11 +552,11 @@ const DisplayExpires = ({ expires }) => {
   const now = new Date()
   if (isBefore(date, now)) {
     return (
-      <span className="token-expired">
+      <span className="token-expired" title={expires}>
         {formatDistanceStrict(date, now)} ago
       </span>
     )
   } else {
-    return <span>in {formatDistanceStrict(date, now)}</span>
+    return <span title={expires}>in {formatDistanceStrict(date, now)}</span>
   }
 }
