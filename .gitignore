@@ -28,3 +28,4 @@ upload-inbox/
 miniodata/
 .pytest_cache/
 .cache/
+docsvenv
