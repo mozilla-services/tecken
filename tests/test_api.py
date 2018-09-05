@@ -261,6 +261,36 @@ def test_tokens_delete(client):
 
 
 @pytest.mark.django_db
+def test_tokens_extend(client):
+    url = reverse("api:extend_token", args=(9999999,))
+    response = client.get(url)
+    assert response.status_code == 405
+
+    response = client.post(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.post(url)
+    assert response.status_code == 404
+
+    # Create an actual token that can be deleted
+    token = Token.objects.create(user=user)
+    url = reverse("api:extend_token", args=(token.id,))
+    response = client.post(url, {"days": "xxx"})
+    assert response.status_code == 400
+    response = client.post(url, {"days": "10"})
+    assert response.status_code == 200
+    expires_before = token.expires_at
+    token.refresh_from_db()
+    expires_after = token.expires_at
+    assert (expires_after - expires_before).days == 10
+
+
+@pytest.mark.django_db
 def test_users(client):
     url = reverse("api:users")
     response = client.get(url)
