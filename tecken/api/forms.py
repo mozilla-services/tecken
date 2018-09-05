@@ -40,6 +40,18 @@ class TokenForm(forms.Form):
         return permissions
 
 
+class ExtendTokenForm(forms.Form):
+    days = forms.CharField(required=False)
+
+    def clean_days(self):
+        value = self.cleaned_data["days"]
+        if value:
+            try:
+                return int(value)
+            except ValueError:
+                raise forms.ValidationError(f"Invalid number of days ({value!r})")
+
+
 class TokensForm(forms.Form):
     state = forms.CharField(required=False)
 
@@ -217,9 +229,31 @@ class UploadsForm(BaseFilteringForm, CleanSizeMixin):
 class UploadsCreatedForm(BaseFilteringForm, CleanSizeMixin):
     date = forms.CharField(required=False)
     size = forms.CharField(required=False)
+    count = forms.CharField(required=False)
 
     def clean_date(self):
         return self._clean_dates(self.cleaned_data["date"], date=True)
+
+    def clean_count(self):
+        values = self.cleaned_data["count"]
+        if not values:
+            return []
+        sizes = []
+        operators = re.compile("<=|>=|<|>|=")
+        for block in [x.strip() for x in values.split(",") if x.strip()]:
+            if operators.findall(block):
+                operator, = operators.findall(block)
+            else:
+                operator = "="
+            rest = operators.sub("", block)
+            try:
+                rest = int(rest)
+                if rest < 0:
+                    raise forms.ValidationError(f"{rest!r} is negative")
+            except ValueError:
+                raise forms.ValidationError(f"{rest!r} is not an integer")
+            sizes.append((operator, rest))
+        return sizes
 
 
 class FileUploadsForm(UploadsForm):
