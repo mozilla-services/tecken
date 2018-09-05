@@ -22,6 +22,7 @@ urlpatterns = [
     path("stats/uploads", views.stats_uploads, name="stats_uploads"),
     path("stats/symbolication", views.stats_symbolication, name="stats_symbolication"),
     path("tokens/", views.tokens, name="tokens"),
+    path("tokens/token/<int:id>/extend", views.extend_token, name="extend_token"),
     path("tokens/token/<int:id>", views.delete_token, name="delete_token"),
     path("uploads/", views.uploads, name="uploads"),
     path("uploads/created/", views.uploads_created, name="uploads_created"),

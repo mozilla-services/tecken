@@ -223,6 +223,22 @@ def delete_token(request, id):
     return http.JsonResponse({"ok": True})
 
 
+@api_require_http_methods(["POST"])
+@api_login_required
+def extend_token(request, id):
+    token = get_object_or_404(Token, id=id, user=request.user)
+    form = forms.ExtendTokenForm(request.POST)
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+
+    days = form.cleaned_data["days"] or 365
+
+    token.expires_at = token.expires_at + datetime.timedelta(days=days)
+    token.save()
+
+    return http.JsonResponse({"ok": True, "days": days})
+
+
 def _serialize_permission(p):
     return {"id": p.id, "name": p.name}
 
@@ -599,9 +615,10 @@ def uploads_created(request):
 
 
 def filter_uploads_created(qs, form):
-    for operator, value in form.cleaned_data["size"]:
-        orm_operator = "size__{}".format(ORM_OPERATORS[operator])
-        qs = qs.filter(**{orm_operator: value})
+    for key in ("size", "count"):
+        for operator, value in form.cleaned_data[key]:
+            orm_operator = "{}__{}".format(key, ORM_OPERATORS[operator])
+            qs = qs.filter(**{orm_operator: value})
     qs = _filter_form_dates(qs, form, ("date",))
     return qs
 
@@ -619,16 +636,17 @@ def uploads_created_backfilled(request):
     context["uploads_created_count"] = uploads_created_count
     context["days_till_today"] = days_till_today
     context["backfilled"] = bool(
-        uploads_created_count and days_till_today == uploads_created_count
+        uploads_created_count and days_till_today + 1 == uploads_created_count
     )
 
     if request.method == "POST":
         days = int(request.POST.get("days", 2))
+        force = request.POST.get("force", "no") not in ("no", "0", "false")
         start = min_uploads.date()
         today = timezone.now().date()
         context["updated"] = []
         while start <= today:
-            if not UploadsCreated.objects.filter(date=start).exists():
+            if force or not UploadsCreated.objects.filter(date=start).exists():
                 record = UploadsCreated.update(start)
                 context["updated"].append({"date": record.date, "count": record.count})
                 if len(context["updated"]) >= days:
