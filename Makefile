@@ -71,8 +71,8 @@ gunicorn: .env .docker-build
 django-shell: .env .docker-build
 	docker-compose run web python manage.py shell
 
-docs: .env .docker-build
-	docker-compose run -u 0 web ./bin/build_docs.sh
+docs:
+	@bin/build-docs-locally.sh
 
 tag:
 	@bin/make-tag.py

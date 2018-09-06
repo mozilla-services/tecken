@@ -272,6 +272,11 @@ class Base(Core):
     REDIS_URL = values.Value("redis://redis-cache:6379/0")
     REDIS_STORE_URL = values.Value("redis://redis-store:6379/0")
 
+    REDIS_SOCKET_CONNECT_TIMEOUT = values.IntegerValue(1)
+    REDIS_SOCKET_TIMEOUT = values.IntegerValue(2)
+    REDIS_STORE_SOCKET_CONNECT_TIMEOUT = values.IntegerValue(1)
+    REDIS_STORE_SOCKET_TIMEOUT = values.IntegerValue(2)
+
     # Use redis as the Celery broker.
     @property
     def CELERY_BROKER_URL(self):
@@ -286,6 +291,8 @@ class Base(Core):
                 "OPTIONS": {
                     "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
                     "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
+                    "SOCKET_CONNECT_TIMEOUT": self.REDIS_SOCKET_CONNECT_TIMEOUT,
+                    "SOCKET_TIMEOUT": self.REDIS_SOCKET_TIMEOUT,
                 },
             },
             "store": {
@@ -294,6 +301,8 @@ class Base(Core):
                 "OPTIONS": {
                     "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
                     "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
+                    "SOCKET_CONNECT_TIMEOUT": self.REDIS_STORE_SOCKET_CONNECT_TIMEOUT,
+                    "SOCKET_TIMEOUT": self.REDIS_STORE_SOCKET_TIMEOUT,
                 },
             },
         }
