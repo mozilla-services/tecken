@@ -320,7 +320,7 @@ class Base(Core):
     LOGGING_DEFAULT_LEVEL = values.Value("INFO")
 
     def LOGGING(self):
-        return {
+        config = {
             "version": 1,
             "disable_existing_loggers": False,
             "formatters": {
@@ -347,7 +347,7 @@ class Base(Core):
             "root": {"level": "INFO", "handlers": ["sentry", "console"]},
             "loggers": {
                 "django": {
-                    "level": "WARNING",
+                    "level": "INFO",
                     "handlers": ["console"],
                     "propagate": False,
                 },
@@ -357,7 +357,7 @@ class Base(Core):
                     "propagate": False,
                 },
                 "django.request": {
-                    "level": "ERROR",
+                    "level": "INFO",
                     "handlers": ["console"],
                     "propagate": False,
                 },
@@ -393,7 +393,7 @@ class Base(Core):
                 },
                 "request.summary": {
                     "handlers": ["console"],
-                    "level": "DEBUG",
+                    "level": "INFO",
                     "propagate": False,
                 },
                 "django.security.DisallowedHost": {
@@ -402,6 +402,11 @@ class Base(Core):
                 },
             },
         }
+        if not self.LOGGING_USE_JSON:
+            # If you're not using JSON logging, there's no point using the
+            # 'request.summary' logger that python-dockerflow uses.
+            config["loggers"]["request.summary"]["handlers"] = []
+        return config
 
     CSRF_FAILURE_VIEW = "tecken.views.csrf_failure"
     CSRF_USE_SESSIONS = values.BooleanValue(True)
