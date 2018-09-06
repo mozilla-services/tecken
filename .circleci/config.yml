@@ -43,12 +43,6 @@ jobs:
             docker-compose run linting-ci lintcheck
 
       - run:
-          name: Linting check for frontend
-          command: |
-            # touch .env
-            docker-compose run frontend-ci lint
-
-      - run:
           name: Push to Dockerhub
           working_directory: ~/tecken
           command: |
@@ -87,6 +81,29 @@ jobs:
             cd docs
             make html
 
+  frontend_lint:
+    docker:
+      - image: circleci/node:latest
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ checksum "frontend/yarn.lock" }}
+      - run:
+          name: Install yarn packages
+          command: |
+            cd frontend
+            yarn
+      - save_cache:
+          key: deps1-{{ checksum "frontend/yarn.lock" }}
+          paths:
+            - "frontend/node_modules"
+      - run:
+          name: Run linting
+          command: |
+            cd frontend
+            node_modules/.bin/prettier -l src/**/*.js
+
 workflows:
   version: 2
   main:
@@ -96,3 +113,4 @@ workflows:
             tags:
               only: /.*/
       - docs
+      - frontend_lint
