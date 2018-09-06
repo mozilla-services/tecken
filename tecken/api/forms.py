@@ -40,6 +40,18 @@ class TokenForm(forms.Form):
         return permissions
 
 
+class ExtendTokenForm(forms.Form):
+    days = forms.CharField(required=False)
+
+    def clean_days(self):
+        value = self.cleaned_data["days"]
+        if value:
+            try:
+                return int(value)
+            except ValueError:
+                raise forms.ValidationError(f"Invalid number of days ({value!r})")
+
+
 class TokensForm(forms.Form):
     state = forms.CharField(required=False)
 

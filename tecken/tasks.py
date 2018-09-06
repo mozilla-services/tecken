@@ -17,7 +17,6 @@ def sample_task(key, value, expires=10):
     regular cache. This way, it can be used to test if celery is working.
 
     This is never expected to be used for anything run-time in production.
-    Just for basic systemtests.
     """
     if not value:
         raise SampleTaskError(f"'value' is falsy {value!r}")

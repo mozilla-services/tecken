@@ -224,7 +224,7 @@ long as it can scale up in the future it doesn't need to be big.
     setting the credentials or if that's automatically "implied"
     the VPC groups.
 
-Redis cache
+Redis Cache
 ===========
 
 The environment variable that needs to be set is: ``REDIS_URL``
@@ -241,8 +241,8 @@ as a broker for message queues by Celery.
 
 Expected version is **3.2** or higher.
 
-Redis LRU
-=========
+Redis Store
+===========
 
 Aka. Redis Store. This is the cache used for downloaded symbol files.
 The environment value key is called ``REDIS_STORE_URL`` and it can
@@ -267,6 +267,22 @@ Expected version is **3.2** or higher.
 .. _`config is not a valid command`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ClientConfig.RestrictedCommands.html
 .. _`ElastiCache Redis Parameter Group`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.3-2-4
 
+
+Redis Socket Timeouts
+=====================
+
+There are two Redis connections. The "Redis Cache" and the "Redis Store".
+These have both have the same defaults for
+``SOCKET_CONNECT_TIMEOUT`` (1 second) and ``SOCKET_TIMEOUT`` (2 seconds).
+
+The environment variables and their defaults are listed below:
+
+.. code-block:: shell
+
+    DJANGO_REDIS_SOCKET_CONNECT_TIMEOUT=1
+    DJANGO_REDIS_SOCKET_TIMEOUT=2
+    DJANGO_REDIS_STORE_SOCKET_CONNECT_TIMEOUT=1
+    DJANGO_REDIS_STORE_SOCKET_TIMEOUT=2
 
 StatsD
 ======

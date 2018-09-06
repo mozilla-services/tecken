@@ -14,7 +14,6 @@ help:
 	@echo "  run              Runs the whole stack, served on http://localhost:8000/"
 	@echo "  gunicorn         Runs the whole stack using gunicorn on http://localhost:8000/"
 	@echo "  stop             Stops the docker containers"
-	@echo "  systemtest       Run system tests against a running tecken"
 	@echo "  django-shell     Django integrative shell"
 	@echo "  psql             Open the psql cli"
 	@echo "  lintcheck        Check that the code is well formatted"
@@ -72,11 +71,8 @@ gunicorn: .env .docker-build
 django-shell: .env .docker-build
 	docker-compose run web python manage.py shell
 
-docs: .env .docker-build
-	docker-compose run -u 0 web ./bin/build_docs.sh
-
-systemtest: .env .docker-build
-	docker-compose run systemtest tests/systemtest/run_tests.sh
+docs:
+	@bin/build-docs-locally.sh
 
 tag:
 	@bin/make-tag.py

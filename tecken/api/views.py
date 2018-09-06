@@ -223,6 +223,22 @@ def delete_token(request, id):
     return http.JsonResponse({"ok": True})
 
 
+@api_require_http_methods(["POST"])
+@api_login_required
+def extend_token(request, id):
+    token = get_object_or_404(Token, id=id, user=request.user)
+    form = forms.ExtendTokenForm(request.POST)
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+
+    days = form.cleaned_data["days"] or 365
+
+    token.expires_at = token.expires_at + datetime.timedelta(days=days)
+    token.save()
+
+    return http.JsonResponse({"ok": True, "days": days})
+
+
 def _serialize_permission(p):
     return {"id": p.id, "name": p.name}
 
