@@ -131,7 +131,7 @@ class Core(AWS, Configuration, Celery, S3):
     # The default Cache-Control max-age used,
     WHITENOISE_MAX_AGE = values.IntegerValue(60 * 60)
 
-    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
     SESSION_CACHE_ALIAS = "default"
 
     # System Checks
@@ -282,6 +282,13 @@ class Base(Core):
     def CELERY_BROKER_URL(self):
         return self.REDIS_URL
 
+    # This name is hardcoded inside django-redis. It it's set to true in `settings`
+    # it means that django-redis will attempt WARNING log any exceptions that
+    # happen with the connection when it swallows the error(s).
+    DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = values.BooleanValue(True)
+
+    REDIS_IGNORE_EXCEPTIONS = values.BooleanValue(True)
+
     @property
     def CACHES(self):
         return {
@@ -293,6 +300,7 @@ class Base(Core):
                     "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
                     "SOCKET_CONNECT_TIMEOUT": self.REDIS_SOCKET_CONNECT_TIMEOUT,
                     "SOCKET_TIMEOUT": self.REDIS_SOCKET_TIMEOUT,
+                    "IGNORE_EXCEPTIONS": self.REDIS_IGNORE_EXCEPTIONS,
                 },
             },
             "store": {

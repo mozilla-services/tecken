@@ -241,6 +241,29 @@ as a broker for message queues by Celery.
 
 Expected version is **3.2** or higher.
 
+Redis Cache Errors
+==================
+
+By default, all exceptions that might happen when ``django-redis`` uses the
+default Redis cache are swallowed. This is done to alleviate potential
+disruption when AWS Elasticache is unresponsive, such as when it's upgraded.
+The Redis Cache is supposed to be for the sake of optimization in that it
+makes some slow computation unnecessary if repeated. But if the cache is
+not working at all (operational errors for example) it's better that the
+service continue to work even if it's slower than normal.
+
+If you want to disable this and have all Redis Cache exceptions bubbled up,
+which ultimately yields a 500 server error, change the environment variable to:
+
+.. code-block:: shell
+
+    DJANGO_REDIS_IGNORE_EXCEPTIONS=False
+
+.. Note::
+
+    If exceptions *do* happen, they are swallowed and logged and not entirely
+    disregarded.
+
 Redis Store
 ===========
 
