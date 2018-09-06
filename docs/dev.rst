@@ -675,3 +675,31 @@ The simplest solution is to delete the ``miniodata`` directory. E.g:
 .. code-block:: shell
 
     $ rm -fr miniodata
+
+
+Debugging a "broken" Redis
+==========================
+
+By default, we have our Redis Cache configured to swallow all exceptions
+(...and just log them). This is useful because the Redis Cache is only
+supposed to make things faster. It shouldn't block things from working even
+if that comes at a price of working slower.
+
+To simulate that Redis is "struggling" you can use the
+`CLIENT PAUSE <https://redis.io/commands/client-pause>`_ command. For example:
+
+.. code-block:: shell
+
+    $ make redis-cache-cli
+    redis-cache:6379> client pause 30000
+    OK
+
+Now, for 30 seconds (30,000 milliseconds) all attempts to talk to Redis Cache
+is going to cause a ``redis.exceptions.TimeoutError: Timeout reading from socket``
+exception which gets swallowed and logged. But you *should* be able to use
+the service fully.
+
+For example, all things related to authentication, such as your session cookie
+should continue to work because we use the ``cached_db`` backend in
+``settings.SESSION_ENGINE``. It just means we have to rely on PostgreSQL to
+verify the session cookie value on each and every request.

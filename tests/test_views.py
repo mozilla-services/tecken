@@ -140,6 +140,7 @@ def test_handler404(client):
     assert information["path"] == "/blabla"
 
 
+@pytest.mark.django_db
 def test_auth_debug(client):
     url = reverse("auth_debug")
 
