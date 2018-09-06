@@ -93,13 +93,7 @@ jobs:
           name: Install yarn packages
           command: |
             cd frontend
-            echo "Node modules files..."
-            ls -l node_modules || echo "No ./node_modules!"
-            echo "SIZE BEFORE"
-            du -sh node_modules || echo "No ./node_modules to du!"
             yarn
-            echo "SIZE AFTER"
-            du -sh node_modules
       - save_cache:
           key: deps1-{{ checksum "frontend/yarn.lock" }}
           paths:
