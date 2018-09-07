@@ -6,6 +6,7 @@
     }
   },
   "dockerfile": {
-    "pinDigests": true
+    "pinDigests": true,
+    "ignorePaths": ["docker/images/redis/"]
   }
 }
