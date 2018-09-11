@@ -1121,7 +1121,7 @@ def test_symbolicate_private_bucket_one_symbol_connectionerror(
         if operation_name == "GetObject":
             filename = api_params["Key"].split("/")[-1]
             if filename == "wntdll.sym":
-                raise botocore.exceptions.ConnectionError("so much hard!")
+                raise botocore.exceptions.ConnectionError(error="so much hard!")
             if filename in SAMPLE_SYMBOL_CONTENT:
                 return {
                     "Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))
