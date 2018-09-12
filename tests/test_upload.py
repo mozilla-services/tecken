@@ -8,7 +8,7 @@ from io import BytesIO
 
 import pytest
 from botocore.exceptions import ClientError
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, RetryError
 
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
@@ -20,7 +20,7 @@ from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload import utils
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.upload.views import get_bucket_info
-from tecken.upload.forms import UploadByDownloadForm
+from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.utils import (
     dump_and_extract,
     key_existing,
@@ -1112,6 +1112,29 @@ def test_upload_archive_by_url(
 
 
 @pytest.mark.django_db
+def test_upload_archive_by_url_remote_error(client, fakeuser, settings, requestsmock):
+
+    requestsmock.head(
+        "https://whitelisted.example.com/symbols.zip", exc=ConnectionError
+    )
+
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ["whitelisted.example.com"]
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename="upload_symbols")
+    token.permissions.add(permission)
+    url = reverse("upload:upload_archive")
+    response = client.post(
+        url,
+        data={"url": "https://whitelisted.example.com/symbols.zip"},
+        HTTP_AUTH_TOKEN=token.key,
+    )
+    assert response.status_code == 500
+    assert response.json()["error"] == (
+        "ConnectionError trying to open https://whitelisted.example.com/symbols.zip"
+    )
+
+
+@pytest.mark.django_db
 def test_upload_client_bad_request(fakeuser, client, settings):
 
     url = reverse("upload:upload_archive")
@@ -1368,15 +1391,11 @@ def test_UploadByDownloadForm_redirects_bad(requestsmock, settings):
         "https://download.example.com/symbols.zip",
         content=b"Internal Server Error",
         status_code=500,
-        headers={"Content-Length": "1234"},
     )
 
     form = UploadByDownloadForm({"url": "https://whitelisted.example.com/symbols.zip"})
-    assert not form.is_valid()
-    validation_errors, = form.errors.as_data().values()
-    assert validation_errors[0].message == (
-        "https://download.example.com/symbols.zip errored (500)"
-    )
+    with pytest.raises(UploadByDownloadRemoteError):
+        form.is_valid()
 
 
 def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
@@ -1387,11 +1406,8 @@ def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     )
 
     form = UploadByDownloadForm({"url": "https://whitelisted.example.com/symbols.zip"})
-    assert not form.is_valid()
-    validation_errors, = form.errors.as_data().values()
-    assert validation_errors[0].message == (
-        "ConnectionError trying to open " "https://whitelisted.example.com/symbols.zip"
-    )
+    with pytest.raises(UploadByDownloadRemoteError):
+        form.is_valid()
 
     # Suppose the HEAD request goes to another URL which eventually
     # raises a ConnectionError.
@@ -1404,11 +1420,8 @@ def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     )
     requestsmock.head("https://download.example.com/busted.zip", exc=ConnectionError)
     form = UploadByDownloadForm({"url": "https://whitelisted.example.com/redirect.zip"})
-    assert not form.is_valid()
-    validation_errors, = form.errors.as_data().values()
-    assert validation_errors[0].message == (
-        "ConnectionError trying to open " "https://download.example.com/busted.zip"
-    )
+    with pytest.raises(UploadByDownloadRemoteError):
+        form.is_valid()
 
     # Suppose the URL simply is not found.
     requestsmock.head(
@@ -1420,6 +1433,18 @@ def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     assert validation_errors[0].message == (
         "https://whitelisted.example.com/404.zip can't be found (404)"
     )
+
+
+def test_UploadByDownloadForm_retryerror(requestsmock, settings):
+    settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ["whitelisted.example.com"]
+
+    requestsmock.head(
+        "https://whitelisted.example.com/symbols.zip", exc=RetryError
+    )
+
+    form = UploadByDownloadForm({"url": "https://whitelisted.example.com/symbols.zip"})
+    with pytest.raises(UploadByDownloadRemoteError):
+        form.is_valid()
 
 
 def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):

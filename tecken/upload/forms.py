@@ -5,11 +5,26 @@
 import os
 from urllib.parse import urlparse
 
-import requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, RetryError
 
 from django import forms
 from django.conf import settings
+
+from tecken.base.utils import requests_retry_session
+
+
+class UploadByDownloadRemoteError(Exception):
+    """Happens when the upload-by-download URL is failing in a "transient" way.
+    For example, if the URL (when GET'ing) causes a ConnectionError or if it works
+    but returns a >=500 error. In those cases, we want to make sure the client
+    is informed "more strongly" than just getting a "400 Bad Request".
+
+    As a note;
+    See https://dxr.mozilla.org/mozilla-central/rev/423bdf7a802b0d302244492b423609187de39f56/toolkit/crashreporter/tools/upload_symbols.py#116
+    The Taskcluster symbol uploader knows to retry on any 5xx error. That's
+    meant to reflect 5xx in Tecken. But by carrying the 5xx from the
+    upload-by-download URL, we're doing them a favor.
+    """
 
 
 class UploadByDownloadForm(forms.Form):
@@ -60,12 +75,16 @@ class UploadByDownloadForm(forms.Form):
 
         def get_response(url):
             try:
-                response = requests.head(url)
+                response = requests_retry_session().head(url)
                 status_code = response.status_code
             except ConnectionError:
-                raise forms.ValidationError(f"ConnectionError trying to open {url}")
+                raise UploadByDownloadRemoteError(
+                    f"ConnectionError trying to open {url}"
+                )
+            except RetryError:
+                raise UploadByDownloadRemoteError(f"RetryError trying to open {url}")
             if status_code >= 500:
-                raise forms.ValidationError(f"{url} errored ({status_code})")
+                raise UploadByDownloadRemoteError(f"{url} errored ({status_code})")
             if status_code >= 400:
                 raise forms.ValidationError(f"{url} can't be found ({status_code})")
             if status_code >= 300 and status_code < 400:

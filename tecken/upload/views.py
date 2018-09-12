@@ -38,7 +38,7 @@ from tecken.upload.utils import (
 from tecken.symbolicate.tasks import invalidate_symbolicate_cache_task
 from tecken.upload.models import Upload
 from tecken.upload.tasks import update_uploads_created_task
-from tecken.upload.forms import UploadByDownloadForm
+from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.s3 import S3Bucket
 
 
@@ -160,7 +160,11 @@ def upload_archive(request, upload_dir):
         else:
             if request.POST.get("url"):
                 form = UploadByDownloadForm(request.POST)
-                if form.is_valid():
+                try:
+                    is_valid = form.is_valid()
+                except UploadByDownloadRemoteError as exception:
+                    return http.JsonResponse({"error": str(exception)}, status=500)
+                if is_valid:
                     url = form.cleaned_data["url"]
                     name = form.cleaned_data["upload"]["name"]
                     size = form.cleaned_data["upload"]["size"]
