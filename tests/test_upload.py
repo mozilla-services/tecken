@@ -1438,9 +1438,7 @@ def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
 def test_UploadByDownloadForm_retryerror(requestsmock, settings):
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ["whitelisted.example.com"]
 
-    requestsmock.head(
-        "https://whitelisted.example.com/symbols.zip", exc=RetryError
-    )
+    requestsmock.head("https://whitelisted.example.com/symbols.zip", exc=RetryError)
 
     form = UploadByDownloadForm({"url": "https://whitelisted.example.com/symbols.zip"})
     with pytest.raises(UploadByDownloadRemoteError):

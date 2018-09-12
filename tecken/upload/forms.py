@@ -20,7 +20,7 @@ class UploadByDownloadRemoteError(Exception):
     is informed "more strongly" than just getting a "400 Bad Request".
 
     As a note;
-    See https://dxr.mozilla.org/mozilla-central/rev/423bdf7a802b0d302244492b423609187de39f56/toolkit/crashreporter/tools/upload_symbols.py#116
+    See https://dxr.mozilla.org/mozilla-central/rev/423bdf7a802b0d302244492b423609187de39f56/toolkit/crashreporter/tools/upload_symbols.py#116 # noqa
     The Taskcluster symbol uploader knows to retry on any 5xx error. That's
     meant to reflect 5xx in Tecken. But by carrying the 5xx from the
     upload-by-download URL, we're doing them a favor.
