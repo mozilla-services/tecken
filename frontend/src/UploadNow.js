@@ -294,12 +294,12 @@ class UploadByDownloadForm extends UploadForm {
       body: formData,
       credentials: 'same-origin'
     }).then(r => {
+      this.setState({ loading: false })
       if (store.fetchError) {
         store.fetchError = null
       }
       if (r.status === 201) {
         this.setState({
-          loading: false,
           validationError: null,
           warning: null
         })
@@ -313,7 +313,6 @@ class UploadByDownloadForm extends UploadForm {
       } else if (r.status === 400) {
         r.json().then(data => {
           this.setState({
-            loading: false,
             validationError: data.error,
             warning: null
           })

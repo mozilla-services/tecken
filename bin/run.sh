@@ -63,8 +63,6 @@ case $1 in
   lintcheck)
     flake8 tecken tests
     black --check tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
-    ls -l frontend
-    ls -l /tmp
     ;;
   superuser)
     exec python manage.py superuser "${@:2}"
