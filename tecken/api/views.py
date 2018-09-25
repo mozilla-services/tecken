@@ -389,7 +389,7 @@ def uploads(request):
 
     rows = []
     order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
-    for upload in qs.select_related('user').order_by(order_by_string)[start:end]:
+    for upload in qs.select_related("user").order_by(order_by_string)[start:end]:
         rows.append(
             {
                 "id": upload.id,
