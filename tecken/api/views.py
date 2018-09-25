@@ -382,18 +382,6 @@ def uploads(request):
     file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
     context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
 
-    # Prepare a map of all user_id => user attributes
-    # This assumes that there are relatively few users who upload.
-    distinct_users_ids = [
-        x["user_id"] for x in qs.values("user_id").distinct("user_id")
-    ]
-    if distinct_users_ids:
-        # Only bother if there is a any distinct users
-        user_map = {
-            user.id: {"email": user.email}
-            for user in User.objects.filter(id__in=distinct_users_ids)
-        }
-
     if form.cleaned_data.get("order_by"):
         order_by = form.cleaned_data["order_by"]
     else:
@@ -401,11 +389,11 @@ def uploads(request):
 
     rows = []
     order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
-    for upload in qs.order_by(order_by_string)[start:end]:
+    for upload in qs.select_related("user").order_by(order_by_string)[start:end]:
         rows.append(
             {
                 "id": upload.id,
-                "user": user_map[upload.user_id],
+                "user": upload.user.email,
                 "filename": upload.filename,
                 "size": upload.size,
                 "bucket_name": upload.bucket_name,
