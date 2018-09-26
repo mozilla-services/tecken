@@ -5,7 +5,6 @@
 from io import StringIO
 
 import pytest
-from markus import TIMING
 
 from django.core.management.base import CommandError
 from django.contrib.auth.models import User
