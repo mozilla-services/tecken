@@ -419,10 +419,13 @@ const UploadsStatsTile = ({ loading, stats }) => (
         <thead>
           <tr>
             <th />
-            <th colSpan={2}>
+            <th>
               <Link to="/uploads">Uploads</Link>
             </th>
-            <th colSpan={2}>
+            <th>
+              <Link to="/uploads">Uploads Size</Link>
+            </th>
+            <th>
               <Link
                 to="/uploads/files"
                 title="Files from .zip uploads we actually upload to S3"
@@ -461,7 +464,6 @@ const UploadsRow = ({ title, uploads, files }) => {
       <td>{thousandFormat(uploads.count)}</td>
       <td>{formatFileSize(uploads.total_size)}</td>
       <td>{thousandFormat(files.count)}</td>
-      <td>{formatFileSize(files.total_size)}</td>
     </tr>
   )
 }
