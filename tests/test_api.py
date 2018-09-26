@@ -702,6 +702,7 @@ def test_uploads_second_increment(client):
     Upload.objects.create(
         user=User.objects.create(email="her@example.com"), size=123456
     )
+    UploadsCreated.update(timezone.now().date())
 
     response = client.get(url)
     assert response.status_code == 200

@@ -363,24 +363,50 @@ def uploads(request):
     start = (page - 1) * batch_size
     end = start + batch_size
 
-    aggregates_numbers = qs.aggregate(
-        count=Count("id"),
-        size_avg=Avg("size"),
-        size_sum=Sum("size"),
-        skipped_sum=SumCardinality("skipped_keys"),
-    )
-    context["aggregates"] = {
-        "uploads": {
-            "count": aggregates_numbers["count"],
-            "size": {
-                "average": aggregates_numbers["size_avg"],
-                "sum": aggregates_numbers["size_sum"],
+    if context["can_view_all"] and not any(form.cleaned_data.values()):
+        # If you can view ALL uploads and there's no filtering, we can use
+        # UploadsCreated instead which is much more efficient.
+        aggregates_numbers = UploadsCreated.objects.aggregate(
+            count=Sum("count"),
+            size_sum=Sum("size"),
+            skipped_sum=Sum("skipped"),
+            files=Sum("files"),
+        )
+        context["aggregates"] = {
+            "uploads": {
+                "count": aggregates_numbers["count"],
+                "size": {"sum": aggregates_numbers["size_sum"]},
+                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
             },
-            "skipped": {"sum": aggregates_numbers["skipped_sum"]},
+            "files": {"count": aggregates_numbers["files"]},
         }
-    }
-    file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
-    context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
+        # Do this later to avoid ZeroDivisionError
+        if aggregates_numbers["count"]:
+            context["aggregates"]["uploads"]["size"]["average"] = (
+                aggregates_numbers["size_sum"] / aggregates_numbers["count"]
+            )
+        else:
+            context["aggregates"]["uploads"]["size"]["average"] = None
+
+    else:
+        aggregates_numbers = qs.aggregate(
+            count=Count("id"),
+            size_avg=Avg("size"),
+            size_sum=Sum("size"),
+            skipped_sum=SumCardinality("skipped_keys"),
+        )
+        context["aggregates"] = {
+            "uploads": {
+                "count": aggregates_numbers["count"],
+                "size": {
+                    "average": aggregates_numbers["size_avg"],
+                    "sum": aggregates_numbers["size_sum"],
+                },
+                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
+            }
+        }
+        file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+        context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
 
     if form.cleaned_data.get("order_by"):
         order_by = form.cleaned_data["order_by"]
