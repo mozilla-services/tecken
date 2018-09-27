@@ -675,7 +675,7 @@ def uploads_created_backfilled(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api", tags=['endpoint:upload_files'])
+@metrics.timer_decorator("api", tags=["endpoint:upload_files"])
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
