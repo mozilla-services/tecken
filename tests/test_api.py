@@ -223,7 +223,7 @@ def test_tokens_create_bad_permissions_combo(client):
 
 @pytest.mark.django_db
 def test_tokens_delete(client):
-    url = reverse("api:delete_token", args=(9999999,))
+    url = reverse("api:delete_token", args=(9_999_999,))
     response = client.post(url)
     assert response.status_code == 405
 
@@ -262,7 +262,7 @@ def test_tokens_delete(client):
 
 @pytest.mark.django_db
 def test_tokens_extend(client):
-    url = reverse("api:extend_token", args=(9999999,))
+    url = reverse("api:extend_token", args=(9_999_999,))
     response = client.get(url)
     assert response.status_code == 405
 
@@ -590,7 +590,7 @@ def test_uploads(client):
 
     # Let's pretend there's an upload belonging to someone else
     upload = Upload.objects.create(
-        user=User.objects.create(email="her@example.com"), size=123456
+        user=User.objects.create(email="her@example.com"), size=123_456
     )
     # sanity check
     assert upload.created_at
@@ -700,7 +700,7 @@ def test_uploads_second_increment(client):
     assert client.login(username="peterbe", password="secret")
 
     Upload.objects.create(
-        user=User.objects.create(email="her@example.com"), size=123456
+        user=User.objects.create(email="her@example.com"), size=123_456
     )
     UploadsCreated.update(timezone.now().date())
 
@@ -859,7 +859,7 @@ def test_uploads_created_backfilled(client):
 
 @pytest.mark.django_db
 def test_upload(client):
-    url = reverse("api:upload", args=(9999999,))
+    url = reverse("api:upload", args=(9_999_999,))
     response = client.get(url)
     # Won't even let you in to find out that ID doesn't exist.
     assert response.status_code == 403
@@ -876,7 +876,7 @@ def test_upload(client):
 
     upload = Upload.objects.create(
         user=User.objects.create(email="her@example.com"),
-        size=123456,
+        size=123_456,
         skipped_keys=["foo"],
         ignored_keys=["bar"],
     )
@@ -910,7 +910,7 @@ def test_upload_related(client):
 
     upload = Upload.objects.create(
         user=User.objects.create(email="her@example.com"),
-        size=123456,
+        size=123_456,
         skipped_keys=["foo"],
         ignored_keys=["bar"],
         filename="symbols.zip",
@@ -968,7 +968,7 @@ def test_upload_files(client, settings):
 
     # Let's pretend there's an upload belonging to someone else
     upload = Upload.objects.create(
-        user=User.objects.create(email="her@example.com"), size=123456
+        user=User.objects.create(email="her@example.com"), size=123_456
     )
     # sanity check
     assert upload.created_at
@@ -1129,8 +1129,8 @@ def test_stats_uploads(client):
     UploadsCreated.objects.create(
         date=timezone.now().date(),
         count=3,
-        size=123456789,
-        size_avg=500000,
+        size=123_456_789,
+        size_avg=500_000,
         files=100,
         skipped=1,
         ignored=2,
@@ -1142,7 +1142,7 @@ def test_stats_uploads(client):
 
     assert data["uploads"]["today"]["count"] == 3
     assert data["uploads"]["today"]["files"] == 100
-    assert data["uploads"]["today"]["total_size"] == 123456789
+    assert data["uploads"]["today"]["total_size"] == 123_456_789
     assert data["uploads"]["today"]["total_size_human"] == "117.7 MB"
     assert data["uploads"]["yesterday"]["count"] == 0
     assert data["uploads"]["yesterday"]["files"] == 0
@@ -1150,7 +1150,7 @@ def test_stats_uploads(client):
     assert data["uploads"]["yesterday"]["total_size_human"] == "0 bytes"
     assert data["uploads"]["this_month"]["count"] == 3
     assert data["uploads"]["this_month"]["files"] == 100
-    assert data["uploads"]["this_month"]["total_size"] == 123456789
+    assert data["uploads"]["this_month"]["total_size"] == 123_456_789
     assert data["uploads"]["this_month"]["total_size_human"] == "117.7 MB"
 
 
@@ -1240,7 +1240,7 @@ def test_filter_uploads_by_user():
     user1 = User.objects.create(username="test1")
     Upload.objects.create(user=user1, filename="symbols1.zip", size=1234)
     user2 = User.objects.create(username="test2")
-    Upload.objects.create(user=user2, filename="symbols2.zip", size=123456789)
+    Upload.objects.create(user=user2, filename="symbols2.zip", size=123_456_789)
     qs = Upload.objects.all()
     form = UploadsForm({})
     assert form.is_valid()
@@ -1463,7 +1463,7 @@ def test_file_upload(client):
     assert response.status_code == 404
 
     upload = Upload.objects.create(
-        user=User.objects.create(email="her@example.com"), size=123456
+        user=User.objects.create(email="her@example.com"), size=123_456
     )
     # Also, let's pretend there's at least one file upload
     file_upload = FileUpload.objects.create(
@@ -1493,7 +1493,7 @@ def test_file_upload_try_upload(client):
     user.save()
     assert client.login(username="peterbe", password="secret")
 
-    upload = Upload.objects.create(user=user, size=123456, try_symbols=True)
+    upload = Upload.objects.create(user=user, size=123_456, try_symbols=True)
     # Also, let's pretend there's at least one file upload
     file_upload = FileUpload.objects.create(
         upload=upload, size=1234, key="foo.pdb/deadbeaf123/foo.sym"

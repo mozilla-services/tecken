@@ -1502,7 +1502,7 @@ def test_uploads_created_update():
             skipped_keys=["foo"],
             ignored_keys=["bar"],
         )
-        FileUpload.objects.create(upload=upload, size=123499, key="foo.sym")
+        FileUpload.objects.create(upload=upload, size=123_499, key="foo.sym")
 
     old_instance = instance
     instance = UploadsCreated.update(today)

@@ -160,7 +160,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
         {
             "jobs": [
                 {
-                    "stacks": [[0, 8057492], [1, 391014], [0, 52067355]],
+                    "stacks": [[0, 8_057_492], [1, 391_014], [0, 52_067_355]],
                     "memoryMap": [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
                 }
             ]
@@ -172,7 +172,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
     response = json_poster(
         url,
         {
-            "stacks": [[0, 8057492], [1, 391014], [0, 52067355]],
+            "stacks": [[0, 8_057_492], [1, 391_014], [0, 52_067_355]],
             "memoryMap": [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
         },
     )
@@ -185,7 +185,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
         {
             "jobs": [
                 {
-                    "stacks": [[[0, 8057492, 10000]]],
+                    "stacks": [[[0, 8_057_492, 10000]]],
                     "memoryMap": [["XUL", "8BC"], ["libsystem_c.dylib", "0F0"]],
                 }
             ]
@@ -200,7 +200,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
         {
             "jobs": [
                 {
-                    "stacks": [[[0, 11723767]]],
+                    "stacks": [[[0, 11_723_767]]],
                     "memoryMap": [["0" * 1025, "44E4EC8C2F41492B9369D6B9A059577C2"]],
                 }
             ]
@@ -211,7 +211,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
 
     # Valid JSON but empty/missing debugID
     response = json_poster(
-        url, {"jobs": [{"stacks": [[[0, 11723767]]], "memoryMap": [["xul.pdb", ""]]}]}
+        url, {"jobs": [{"stacks": [[[0, 11_723_767]]], "memoryMap": [["xul.pdb", ""]]}]}
     )
     assert response.status_code == 400
     assert response.json()["error"]
@@ -222,7 +222,7 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
         {
             "jobs": [
                 {
-                    "stacks": [[[0, 11723767]]],
+                    "stacks": [[[0, 11_723_767]]],
                     "memoryMap": [["firefox\x00", "44E4EC8C2F41492B9369D6B9A059577C2"]],
                 }
             ]
@@ -273,7 +273,7 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
     url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
         job = {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -358,7 +358,7 @@ def test_client_happy_path_v5_with_debug(
     url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
         job = {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -420,7 +420,7 @@ def test_client_happy_path_v5_with_m_prefix(
     url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(mock_api_call):
         job = {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -443,7 +443,7 @@ def test_v5_first_download_address_missing(
     url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(default_mock_api_call):
         job = {
-            "stacks": [[[0, 65648], [1, 11723767], [0, 65907]]],
+            "stacks": [[[0, 65648], [1, 11_723_767], [0, 65907]]],
             "memoryMap": [
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
@@ -505,7 +505,7 @@ def test_client_happy_path_v4(
     response = json_poster(
         url,
         {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -556,7 +556,7 @@ def test_symbolicate_through_root_gone(json_poster):
     response = json_poster(
         reverse("dashboard"),
         {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -575,7 +575,7 @@ def test_symbolicate_v4_json_one_cache_lookup(json_poster, clear_redis_store, bo
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802], [1, 55802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802], [1, 55802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -626,7 +626,7 @@ def test_symbolicate_v4_json_lru_causing_mischief(
     response = json_poster(
         url,
         {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -659,7 +659,7 @@ def test_symbolicate_v4_json_lru_causing_mischief(
     response = json_poster(
         url,
         {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -701,7 +701,7 @@ def test_symbolicate_v4_json_bad_module_indexes(
     response = json_poster(
         url,
         {
-            "stacks": [[[-1, 11723767], [1, 65802]]],
+            "stacks": [[[-1, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -726,7 +726,7 @@ def test_symbolicate_v4_json_bad_module_offset(
         response = json_poster(
             url,
             {
-                "stacks": [[[-1, 1.00000000], [1, 65802]]],
+                "stacks": [[[-1, 1.000_000_00], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -749,7 +749,7 @@ def test_symbolicate_v5_json_bad_module_offset(
         response = json_poster(
             url,
             {
-                "stacks": [[[-1, 1.00000000], [1, 65802]]],
+                "stacks": [[[-1, 1.000_000_00], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -771,7 +771,7 @@ def test_symbolicate_v4_json_happy_path_with_debug(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -809,7 +809,7 @@ def test_symbolicate_v4_json_happy_path_with_debug(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -862,7 +862,7 @@ def test_symbolicate_v4_json_one_symbol_not_found_with_debug(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -903,7 +903,7 @@ def test_symbolicate_v5_json_one_symbol_not_found(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -949,7 +949,7 @@ def test_symbolicate_v5_json_one_symbol_never_looked_up(
             {
                 # Note! We never use a module index of 1 to point to the
                 # second module in the memoryMap.
-                "stacks": [[[0, 11723767], [0, 65802]]],
+                "stacks": [[[0, 11_723_767], [0, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -985,7 +985,7 @@ def test_symbolicate_v4_json_one_symbol_empty(json_poster, clear_redis_store, bo
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -1006,7 +1006,7 @@ def test_symbolicate_v4_json_one_symbol_empty(json_poster, clear_redis_store, bo
     response = json_poster(
         url,
         {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -1040,7 +1040,7 @@ def test_symbolicate_public_bucket_one_symbol_500_error(
         json_poster(
             url,
             {
-                "stacks": [[[0, 11723767], [1, 65802]]],
+                "stacks": [[[0, 11_723_767], [1, 65802]]],
                 "memoryMap": [
                     ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                     ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -1066,7 +1066,7 @@ def test_symbolicate_public_bucket_one_symbol_sslerror(
     )
     url = reverse("symbolicate:symbolicate_v5_json")
     job = {
-        "stacks": [[[0, 11723767], [1, 65802]]],
+        "stacks": [[[0, 11_723_767], [1, 65802]]],
         "memoryMap": [
             ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
             ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -1097,7 +1097,7 @@ def test_symbolicate_public_bucket_one_symbol_readtimeout(
     )
     url = reverse("symbolicate:symbolicate_v5_json")
     job = {
-        "stacks": [[[0, 11723767], [1, 65802]]],
+        "stacks": [[[0, 11_723_767], [1, 65802]]],
         "memoryMap": [
             ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
             ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -1133,7 +1133,7 @@ def test_symbolicate_private_bucket_one_symbol_connectionerror(
     with botomock(mock_api_call):
         url = reverse("symbolicate:symbolicate_v5_json")
         job = {
-            "stacks": [[[0, 11723767], [1, 65802]]],
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
             "memoryMap": [
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
@@ -1155,14 +1155,14 @@ def test_symbolicate_v5_json_reused_memory_maps(
 
     url = reverse("symbolicate:symbolicate_v5_json")
     job1 = {
-        "stacks": [[[0, 11723767], [1, 65802]]],
+        "stacks": [[[0, 11_723_767], [1, 65802]]],
         "memoryMap": [
             ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
             ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
         ],
     }
     job2 = {
-        "stacks": [[[0, 10613656]]],
+        "stacks": [[[0, 10_613_656]]],
         "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
     }
     job3 = {
@@ -1216,7 +1216,7 @@ def test_invalidate_symbols_invalidates_cache(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767]]],
+                "stacks": [[[0, 11_723_767]]],
                 "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
             },
         )
@@ -1230,7 +1230,7 @@ def test_invalidate_symbols_invalidates_cache(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767]]],
+                "stacks": [[[0, 11_723_767]]],
                 "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
             },
         )
@@ -1247,7 +1247,7 @@ def test_invalidate_symbols_invalidates_cache(
         response = json_poster(
             url,
             {
-                "stacks": [[[0, 11723767]]],
+                "stacks": [[[0, 11_723_767]]],
                 "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
             },
         )
@@ -1284,7 +1284,7 @@ def test_change_symbols_urls_invalidates_cache(
     with botomock(mock_api_call):
         url = reverse("symbolicate:symbolicate_v5_json")
         job = {
-            "stacks": [[[0, 11723767]]],
+            "stacks": [[[0, 11_723_767]]],
             "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
         }
         response = json_poster(url, job, debug=True)
@@ -1333,7 +1333,7 @@ def test_symbolicate_huge_symbol_file(
             filename = api_params["Key"].split("/")[-1]
             if filename == "libxul.so.sym":
                 monster = []
-                for i in range(75_0000):
+                for i in range(750_000):
                     address = hex(i)
                     signature = format(i, ",")
                     monster.append(f"FUNC {address} 000 X {signature}")
@@ -1346,7 +1346,7 @@ def test_symbolicate_huge_symbol_file(
     url = reverse("symbolicate:symbolicate_v5_json")
     with botomock(mock_api_call):
         job = {
-            "stacks": [[[0, 75_000]]],
+            "stacks": [[[0, 75000]]],
             "memoryMap": [["libxul.so", "44E4EC8C2F41492B9369D6B9A059577C2"]],
         }
         response = json_poster(url, {"jobs": [job]})

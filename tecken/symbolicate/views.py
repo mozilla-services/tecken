@@ -622,7 +622,7 @@ class SymbolicateJSON:
                         all_keys.append(key)
                         buffer[key] = information["symbol_map"][key]
                         count += 1
-                        if count > 50_000:
+                        if count > 50000:
                             redis_store_connection.hmset(hmset_key, buffer)
                             count = 0
                             buffer = {}
