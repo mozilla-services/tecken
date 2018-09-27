@@ -638,8 +638,8 @@ if there were multiple files:
 
 `black <https://github.com/ambv/black>`_. is the Python code formatting tool we use
 to format all non-generated Python code. In CI, we test that all code passes
-``black --check ...``. When doing local development, consider setting up either
-some sort of "format on save" in your editor or a git pre-commit hook.
+``black --diff --check ...``. When doing local development, consider setting
+up either some sort of "format on save" in your editor or a git pre-commit hook.
 
 To check that all code is formatted correctly, run:
 
