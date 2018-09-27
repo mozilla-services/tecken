@@ -79,7 +79,7 @@ def _filter_form_dates(qs, form, keys):
     return qs
 
 
-@metrics.timer_decorator("api_auth")
+@metrics.timer_decorator("api", tags=["endpoint:auth"])
 def auth(request):
     context = {}
     if request.user.is_authenticated:
@@ -342,7 +342,7 @@ def edit_user(request, id):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api_uploads")
+@metrics.timer_decorator("api", tags=["endpoint:uploads"])
 @api_login_required
 def uploads(request):
     context = {
@@ -496,7 +496,7 @@ def filter_uploads(qs, can_view_all, user, form):
     return qs
 
 
-@metrics.timer_decorator("api_upload")
+@metrics.timer_decorator("api", tags=["endpoint:upload"])
 @api_login_required
 def upload(request, id):
     obj = get_object_or_404(Upload, id=id)
@@ -675,7 +675,7 @@ def uploads_created_backfilled(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api_upload_files")
+@metrics.timer_decorator("api", tags=["endpoint:upload_files"])
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
@@ -787,7 +787,7 @@ def upload_files(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api_upload_file")
+@metrics.timer_decorator("api", tags=["endpoint:upload_file"])
 @api_login_required
 def upload_file(request, id):
     file_upload = get_object_or_404(FileUpload, id=id)
@@ -854,7 +854,7 @@ def upload_file(request, id):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api_stats")
+@metrics.timer_decorator("api", tags=["endpoint:stats"])
 @api_login_required
 def stats(request):
     numbers = {}
@@ -1135,7 +1135,7 @@ def current_versions(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api_downloads_missing")
+@metrics.timer_decorator("api", tags=["endpoint:downloads_missing"])
 def downloads_missing(request):
     context = {}
     form = forms.DownloadsMissingForm(
@@ -1206,7 +1206,7 @@ def filter_missing_symbols(qs, form):
     return qs
 
 
-@metrics.timer_decorator("api_downloads_microsoft")
+@metrics.timer_decorator("api", tags=["endpoint:downloads_microsoft"])
 def downloads_microsoft(request):
     context = {}
     form = forms.DownloadsMicrosoftForm(request.GET)
