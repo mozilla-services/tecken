@@ -423,7 +423,7 @@ def uploads(request):
         rows.append(
             {
                 "id": upload.id,
-                "user": upload.user.email,
+                "user": {"email": upload.user.email},
                 "filename": upload.filename,
                 "size": upload.size,
                 "bucket_name": upload.bucket_name,
