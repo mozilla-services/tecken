@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "prettier": "1.14.3",
-    "react-scripts": "1.1.5"
+    "react-scripts": "2.0.4"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -25,5 +25,8 @@
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   },
-  "proxy": "http://web:8000"
+  "proxy": "http://web:8000",
+  "browserslist": [
+    "Firefox >= 62"
+  ]
 }

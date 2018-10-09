@@ -43,6 +43,7 @@ export default class File extends React.PureComponent {
   }
 
   goBack = event => {
+    event.preventDefault();
     this.props.history.goBack();
   };
 
@@ -82,12 +83,16 @@ export default class File extends React.PureComponent {
         <div className="is-clearfix">
           <p className="is-pulled-right">
             {this.props.history.action === "PUSH" && (
-              <a className="button is-small is-info" onClick={this.goBack}>
+              <Link
+                to="/uploads"
+                className="button is-small is-info"
+                onClick={this.goBack}
+              >
                 <span className="icon">
                   <i className="fa fa-backward" />
                 </span>{" "}
                 <span>Back to Uploads</span>
-              </a>
+              </Link>
             )}
             {this.props.history.action === "POP" && (
               <Link to="/uploads" className="button is-small is-info">

@@ -529,7 +529,7 @@ class DisplayKey extends PureComponent {
     return (
       <p>
         {code}
-        <a
+        <span
           title="Click to toggle displaying the whole key"
           className="button is-small"
           onClick={this.toggle}
@@ -541,7 +541,7 @@ class DisplayKey extends PureComponent {
               }
             />
           </span>
-        </a>
+        </span>
       </p>
     );
   }

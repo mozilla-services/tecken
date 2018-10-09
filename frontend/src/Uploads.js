@@ -344,33 +344,29 @@ class ShowNewUploadsCount extends React.PureComponent {
     }
     return (
       <p className="is-pulled-right">
-        {this.props.refreshing ? (
-          <a className="button is-small is-info" disabled>
-            <span className="icon">
-              <i className="fa fa-refresh fa-spin fa-3x fa-fw" />
-            </span>{" "}
-            <span>
-              {pluralize(
-                this.props.count,
-                "new upload available",
-                "new uploads available"
-              )}
-            </span>
-          </a>
-        ) : (
-          <a className="button is-small is-info" onClick={this.refresh}>
-            <span className="icon">
-              <i className="fa fa-refresh" />
-            </span>{" "}
-            <span>
-              {pluralize(
-                this.props.count,
-                "new upload available",
-                "new uploads available"
-              )}
-            </span>
-          </a>
-        )}
+        <Link
+          to="/uploads"
+          className="button is-small is-info"
+          disabled={this.props.refreshing}
+          onClick={this.refresh}
+        >
+          <span className="icon">
+            <i
+              className={
+                this.props.refreshing
+                  ? "fa fa-refresh fa-spin fa-3x fa-fw"
+                  : "fa fa-refresh"
+              }
+            />
+          </span>{" "}
+          <span>
+            {pluralize(
+              this.props.count,
+              "new upload available",
+              "new uploads available"
+            )}
+          </span>
+        </Link>
       </p>
     );
   }
