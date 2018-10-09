@@ -1,11 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 
-import {
-  toDate,
-  differenceInMinutes,
-  differenceInMilliseconds
-} from 'date-fns/esm'
+import { toDate, differenceInMinutes, differenceInMilliseconds } from 'date-fns'
 
 import {
   Loading,
