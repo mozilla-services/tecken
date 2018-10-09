@@ -1,7 +1,7 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import Fetch from './Fetch'
-import store from './Store'
+import React from "react";
+import { Link } from "react-router-dom";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 import {
   Loading,
@@ -13,13 +13,13 @@ import {
   filterToQueryString,
   parseQueryString,
   SortLink
-} from './Common'
+} from "./Common";
 
 class DownloadsMissing extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
-      pageTitle: 'Downloads Missing',
+      pageTitle: "Downloads Missing",
       loading: true,
       missing: null,
       aggregates: null,
@@ -29,22 +29,22 @@ class DownloadsMissing extends React.PureComponent {
       filter: {},
       validationErrors: null,
       orderBy: null
-    }
+    };
   }
 
   componentDidMount() {
-    document.title = this.state.pageTitle
-    store.resetApiRequests()
+    document.title = this.state.pageTitle;
+    store.resetApiRequests();
 
     if (this.props.location.search) {
       this.setState(
         { filter: parseQueryString(this.props.location.search) },
         () => {
-          this._fetchMissing()
+          this._fetchMissing();
         }
-      )
+      );
     } else {
-      this._fetchMissing()
+      this._fetchMissing();
     }
   }
 
@@ -55,24 +55,24 @@ class DownloadsMissing extends React.PureComponent {
     // and display the new data.
     this.setLoadingTimer = window.setTimeout(() => {
       if (!this.dismounted) {
-        this.setState({ loading: true })
+        this.setState({ loading: true });
       }
-    }, 1000)
-    let url = '/api/downloads/missing/'
-    const qs = filterToQueryString(this.state.filter, this.state.orderBy)
+    }, 1000);
+    let url = "/api/downloads/missing/";
+    const qs = filterToQueryString(this.state.filter, this.state.orderBy);
     if (qs) {
-      url += '?' + qs
+      url += "?" + qs;
     }
-    this.props.history.push({ search: qs })
+    this.props.history.push({ search: qs });
 
     return Fetch(url, {}).then(r => {
       if (this.setLoadingTimer) {
-        window.clearTimeout(this.setLoadingTimer)
+        window.clearTimeout(this.setLoadingTimer);
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState({
@@ -82,23 +82,23 @@ class DownloadsMissing extends React.PureComponent {
             batchSize: response.batch_size,
             validationErrors: null,
             orderBy: response.order_by
-          })
-        })
+          });
+        });
       } else if (r.status === 400) {
         return r.json().then(data => {
           this.setState({
             loading: false,
             refreshing: false,
             validationErrors: data.errors
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
         // Always return a promise
-        return Promise.resolve()
+        return Promise.resolve();
       }
-    })
-  }
+    });
+  };
 
   updateFilter = newFilters => {
     this.setState(
@@ -106,21 +106,21 @@ class DownloadsMissing extends React.PureComponent {
         filter: Object.assign({}, this.state.filter, newFilters)
       },
       this._fetchMissing
-    )
-  }
+    );
+  };
 
   resetAndReload = event => {
-    event.preventDefault()
+    event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
-      this._fetchMissing()
-    })
-  }
+      this._fetchMissing();
+    });
+  };
 
   changeOrderBy = orderBy => {
     this.setState({ orderBy: orderBy }, () => {
-      this._fetchMissing()
-    })
-  }
+      this._fetchMissing();
+    });
+  };
 
   render() {
     return (
@@ -169,36 +169,36 @@ class DownloadsMissing extends React.PureComponent {
           />
         )}
       </div>
-    )
+    );
   }
 }
 
-export default DownloadsMissing
+export default DownloadsMissing;
 
 class DisplayMissingSymbols extends React.PureComponent {
   componentDidMount() {
-    this._updateFilterInputs(this.props.filter)
+    this._updateFilterInputs(this.props.filter);
   }
 
   componentWillReceiveProps(nextProps) {
-    this._updateFilterInputs(nextProps.filter)
+    this._updateFilterInputs(nextProps.filter);
   }
 
   _updateFilterInputs = filter => {
-    this.refs.modified_at.value = filter.modified_at || ''
-    this.refs.count.value = filter.count || ''
-    this.refs.symbol.value = filter.symbol || ''
-    this.refs.debugid.value = filter.debugid || ''
-    this.refs.filename.value = filter.filename || ''
-  }
+    this.refs.modified_at.value = filter.modified_at || "";
+    this.refs.count.value = filter.count || "";
+    this.refs.symbol.value = filter.symbol || "";
+    this.refs.debugid.value = filter.debugid || "";
+    this.refs.filename.value = filter.filename || "";
+  };
 
   submitForm = event => {
-    event.preventDefault()
-    const modified_at = this.refs.modified_at.value.trim()
-    const count = this.refs.count.value.trim()
-    const symbol = this.refs.symbol.value.trim()
-    const debugid = this.refs.debugid.value.trim()
-    const filename = this.refs.filename.value.trim()
+    event.preventDefault();
+    const modified_at = this.refs.modified_at.value.trim();
+    const count = this.refs.count.value.trim();
+    const symbol = this.refs.symbol.value.trim();
+    const debugid = this.refs.debugid.value.trim();
+    const filename = this.refs.filename.value.trim();
     this.props.updateFilter({
       page: 1,
       modified_at,
@@ -206,20 +206,20 @@ class DisplayMissingSymbols extends React.PureComponent {
       symbol,
       debugid,
       filename
-    })
-  }
+    });
+  };
 
   resetFilter = event => {
-    this.refs.symbol.value = ''
-    this.refs.debugid.value = ''
-    this.refs.filename.value = ''
-    this.refs.count.value = ''
-    this.refs.modified_at.value = ''
-    this.props.resetAndReload(event)
-  }
+    this.refs.symbol.value = "";
+    this.refs.debugid.value = "";
+    this.refs.filename.value = "";
+    this.refs.count.value = "";
+    this.refs.modified_at.value = "";
+    this.props.resetAndReload(event);
+  };
 
   render() {
-    const { missing, aggregates } = this.props
+    const { missing, aggregates } = this.props;
 
     return (
       <form onSubmit={this.submitForm}>
@@ -267,21 +267,21 @@ class DisplayMissingSymbols extends React.PureComponent {
                   className="input"
                   ref="symbol"
                   placeholder="symbol..."
-                  style={{ width: '30%' }}
-                />{' '}
+                  style={{ width: "30%" }}
+                />{" "}
                 <input
                   type="text"
                   className="input"
                   ref="debugid"
                   placeholder="debugid..."
-                  style={{ width: '30%' }}
-                />{' '}
+                  style={{ width: "30%" }}
+                />{" "}
                 <input
                   type="text"
                   className="input"
                   ref="filename"
                   placeholder="filename..."
-                  style={{ width: '30%' }}
+                  style={{ width: "30%" }}
                 />
               </td>
               <td>
@@ -350,7 +350,7 @@ class DisplayMissingSymbols extends React.PureComponent {
 
         <ShowAggregates aggregates={aggregates} />
       </form>
-    )
+    );
   }
 }
 
@@ -359,24 +359,24 @@ const ShowMissingCodeAndId = ({ file, id }) => {
     return (
       <span>
         <b>file:</b> {file}
-        {'   '}
+        {"   "}
         <b>id:</b> {id}
       </span>
-    )
+    );
   } else if (file) {
     return (
       <span>
         <b>file:</b> {file}
       </span>
-    )
+    );
   } else if (id) {
     return (
       <span>
         <b>id:</b> {file}
       </span>
-    )
+    );
   }
-}
+};
 
 const ShowAggregates = ({ aggregates }) => {
   return (
@@ -420,5 +420,5 @@ const ShowAggregates = ({ aggregates }) => {
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};

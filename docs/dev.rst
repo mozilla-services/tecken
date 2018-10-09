@@ -532,6 +532,13 @@ If you get any output, it means it found files that should/could have been
 formatted. The error message will explain what files need attention and
 how to just format them all right now.
 
+If you don't really care all that much about what the difference is and
+just want to fix it automatically run:
+
+.. code-block:: shell
+
+    $ docker-compose run frontend lintfix
+
 .. _`Prettier`: https://prettier.io/
 
 

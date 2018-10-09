@@ -1,89 +1,89 @@
-import React from 'react'
-import './App.css'
+import React from "react";
+import "./App.css";
 import {
   BrowserRouter as Router,
   Route,
   Redirect,
   Switch,
   Link
-} from 'react-router-dom'
-import { withRouter } from 'react-router'
-import Raven from 'raven-js'
-import { observer } from 'mobx-react'
-import 'bulma/css/bulma.css'
+} from "react-router-dom";
+import { withRouter } from "react-router";
+import Raven from "raven-js";
+import { observer } from "mobx-react";
+import "bulma/css/bulma.css";
 
-import Nav from './Nav'
-import Home from './Home'
-import Help from './Help'
-import Tokens from './Tokens'
-import Uploads from './Uploads'
-import Downloads from './Downloads'
-import DownloadsMissing from './DownloadsMissing'
-import DownloadsMicrosoft from './DownloadsMicrosoft'
-import Upload from './Upload'
-import UploadNow from './UploadNow'
-import Files from './Files'
-import File from './File'
-import Users from './Users'
-import User from './User'
-import Symbolication from './Symbolication'
-import FetchError from './FetchError'
-import Fetch from './Fetch'
-import DisplayAPIRequests from './APIRequests'
-import store from './Store'
+import Nav from "./Nav";
+import Home from "./Home";
+import Help from "./Help";
+import Tokens from "./Tokens";
+import Uploads from "./Uploads";
+import Downloads from "./Downloads";
+import DownloadsMissing from "./DownloadsMissing";
+import DownloadsMicrosoft from "./DownloadsMicrosoft";
+import Upload from "./Upload";
+import UploadNow from "./UploadNow";
+import Files from "./Files";
+import File from "./File";
+import Users from "./Users";
+import User from "./User";
+import Symbolication from "./Symbolication";
+import FetchError from "./FetchError";
+import Fetch from "./Fetch";
+import DisplayAPIRequests from "./APIRequests";
+import store from "./Store";
 
 if (process.env.REACT_APP_SENTRY_PUBLIC_DSN) {
-  Raven.config(process.env.REACT_APP_SENTRY_PUBLIC_DSN).install()
+  Raven.config(process.env.REACT_APP_SENTRY_PUBLIC_DSN).install();
 }
 
-const NavWithRouter = withRouter(Nav)
+const NavWithRouter = withRouter(Nav);
 
 const App = observer(
   class App extends React.Component {
     constructor(props) {
-      super(props)
+      super(props);
       this.state = {
         redirectTo: null
-      }
+      };
     }
 
     componentWillMount() {
-      this._fetchAuth()
+      this._fetchAuth();
     }
 
     _fetchAuth = () => {
-      Fetch('/api/_auth/', { credentials: 'same-origin' }).then(r => {
+      Fetch("/api/_auth/", { credentials: "same-origin" }).then(r => {
         if (r.status === 200) {
           if (store.fetchError) {
-            store.fetchError = null
+            store.fetchError = null;
           }
           r.json().then(response => {
             if (response.user) {
-              store.currentUser = response.user
-              store.signOutUrl = response.sign_out_url
+              store.currentUser = response.user;
+              store.signOutUrl = response.sign_out_url;
               if (
                 document.location.search.match(/signedin=true/) &&
-                !sessionStorage.getItem('signedin')
+                !sessionStorage.getItem("signedin")
               ) {
-                sessionStorage.setItem('signedin', true)
+                sessionStorage.setItem("signedin", true);
                 // you have just signed in
                 store.setNotificationMessage(
                   `You have signed in as ${response.user.email}`
-                )
+                );
               }
             } else {
-              store.signInUrl = response.sign_in_url
+              store.signInUrl = response.sign_in_url;
             }
-          })
+          });
         } else {
-          store.fetchError = r
+          store.fetchError = r;
         }
-      })
-    }
+      });
+    };
 
     signIn = event => {
-      event.preventDefault()
-      let url = store.signInUrl
+      event.preventDefault();
+      let url = store.signInUrl;
       /* When doing local development, the Django runserver is
          running at 'http://web:8000', in Docker, as far as the React dev
          server is concerned. That doesn't work outside Docker
@@ -91,30 +91,30 @@ const App = observer(
          It's safe since the string replace is hardcoded and only does
          something if the original URL matched.
          */
-      url = url.replace('http://web:8000/', 'http://localhost:8000/')
-      document.location.href = url
-    }
+      url = url.replace("http://web:8000/", "http://localhost:8000/");
+      document.location.href = url;
+    };
 
     signOut = event => {
-      event.preventDefault()
-      let url = store.signOutUrl
+      event.preventDefault();
+      let url = store.signOutUrl;
       // See above explanation, in 'signIn()' about this "hack"
-      url = url.replace('http://web:8000/', 'http://localhost:3000/')
+      url = url.replace("http://web:8000/", "http://localhost:3000/");
       Fetch(url, {
-        method: 'POST',
-        credentials: 'same-origin',
-        redirect: 'manual'
+        method: "POST",
+        credentials: "same-origin",
+        redirect: "manual"
       }).then(r => {
-        sessionStorage.removeItem('signedin')
-        store.currentUser = false
-        store.setRedirectTo('/', {
-          message: 'Signed out',
+        sessionStorage.removeItem("signedin");
+        store.currentUser = false;
+        store.setRedirectTo("/", {
+          message: "Signed out",
           success: true
-        })
+        });
         // This'll refetch the signInUrl
-        this._fetchAuth()
-      })
-    }
+        this._fetchAuth();
+      });
+    };
 
     render() {
       // The reason we make this conditional first, rather than letting
@@ -125,7 +125,7 @@ const App = observer(
           <Router>
             <RedirectMaybe redirectTo={store.redirectTo} />
           </Router>
-        )
+        );
       }
       return (
         <Router>
@@ -142,7 +142,7 @@ const App = observer(
                     path="/"
                     exact
                     render={props => {
-                      return <Home {...props} signIn={this.signIn} />
+                      return <Home {...props} signIn={this.signIn} />;
                     }}
                   />
                   <Route path="/help" component={Help} />
@@ -176,14 +176,14 @@ const App = observer(
                   <p>
                     <strong>The Mozilla Symbol Server</strong>
                     <br />
-                    Powered by{' '}
+                    Powered by{" "}
                     <a
                       href="https://github.com/mozilla-services/tecken"
                       rel="noopener noreferrer"
                     >
                       Tecken
                     </a>
-                    {' • '}
+                    {" • "}
                     <a
                       href="https://tecken.readthedocs.io"
                       rel="noopener noreferrer"
@@ -196,12 +196,12 @@ const App = observer(
             </footer>
           </React.Fragment>
         </Router>
-      )
+      );
     }
   }
-)
+);
 
-export default App
+export default App;
 
 class NoMatch extends React.PureComponent {
   render() {
@@ -215,7 +215,7 @@ class NoMatch extends React.PureComponent {
           <Link to="/">Go back to Home</Link>
         </h2>
       </div>
-    )
+    );
   }
 }
 
@@ -223,41 +223,41 @@ class RedirectMaybe extends React.PureComponent {
   componentDidMount() {
     if (this.props.redirectTo) {
       // tell the store we've used it
-      store.redirectTo = null
+      store.redirectTo = null;
     }
   }
   render() {
-    const redirectTo = this.props.redirectTo
+    const redirectTo = this.props.redirectTo;
     if (redirectTo) {
-      return <Redirect to={redirectTo} />
+      return <Redirect to={redirectTo} />;
     }
-    return null
+    return null;
   }
 }
 
 class DisplayNotificationMessage extends React.PureComponent {
   reset = event => {
-    store.notificationMessage = null
-  }
+    store.notificationMessage = null;
+  };
 
   render() {
-    const { message } = this.props
+    const { message } = this.props;
     if (!message) {
-      return null
+      return null;
     }
-    let className = 'notification'
+    let className = "notification";
     if (message.success) {
-      className += ' is-success'
+      className += " is-success";
     } else if (message.warning) {
-      className += ' is-warning'
+      className += " is-warning";
     } else {
-      className += ' is-info'
+      className += " is-info";
     }
     return (
       <div className={className}>
         <button className="delete" onClick={this.reset} />
         {message.message}
       </div>
-    )
+    );
   }
 }

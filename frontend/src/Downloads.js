@@ -1,18 +1,18 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import store from './Store'
+import React from "react";
+import { Link } from "react-router-dom";
+import store from "./Store";
 
 class Downloads extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
-      pageTitle: 'Downloads'
-    }
+      pageTitle: "Downloads"
+    };
   }
 
   componentDidMount() {
-    document.title = this.state.pageTitle
-    store.resetApiRequests()
+    document.title = this.state.pageTitle;
+    store.resetApiRequests();
   }
 
   render() {
@@ -26,8 +26,8 @@ class Downloads extends React.PureComponent {
           <Link to="/downloads/microsoft">Microsoft Downloads</Link>
         </p>
       </div>
-    )
+    );
   }
 }
 
-export default Downloads
+export default Downloads;
