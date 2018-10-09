@@ -260,7 +260,7 @@ export const ShowUploadMetadata = ({ upload }) => (
               <ol start="0" className="redirect-urls">
                 <li>{URLTag(upload.download_url)}</li>
                 {upload.redirect_urls.map(url => (
-                  <li>{URLTag(url)}</li>
+                  <li key={url}>{URLTag(url)}</li>
                 ))}
               </ol>
             ) : null}

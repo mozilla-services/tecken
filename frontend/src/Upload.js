@@ -57,6 +57,7 @@ export default class Upload extends React.PureComponent {
   }
 
   goBack = event => {
+    event.preventDefault();
     this.props.history.goBack();
   };
 
@@ -146,12 +147,16 @@ export default class Upload extends React.PureComponent {
         <div className="is-clearfix">
           <p className="is-pulled-right">
             {this.props.history.action === "PUSH" && (
-              <a className="button is-small is-info" onClick={this.goBack}>
+              <Link
+                to="/uploads"
+                className="button is-small is-info"
+                onClick={this.goBack}
+              >
                 <span className="icon">
                   <i className="fa fa-backward" />
                 </span>{" "}
                 <span>Back to Uploads</span>
-              </a>
+              </Link>
             )}
             {this.props.history.action === "POP" && (
               <Link to="/uploads" className="button is-small is-info">
@@ -169,7 +174,7 @@ export default class Upload extends React.PureComponent {
           !this.state.loading &&
           this.recentAndIncompleteUpload() && (
             <p className="is-pulled-right">
-              <a
+              <button
                 className="button is-small is-primary"
                 onClick={this.refreshUpload}
               >
@@ -177,7 +182,7 @@ export default class Upload extends React.PureComponent {
                   <i className="fa fa-refresh" />
                 </span>{" "}
                 <span>Refresh</span>
-              </a>
+              </button>
             </p>
           )}
         {this.state.upload &&
