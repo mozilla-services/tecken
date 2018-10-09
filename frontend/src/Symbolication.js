@@ -1,12 +1,12 @@
-import React from 'react'
-import { Loading, thousandFormat } from './Common'
-import Fetch from './Fetch'
-import store from './Store'
+import React from "react";
+import { Loading, thousandFormat } from "./Common";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 class Symbolication extends React.PureComponent {
-  pageTitle = 'Symbolication'
+  pageTitle = "Symbolication";
   componentDidMount() {
-    document.title = this.pageTitle
+    document.title = this.pageTitle;
   }
   render() {
     return (
@@ -27,11 +27,11 @@ class Symbolication extends React.PureComponent {
         <Form />
         <Stats />
       </div>
-    )
+    );
   }
 }
 
-export default Symbolication
+export default Symbolication;
 
 class Form extends React.PureComponent {
   state = {
@@ -41,73 +41,73 @@ class Form extends React.PureComponent {
     jobInputs: 1,
     jsonBody: null,
     validationError: null
-  }
+  };
 
   submit = event => {
-    event.preventDefault()
+    event.preventDefault();
     if (!this.state.jobs.length) {
-      alert('No jobs yet.')
+      alert("No jobs yet.");
     } else {
-      const jsonBody = JSON.stringify({ jobs: this.state.jobs })
+      const jsonBody = JSON.stringify({ jobs: this.state.jobs });
       this.setState({
         loading: true,
         jsonBody,
         result: null,
         validationError: null
-      })
-      return fetch('/symbolicate/v5', {
-        method: 'POST',
+      });
+      return fetch("/symbolicate/v5", {
+        method: "POST",
         body: jsonBody,
         headers: new Headers({
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         })
       }).then(r => {
         if (r.status === 200) {
-          this.setState({ loading: false, validationError: null })
+          this.setState({ loading: false, validationError: null });
           r.json().then(response => {
             this.setState({ result: response }, () => {
-              const el = document.querySelector('div.showresult')
+              const el = document.querySelector("div.showresult");
               if (el) {
-                el.scrollIntoView()
+                el.scrollIntoView();
               }
               if (store.fetchError) {
-                store.fetchError = null
+                store.fetchError = null;
               }
-            })
-          })
+            });
+          });
         } else if (r.status === 400) {
           r.json().then(data => {
             this.setState(
               { validationError: data.error, loading: false },
               () => {
-                const el = document.querySelector('div.validationerror')
+                const el = document.querySelector("div.validationerror");
                 if (el) {
-                  el.scrollIntoView()
+                  el.scrollIntoView();
                 }
                 if (store.fetchError) {
-                  store.fetchError = null
+                  store.fetchError = null;
                 }
               }
-            )
-          })
+            );
+          });
         } else {
-          this.setState({ loading: false, validationError: null })
-          store.fetchError = r
+          this.setState({ loading: false, validationError: null });
+          store.fetchError = r;
         }
-      })
+      });
     }
-  }
+  };
 
   updateJob = (index, memoryMaps, stacks) => {
-    const jobs = [...this.state.jobs]
-    const maps = memoryMaps.map(mm => mm.split(/\//))
-    jobs[index] = { memoryMap: maps, stacks: [stacks] }
-    this.setState({ jobs: jobs })
-  }
+    const jobs = [...this.state.jobs];
+    const maps = memoryMaps.map(mm => mm.split(/\//));
+    jobs[index] = { memoryMap: maps, stacks: [stacks] };
+    this.setState({ jobs: jobs });
+  };
 
   clear = event => {
-    console.error('Not implemented yet')
-  }
+    console.error("Not implemented yet");
+  };
 
   render() {
     return (
@@ -120,7 +120,7 @@ class Form extends React.PureComponent {
                 key={i}
                 updateJob={(mm, stacks) => this.updateJob(i, mm, stacks)}
               />
-            )
+            );
           })}
         <div className="field is-grouped is-grouped-centered">
           <p className="control">
@@ -150,25 +150,25 @@ class Form extends React.PureComponent {
           <ShowCurl json={this.state.jsonBody} />
         ) : null}
       </div>
-    )
+    );
   }
 }
 
 class PreviewJSONBody extends React.PureComponent {
   render() {
-    const json = JSON.stringify(JSON.parse(this.props.json), undefined, 2)
+    const json = JSON.stringify(JSON.parse(this.props.json), undefined, 2);
     return (
       <div className="box">
         <h4>JSON We're Sending</h4>
         <pre>{json}</pre>
       </div>
-    )
+    );
   }
 }
 
 class ShowValidationError extends React.PureComponent {
   render() {
-    const { error } = this.props
+    const { error } = this.props;
     return (
       <article className="message is-danger validationerror">
         <div className="message-header">
@@ -178,33 +178,33 @@ class ShowValidationError extends React.PureComponent {
           <code>{error}</code>
         </div>
       </article>
-    )
+    );
   }
 }
 
 class ShowResult extends React.PureComponent {
   render() {
-    const json = JSON.stringify(this.props.result, undefined, 2)
+    const json = JSON.stringify(this.props.result, undefined, 2);
     return (
       <div className="box showresult">
         <h3>RESULT</h3>
         <pre>{json}</pre>
       </div>
-    )
+    );
   }
 }
 
 class ShowCurl extends React.PureComponent {
-  state = { copyMode: false, copied: false }
+  state = { copyMode: false, copied: false };
   render() {
-    const { json } = this.props
-    const protocol = window.location.protocol
+    const { json } = this.props;
+    const protocol = window.location.protocol;
     const hostname = window.location.host.replace(
-      'localhost:3000',
-      'localhost:8000'
-    )
-    const absoluteUrl = `${protocol}//${hostname}/symbolicate/v5`
-    const command = `curl -XPOST -d '${json}' ${absoluteUrl}`
+      "localhost:3000",
+      "localhost:8000"
+    );
+    const absoluteUrl = `${protocol}//${hostname}/symbolicate/v5`;
+    const command = `curl -XPOST -d '${json}' ${absoluteUrl}`;
     return (
       <div className="box">
         <h3>
@@ -219,18 +219,18 @@ class ShowCurl extends React.PureComponent {
           className="button"
           onClick={event => {
             this.setState({ copyMode: true }, () => {
-              const el = document.querySelector('input[name="command"]')
-              el.select()
-              document.execCommand('copy')
-              this.setState({ copyMode: false, copied: true })
-            })
+              const el = document.querySelector('input[name="command"]');
+              el.select();
+              document.execCommand("copy");
+              this.setState({ copyMode: false, copied: true });
+            });
           }}
         >
           Copy to clipboard
-        </button>{' '}
+        </button>{" "}
         {this.state.copied ? <small>Copied!</small> : null}
       </div>
-    )
+    );
   }
 }
 
@@ -241,10 +241,10 @@ class JobForm extends React.PureComponent {
     invalidMemoryMaps: [],
     defaultMemoryMap: 0,
     stacks: []
-  }
+  };
   componentDidMount() {
     if (this.refs.memoryMap.value) {
-      this.updateMemoryMap()
+      this.updateMemoryMap();
     }
   }
   updateMemoryMap = () => {
@@ -252,38 +252,38 @@ class JobForm extends React.PureComponent {
       .trim()
       .split(/\n/g)
       .filter(line => line.trim())
-      .map(line => line.trim())
-    const valid = new Set()
-    const invalid = new Set()
+      .map(line => line.trim());
+    const valid = new Set();
+    const invalid = new Set();
     lines.forEach(line => {
-      let pathname = line
+      let pathname = line;
       try {
-        const split = new URL(line).pathname.split(/\//g)
-        pathname = [split[1], split[2]].join('/')
+        const split = new URL(line).pathname.split(/\//g);
+        pathname = [split[1], split[2]].join("/");
       } catch (_) {}
       if (pathname.split(/\//g).length === 2) {
-        valid.add(pathname)
+        valid.add(pathname);
       } else {
-        invalid.add(line)
+        invalid.add(line);
       }
-    })
+    });
     if (invalid.size) {
-      this.setState({ invalidMemoryMaps: Array.from(invalid), memoryMaps: [] })
+      this.setState({ invalidMemoryMaps: Array.from(invalid), memoryMaps: [] });
     } else {
       this.setState(
         { memoryMaps: Array.from(valid), invalidMemoryMaps: [] },
         () => {
-          this.refs.memoryMap.value = this.state.memoryMaps.join('\n')
+          this.refs.memoryMap.value = this.state.memoryMaps.join("\n");
         }
-      )
+      );
     }
-  }
+  };
   render() {
     const placeholder = `
 E.g. https://symbols.mozilla.org/GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233/GenerateOCSPResponse.sym
 or
 GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233
-    `.trim()
+    `.trim();
 
     return (
       <div>
@@ -300,13 +300,13 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
 
               `.trim()}
               onBlur={event => {
-                this.updateMemoryMap()
+                this.updateMemoryMap();
               }}
             />
           </div>
           {this.state.invalidMemoryMaps.length ? (
             <p className="help is-danger">
-              {this.state.invalidMemoryMaps.length} invalid lines:{' '}
+              {this.state.invalidMemoryMaps.length} invalid lines:{" "}
               {this.state.invalidMemoryMaps.map(x => (
                 <code key={x}>{x}</code>
               ))}
@@ -335,39 +335,39 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
                       this.props.updateJob(
                         this.state.memoryMaps,
                         this.state.stacks
-                      )
+                      );
                     }
-                  )
+                  );
                 }}
               />
-            )
+            );
           })}
       </div>
-    )
+    );
   }
 }
 
 class StackForm extends React.PureComponent {
   state = {
     invalidAddress: false
-  }
+  };
   add = event => {
-    event.preventDefault()
-    const address = parseInt(this.refs.address.value, 10)
+    event.preventDefault();
+    const address = parseInt(this.refs.address.value, 10);
     if (isNaN(address)) {
-      this.setState({ invalidAddress: true })
+      this.setState({ invalidAddress: true });
     } else {
       this.setState({ invalidAddress: false }, () => {
         this.props.addStackInput(
           address,
           parseInt(this.refs.memoryMap.value, 10)
-        )
-      })
+        );
+      });
     }
-  }
+  };
   componentDidMount() {
     if (this.props.isNext) {
-      this.refs.address.focus()
+      this.refs.address.focus();
     }
   }
   render() {
@@ -385,7 +385,7 @@ class StackForm extends React.PureComponent {
                     <option value={i} key={memoryMap}>
                       {i}. {memoryMap}
                     </option>
-                  )
+                  );
                 })}
               </select>
             </span>
@@ -405,7 +405,7 @@ class StackForm extends React.PureComponent {
           </p>
         </div>
       </form>
-    )
+    );
   }
 }
 
@@ -413,23 +413,23 @@ class Stats extends React.PureComponent {
   state = {
     loading: true,
     stats: null
-  }
+  };
 
   async componentDidMount() {
-    const response = await Fetch('/api/stats/symbolication', {
-      credentials: 'same-origin'
-    })
-    this.setState({ loading: false })
+    const response = await Fetch("/api/stats/symbolication", {
+      credentials: "same-origin"
+    });
+    this.setState({ loading: false });
     if (response.ok) {
       if (store.fetchError) {
-        store.fetchError = null
+        store.fetchError = null;
       }
-      const data = await response.json()
+      const data = await response.json();
       this.setState({
         stats: data.symbolications
-      })
+      });
     } else {
-      store.fetchError = response
+      store.fetchError = response;
     }
   }
 
@@ -441,13 +441,13 @@ class Stats extends React.PureComponent {
 
         {this.state.stats && <StatsTable data={this.state.stats} />}
       </div>
-    )
+    );
   }
 }
 
 class StatsTable extends React.PureComponent {
   render() {
-    const { data } = this.props
+    const { data } = this.props;
     return (
       <table className="table">
         <thead>
@@ -472,6 +472,6 @@ class StatsTable extends React.PureComponent {
           </tr>
         </tbody>
       </table>
-    )
+    );
   }
 }

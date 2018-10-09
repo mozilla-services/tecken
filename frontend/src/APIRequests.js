@@ -1,35 +1,35 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { observer } from 'mobx-react'
+import React from "react";
+import { Link } from "react-router-dom";
+import { observer } from "mobx-react";
 
-import store from './Store'
+import store from "./Store";
 
 const DisplayAPIRequests = observer(
   class DisplayAPIRequests extends React.Component {
     reset = event => {
-      store.apiRequests = []
-      window.sessionStorage.setItem('hide-api-requests', true)
-    }
+      store.apiRequests = [];
+      window.sessionStorage.setItem("hide-api-requests", true);
+    };
 
     displayUrl = url => {
-      if (url.charAt(0) === '/') {
+      if (url.charAt(0) === "/") {
         // make local URLs absolute
-        url = `${document.location.protocol}//${document.location.host}${url}`
+        url = `${document.location.protocol}//${document.location.host}${url}`;
       }
       // When doing local development, the hostname is most likely
       // 'localhost:3000' which gets proxied by the React dev server to
       // 'localhost:8000', let's make that easier.
-      url = url.replace('localhost:3000/', 'localhost:8000/')
-      return url
-    }
+      url = url.replace("localhost:3000/", "localhost:8000/");
+      return url;
+    };
 
     render() {
-      if (window.sessionStorage.getItem('hide-api-requests')) {
-        return null
+      if (window.sessionStorage.getItem("hide-api-requests")) {
+        return null;
       }
-      const requests = store.apiRequests
+      const requests = store.apiRequests;
       if (!requests.length) {
-        return null
+        return null;
       }
       return (
         <div style={{ marginTop: 100 }}>
@@ -44,13 +44,13 @@ const DisplayAPIRequests = observer(
               remember to pass an authentication header.
             </p>
             {requests.map((request, i) => {
-              const fullUrl = this.displayUrl(request.url)
+              const fullUrl = this.displayUrl(request.url);
               return (
                 <p key={i}>
                   {request.requiresAuth ? (
                     <code>
-                      curl -X {request.method} -H 'Auth-Token:{' '}
-                      <Link to="/tokens">YOURTOKENHERE</Link>'{' '}
+                      curl -X {request.method} -H 'Auth-Token:{" "}
+                      <Link to="/tokens">YOURTOKENHERE</Link>'{" "}
                       <a href={fullUrl}>{fullUrl}</a>
                     </code>
                   ) : (
@@ -59,13 +59,13 @@ const DisplayAPIRequests = observer(
                     </code>
                   )}
                 </p>
-              )
+              );
             })}
           </div>
         </div>
-      )
+      );
     }
   }
-)
+);
 
-export default DisplayAPIRequests
+export default DisplayAPIRequests;

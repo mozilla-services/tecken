@@ -1,7 +1,7 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import Fetch from './Fetch'
-import store from './Store'
+import React from "react";
+import { Link } from "react-router-dom";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 import {
   Loading,
@@ -14,13 +14,13 @@ import {
   ShowValidationErrors,
   filterToQueryString,
   parseQueryString
-} from './Common'
+} from "./Common";
 
 class DownloadsMicrosoft extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
-      pageTitle: 'Microsoft Downloads',
+      pageTitle: "Microsoft Downloads",
       loading: true,
       downloads: null,
       aggregates: null,
@@ -29,22 +29,22 @@ class DownloadsMicrosoft extends React.PureComponent {
       apiUrl: null,
       filter: {},
       validationErrors: null
-    }
+    };
   }
 
   componentDidMount() {
-    document.title = this.state.pageTitle
-    store.resetApiRequests()
+    document.title = this.state.pageTitle;
+    store.resetApiRequests();
 
     if (this.props.location.search) {
       this.setState(
         { filter: parseQueryString(this.props.location.search) },
         () => {
-          this._fetchMissing()
+          this._fetchMissing();
         }
-      )
+      );
     } else {
-      this._fetchMissing()
+      this._fetchMissing();
     }
   }
 
@@ -52,24 +52,24 @@ class DownloadsMicrosoft extends React.PureComponent {
     // delay the loading animation in case it loads really fast
     this.setLoadingTimer = window.setTimeout(() => {
       if (!this.dismounted) {
-        this.setState({ loading: true })
+        this.setState({ loading: true });
       }
-    }, 500)
-    let url = '/api/downloads/microsoft/'
-    const qs = filterToQueryString(this.state.filter)
+    }, 500);
+    let url = "/api/downloads/microsoft/";
+    const qs = filterToQueryString(this.state.filter);
     if (qs) {
-      url += '?' + qs
+      url += "?" + qs;
     }
-    this.props.history.push({ search: qs })
+    this.props.history.push({ search: qs });
 
     return Fetch(url, {}).then(r => {
       if (this.setLoadingTimer) {
-        window.clearTimeout(this.setLoadingTimer)
+        window.clearTimeout(this.setLoadingTimer);
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState({
@@ -78,23 +78,23 @@ class DownloadsMicrosoft extends React.PureComponent {
             total: response.total,
             batchSize: response.batch_size,
             validationErrors: null
-          })
-        })
+          });
+        });
       } else if (r.status === 400) {
         return r.json().then(data => {
           this.setState({
             loading: false,
             refreshing: false,
             validationErrors: data.errors
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
         // Always return a promise
-        return Promise.resolve()
+        return Promise.resolve();
       }
-    })
-  }
+    });
+  };
 
   updateFilter = newFilters => {
     this.setState(
@@ -102,15 +102,15 @@ class DownloadsMicrosoft extends React.PureComponent {
         filter: Object.assign({}, this.state.filter, newFilters)
       },
       this._fetchMissing
-    )
-  }
+    );
+  };
 
   resetAndReload = event => {
-    event.preventDefault()
+    event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
-      this._fetchMissing()
-    })
-  }
+      this._fetchMissing();
+    });
+  };
 
   render() {
     return (
@@ -157,40 +157,40 @@ class DownloadsMicrosoft extends React.PureComponent {
           />
         )}
       </div>
-    )
+    );
   }
 }
 
-export default DownloadsMicrosoft
+export default DownloadsMicrosoft;
 
 class DisplayDownloads extends React.PureComponent {
   componentDidMount() {
-    this._updateFilterInputs(this.props.filter)
+    this._updateFilterInputs(this.props.filter);
   }
 
   componentWillReceiveProps(nextProps) {
-    this._updateFilterInputs(nextProps.filter)
+    this._updateFilterInputs(nextProps.filter);
   }
 
   _updateFilterInputs = filter => {
-    this.refs.created_at.value = filter.created_at || ''
-    this.refs.symbol.value = filter.symbol || ''
-    this.refs.debugid.value = filter.debugid || ''
-    this.refs.filename.value = filter.filename || ''
-    this.stateFilter.value = filter.state || ''
+    this.refs.created_at.value = filter.created_at || "";
+    this.refs.symbol.value = filter.symbol || "";
+    this.refs.debugid.value = filter.debugid || "";
+    this.refs.filename.value = filter.filename || "";
+    this.stateFilter.value = filter.state || "";
     if (this.stateError) {
-      this.stateError.value = filter.error || ''
+      this.stateError.value = filter.error || "";
     }
-  }
+  };
 
   submitForm = event => {
-    event.preventDefault()
-    const created_at = this.refs.created_at.value.trim()
-    const symbol = this.refs.symbol.value.trim()
-    const debugid = this.refs.debugid.value.trim()
-    const filename = this.refs.filename.value.trim()
-    const stateFilter = this.stateFilter.value
-    const stateError = this.stateError ? this.stateError.value : ''
+    event.preventDefault();
+    const created_at = this.refs.created_at.value.trim();
+    const symbol = this.refs.symbol.value.trim();
+    const debugid = this.refs.debugid.value.trim();
+    const filename = this.refs.filename.value.trim();
+    const stateFilter = this.stateFilter.value;
+    const stateError = this.stateError ? this.stateError.value : "";
     this.props.updateFilter({
       page: 1,
       created_at,
@@ -199,23 +199,23 @@ class DisplayDownloads extends React.PureComponent {
       filename,
       state: stateFilter,
       error: stateError
-    })
-  }
+    });
+  };
 
   resetFilter = event => {
-    this.refs.symbol.value = ''
-    this.refs.debugid.value = ''
-    this.refs.filename.value = ''
-    this.refs.created_at.value = ''
-    this.stateFilter.value = ''
+    this.refs.symbol.value = "";
+    this.refs.debugid.value = "";
+    this.refs.filename.value = "";
+    this.refs.created_at.value = "";
+    this.stateFilter.value = "";
     if (this.stateError) {
-      this.stateError.value = ''
+      this.stateError.value = "";
     }
-    this.props.resetAndReload(event)
-  }
+    this.props.resetAndReload(event);
+  };
 
   render() {
-    const { downloads, aggregates } = this.props
+    const { downloads, aggregates } = this.props;
 
     return (
       <form onSubmit={this.submitForm}>
@@ -237,21 +237,21 @@ class DisplayDownloads extends React.PureComponent {
                   className="input"
                   ref="symbol"
                   placeholder="symbol..."
-                  style={{ width: '30%' }}
-                />{' '}
+                  style={{ width: "30%" }}
+                />{" "}
                 <input
                   type="text"
                   className="input"
                   ref="debugid"
                   placeholder="debugid..."
-                  style={{ width: '30%' }}
-                />{' '}
+                  style={{ width: "30%" }}
+                />{" "}
                 <input
                   type="text"
                   className="input"
                   ref="filename"
                   placeholder="filename..."
-                  style={{ width: '30%' }}
+                  style={{ width: "30%" }}
                 />
               </td>
               <td colSpan={2}>
@@ -302,14 +302,14 @@ class DisplayDownloads extends React.PureComponent {
                   {download.file_upload ? (
                     <ShowFileUpload file_upload={download.file_upload} />
                   ) : (
-                    'n/a'
+                    "n/a"
                   )}
                 </td>
                 <td className="is-clipped">
                   {download.error ? (
                     <span className="has-text-danger">{download.error}</span>
                   ) : (
-                    '-'
+                    "-"
                   )}
                 </td>
                 <td>
@@ -323,7 +323,7 @@ class DisplayDownloads extends React.PureComponent {
                       suffix="after"
                     />
                   )}
-                  {!download.completed_at && download.error && 'n/a'}
+                  {!download.completed_at && download.error && "n/a"}
                   {!download.completed_at &&
                     !download.error && <i>Incomplete!</i>}
                 </td>
@@ -342,23 +342,23 @@ class DisplayDownloads extends React.PureComponent {
 
         <ShowAggregates aggregates={aggregates} />
       </form>
-    )
+    );
   }
 }
 
 class StateChoice extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
-      showErrorInput: this.props.initialState === 'specific-error'
-    }
+      showErrorInput: this.props.initialState === "specific-error"
+    };
   }
 
   onChangeSelect = event => {
     this.setState({
-      showErrorInput: event.target.value === 'specific-error'
-    })
-  }
+      showErrorInput: event.target.value === "specific-error"
+    });
+  };
 
   render() {
     return (
@@ -380,7 +380,7 @@ class StateChoice extends React.PureComponent {
           />
         )}
       </div>
-    )
+    );
   }
 }
 
@@ -388,7 +388,7 @@ const ShowFileUpload = ({ file_upload }) => (
   <Link to={`/uploads/files/file/${file_upload.id}`}>
     {formatFileSize(file_upload.size)}
   </Link>
-)
+);
 
 const ShowAggregates = ({ aggregates }) => {
   return (
@@ -446,5 +446,5 @@ const ShowAggregates = ({ aggregates }) => {
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};

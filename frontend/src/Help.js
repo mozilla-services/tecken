@@ -1,10 +1,10 @@
-import React, { PureComponent } from 'react'
-import { Link } from 'react-router-dom'
+import React, { PureComponent } from "react";
+import { Link } from "react-router-dom";
 
 class Help extends PureComponent {
-  pageTitle = 'Help'
+  pageTitle = "Help";
   componentDidMount() {
-    document.title = 'Help'
+    document.title = "Help";
   }
   render() {
     return (
@@ -12,10 +12,10 @@ class Help extends PureComponent {
         <h1 className="title">{this.pageTitle}</h1>
         <h2>Usage as a symbol server for Microsoft Debuggers</h2>
         <p>
-          To use this as a symbol server for Microsoft debuggers, see{' '}
+          To use this as a symbol server for Microsoft debuggers, see{" "}
           <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Using_the_Mozilla_symbol_server">
             this MDN article
-          </a>{' '}
+          </a>{" "}
           for instructions on how to configure your debugger.
         </p>
         <h2>Permissions</h2>
@@ -34,7 +34,7 @@ class Help extends PureComponent {
         <h2>API Tokens</h2>
         <p>
           To be able to do things like uploading symbols or querying what's
-          already been uploaded, <i>outside</i> this web app, you can use{' '}
+          already been uploaded, <i>outside</i> this web app, you can use{" "}
           <Link to="/tokens">API tokens</Link>.
         </p>
 
@@ -46,16 +46,16 @@ class Help extends PureComponent {
         <ul>
           <li>That you have the permission to upload symbols.</li>
           <li>
-            That you have created a valid <Link to="/tokens">API token</Link>{' '}
-            and associated it with the <code>Upload Symbols Files</code>{' '}
+            That you have created a valid <Link to="/tokens">API token</Link>{" "}
+            and associated it with the <code>Upload Symbols Files</code>{" "}
             permission.
           </li>
           <li>
             Inside the archive file, each symbol file is supposed to be in a
             directory that is the <b>module name</b> (e.g <code>xul.pdb</code>
-            ), and that directory should contain a directory that is the{' '}
+            ), and that directory should contain a directory that is the{" "}
             <b>debug ID</b> (e.g. <code>014BB0B098DC4244BCFC9F76ED2FA5302</code>
-            ) and in that directory the <b>symbol file</b> (e.g.{' '}
+            ) and in that directory the <b>symbol file</b> (e.g.{" "}
             <code>xul.sym</code>
             ).
           </li>
@@ -69,7 +69,7 @@ class Help extends PureComponent {
           </li>
         </ul>
         <p>
-          More information is available in the{' '}
+          More information is available in the{" "}
           <a
             rel="noopener noreferrer"
             href="https://tecken.readthedocs.io/en/latest/upload.html#checks-and-validations"
@@ -79,8 +79,8 @@ class Help extends PureComponent {
           .
         </p>
       </div>
-    )
+    );
   }
 }
 
-export default Help
+export default Help;

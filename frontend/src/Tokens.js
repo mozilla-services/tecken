@@ -1,79 +1,79 @@
-import React, { PureComponent } from 'react'
-import { Link } from 'react-router-dom'
+import React, { PureComponent } from "react";
+import { Link } from "react-router-dom";
 
-import { toDate, isBefore, formatDistanceStrict } from 'date-fns'
+import { toDate, isBefore, formatDistanceStrict } from "date-fns";
 
-import { Loading, filterToQueryString, parseQueryString } from './Common'
-import Fetch from './Fetch'
-import store from './Store'
+import { Loading, filterToQueryString, parseQueryString } from "./Common";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 class Tokens extends PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'API Tokens'
+    super(props);
+    this.pageTitle = "API Tokens";
     this.state = {
       loading: true, // undone by componentDidMount
       tokens: null,
       totals: {},
       permissions: null,
       filter: {}
-    }
+    };
   }
 
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
+    document.title = this.pageTitle;
 
     if (this.props.location.search) {
       this.setState(
         { filter: parseQueryString(this.props.location.search) },
         () => {
-          this._fetchTokens()
+          this._fetchTokens();
         }
-      )
+      );
     } else {
-      this._fetchTokens()
+      this._fetchTokens();
     }
   }
 
   _fetchTokens = () => {
-    this.setState({ loading: true })
+    this.setState({ loading: true });
 
-    let url = '/api/tokens/'
-    const qs = filterToQueryString(this.state.filter)
+    let url = "/api/tokens/";
+    const qs = filterToQueryString(this.state.filter);
     if (qs) {
-      url += '?' + qs
+      url += "?" + qs;
     }
-    this.props.history.push({ search: qs })
+    this.props.history.push({ search: qs });
 
-    Fetch(url, { credentials: 'same-origin' }).then(r => {
+    Fetch(url, { credentials: "same-origin" }).then(r => {
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
-          '/',
+          "/",
           `You have to be signed in to view "${this.pageTitle}"`
-        )
-        return
+        );
+        return;
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState({
             tokens: response.tokens,
             totals: response.totals,
             permissions: response.permissions
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   updateFilter = newFilters => {
     this.setState(
@@ -81,52 +81,52 @@ class Tokens extends PureComponent {
         filter: Object.assign({}, this.state.filter, newFilters)
       },
       this._fetchTokens
-    )
-  }
+    );
+  };
 
   deleteToken = id => {
     Fetch(`/api/tokens/token/${id}`, {
-      method: 'DELETE',
-      credentials: 'same-origin'
+      method: "DELETE",
+      credentials: "same-origin"
     }).then(r => {
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
-        store.setNotificationMessage('API Token deleted')
-        this._fetchTokens()
+        store.setNotificationMessage("API Token deleted");
+        this._fetchTokens();
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   extendToken = (id, days = null) => {
-    const formData = new FormData()
-    formData.append('days', days)
+    const formData = new FormData();
+    formData.append("days", days);
     return Fetch(`/api/tokens/token/${id}/extend`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
-      credentials: 'same-origin',
+      credentials: "same-origin",
       headers: new Headers({
-        'X-CSRFToken': this.props.csrfToken
+        "X-CSRFToken": this.props.csrfToken
       })
     }).then(r => {
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           store.setNotificationMessage(
             `API Token extended ${response.days} days`
-          )
-          return this._fetchTokens()
-        })
+          );
+          return this._fetchTokens();
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   render() {
     return (
@@ -140,7 +140,7 @@ class Tokens extends PureComponent {
             </div>
             <div className="message-body">
               <p>
-                You do <b>not have any permissions</b>. It means you{' '}
+                You do <b>not have any permissions</b>. It means you{" "}
                 <b>can not create any API tokens</b>.
               </p>
               <p>
@@ -178,76 +178,76 @@ class Tokens extends PureComponent {
           </div>
         ) : null}
       </div>
-    )
+    );
   }
 }
 
-export default Tokens
+export default Tokens;
 
 class CreateTokenForm extends PureComponent {
   state = {
     loading: false,
     validationErrors: null
-  }
+  };
   submitCreate = event => {
-    event.preventDefault()
-    const expires = this.refs.expires.value
-    const notes = this.refs.notes.value
-    const permissions = []
-    ;[...this.refs.permissions.options].forEach(option => {
+    event.preventDefault();
+    const expires = this.refs.expires.value;
+    const notes = this.refs.notes.value;
+    const permissions = [];
+    [...this.refs.permissions.options].forEach(option => {
       if (option.selected) {
-        permissions.push(option.value)
+        permissions.push(option.value);
       }
-    })
-    this.setState({ loading: true })
-    const formData = new FormData()
-    formData.append('permissions', permissions)
-    formData.append('expires', expires)
-    formData.append('notes', notes.trim())
-    return Fetch('/api/tokens/', {
-      method: 'POST',
+    });
+    this.setState({ loading: true });
+    const formData = new FormData();
+    formData.append("permissions", permissions);
+    formData.append("expires", expires);
+    formData.append("notes", notes.trim());
+    return Fetch("/api/tokens/", {
+      method: "POST",
       body: formData,
-      credentials: 'same-origin'
+      credentials: "same-origin"
     }).then(r => {
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (store.fetchError) {
-        store.fetchError = null
+        store.fetchError = null;
       }
       if (r.status === 201) {
-        this.setState({ validationErrors: null })
-        this._resetForm()
-        store.setNotificationMessage('New API Token created')
-        this.props.refreshTokens()
+        this.setState({ validationErrors: null });
+        this._resetForm();
+        store.setNotificationMessage("New API Token created");
+        this.props.refreshTokens();
         // Scroll up to the top to see the notification message
         // and the new entry in the table.
         setTimeout(() => {
-          window.scroll(0, 0)
-        })
+          window.scroll(0, 0);
+        });
       } else if (r.status === 400) {
         r.json().then(data => {
-          this.setState({ validationErrors: data.errors })
-        })
+          this.setState({ validationErrors: data.errors });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   _resetForm = () => {
-    this.refs.notes.value = ''
-  }
+    this.refs.notes.value = "";
+  };
 
   render() {
-    let validationErrors = this.state.validationErrors
+    let validationErrors = this.state.validationErrors;
     if (validationErrors === null) {
       // makes it easier to reference in the JSX
-      validationErrors = {}
+      validationErrors = {};
     }
 
-    const permissionNames = this.props.permissions.map(p => p.name)
+    const permissionNames = this.props.permissions.map(p => p.name);
     const hasBothUploadPermissions =
-      permissionNames.includes('Upload Symbols Files') &&
-      permissionNames.includes('Upload Try Symbols Files')
+      permissionNames.includes("Upload Symbols Files") &&
+      permissionNames.includes("Upload Try Symbols Files");
 
     return (
       <form onSubmit={this.submitCreate}>
@@ -256,7 +256,7 @@ class CreateTokenForm extends PureComponent {
           <div className="select is-multiple">
             <select
               multiple={true}
-              className={validationErrors.permissions ? 'is-danger' : ''}
+              className={validationErrors.permissions ? "is-danger" : ""}
               ref="permissions"
               size={this.props.permissions.length}
             >
@@ -265,7 +265,7 @@ class CreateTokenForm extends PureComponent {
                   <option key={permission.id} value={permission.id}>
                     {permission.name}
                   </option>
-                )
+                );
               })}
             </select>
           </div>
@@ -280,7 +280,7 @@ class CreateTokenForm extends PureComponent {
               <select
                 ref="expires"
                 defaultValue={365}
-                className={validationErrors.expires ? 'is-danger' : ''}
+                className={validationErrors.expires ? "is-danger" : ""}
               >
                 <option value={1}>1 day</option>
                 <option value={7}>1 week</option>
@@ -301,7 +301,7 @@ class CreateTokenForm extends PureComponent {
               ref="notes"
               placeholder="optional notes..."
               className={
-                validationErrors.notes ? 'textarea is-danger' : 'textarea'
+                validationErrors.notes ? "textarea is-danger" : "textarea"
               }
             />
           </p>
@@ -315,8 +315,8 @@ class CreateTokenForm extends PureComponent {
               type="submit"
               className={
                 this.state.loading
-                  ? 'button is-primary is-loading'
-                  : 'button is-primary'
+                  ? "button is-primary is-loading"
+                  : "button is-primary"
               }
             >
               Create
@@ -326,65 +326,65 @@ class CreateTokenForm extends PureComponent {
 
         {hasBothUploadPermissions ? (
           <p>
-            <b>Note!</b> An API Token can not contain <i>both</i> the{' '}
+            <b>Note!</b> An API Token can not contain <i>both</i> the{" "}
             <code>Upload Symbols Files</code> <i>and</i>
             <code>Upload Try Symbols Files</code>.
           </p>
         ) : null}
       </form>
-    )
+    );
   }
 }
 
 class DisplayTokens extends PureComponent {
   state = {
     extend: null
-  }
+  };
   onDelete = (event, id, expired) => {
-    event.preventDefault()
-    if (expired || window.confirm('Are you sure?')) {
-      this.props.deleteToken(id)
+    event.preventDefault();
+    if (expired || window.confirm("Are you sure?")) {
+      this.props.deleteToken(id);
     }
-  }
+  };
 
   filterOnAll = event => {
-    event.preventDefault()
-    const filter = this.props.filter
-    filter.state = 'all'
-    this.props.updateFilter(filter)
-  }
+    event.preventDefault();
+    const filter = this.props.filter;
+    filter.state = "all";
+    this.props.updateFilter(filter);
+  };
 
   filterOnActive = event => {
-    event.preventDefault()
-    const filter = this.props.filter
-    delete filter.state
-    this.props.updateFilter(filter)
-  }
+    event.preventDefault();
+    const filter = this.props.filter;
+    delete filter.state;
+    this.props.updateFilter(filter);
+  };
 
   filterOnExpired = event => {
-    event.preventDefault()
-    const filter = this.props.filter
-    filter.state = 'expired'
-    this.props.updateFilter(filter)
-  }
+    event.preventDefault();
+    const filter = this.props.filter;
+    filter.state = "expired";
+    this.props.updateFilter(filter);
+  };
 
   render() {
-    const { tokens, totals, filter } = this.props
+    const { tokens, totals, filter } = this.props;
     return (
       <div>
         <div className="tabs is-centered">
           <ul>
-            <li className={!filter.state ? 'is-active' : ''}>
+            <li className={!filter.state ? "is-active" : ""}>
               <Link to="/tokens?state=active" onClick={this.filterOnActive}>
                 Active ({totals.active})
               </Link>
             </li>
-            <li className={filter.state === 'all' ? 'is-active' : ''}>
+            <li className={filter.state === "all" ? "is-active" : ""}>
               <Link to="/tokens" onClick={this.filterOnAll}>
                 All ({totals.all})
               </Link>
             </li>
-            <li className={filter.state === 'expired' ? 'is-active' : ''}>
+            <li className={filter.state === "expired" ? "is-active" : ""}>
               <Link to="/tokens?state=expired" onClick={this.filterOnExpired}>
                 Expired ({totals.expired})
               </Link>
@@ -409,14 +409,14 @@ class DisplayTokens extends PureComponent {
                     <DisplayKey tokenKey={token.key} />
                   </td>
                   <td>
-                    <DisplayExpires expires={token.expires_at} />{' '}
+                    <DisplayExpires expires={token.expires_at} />{" "}
                     {token.is_expired && (
                       <span className="tag is-danger">Expired</span>
                     )}
                   </td>
                   <td>
                     {token.permissions.map(p => (
-                      <code key={p.id} style={{ display: 'block' }}>
+                      <code key={p.id} style={{ display: "block" }}>
                         {p.name}
                       </code>
                     ))}
@@ -433,16 +433,16 @@ class DisplayTokens extends PureComponent {
                       >
                         Delete
                       </button>
-                    ) : null}{' '}
+                    ) : null}{" "}
                     {this.state.extend && this.state.extend === token.id ? (
                       <ExtendForm
                         onSubmit={days => {
                           this.props.extendToken(token.id, days).then(() => {
-                            this.setState({ extend: null })
-                          })
+                            this.setState({ extend: null });
+                          });
                         }}
                         onCancel={() => {
-                          this.setState({ extend: null })
+                          this.setState({ extend: null });
                         }}
                       />
                     ) : (
@@ -457,25 +457,25 @@ class DisplayTokens extends PureComponent {
                     )}
                   </td>
                 </tr>
-              )
+              );
             })}
           </tbody>
         </table>
       </div>
-    )
+    );
   }
 }
 
 class ExtendForm extends React.PureComponent {
   state = {
     loading: false
-  }
+  };
   onSubmit = event => {
-    event.preventDefault()
+    event.preventDefault();
     this.setState({ loading: true }, () => {
-      this.props.onSubmit(this.refs.days.value)
-    })
-  }
+      this.props.onSubmit(this.refs.days.value);
+    });
+  };
   render() {
     return (
       <form onSubmit={this.onSubmit}>
@@ -487,43 +487,43 @@ class ExtendForm extends React.PureComponent {
             <option value={365}>1 year</option>
             <option value={365 * 10}>10 years</option>
           </select>
-        </span>{' '}
+        </span>{" "}
         <button
           type="submit"
           className={
             this.state.loading
-              ? 'button is-small is-primary is-loading'
-              : 'button is-small is-primary'
+              ? "button is-small is-primary is-loading"
+              : "button is-small is-primary"
           }
         >
           Extend
-        </button>{' '}
+        </button>{" "}
         {!this.state.loading ? (
           <button
             type="button"
             className="button is-small"
             onClick={event => {
-              this.props.onCancel()
+              this.props.onCancel();
             }}
           >
             Cancel
           </button>
         ) : null}
       </form>
-    )
+    );
   }
 }
 
 class DisplayKey extends PureComponent {
-  state = { truncate: true }
+  state = { truncate: true };
   toggle = event => {
-    this.setState({ truncate: !this.state.truncate })
-  }
+    this.setState({ truncate: !this.state.truncate });
+  };
   render() {
-    let code = <code>{this.props.tokenKey}</code>
+    let code = <code>{this.props.tokenKey}</code>;
     if (this.state.truncate) {
-      const truncated = this.props.tokenKey.substr(0, 10)
-      code = <code>{`${truncated}…`}</code>
+      const truncated = this.props.tokenKey.substr(0, 10);
+      code = <code>{`${truncated}…`}</code>;
     }
 
     return (
@@ -537,26 +537,26 @@ class DisplayKey extends PureComponent {
           <span className="icon is-small">
             <i
               className={
-                this.state.truncate ? 'fa fa-expand' : 'fa fa-compress'
+                this.state.truncate ? "fa fa-expand" : "fa fa-compress"
               }
             />
           </span>
         </a>
       </p>
-    )
+    );
   }
 }
 
 const DisplayExpires = ({ expires }) => {
-  const date = toDate(expires)
-  const now = new Date()
+  const date = toDate(expires);
+  const now = new Date();
   if (isBefore(date, now)) {
     return (
       <span className="token-expired" title={expires}>
         {formatDistanceStrict(date, now)} ago
       </span>
-    )
+    );
   } else {
-    return <span title={expires}>in {formatDistanceStrict(date, now)}</span>
+    return <span title={expires}>in {formatDistanceStrict(date, now)}</span>;
   }
-}
+};

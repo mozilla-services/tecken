@@ -1,23 +1,23 @@
-import React from 'react'
-import { NavLink, Link } from 'react-router-dom'
-import { observer } from 'mobx-react'
-import './Nav.css'
-import store from './Store'
+import React from "react";
+import { NavLink, Link } from "react-router-dom";
+import { observer } from "mobx-react";
+import "./Nav.css";
+import store from "./Store";
 
 const Nav = observer(
   class Nav extends React.Component {
     constructor(props) {
-      super(props)
+      super(props);
 
       this.state = {
         menuToggled: true
-      }
+      };
     }
 
     toggleMenu = event => {
-      event.preventDefault()
-      this.setState({ menuToggled: !this.state.menuToggled })
-    }
+      event.preventDefault();
+      this.setState({ menuToggled: !this.state.menuToggled });
+    };
 
     render() {
       return (
@@ -31,8 +31,8 @@ const Nav = observer(
               data-target="navMenubd-example"
               className={
                 this.state.menuToggled
-                  ? 'navbar-burger'
-                  : 'navbar-burger is-active'
+                  ? "navbar-burger"
+                  : "navbar-burger is-active"
               }
               onClick={this.toggleMenu}
             >
@@ -45,7 +45,7 @@ const Nav = observer(
           <div
             id="navMenubd-example"
             className={
-              this.state.menuToggled ? 'navbar-menu' : 'navbar-menu is-active'
+              this.state.menuToggled ? "navbar-menu" : "navbar-menu is-active"
             }
           >
             <div className="navbar-end">
@@ -75,7 +75,7 @@ const Nav = observer(
                 </NavLink>
               ) : null}
               {store.currentUser &&
-                store.hasPermission('tokens.manage_tokens') && (
+                store.hasPermission("tokens.manage_tokens") && (
                   <NavLink
                     to="/tokens"
                     className="navbar-item"
@@ -85,7 +85,7 @@ const Nav = observer(
                   </NavLink>
                 )}
               {store.currentUser &&
-                store.hasPermission('upload.upload_symbols') && (
+                store.hasPermission("upload.upload_symbols") && (
                   <NavLink
                     to="/uploads"
                     className="navbar-item"
@@ -131,9 +131,9 @@ const Nav = observer(
             </div>
           </div>
         </nav>
-      )
+      );
     }
   }
-)
+);
 
-export default Nav
+export default Nav;

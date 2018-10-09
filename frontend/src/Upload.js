@@ -1,7 +1,11 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React from "react";
+import { Link } from "react-router-dom";
 
-import { toDate, differenceInMinutes, differenceInMilliseconds } from 'date-fns'
+import {
+  toDate,
+  differenceInMinutes,
+  differenceInMilliseconds
+} from "date-fns";
 
 import {
   Loading,
@@ -13,67 +17,67 @@ import {
   thousandFormat,
   DisplayFilesSummary,
   ShowUploadMetadata
-} from './Common'
-import './Upload.css'
-import Fetch from './Fetch'
-import store from './Store'
+} from "./Common";
+import "./Upload.css";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 export default class Upload extends React.PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'Symbol Upload'
+    super(props);
+    this.pageTitle = "Symbol Upload";
     this.state = {
       loading: true,
       upload: null,
       refreshingInterval: null
-    }
+    };
 
-    this.initialRefreshingInterval = 4
+    this.initialRefreshingInterval = 4;
   }
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentWillUnmount() {
-    this.dismounted = true
+    this.dismounted = true;
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
-    this.setState({ loading: true })
-    this._upload_id = this.props.match.params.id
-    this._fetchUpload(this.props.match.params.id)
+    document.title = this.pageTitle;
+    this.setState({ loading: true });
+    this._upload_id = this.props.match.params.id;
+    this._fetchUpload(this.props.match.params.id);
   }
 
   componentDidUpdate() {
     if (this._upload_id !== this.props.match.params.id) {
-      this._upload_id = this.props.match.params.id
-      this._fetchUpload(this.props.match.params.id)
+      this._upload_id = this.props.match.params.id;
+      this._fetchUpload(this.props.match.params.id);
     }
   }
 
   goBack = event => {
-    this.props.history.goBack()
-  }
+    this.props.history.goBack();
+  };
 
   _fetchUpload = id => {
     return Fetch(`/api/uploads/upload/${id}`, {
-      credentials: 'same-origin'
+      credentials: "same-origin"
     }).then(r => {
       if (this.dismounted) {
-        return
+        return;
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
-          '/',
+          "/",
           `You have to be signed in to view "${this.pageTitle}"`
-        )
-        return
+        );
+        return;
       }
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState(
@@ -83,57 +87,57 @@ export default class Upload extends React.PureComponent {
             },
             () => {
               if (this.recentAndIncompleteUpload()) {
-                this.keepRefreshing()
+                this.keepRefreshing();
               } else if (this.state.refreshingInterval) {
-                this.setState({ refreshingInterval: null })
+                this.setState({ refreshingInterval: null });
               }
             }
-          )
-        })
+          );
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   keepRefreshing = () => {
-    let refreshingInterval = this.state.refreshingInterval
+    let refreshingInterval = this.state.refreshingInterval;
     if (!refreshingInterval) {
-      refreshingInterval = this.initialRefreshingInterval
+      refreshingInterval = this.initialRefreshingInterval;
     } else {
-      refreshingInterval *= 1.5
+      refreshingInterval *= 1.5;
     }
     if (!this.dismounted) {
       window.setTimeout(() => {
         if (this.dismounted) {
-          return
+          return;
         }
         if (this.state.upload) {
-          this._fetchUpload(this.state.upload.id)
+          this._fetchUpload(this.state.upload.id);
         }
-      }, refreshingInterval * 1000)
+      }, refreshingInterval * 1000);
       this.setState({
         refreshingInterval: refreshingInterval
-      })
+      });
     }
-  }
+  };
 
   refreshUpload = event => {
-    event.preventDefault()
+    event.preventDefault();
     this.setState({
       loading: true,
       refreshingInterval: this.initialRefreshingInterval
-    })
-    this._fetchUpload(this.state.upload.id)
-  }
+    });
+    this._fetchUpload(this.state.upload.id);
+  };
 
   recentAndIncompleteUpload = () => {
     if (!this.state.upload.completed_at) {
-      const dateObj = toDate(this.state.upload.created_at)
-      return differenceInMinutes(new Date(), dateObj) < 3
+      const dateObj = toDate(this.state.upload.created_at);
+      return differenceInMinutes(new Date(), dateObj) < 3;
     }
-    return false
-  }
+    return false;
+  };
 
   render() {
     return (
@@ -141,19 +145,19 @@ export default class Upload extends React.PureComponent {
         <h1 className="title">{this.pageTitle}</h1>
         <div className="is-clearfix">
           <p className="is-pulled-right">
-            {this.props.history.action === 'PUSH' && (
+            {this.props.history.action === "PUSH" && (
               <a className="button is-small is-info" onClick={this.goBack}>
                 <span className="icon">
                   <i className="fa fa-backward" />
-                </span>{' '}
+                </span>{" "}
                 <span>Back to Uploads</span>
               </a>
             )}
-            {this.props.history.action === 'POP' && (
+            {this.props.history.action === "POP" && (
               <Link to="/uploads" className="button is-small is-info">
                 <span className="icon">
                   <i className="fa fa-backward" />
-                </span>{' '}
+                </span>{" "}
                 <span>Back to Uploads</span>
               </Link>
             )}
@@ -171,7 +175,7 @@ export default class Upload extends React.PureComponent {
               >
                 <span className="icon">
                   <i className="fa fa-refresh" />
-                </span>{' '}
+                </span>{" "}
                 <span>Refresh</span>
               </a>
             </p>
@@ -184,32 +188,32 @@ export default class Upload extends React.PureComponent {
           )}
         {this.state.upload && <DisplayUpload upload={this.state.upload} />}
       </div>
-    )
+    );
   }
 }
 
 class DisplayRefreshingInterval extends React.PureComponent {
   constructor(props) {
-    super(props)
-    this.state = { seconds: this._roundInterval(props.interval) }
+    super(props);
+    this.state = { seconds: this._roundInterval(props.interval) };
   }
-  _roundInterval = interval => Math.round(Number(interval))
+  _roundInterval = interval => Math.round(Number(interval));
   componentWillUnmount() {
-    this.dismounted = true
+    this.dismounted = true;
   }
   componentWillReceiveProps(nextProps) {
-    this.setState({ seconds: this._roundInterval(nextProps.interval) })
+    this.setState({ seconds: this._roundInterval(nextProps.interval) });
   }
   componentDidMount() {
     this.loop = window.setInterval(() => {
       if (this.dismounted) {
-        window.clearInterval(this.loop)
+        window.clearInterval(this.loop);
       } else {
         this.setState(state => {
-          return { seconds: state.seconds - 1 }
-        })
+          return { seconds: state.seconds - 1 };
+        });
       }
-    }, 1000)
+    }, 1000);
   }
   render() {
     if (this.state.seconds <= 0) {
@@ -217,19 +221,19 @@ class DisplayRefreshingInterval extends React.PureComponent {
         <div className="tags">
           <span className="tag">Refreshing now</span>
         </div>
-      )
+      );
     }
-    let prettyTime = `${this.state.seconds} s`
+    let prettyTime = `${this.state.seconds} s`;
     if (this.state.seconds >= 60) {
-      const minutes = Math.floor(this.state.seconds / 60)
-      prettyTime = `${minutes} m`
+      const minutes = Math.floor(this.state.seconds / 60);
+      prettyTime = `${minutes} m`;
     }
     return (
       <div className="tags has-addons">
         <span className="tag">Refreshing in</span>
         <span className="tag is-primary">{prettyTime}</span>
       </div>
-    )
+    );
   }
 }
 
@@ -245,8 +249,8 @@ const DisplayUpload = ({ upload }) => {
       <ShowUploadTimes upload={upload} />
       <ShowRelatedUploads upload={upload} />
     </div>
-  )
-}
+  );
+};
 
 /* Return a new array where every item is an object.
    The reason we do this is because an upload consists of a pure array
@@ -254,85 +258,85 @@ const DisplayUpload = ({ upload }) => {
    file upload objects.
 */
 const mergeAllKeys = (uploads, skipped, ignored) => {
-  const all = []
+  const all = [];
   ignored.forEach(key => {
-    all.push({ key: key, ignored: true })
-  })
+    all.push({ key: key, ignored: true });
+  });
   skipped.forEach(key => {
-    all.push({ key: key, skipped: true })
-  })
+    all.push({ key: key, skipped: true });
+  });
   uploads.forEach(upload => {
-    all.push(upload)
-  })
-  return all
-}
+    all.push(upload);
+  });
+  return all;
+};
 
 class ShowUploadFiles extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       sortBy: null,
       reverse: false
-    }
+    };
   }
 
   _sortByKey = (key, defaultReverse = false) => {
     if (this.state.sortBy === key) {
-      this.setState({ reverse: !this.state.reverse })
+      this.setState({ reverse: !this.state.reverse });
     } else {
-      this.setState({ sortBy: key, reverse: defaultReverse })
+      this.setState({ sortBy: key, reverse: defaultReverse });
     }
-  }
+  };
 
   sortByKey = event => {
-    event.preventDefault()
-    this._sortByKey('key')
-  }
+    event.preventDefault();
+    this._sortByKey("key");
+  };
 
   sortBySize = event => {
-    event.preventDefault()
-    this._sortByKey('size', true)
-  }
+    event.preventDefault();
+    this._sortByKey("size", true);
+  };
 
   sortByUpdate = event => {
-    event.preventDefault()
-    this._sortByKey('update')
-  }
+    event.preventDefault();
+    this._sortByKey("update");
+  };
 
   sortByCompressed = event => {
-    event.preventDefault()
-    this._sortByKey('compressed')
-  }
+    event.preventDefault();
+    this._sortByKey("compressed");
+  };
 
   sortByTime = event => {
-    event.preventDefault()
-    this._sortByKey('time', true)
-  }
+    event.preventDefault();
+    this._sortByKey("time", true);
+  };
 
   sortKeys = keys => {
     if (!this.state.sortBy) {
-      return keys
+      return keys;
     }
-    const sortBy = this.state.sortBy
-    const reverse = this.state.reverse ? -1 : 1
+    const sortBy = this.state.sortBy;
+    const reverse = this.state.reverse ? -1 : 1;
 
     const cmp = (a, b) => {
       if (a > b) {
-        return 1 * reverse
+        return 1 * reverse;
       } else if (a < b) {
-        return -1 * reverse
+        return -1 * reverse;
       }
-    }
+    };
     keys.sort((a, b) => {
-      if (sortBy === 'key') {
-        return cmp(a.key.toLowerCase(), b.key.toLowerCase())
-      } else if (sortBy === 'time') {
-        return cmp(a._time || 0, b._time || 0)
+      if (sortBy === "key") {
+        return cmp(a.key.toLowerCase(), b.key.toLowerCase());
+      } else if (sortBy === "time") {
+        return cmp(a._time || 0, b._time || 0);
       }
-      return cmp(a[sortBy] || 0, b[sortBy] || 0)
-    })
-    return keys
-  }
+      return cmp(a[sortBy] || 0, b[sortBy] || 0);
+    });
+    return keys;
+  };
 
   _addTime = files => {
     return files.map(file => {
@@ -340,21 +344,21 @@ class ShowUploadFiles extends React.PureComponent {
         file._time = differenceInMilliseconds(
           toDate(file.completed_at),
           toDate(file.created_at)
-        )
+        );
       }
-      return file
-    })
-  }
+      return file;
+    });
+  };
 
   render() {
-    const { upload } = this.props
+    const { upload } = this.props;
     const allKeys = this.sortKeys(
       mergeAllKeys(
         this._addTime(upload.file_uploads),
         upload.skipped_keys,
         upload.ignored_keys
       )
-    )
+    );
     return (
       <div>
         <h4 className="title is-4">Files</h4>
@@ -393,7 +397,7 @@ class ShowUploadFiles extends React.PureComponent {
                   <tr key={file.key}>
                     <td className="file-key">{file.key}</td>
                     <td colSpan={6}>
-                      <b>{file.skipped ? 'Skipped' : 'Ignored'}</b>{' '}
+                      <b>{file.skipped ? "Skipped" : "Ignored"}</b>{" "}
                       {file.skipped ? (
                         <small>
                           Not uploaded because existing file has the same size
@@ -405,7 +409,7 @@ class ShowUploadFiles extends React.PureComponent {
                       )}
                     </td>
                   </tr>
-                )
+                );
               }
               return (
                 <tr key={file.key}>
@@ -428,21 +432,21 @@ class ShowUploadFiles extends React.PureComponent {
                     )}
                   </td>
                 </tr>
-              )
+              );
             })}
           </tbody>
         </table>
       </div>
-    )
+    );
   }
 }
 
 const ShowAggregates = ({ upload }) => {
-  const fileSizes = upload.file_uploads.map(u => u.size)
-  const filesSizeSum = fileSizes.reduce((a, b) => a + b, 0)
-  let filesSizeAvg = null
+  const fileSizes = upload.file_uploads.map(u => u.size);
+  const filesSizeSum = fileSizes.reduce((a, b) => a + b, 0);
+  let filesSizeAvg = null;
   if (fileSizes.length) {
-    filesSizeAvg = filesSizeSum / fileSizes.length
+    filesSizeAvg = filesSizeSum / fileSizes.length;
   }
   return (
     <nav className="level" style={{ marginTop: 60 }}>
@@ -462,7 +466,7 @@ const ShowAggregates = ({ upload }) => {
         <div>
           <p className="heading">Files Sizes Avg</p>
           <p className="title">
-            {filesSizeAvg ? formatFileSize(filesSizeAvg) : 'n/a'}
+            {filesSizeAvg ? formatFileSize(filesSizeAvg) : "n/a"}
           </p>
         </div>
       </div>
@@ -486,40 +490,40 @@ const ShowAggregates = ({ upload }) => {
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};
 
 const ShowUploadTimes = ({ upload }) => {
   if (!upload.completed_at) {
-    return null
+    return null;
   }
-  const uploadStart = toDate(upload.created_at)
-  const uploadEnd = toDate(upload.completed_at)
-  const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart)
-  const uploadTimes = []
-  let longestFileUpload = null
+  const uploadStart = toDate(upload.created_at);
+  const uploadEnd = toDate(upload.completed_at);
+  const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart);
+  const uploadTimes = [];
+  let longestFileUpload = null;
   upload.file_uploads.forEach(file => {
     if (file.completed_at) {
-      const start = toDate(file.created_at)
-      const end = toDate(file.completed_at)
-      const diff = differenceInMilliseconds(end, start)
+      const start = toDate(file.created_at);
+      const end = toDate(file.completed_at);
+      const diff = differenceInMilliseconds(end, start);
       if (longestFileUpload === null || longestFileUpload < diff) {
-        longestFileUpload = diff
+        longestFileUpload = diff;
       }
-      uploadTimes.push(diff)
+      uploadTimes.push(diff);
     }
-  })
+  });
   if (!uploadTimes.length) {
-    return null
+    return null;
   }
 
-  const filesSum = uploadTimes.reduce((a, b) => a + b, 0)
-  const filesAvg = filesSum / uploadTimes.length
-  uploadTimes.sort((a, b) => a - b)
+  const filesSum = uploadTimes.reduce((a, b) => a + b, 0);
+  const filesAvg = filesSum / uploadTimes.length;
+  uploadTimes.sort((a, b) => a - b);
   const filesMedian =
     (uploadTimes[(uploadTimes.length - 1) >> 1] +
       uploadTimes[uploadTimes.length >> 1]) /
-    2
+    2;
 
   return (
     <nav className="level" style={{ marginTop: 60 }}>
@@ -554,12 +558,12 @@ const ShowUploadTimes = ({ upload }) => {
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};
 
 const ShowRelatedUploads = ({ upload }) => {
   if (!upload.related.length) {
-    return null
+    return null;
   }
   return (
     <div style={{ marginTop: 100 }}>
@@ -579,8 +583,8 @@ const ShowRelatedUploads = ({ upload }) => {
         </tbody>
       </table>
     </div>
-  )
-}
+  );
+};
 
 const ShowUploadRow = ({ upload }) => {
   return (
@@ -614,5 +618,5 @@ const ShowUploadRow = ({ upload }) => {
         )}
       </td>
     </tr>
-  )
-}
+  );
+};
