@@ -1,44 +1,44 @@
-import React, { PureComponent } from 'react'
-import { Link } from 'react-router-dom'
+import React, { PureComponent } from "react";
+import { Link } from "react-router-dom";
 
-import { Loading, DisplayDate } from './Common'
-import Fetch from './Fetch'
-import store from './Store'
+import { Loading, DisplayDate } from "./Common";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 class Users extends PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'User Management'
+    super(props);
+    this.pageTitle = "User Management";
     this.state = {
       loading: true,
       users: null,
       displayUsers: null,
       showInactiveUsers: false
-    }
+    };
   }
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
-    this._fetchUsers()
+    document.title = this.pageTitle;
+    this._fetchUsers();
   }
 
   _fetchUsers = () => {
-    this.setState({ loading: true })
-    Fetch('/api/_users/', { credentials: 'same-origin' }).then(r => {
-      this.setState({ loading: false })
+    this.setState({ loading: true });
+    Fetch("/api/_users/", { credentials: "same-origin" }).then(r => {
+      this.setState({ loading: false });
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
-          '/',
+          "/",
           `You have to be signed in to view "${this.pageTitle}"`
-        )
-        return
+        );
+        return;
       }
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState({
@@ -47,25 +47,25 @@ class Users extends PureComponent {
               ? response.users
               : this._filterInActiveUsers(response.users),
             loading: false
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   _filterInActiveUsers = users => {
     return users.filter(user => {
       if (!user.is_active) {
-        return false
+        return false;
       }
       if (!user.last_login) {
-        return false
+        return false;
       }
-      return true
-    })
-  }
+      return true;
+    });
+  };
 
   render() {
     return (
@@ -86,9 +86,9 @@ class Users extends PureComponent {
                     displayUsers: this.state.showInactiveUsers
                       ? this.state.users
                       : this._filterInActiveUsers(this.state.users)
-                  })
+                  });
                 }
-              )
+              );
             }}
           />
         )}
@@ -96,11 +96,11 @@ class Users extends PureComponent {
           <DisplayUsers users={this.state.displayUsers} />
         ) : null}
       </div>
-    )
+    );
   }
 }
 
-export default Users
+export default Users;
 
 class ShowActiveUsersToggle extends React.PureComponent {
   render() {
@@ -111,43 +111,43 @@ class ShowActiveUsersToggle extends React.PureComponent {
             type="checkbox"
             checked={this.props.on}
             onChange={this.props.change}
-          />{' '}
+          />{" "}
           Show inactive users
         </label>
       </p>
-    )
+    );
   }
 }
 
 class DisplayUsers extends PureComponent {
   state = {
     filter: {
-      q: ''
+      q: ""
     }
-  }
+  };
 
   onEdit = (event, id) => {
-    event.preventDefault()
-    this.props.editUser(id)
-  }
+    event.preventDefault();
+    this.props.editUser(id);
+  };
 
   _resetFilter = event => {
-    event.preventDefault()
+    event.preventDefault();
     this.setState({
       filter: {
-        q: ''
+        q: ""
       }
-    })
-  }
+    });
+  };
 
   render() {
-    const { users } = this.props
+    const { users } = this.props;
     if (!users) {
       return (
         <p>
           There are <b>no users</b>.
         </p>
-      )
+      );
     }
     return (
       <table className="table is-fullwidth">
@@ -200,13 +200,13 @@ class DisplayUsers extends PureComponent {
                   .toLowerCase()
                   .includes(this.state.filter.q.toLowerCase())
               ) {
-                return null
+                return null;
               }
             }
             return (
               <tr key={user.id}>
                 <td>
-                  {user.email}{' '}
+                  {user.email}{" "}
                   {!user.is_active ? (
                     <span className="tag is-danger">Not Active</span>
                   ) : null}
@@ -216,7 +216,7 @@ class DisplayUsers extends PureComponent {
                     <DisplayDate date={user.last_login} />
                   ) : (
                     <i>never logged in</i>
-                  )}{' '}
+                  )}{" "}
                   <small>
                     (joined <DisplayDate date={user.date_joined} />)
                   </small>
@@ -226,7 +226,7 @@ class DisplayUsers extends PureComponent {
                     <span className="tag is-warning">Superuser</span>
                   ) : (
                     user.permissions.map(p => (
-                      <code key={p.id} style={{ display: 'block' }}>
+                      <code key={p.id} style={{ display: "block" }}>
                         {p.name}
                       </code>
                     ))
@@ -240,10 +240,10 @@ class DisplayUsers extends PureComponent {
                   </Link>
                 </td>
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
-    )
+    );
   }
 }

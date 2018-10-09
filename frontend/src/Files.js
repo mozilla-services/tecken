@@ -1,5 +1,5 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React from "react";
+import { Link } from "react-router-dom";
 
 import {
   Loading,
@@ -13,17 +13,17 @@ import {
   DisplayDateDifference,
   filterToQueryString,
   parseQueryString
-} from './Common'
-import Fetch from './Fetch'
-import './Upload.css' // they have enough in common
-import './Files.css'
+} from "./Common";
+import Fetch from "./Fetch";
+import "./Upload.css"; // they have enough in common
+import "./Files.css";
 
-import store from './Store'
+import store from "./Store";
 
 class Files extends React.PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'All Files'
+    super(props);
+    this.pageTitle = "All Files";
     this.state = {
       loading: true, // undone by componentDidMount
       files: null,
@@ -31,54 +31,54 @@ class Files extends React.PureComponent {
       batchSize: null,
       apiUrl: null,
       filter: {}
-    }
+    };
   }
 
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
+    document.title = this.pageTitle;
     if (this.props.location.search) {
       this.setState(
         { filter: parseQueryString(this.props.location.search) },
         () => {
-          this._fetchFiles(false)
+          this._fetchFiles(false);
         }
-      )
+      );
     } else {
-      this._fetchFiles(false)
+      this._fetchFiles(false);
     }
   }
 
   _fetchFiles = (updateHistory = true) => {
     // delay the loading animation in case it loads really fast
     this.setLoadingTimer = window.setTimeout(() => {
-      this.setState({ loading: true })
-    }, 500)
-    let url = '/api/uploads/files/'
-    const qs = filterToQueryString(this.state.filter)
+      this.setState({ loading: true });
+    }, 500);
+    let url = "/api/uploads/files/";
+    const qs = filterToQueryString(this.state.filter);
     if (qs) {
-      url += '?' + qs
+      url += "?" + qs;
     }
-    this.props.history.push({ search: qs })
+    this.props.history.push({ search: qs });
 
-    Fetch(url, { credentials: 'same-origin' }).then(r => {
+    Fetch(url, { credentials: "same-origin" }).then(r => {
       if (this.setLoadingTimer) {
-        window.clearTimeout(this.setLoadingTimer)
+        window.clearTimeout(this.setLoadingTimer);
       }
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
-          '/',
+          "/",
           `You have to be signed in to view "${this.pageTitle}"`
-        )
-        return
+        );
+        return;
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState({
@@ -86,32 +86,32 @@ class Files extends React.PureComponent {
             aggregates: response.aggregates,
             total: response.total,
             batchSize: response.batch_size
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   filterOnAll = event => {
-    event.preventDefault()
-    const filter = this.state.filter
+    event.preventDefault();
+    const filter = this.state.filter;
     // delete filter.user
-    delete filter.download
-    filter.page = 1
-    filter.key = ''
-    filter.size = ''
-    this.setState({ filter: filter }, this._fetchFiles)
-  }
+    delete filter.download;
+    filter.page = 1;
+    filter.key = "";
+    filter.size = "";
+    this.setState({ filter: filter }, this._fetchFiles);
+  };
 
   filterOnMicrosoftDownloads = event => {
-    event.preventDefault()
-    const filter = this.state.filter
-    filter.download = 'microsoft'
-    filter.page = 1
-    this.setState({ filter: filter }, this._fetchFiles)
-  }
+    event.preventDefault();
+    const filter = this.state.filter;
+    filter.download = "microsoft";
+    filter.page = 1;
+    this.setState({ filter: filter }, this._fetchFiles);
+  };
 
   updateFilter = newFilters => {
     this.setState(
@@ -119,23 +119,23 @@ class Files extends React.PureComponent {
         filter: Object.assign({}, this.state.filter, newFilters)
       },
       this._fetchFiles
-    )
-  }
+    );
+  };
 
   render() {
     return (
       <div>
-        {store.hasPermission('upload.view_all_uploads') ? (
+        {store.hasPermission("upload.view_all_uploads") ? (
           <div className="tabs is-centered">
             <ul>
-              <li className={!this.state.filter.download ? 'is-active' : ''}>
+              <li className={!this.state.filter.download ? "is-active" : ""}>
                 <Link to="/uploads/files" onClick={this.filterOnAll}>
                   All Files
                 </Link>
               </li>
               <li
                 className={
-                  this.state.filter.download === 'microsoft' ? 'is-active' : ''
+                  this.state.filter.download === "microsoft" ? "is-active" : ""
                 }
               >
                 <Link
@@ -175,46 +175,46 @@ class Files extends React.PureComponent {
           />
         )}
       </div>
-    )
+    );
   }
 }
 
-export default Files
+export default Files;
 
 class DisplayFiles extends React.PureComponent {
   componentDidMount() {
     // XXX perhaps this stuff should happen in a componentWillReceiveProps too
-    const filter = this.props.filter
-    this.refs.key.value = filter.key || ''
-    this.refs.size.value = filter.size || ''
-    this.refs.created_at.value = filter.created_at || ''
-    this.refs.bucketName.value = filter.bucket_name || ''
+    const filter = this.props.filter;
+    this.refs.key.value = filter.key || "";
+    this.refs.size.value = filter.size || "";
+    this.refs.created_at.value = filter.created_at || "";
+    this.refs.bucketName.value = filter.bucket_name || "";
   }
 
   submitForm = event => {
-    event.preventDefault()
-    const key = this.refs.key.value.trim()
-    const size = this.refs.size.value.trim()
-    const created_at = this.refs.created_at.value.trim()
-    const bucketName = this.refs.bucketName.value.trim()
+    event.preventDefault();
+    const key = this.refs.key.value.trim();
+    const size = this.refs.size.value.trim();
+    const created_at = this.refs.created_at.value.trim();
+    const bucketName = this.refs.bucketName.value.trim();
     this.props.updateFilter({
       page: 1,
       key,
       size,
       created_at,
       bucket_name: bucketName
-    })
-  }
+    });
+  };
 
   resetFilter = event => {
-    this.refs.key.value = ''
-    this.refs.size.value = ''
-    this.refs.bucketName.value = ''
-    this.refs.created_at.value = ''
-    this.submitForm(event)
-  }
+    this.refs.key.value = "";
+    this.refs.size.value = "";
+    this.refs.bucketName.value = "";
+    this.refs.created_at.value = "";
+    this.submitForm(event);
+  };
   render() {
-    const { files, aggregates } = this.props
+    const { files, aggregates } = this.props;
 
     return (
       <form onSubmit={this.submitForm}>
@@ -280,7 +280,7 @@ class DisplayFiles extends React.PureComponent {
               <td colSpan={3} style={{ minWidth: 230 }}>
                 <button type="submit" className="button is-primary">
                   Filter
-                </button>{' '}
+                </button>{" "}
                 <button
                   type="button"
                   onClick={this.resetFilter}
@@ -309,7 +309,7 @@ class DisplayFiles extends React.PureComponent {
                     </Link>
                   ) : (
                     <DisplayDate date={file.created_at} />
-                  )}{' '}
+                  )}{" "}
                   {file.upload && file.upload.try_symbols ? (
                     <span
                       className="tag is-info"
@@ -346,7 +346,7 @@ class DisplayFiles extends React.PureComponent {
 
         <ShowAggregates aggregates={aggregates} />
       </form>
-    )
+    );
   }
 }
 
@@ -359,7 +359,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.files.count
               ? thousandFormat(aggregates.files.count)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -375,7 +375,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.files.size.sum
               ? formatFileSize(aggregates.files.size.sum)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -385,7 +385,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.files.size.average
               ? formatFileSize(aggregates.files.size.average)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -398,10 +398,10 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.files.time.average
               ? formatSeconds(aggregates.files.time.average)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};

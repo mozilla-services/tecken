@@ -1,5 +1,5 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React from "react";
+import { Link } from "react-router-dom";
 
 import {
   Loading,
@@ -7,73 +7,73 @@ import {
   ShowFileMetadata,
   ShowMicrosoftDownloadMetadata,
   BooleanIcon
-} from './Common'
-import Fetch from './Fetch'
-import store from './Store'
+} from "./Common";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 export default class File extends React.PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'Symbol Upload File'
+    super(props);
+    this.pageTitle = "Symbol Upload File";
     this.state = {
       loading: false,
       file: null
-    }
+    };
   }
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentWillUnmount() {
-    this.dismounted = true
+    this.dismounted = true;
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
-    this.setState({ loading: true })
-    this._id = this.props.match.params.id
-    this._fetchFile(this.props.match.params.id)
+    document.title = this.pageTitle;
+    this.setState({ loading: true });
+    this._id = this.props.match.params.id;
+    this._fetchFile(this.props.match.params.id);
   }
 
   componentDidUpdate() {
     if (this._id !== this.props.match.params.id) {
-      this._id = this.props.match.params.id
-      this._fetchFile(this.props.match.params.id)
+      this._id = this.props.match.params.id;
+      this._fetchFile(this.props.match.params.id);
     }
   }
 
   goBack = event => {
-    this.props.history.goBack()
-  }
+    this.props.history.goBack();
+  };
 
   _fetchFile = id => {
-    this.setState({ loading: true })
+    this.setState({ loading: true });
     return Fetch(`/api/uploads/files/file/${id}`, {
-      credentials: 'same-origin'
+      credentials: "same-origin"
     }).then(r => {
       if (this.dismounted) {
-        return
+        return;
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
-          '/',
+          "/",
           `You have to be signed in to view "${this.pageTitle}"`
-        )
-        return
+        );
+        return;
       }
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
-          this.setState({ file: response.file })
-        })
+          this.setState({ file: response.file });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   render() {
     return (
@@ -81,19 +81,19 @@ export default class File extends React.PureComponent {
         <h1 className="title">{this.pageTitle}</h1>
         <div className="is-clearfix">
           <p className="is-pulled-right">
-            {this.props.history.action === 'PUSH' && (
+            {this.props.history.action === "PUSH" && (
               <a className="button is-small is-info" onClick={this.goBack}>
                 <span className="icon">
                   <i className="fa fa-backward" />
-                </span>{' '}
+                </span>{" "}
                 <span>Back to Uploads</span>
               </a>
             )}
-            {this.props.history.action === 'POP' && (
+            {this.props.history.action === "POP" && (
               <Link to="/uploads" className="button is-small is-info">
                 <span className="icon">
                   <i className="fa fa-backward" />
-                </span>{' '}
+                </span>{" "}
                 <span>Back to Uploads</span>
               </Link>
             )}
@@ -103,43 +103,43 @@ export default class File extends React.PureComponent {
         {this.state.loading && <Loading />}
         {this.state.file && <DisplayFile file={this.state.file} />}
       </div>
-    )
+    );
   }
 }
 
 class DisplayFile extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       loading: true,
       headLoading: true,
       headSuccess: null
-    }
+    };
   }
 
   headQuery = file => {
-    fetch(file.url, { method: 'HEAD' }).then(r => {
-      this.setState({ headSuccess: r.status === 200, headLoading: false })
-    })
-  }
+    fetch(file.url, { method: "HEAD" }).then(r => {
+      this.setState({ headSuccess: r.status === 200, headLoading: false });
+    });
+  };
 
   componentDidMount() {
-    this.headQuery(this.props.file)
+    this.headQuery(this.props.file);
   }
 
   absoluteURL = () => {
-    const uri = this.props.file.url
-    let host = document.location.host
-    if (host === 'localhost:3000') {
+    const uri = this.props.file.url;
+    let host = document.location.host;
+    if (host === "localhost:3000") {
       // You're in the middle of local development, change this
       // for the sake of the developer.
-      host = 'localhost:8000'
+      host = "localhost:8000";
     }
-    return `${document.location.protocol}//${host}${uri}`
-  }
+    return `${document.location.protocol}//${host}${uri}`;
+  };
 
   render() {
-    const { file } = this.props
+    const { file } = this.props;
     return (
       <div>
         <h4 className="title is-4">Public URL</h4>
@@ -153,7 +153,7 @@ class DisplayFile extends React.PureComponent {
           ) : (
             <span>
               {BooleanIcon(this.state.headSuccess)}
-              {this.state.headSuccess ? 'Yep, it exists' : 'Sorry, not found'}
+              {this.state.headSuccess ? "Yep, it exists" : "Sorry, not found"}
             </span>
           )}
         </p>
@@ -178,6 +178,6 @@ class DisplayFile extends React.PureComponent {
           <ShowMicrosoftDownloadMetadata download={file.microsoft_download} />
         )}
       </div>
-    )
+    );
   }
 }

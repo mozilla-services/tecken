@@ -5,18 +5,18 @@
   "license": "MPL-2.0",
   "dependencies": {
     "bulma": "0.7.1",
-    "date-fns": "2.0.0-alpha.16",
+    "date-fns": "2.0.0-alpha.21",
     "font-awesome": "4.7.0",
-    "mobx": "4.3.1",
-    "mobx-react": "5.2.0",
+    "mobx": "5.5.0",
+    "mobx-react": "5.2.8",
     "raven-js": "3.27.0",
-    "react": "16.5.0",
-    "react-dom": "16.5.0",
+    "react": "16.5.2",
+    "react-dom": "16.5.2",
     "react-fontawesome": "1.6.1",
     "react-router-dom": "4.3.1"
   },
   "devDependencies": {
-    "prettier": "1.14.2",
+    "prettier": "1.14.3",
     "react-scripts": "1.1.5"
   },
   "scripts": {

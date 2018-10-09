@@ -7,6 +7,7 @@ import json
 import logging
 from urllib.parse import urlparse, urlunparse
 
+import markus
 from dockerflow.version import get_version as dockerflow_get_version
 from django_redis import get_redis_connection
 
@@ -37,6 +38,7 @@ from tecken.base.utils import filesizeformat
 from . import forms
 
 logger = logging.getLogger("tecken")
+metrics = markus.get_metrics("tecken")
 
 
 class SumCardinality(Aggregate):
@@ -77,6 +79,7 @@ def _filter_form_dates(qs, form, keys):
     return qs
 
 
+@metrics.timer_decorator("api", tags=["endpoint:auth"])
 def auth(request):
     context = {}
     if request.user.is_authenticated:
@@ -339,6 +342,7 @@ def edit_user(request, id):
     return http.JsonResponse(context)
 
 
+@metrics.timer_decorator("api", tags=["endpoint:uploads"])
 @api_login_required
 def uploads(request):
     context = {
@@ -363,36 +367,50 @@ def uploads(request):
     start = (page - 1) * batch_size
     end = start + batch_size
 
-    aggregates_numbers = qs.aggregate(
-        count=Count("id"),
-        size_avg=Avg("size"),
-        size_sum=Sum("size"),
-        skipped_sum=SumCardinality("skipped_keys"),
-    )
-    context["aggregates"] = {
-        "uploads": {
-            "count": aggregates_numbers["count"],
-            "size": {
-                "average": aggregates_numbers["size_avg"],
-                "sum": aggregates_numbers["size_sum"],
+    if context["can_view_all"] and not any(form.cleaned_data.values()):
+        # If you can view ALL uploads and there's no filtering, we can use
+        # UploadsCreated instead which is much more efficient.
+        aggregates_numbers = UploadsCreated.objects.aggregate(
+            count=Sum("count"),
+            size_sum=Sum("size"),
+            skipped_sum=Sum("skipped"),
+            files=Sum("files"),
+        )
+        context["aggregates"] = {
+            "uploads": {
+                "count": aggregates_numbers["count"],
+                "size": {"sum": aggregates_numbers["size_sum"]},
+                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
             },
-            "skipped": {"sum": aggregates_numbers["skipped_sum"]},
+            "files": {"count": aggregates_numbers["files"]},
         }
-    }
-    file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
-    context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
+        # Do this later to avoid ZeroDivisionError
+        if aggregates_numbers["count"]:
+            context["aggregates"]["uploads"]["size"]["average"] = (
+                aggregates_numbers["size_sum"] / aggregates_numbers["count"]
+            )
+        else:
+            context["aggregates"]["uploads"]["size"]["average"] = None
 
-    # Prepare a map of all user_id => user attributes
-    # This assumes that there are relatively few users who upload.
-    distinct_users_ids = [
-        x["user_id"] for x in qs.values("user_id").distinct("user_id")
-    ]
-    if distinct_users_ids:
-        # Only bother if there is a any distinct users
-        user_map = {
-            user.id: {"email": user.email}
-            for user in User.objects.filter(id__in=distinct_users_ids)
+    else:
+        aggregates_numbers = qs.aggregate(
+            count=Count("id"),
+            size_avg=Avg("size"),
+            size_sum=Sum("size"),
+            skipped_sum=SumCardinality("skipped_keys"),
+        )
+        context["aggregates"] = {
+            "uploads": {
+                "count": aggregates_numbers["count"],
+                "size": {
+                    "average": aggregates_numbers["size_avg"],
+                    "sum": aggregates_numbers["size_sum"],
+                },
+                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
+            }
         }
+        file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+        context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
 
     if form.cleaned_data.get("order_by"):
         order_by = form.cleaned_data["order_by"]
@@ -401,11 +419,11 @@ def uploads(request):
 
     rows = []
     order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
-    for upload in qs.order_by(order_by_string)[start:end]:
+    for upload in qs.select_related("user").order_by(order_by_string)[start:end]:
         rows.append(
             {
                 "id": upload.id,
-                "user": user_map[upload.user_id],
+                "user": {"email": upload.user.email},
                 "filename": upload.filename,
                 "size": upload.size,
                 "bucket_name": upload.bucket_name,
@@ -478,6 +496,7 @@ def filter_uploads(qs, can_view_all, user, form):
     return qs
 
 
+@metrics.timer_decorator("api", tags=["endpoint:upload"])
 @api_login_required
 def upload(request, id):
     obj = get_object_or_404(Upload, id=id)
@@ -656,6 +675,7 @@ def uploads_created_backfilled(request):
     return http.JsonResponse(context)
 
 
+@metrics.timer_decorator("api", tags=["endpoint:upload_files"])
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
@@ -767,6 +787,7 @@ def upload_files(request):
     return http.JsonResponse(context)
 
 
+@metrics.timer_decorator("api", tags=["endpoint:upload_file"])
 @api_login_required
 def upload_file(request, id):
     file_upload = get_object_or_404(FileUpload, id=id)
@@ -833,37 +854,85 @@ def upload_file(request, id):
     return http.JsonResponse(context)
 
 
+@metrics.timer_decorator("api", tags=["endpoint:stats"])
 @api_login_required
 def stats(request):
     numbers = {}
 
     all_uploads = request.user.has_perm("upload.can_view_all")
-    upload_qs = Upload.objects.all()
-    files_qs = FileUpload.objects.all()
-    if not all_uploads:
-        upload_qs = upload_qs.filter(user=request.user)
-        files_qs = files_qs.filter(upload__user=request.user)
-
-    def count_and_size(qs, start, end):
-        sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-        return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
 
     today = timezone.now()
     start_today = today.replace(hour=0, minute=0, second=0)
     start_yesterday = start_today - datetime.timedelta(days=1)
     start_this_month = today.replace(day=1)
 
-    numbers["uploads"] = {
-        "all_uploads": all_uploads,
-        "today": count_and_size(upload_qs, start_today, today),
-        "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
-        "this_month": count_and_size(upload_qs, start_this_month, today),
-    }
-    numbers["files"] = {
-        "today": count_and_size(files_qs, start_today, today),
-        "yesterday": count_and_size(files_qs, start_yesterday, start_today),
-        "this_month": count_and_size(files_qs, start_this_month, today),
-    }
+    if not all_uploads:
+        # If it's an individual user, they can only see their own uploads and
+        # thus can't use UploadsCreated.
+        upload_qs = Upload.objects.filter(user=request.user)
+        files_qs = FileUpload.objects.filter(upload__user=request.user)
+
+        def count_and_size(qs, start, end):
+            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
+            return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
+
+        def count(qs, start, end):
+            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
+            return sub_qs.aggregate(count=Count("id"))
+
+        numbers["uploads"] = {
+            "all_uploads": all_uploads,
+            "today": count_and_size(upload_qs, start_today, today),
+            "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
+            "this_month": count_and_size(upload_qs, start_this_month, today),
+        }
+        numbers["files"] = {
+            "today": count(files_qs, start_today, today),
+            "yesterday": count(files_qs, start_yesterday, start_today),
+            "this_month": count(files_qs, start_this_month, today),
+        }
+    else:
+
+        def count_and_size(start, end):
+            return UploadsCreated.objects.filter(
+                date__gte=start.date(), date__lt=end.date()
+            ).aggregate(count=Sum("count"), total_size=Sum("size"), files=Sum("files"))
+
+        _today = count_and_size(today, today + datetime.timedelta(days=1))
+        _yesterday = count_and_size(today - datetime.timedelta(days=1), today)
+        _this_month = count_and_size(
+            start_this_month, today + datetime.timedelta(days=1)
+        )
+
+        numbers["uploads"] = {
+            "all_uploads": all_uploads,
+            "today": {"count": _today["count"], "total_size": _today["total_size"]},
+            "yesterday": {
+                "count": _yesterday["count"],
+                "total_size": _yesterday["total_size"],
+            },
+            "this_month": {
+                "count": _this_month["count"],
+                "total_size": _this_month["total_size"],
+            },
+        }
+        numbers["files"] = {
+            "today": {"count": _today["files"]},
+            "yesterday": {"count": _yesterday["files"]},
+            "this_month": {"count": _this_month["files"]},
+        }
+
+    # When doing aggregates on rows that don't exist you can get a None instead
+    # of 0. Only really happens in cases where you have extremely little in the
+    # database.
+    def nones_to_zero(obj):
+        for key, value in obj.items():
+            if isinstance(value, dict):
+                nones_to_zero(value)
+            elif value is None:
+                obj[key] = 0
+
+    nones_to_zero(numbers)
 
     missing_qs = MissingSymbol.objects.all()
     microsoft_qs = MicrosoftDownload.objects.all()
@@ -1066,6 +1135,7 @@ def current_versions(request):
     return http.JsonResponse(context)
 
 
+@metrics.timer_decorator("api", tags=["endpoint:downloads_missing"])
 def downloads_missing(request):
     context = {}
     form = forms.DownloadsMissingForm(
@@ -1136,6 +1206,7 @@ def filter_missing_symbols(qs, form):
     return qs
 
 
+@metrics.timer_decorator("api", tags=["endpoint:downloads_microsoft"])
 def downloads_microsoft(request):
     context = {}
     form = forms.DownloadsMicrosoftForm(request.GET)

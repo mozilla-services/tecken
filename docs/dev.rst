@@ -532,6 +532,13 @@ If you get any output, it means it found files that should/could have been
 formatted. The error message will explain what files need attention and
 how to just format them all right now.
 
+If you don't really care all that much about what the difference is and
+just want to fix it automatically run:
+
+.. code-block:: shell
+
+    $ docker-compose run frontend lintfix
+
 .. _`Prettier`: https://prettier.io/
 
 
@@ -638,8 +645,8 @@ if there were multiple files:
 
 `black <https://github.com/ambv/black>`_. is the Python code formatting tool we use
 to format all non-generated Python code. In CI, we test that all code passes
-``black --check ...``. When doing local development, consider setting up either
-some sort of "format on save" in your editor or a git pre-commit hook.
+``black --diff --check ...``. When doing local development, consider setting
+up either some sort of "format on save" in your editor or a git pre-commit hook.
 
 To check that all code is formatted correctly, run:
 

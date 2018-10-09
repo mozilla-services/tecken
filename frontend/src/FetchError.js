@@ -1,5 +1,5 @@
-import React, { PureComponent } from 'react'
-import store from './Store'
+import React, { PureComponent } from "react";
+import store from "./Store";
 
 /* Global component that is used to display that any fetch() failed.
    Kinda equivalent of how jQuery.ajaxError works except we don't
@@ -7,15 +7,15 @@ import store from './Store'
 */
 class FetchError extends PureComponent {
   resetFetchError = event => {
-    store.fetchError = null
-  }
+    store.fetchError = null;
+  };
   render() {
-    const { error } = this.props
+    const { error } = this.props;
     // Allowing the only and first argument to be falsy is to make it
     // convenient to do things like `<FetchError errors={store.anyError}/>`
     // without having to wrap it in a conditional.
     if (!error) {
-      return null
+      return null;
     }
     // error is a response object unless it's null
     return (
@@ -35,8 +35,8 @@ class FetchError extends PureComponent {
           </p>
         </div>
       </article>
-    )
+    );
   }
 }
 
-export default FetchError
+export default FetchError;

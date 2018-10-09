@@ -1,7 +1,7 @@
-import React from 'react'
-import FontAwesome from 'react-fontawesome'
-import 'font-awesome/css/font-awesome.css'
-import { Link } from 'react-router-dom'
+import React from "react";
+import FontAwesome from "react-fontawesome";
+import "font-awesome/css/font-awesome.css";
+import { Link } from "react-router-dom";
 
 import {
   toDate,
@@ -10,7 +10,7 @@ import {
   formatDistanceStrict,
   differenceInSeconds,
   differenceInMilliseconds
-} from 'date-fns/esm'
+} from "date-fns";
 
 export const Loading = () => (
   <p className="has-text-centered">
@@ -19,34 +19,34 @@ export const Loading = () => (
       <span className="sr-only">Loading...</span>
     </span>
   </p>
-)
+);
 
 export const DisplayDate = ({ date }) => {
   if (date === null) {
-    throw new Error('date is null')
+    throw new Error("date is null");
   }
-  const dateObj = toDate(date)
-  const now = new Date()
+  const dateObj = toDate(date);
+  const now = new Date();
   if (isBefore(dateObj, now)) {
-    return <span title={date}>{formatDistance(date, now)} ago</span>
+    return <span title={date}>{formatDistance(date, now)} ago</span>;
   } else {
-    return <span title={date}>in {formatDistance(date, now)}</span>
+    return <span title={date}>in {formatDistance(date, now)}</span>;
   }
-}
+};
 
-export const DisplayDateDifference = ({ from, to, suffix = '' }) => {
-  const fromObj = toDate(from)
-  const toObj = toDate(to)
-  const secDiff = differenceInSeconds(toObj, fromObj)
+export const DisplayDateDifference = ({ from, to, suffix = "" }) => {
+  const fromObj = toDate(from);
+  const toObj = toDate(to);
+  const secDiff = differenceInSeconds(toObj, fromObj);
   if (secDiff === 0) {
-    const msecDiff = differenceInMilliseconds(toObj, fromObj)
+    const msecDiff = differenceInMilliseconds(toObj, fromObj);
     if (msecDiff > 0) {
       return (
         <span title={`From ${fromObj} to ${toObj}`}>
           {msecDiff} ms
           {suffix && ` ${suffix}`}
         </span>
-      )
+      );
     }
   }
   return (
@@ -54,41 +54,41 @@ export const DisplayDateDifference = ({ from, to, suffix = '' }) => {
       {formatDistanceStrict(fromObj, toObj)}
       {suffix && ` ${suffix}`}
     </span>
-  )
-}
+  );
+};
 
 export const thousandFormat = x => {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
 
 export const formatFileSize = (bytes, decimals = 0) => {
-  if (!bytes) return '0 bytes'
-  var k = 1024
-  var dm = decimals + 1 || 3
-  var sizes = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-  var i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
-}
+  if (!bytes) return "0 bytes";
+  var k = 1024;
+  var dm = decimals + 1 || 3;
+  var sizes = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+  var i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+};
 
 export const formatSeconds = seconds => {
   if (seconds < 1) {
     // milliseconds
-    return (seconds * 1000).toFixed(0) + 'ms'
+    return (seconds * 1000).toFixed(0) + "ms";
   } else if (seconds > 3000) {
-    return (seconds / 60).toFixed(1) + 'm'
+    return (seconds / 60).toFixed(1) + "m";
   } else if (seconds < 60) {
-    return seconds.toFixed(1) + 's'
+    return seconds.toFixed(1) + "s";
   } else {
-    const minutes = Math.floor(seconds / 60)
-    seconds = Math.round(seconds % 60)
-    return `${minutes}m${seconds}s`
+    const minutes = Math.floor(seconds / 60);
+    seconds = Math.round(seconds % 60);
+    return `${minutes}m${seconds}s`;
   }
-}
+};
 export const BooleanIcon = bool => (
-  <span className="icon" style={{ color: bool ? 'green' : 'red' }}>
-    <i className={bool ? 'fa fa-check' : 'fa fa-close'} />
+  <span className="icon" style={{ color: bool ? "green" : "red" }}>
+    <i className={bool ? "fa fa-check" : "fa fa-close"} />
   </span>
-)
+);
 
 export const Pagination = ({
   location,
@@ -98,26 +98,26 @@ export const Pagination = ({
   updateFilter
 }) => {
   if (!currentPage) {
-    currentPage = 1
-  } else if (typeof currentPage === 'string') {
-    currentPage = parseInt(currentPage, 10)
+    currentPage = 1;
+  } else if (typeof currentPage === "string") {
+    currentPage = parseInt(currentPage, 10);
   }
 
   const nextPageUrl = page => {
-    const searchParams = new URLSearchParams(location.search)
-    searchParams.set('page', page)
-    return location.pathname + '?' + searchParams.toString()
-  }
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set("page", page);
+    return location.pathname + "?" + searchParams.toString();
+  };
 
   const goTo = (event, page) => {
-    event.preventDefault()
-    updateFilter({ page })
-  }
+    event.preventDefault();
+    updateFilter({ page });
+  };
 
   const isOverflow = page => {
     // return true if doesn't make sense to go to this page
-    return page < 1 || (page - 1) * batchSize >= total
-  }
+    return page < 1 || (page - 1) * batchSize >= total;
+  };
 
   return (
     <nav className="pagination is-right">
@@ -138,41 +138,43 @@ export const Pagination = ({
         Next page
       </Link>
     </nav>
-  )
-}
+  );
+};
 
 export const TableSubTitle = ({ total, page, batchSize }) => {
   if (total === null) {
-    return null
+    return null;
   }
-  page = page || 1
-  const totalPages = Math.ceil(total / batchSize)
+  page = page || 1;
+  const totalPages = Math.ceil(total / batchSize);
   return (
     <h2 className="subtitle">
-      {thousandFormat(total)} Found (Page {thousandFormat(page)} of{' '}
+      {thousandFormat(total)} Found (Page {thousandFormat(page)} of{" "}
       {thousandFormat(totalPages)})
     </h2>
-  )
-}
+  );
+};
 
 export const pluralize = (number, singular, plural) => {
   if (number === 1) {
-    return `1 ${singular}`
+    return `1 ${singular}`;
   } else {
-    return `${number} ${plural}`
+    return `${number} ${plural}`;
   }
-}
+};
 
 export const DisplayFilesSummary = (files, incomplete, skipped, ignored) => {
-  const sentences = []
-  sentences.push(pluralize(files, 'file uploaded', 'files uploaded'))
+  const sentences = [];
+  sentences.push(pluralize(files, "file uploaded", "files uploaded"));
   if (incomplete) {
-    sentences.push(pluralize(incomplete, 'file incomplete', 'files incomplete'))
+    sentences.push(
+      pluralize(incomplete, "file incomplete", "files incomplete")
+    );
   }
-  sentences.push(`${skipped} skipped`)
+  sentences.push(`${skipped} skipped`);
   // Currently ignoring the 'ignored'
-  return sentences.join('. ') + '.'
-}
+  return sentences.join(". ") + ".";
+};
 
 export const ShowValidationErrors = ({ errors, resetAndReload }) => {
   return (
@@ -185,44 +187,44 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
             <li key={key}>
               <b>{key}</b> - <code>{errors[key]}</code>
             </li>
-          )
+          );
         })}
       </ul>
     </div>
-  )
-}
+  );
+};
 
 export const parseQueryString = qs => {
-  const searchParams = new URLSearchParams(qs)
-  const parsed = {}
+  const searchParams = new URLSearchParams(qs);
+  const parsed = {};
   for (let [key, value] of searchParams) {
-    const already = parsed[key]
+    const already = parsed[key];
     if (already === undefined) {
-      parsed[key] = value
+      parsed[key] = value;
     } else if (Array.isArray(already)) {
-      parsed[key].push(value)
+      parsed[key].push(value);
     } else {
-      parsed[key] = [already, value]
+      parsed[key] = [already, value];
     }
   }
-  return parsed
-}
+  return parsed;
+};
 
 export const filterToQueryString = (filterObj, overrides) => {
-  const copy = Object.assign(overrides || {}, filterObj)
-  const searchParams = new URLSearchParams()
+  const copy = Object.assign(overrides || {}, filterObj);
+  const searchParams = new URLSearchParams();
   Object.entries(copy).forEach(([key, value]) => {
     if (Array.isArray(value) && value.length) {
-      value.forEach(v => searchParams.append(key, v))
+      value.forEach(v => searchParams.append(key, v));
     } else if (value) {
-      searchParams.set(key, value)
+      searchParams.set(key, value);
     }
-  })
-  searchParams.sort()
-  return searchParams.toString()
-}
+  });
+  searchParams.sort();
+  return searchParams.toString();
+};
 
-const URLTag = url => <span className="url">{url}</span>
+const URLTag = url => <span className="url">{url}</span>;
 
 export const ShowUploadMetadata = ({ upload }) => (
   <table className="table is-fullwidth">
@@ -241,7 +243,7 @@ export const ShowUploadMetadata = ({ upload }) => (
       </tr>
       <tr>
         <th>Try Symbols</th>
-        <td>{upload.try_symbols ? 'Yes' : 'No'}</td>
+        <td>{upload.try_symbols ? "Yes" : "No"}</td>
       </tr>
       <tr>
         <th>Download URL</th>
@@ -301,8 +303,8 @@ export const ShowUploadMetadata = ({ upload }) => (
           )}
           {upload.completed_at ? (
             <small>
-              {' '}
-              (took{' '}
+              {" "}
+              (took{" "}
               <DisplayDateDifference
                 from={upload.created_at}
                 to={upload.completed_at}
@@ -314,7 +316,7 @@ export const ShowUploadMetadata = ({ upload }) => (
       </tr>
     </tbody>
   </table>
-)
+);
 
 export const ShowFileMetadata = ({ file }) => (
   <table className="table is-fullwidth">
@@ -355,8 +357,8 @@ export const ShowFileMetadata = ({ file }) => (
           )}
           {file.completed_at ? (
             <small>
-              {' '}
-              (took{' '}
+              {" "}
+              (took{" "}
               <DisplayDateDifference
                 from={file.created_at}
                 to={file.completed_at}
@@ -368,7 +370,7 @@ export const ShowFileMetadata = ({ file }) => (
       </tr>
     </tbody>
   </table>
-)
+);
 
 export const ShowMicrosoftDownloadMetadata = ({ download }) => (
   <table className="table is-fullwidth">
@@ -383,7 +385,7 @@ export const ShowMicrosoftDownloadMetadata = ({ download }) => (
           {download.error ? (
             <span className="has-text-danger">{download.error}</span>
           ) : (
-            '-'
+            "-"
           )}
         </td>
       </tr>
@@ -403,8 +405,8 @@ export const ShowMicrosoftDownloadMetadata = ({ download }) => (
           )}
           {download.completed_at ? (
             <small>
-              {' '}
-              (took{' '}
+              {" "}
+              (took{" "}
               <DisplayDateDifference
                 from={download.created_at}
                 to={download.completed_at}
@@ -416,44 +418,44 @@ export const ShowMicrosoftDownloadMetadata = ({ download }) => (
       </tr>
     </tbody>
   </table>
-)
+);
 
 const capitalize = s => {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
 
 export class SortLink extends React.PureComponent {
   change = event => {
-    event.preventDefault()
-    const { current, name } = this.props
-    let reverse = true
+    event.preventDefault();
+    const { current, name } = this.props;
+    let reverse = true;
     if (current && current.sort === name) {
-      reverse = !current.reverse
+      reverse = !current.reverse;
     }
     this.props.onChangeSort({
       sort: name,
       reverse: reverse
-    })
-  }
+    });
+  };
   render() {
-    const { current, name } = this.props
-    const title = this.props.title || capitalize(name)
-    const currentUrl = document.location.pathname
-    let isCurrent = false
-    let isReverse = true
+    const { current, name } = this.props;
+    const title = this.props.title || capitalize(name);
+    const currentUrl = document.location.pathname;
+    let isCurrent = false;
+    let isReverse = true;
     if (current && current.sort === name) {
-      isCurrent = true
-      isReverse = current.reverse
+      isCurrent = true;
+      isReverse = current.reverse;
     }
-    let arrow
+    let arrow;
     if (isCurrent) {
       if (isReverse) {
-        arrow = '⬇'
+        arrow = "⬇";
       } else {
-        arrow = '⬆'
+        arrow = "⬆";
       }
     } else {
-      arrow = '⇣'
+      arrow = "⇣";
     }
     return (
       <Link
@@ -463,6 +465,6 @@ export class SortLink extends React.PureComponent {
       >
         {arrow}
       </Link>
-    )
+    );
   }
 }

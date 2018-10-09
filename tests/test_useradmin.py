@@ -5,7 +5,6 @@
 from io import StringIO
 
 import pytest
-from markus import TIMING
 
 from django.core.management.base import CommandError
 from django.contrib.auth.models import User
@@ -111,10 +110,6 @@ def test_not_blocked_in_auth0(client, requestsmock, settings, metricsmock):
 
     response = client.get(url)
     assert response.status_code == 200
-
-    metrics_records = metricsmock.get_records()
-    timing_record, = metrics_records
-    assert timing_record[0] == TIMING
 
 
 @pytest.mark.django_db

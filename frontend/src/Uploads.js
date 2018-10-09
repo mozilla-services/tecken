@@ -1,6 +1,6 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { format } from 'date-fns/esm'
+import React from "react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
 
 import {
   Loading,
@@ -16,17 +16,17 @@ import {
   filterToQueryString,
   parseQueryString,
   SortLink
-} from './Common'
-import Fetch from './Fetch'
-import './Uploads.css'
+} from "./Common";
+import Fetch from "./Fetch";
+import "./Uploads.css";
 
-import store from './Store'
+import store from "./Store";
 
 class Uploads extends React.PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
-      pageTitle: 'Uploads',
+      pageTitle: "Uploads",
       loading: true,
       refreshing: false,
       uploads: null,
@@ -38,21 +38,21 @@ class Uploads extends React.PureComponent {
       latestUpload: null,
       newUploadsCount: 0,
       orderBy: null
-    }
+    };
 
-    this.newCountLoopInterval = 5 * 1000
+    this.newCountLoopInterval = 5 * 1000;
   }
 
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentWillUnmount() {
-    this.dismounted = true
+    this.dismounted = true;
   }
 
   componentDidMount() {
-    document.title = this.state.pageTitle
+    document.title = this.state.pageTitle;
     if (this.props.location.search) {
       this.setState(
         { filter: parseQueryString(this.props.location.search) },
@@ -60,49 +60,49 @@ class Uploads extends React.PureComponent {
           // If you load the page with some filtering, the "latestUpload"
           // might not be the unfiltered latest upload.
           this._fetchAbsoluteLatestUpload().then(() => {
-            this._fetchUploads()
-          })
+            this._fetchUploads();
+          });
         }
-      )
+      );
     } else {
-      this._fetchUploads()
+      this._fetchUploads();
     }
 
     window.setTimeout(() => {
-      this._fetchUploadsNewCountLoop()
-    }, this.newCountLoopInterval)
+      this._fetchUploadsNewCountLoop();
+    }, this.newCountLoopInterval);
   }
 
   _fetchUploads = () => {
     // delay the loading animation in case it loads really fast
     this.setLoadingTimer = window.setTimeout(() => {
       if (!this.dismounted) {
-        this.setState({ loading: true })
+        this.setState({ loading: true });
       }
-    }, 1000)
-    let url = '/api/uploads/'
-    const qs = filterToQueryString(this.state.filter, this.state.orderBy)
+    }, 1000);
+    let url = "/api/uploads/";
+    const qs = filterToQueryString(this.state.filter, this.state.orderBy);
     if (qs) {
-      url += '?' + qs
+      url += "?" + qs;
     }
-    this.props.history.push({ search: qs })
+    this.props.history.push({ search: qs });
 
-    return Fetch(url, { credentials: 'same-origin' }).then(r => {
+    return Fetch(url, { credentials: "same-origin" }).then(r => {
       if (this.setLoadingTimer) {
-        window.clearTimeout(this.setLoadingTimer)
+        window.clearTimeout(this.setLoadingTimer);
       }
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
-          '/',
+          "/",
           `You have to be signed in to view "${this.pageTitle}"`
-        )
+        );
         // Even though we exit early, always return a promise
-        return Promise.resolve()
+        return Promise.resolve();
       }
-      this.setState({ loading: false, refreshing: false })
+      this.setState({ loading: false, refreshing: false });
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
           this.setState(
@@ -118,106 +118,108 @@ class Uploads extends React.PureComponent {
             },
             () => {
               if (this.state.newUploadsCount) {
-                document.title = this.state.pageTitle
-                this.setState({ newUploadsCount: 0 })
+                document.title = this.state.pageTitle;
+                this.setState({ newUploadsCount: 0 });
               }
             }
-          )
-        })
+          );
+        });
       } else if (r.status === 400) {
         return r.json().then(data => {
           this.setState({
             loading: false,
             refreshing: false,
             validationErrors: data.errors
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
         // Always return a promise
-        return Promise.resolve()
+        return Promise.resolve();
       }
-    })
-  }
+    });
+  };
 
   _fetchAbsoluteLatestUpload = () => {
-    const url = '/api/uploads/'
-    return fetch(url, { credentials: 'same-origin' }).then(r => {
+    const url = "/api/uploads/";
+    return fetch(url, { credentials: "same-origin" }).then(r => {
       if (r.status === 200) {
         return r.json().then(response => {
           return this.setState({
             latestUpload: this._getLatestUpload(response.uploads)
-          })
-        })
+          });
+        });
       }
-    })
-  }
+    });
+  };
 
   _refreshUploads = () => {
-    this.setState({ refreshing: true })
-    this._fetchUploads()
-  }
+    this.setState({ refreshing: true });
+    this._fetchUploads();
+  };
 
   // This is called every time _fetchUploads() finishes successfully.
   _getLatestUpload = uploads => {
     // Of all 'uploads', look for the one with the highest
     // created_at and if it's more than this.state.latestUpload, update.
-    let latestUpload = this.state.latestUpload
+    let latestUpload = this.state.latestUpload;
     uploads.forEach(upload => {
-      const createdAt = upload.created_at
+      const createdAt = upload.created_at;
       if (latestUpload === null || createdAt > latestUpload) {
-        latestUpload = createdAt
+        latestUpload = createdAt;
       }
-    })
-    return latestUpload
-  }
+    });
+    return latestUpload;
+  };
 
   _fetchUploadsNewCountLoop = () => {
     if (!this.dismounted) {
-      let url = '/api/uploads/'
+      let url = "/api/uploads/";
       const qs = filterToQueryString(this.state.filter, {
         created_at: `>${this.state.latestUpload}`
-      })
-      url += '?' + qs
+      });
+      url += "?" + qs;
       if (this.previousLatestUpload) {
         // assert that this time it's >= the previous one
         if (this.state.latestUpload < this.previousLatestUpload) {
-          throw new Error('Bad state! Previous latestUpload has regressed')
+          throw new Error("Bad state! Previous latestUpload has regressed");
         }
       }
-      this.previousLatestUpload = this.state.latestUpload
+      this.previousLatestUpload = this.state.latestUpload;
       // Not going to obsess over fetch errors
-      Fetch(url, { credentials: 'same-origin' }).then(r => {
+      Fetch(url, { credentials: "same-origin" }).then(r => {
         if (r.status === 200) {
           r.json().then(response => {
             if (response.total) {
-              document.title = `(${response.total} new) ${this.state.pageTitle}`
-              this.setState({ newUploadsCount: response.total })
+              document.title = `(${response.total} new) ${
+                this.state.pageTitle
+              }`;
+              this.setState({ newUploadsCount: response.total });
             }
             window.setTimeout(() => {
-              this._fetchUploadsNewCountLoop()
-            }, this.newCountLoopInterval)
-          })
+              this._fetchUploadsNewCountLoop();
+            }, this.newCountLoopInterval);
+          });
         } else {
-          console.warn(`Unable to continue loop because of status ${r.status}`)
+          console.warn(`Unable to continue loop because of status ${r.status}`);
         }
-      })
+      });
     }
-  }
+  };
 
   filterOnAll = event => {
-    event.preventDefault()
-    const filter = this.state.filter
-    delete filter.user
-    this.setState({ filter: filter }, this._fetchUploads)
-  }
+    event.preventDefault();
+    const filter = this.state.filter;
+    delete filter.user;
+    this.setState({ filter: filter }, this._fetchUploads);
+  };
 
   filterOnYours = event => {
-    event.preventDefault()
-    const filter = this.state.filter
-    filter.user = store.currentUser.email
-    this.setState({ filter: filter }, this._fetchUploads)
-  }
+    event.preventDefault();
+    const filter = this.state.filter;
+    filter.user = store.currentUser.email;
+    this.setState({ filter: filter }, this._fetchUploads);
+  };
 
   updateFilter = newFilters => {
     this.setState(
@@ -225,41 +227,41 @@ class Uploads extends React.PureComponent {
         filter: Object.assign({}, this.state.filter, newFilters)
       },
       this._fetchUploads
-    )
-  }
+    );
+  };
 
   resetAndReload = event => {
-    event.preventDefault()
+    event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
-      this._fetchUploads()
-    })
-  }
+      this._fetchUploads();
+    });
+  };
 
   _filterOnYourUploads = () => {
     if (this.state.filter.user && store.currentUser) {
-      return this.state.filter.user === store.currentUser.email
+      return this.state.filter.user === store.currentUser.email;
     }
-    return false
-  }
+    return false;
+  };
 
   changeOrderBy = orderBy => {
     this.setState({ orderBy: orderBy }, () => {
-      this._fetchUploads()
-    })
-  }
+      this._fetchUploads();
+    });
+  };
 
   render() {
     return (
       <div>
-        {store.hasPermission('upload.view_all_uploads') ? (
+        {store.hasPermission("upload.view_all_uploads") ? (
           <div className="tabs is-centered">
             <ul>
-              <li className={!this._filterOnYourUploads() ? 'is-active' : ''}>
+              <li className={!this._filterOnYourUploads() ? "is-active" : ""}>
                 <Link to="/uploads" onClick={this.filterOnAll}>
                   All Uploads
                 </Link>
               </li>
-              <li className={this._filterOnYourUploads() ? 'is-active' : ''}>
+              <li className={this._filterOnYourUploads() ? "is-active" : ""}>
                 <Link
                   to={`/uploads?user=${store.currentUser.email}`}
                   onClick={this.filterOnYours}
@@ -278,7 +280,7 @@ class Uploads extends React.PureComponent {
         ) : (
           <div className="tabs is-centered">
             <ul>
-              <li className={!this.state.filter.user ? 'is-active' : ''}>
+              <li className={!this.state.filter.user ? "is-active" : ""}>
                 <Link to="/uploads/">All Uploads</Link>
               </li>
               <li>
@@ -287,14 +289,12 @@ class Uploads extends React.PureComponent {
             </ul>
           </div>
         )}
-
         <ShowNewUploadsCount
           count={this.state.newUploadsCount}
           refreshing={this.state.refreshing}
           refresh={this._refreshUploads}
         />
         <h1 className="title">{this.state.pageTitle}</h1>
-
         {this.state.loading ? (
           <Loading />
         ) : (
@@ -304,14 +304,12 @@ class Uploads extends React.PureComponent {
             batchSize={this.state.batchSize}
           />
         )}
-
         {this.state.validationErrors && (
           <ShowValidationErrors
             errors={this.state.validationErrors}
             resetAndReload={this.resetAndReload}
           />
         )}
-
         {this.state.uploads && (
           <DisplayUploads
             uploads={this.state.uploads}
@@ -329,20 +327,20 @@ class Uploads extends React.PureComponent {
           />
         )}
       </div>
-    )
+    );
   }
 }
 
-export default Uploads
+export default Uploads;
 
 class ShowNewUploadsCount extends React.PureComponent {
   refresh = event => {
-    event.preventDefault()
-    this.props.refresh()
-  }
+    event.preventDefault();
+    this.props.refresh();
+  };
   render() {
     if (!this.props.count) {
-      return null
+      return null;
     }
     return (
       <p className="is-pulled-right">
@@ -350,12 +348,12 @@ class ShowNewUploadsCount extends React.PureComponent {
           <a className="button is-small is-info" disabled>
             <span className="icon">
               <i className="fa fa-refresh fa-spin fa-3x fa-fw" />
-            </span>{' '}
+            </span>{" "}
             <span>
               {pluralize(
                 this.props.count,
-                'new upload available',
-                'new uploads available'
+                "new upload available",
+                "new uploads available"
               )}
             </span>
           </a>
@@ -363,79 +361,79 @@ class ShowNewUploadsCount extends React.PureComponent {
           <a className="button is-small is-info" onClick={this.refresh}>
             <span className="icon">
               <i className="fa fa-refresh" />
-            </span>{' '}
+            </span>{" "}
             <span>
               {pluralize(
                 this.props.count,
-                'new upload available',
-                'new uploads available'
+                "new upload available",
+                "new uploads available"
               )}
             </span>
           </a>
         )}
       </p>
-    )
+    );
   }
 }
 
 class DisplayUploads extends React.PureComponent {
   componentDidMount() {
-    this._updateFilterInputs(this.props.filter, this.props.canViewAll)
+    this._updateFilterInputs(this.props.filter, this.props.canViewAll);
   }
 
   componentWillReceiveProps(nextProps) {
-    this._updateFilterInputs(nextProps.filter, nextProps.canViewAll)
+    this._updateFilterInputs(nextProps.filter, nextProps.canViewAll);
   }
 
   _updateFilterInputs = (filter, canViewAll) => {
     if (canViewAll) {
-      this.refs.user.value = filter.user || ''
+      this.refs.user.value = filter.user || "";
     }
-    this.refs.size.value = filter.size || ''
-    this.refs.created_at.value = filter.created_at || ''
-    this.refs.completed_at.value = filter.completed_at || ''
-  }
+    this.refs.size.value = filter.size || "";
+    this.refs.created_at.value = filter.created_at || "";
+    this.refs.completed_at.value = filter.completed_at || "";
+  };
 
   submitForm = event => {
-    event.preventDefault()
-    let user = ''
+    event.preventDefault();
+    let user = "";
     if (this.props.canViewAll) {
-      user = this.refs.user.value.trim()
+      user = this.refs.user.value.trim();
     }
-    const size = this.refs.size.value.trim()
-    const created_at = this.refs.created_at.value.trim()
-    const completed_at = this.refs.completed_at.value.trim()
+    const size = this.refs.size.value.trim();
+    const created_at = this.refs.created_at.value.trim();
+    const completed_at = this.refs.completed_at.value.trim();
     this.props.updateFilter({
       page: 1,
       user,
       size,
       created_at,
       completed_at
-    })
-  }
+    });
+  };
 
   resetFilter = event => {
     if (this.props.canViewAll) {
-      this.refs.user.value = ''
+      this.refs.user.value = "";
     }
-    this.refs.size.value = ''
-    this.refs.created_at.value = ''
-    this.refs.completed_at.value = ''
-    this.props.resetAndReload(event)
-  }
+    this.refs.size.value = "";
+    this.refs.created_at.value = "";
+    this.refs.completed_at.value = "";
+    this.props.resetAndReload(event);
+  };
 
   isNew = date => {
     if (this.props.previousLatestUpload) {
-      return date > this.props.previousLatestUpload
+      return date > this.props.previousLatestUpload;
     }
-    return false
-  }
+    return false;
+  };
 
   render() {
-    const { uploads, aggregates } = this.props
+    const { uploads, aggregates } = this.props;
 
-    const todayStr = format(new Date(), 'YYYY-MM-DD')
-    const todayFullStr = format(new Date(), 'YYYY-MM-DDTHH:MM.SSSZ')
+    const todayStr = format(new Date(), "YYYY-MM-DD");
+    const todayFullStr = format(new Date(), "YYYY-MM-DDTHH:MM.SSSZ");
     return (
       <form onSubmit={this.submitForm}>
         <table className="table is-fullwidth">
@@ -528,7 +526,7 @@ class DisplayUploads extends React.PureComponent {
                       upload.skipped_keys.length,
                       upload.ignored_keys.length
                     )}
-                  </Link>{' '}
+                  </Link>{" "}
                   {upload.try_symbols ? (
                     <span
                       className="tag is-info"
@@ -541,7 +539,7 @@ class DisplayUploads extends React.PureComponent {
                 <td>{upload.user.email}</td>
                 <td>{formatFileSize(upload.size)}</td>
                 <td>
-                  <DisplayDate date={upload.created_at} />{' '}
+                  <DisplayDate date={upload.created_at} />{" "}
                   {this.isNew(upload.created_at) && (
                     <span className="tag is-light">new</span>
                   )}
@@ -574,7 +572,7 @@ class DisplayUploads extends React.PureComponent {
 
         <ExamplesOfFiltering todayStr={todayStr} todayFullStr={todayFullStr} />
       </form>
-    )
+    );
   }
 }
 
@@ -596,7 +594,7 @@ const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
           whose email does NOT match that email.
         </li>
         <li>
-          <b>Size:</b> <code>&gt;1mb</code> to filter all uploads <i>bigger</i>{' '}
+          <b>Size:</b> <code>&gt;1mb</code> to filter all uploads <i>bigger</i>{" "}
           than one megabyte.
         </li>
         <li>
@@ -604,11 +602,11 @@ const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
           uploaded any time during this day (in UTC).
         </li>
         <li>
-          <b>Uploaded:</b>{' '}
+          <b>Uploaded:</b>{" "}
           <code>
             &gt;=
             {todayFullStr}
-          </code>{' '}
+          </code>{" "}
           to filter all uploads uploaded after this ISO date (in UTC).
         </li>
         <li>
@@ -622,7 +620,7 @@ const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
       </ul>
     </div>
   </article>
-)
+);
 
 const ShowAggregates = ({ aggregates }) => {
   return (
@@ -633,7 +631,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.uploads.count
               ? thousandFormat(aggregates.uploads.count)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -643,7 +641,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.uploads.size.sum
               ? formatFileSize(aggregates.uploads.size.sum)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -653,7 +651,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.uploads.size.average
               ? formatFileSize(aggregates.uploads.size.average)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -668,7 +666,7 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.uploads.skipped.sum
               ? thousandFormat(aggregates.uploads.skipped.sum)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
@@ -680,10 +678,10 @@ const ShowAggregates = ({ aggregates }) => {
           <p className="title">
             {aggregates.files.count
               ? thousandFormat(aggregates.files.count)
-              : 'n/a'}
+              : "n/a"}
           </p>
         </div>
       </div>
     </nav>
-  )
-}
+  );
+};

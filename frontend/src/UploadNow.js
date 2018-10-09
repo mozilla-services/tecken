@@ -1,24 +1,24 @@
-import React, { PureComponent } from 'react'
-import { Link } from 'react-router-dom'
+import React, { PureComponent } from "react";
+import { Link } from "react-router-dom";
 
-import { Loading, formatFileSize } from './Common'
-import store from './Store'
+import { Loading, formatFileSize } from "./Common";
+import store from "./Store";
 
 export default class UploadNow extends PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'Symbol Upload Now'
+    super(props);
+    this.pageTitle = "Symbol Upload Now";
     this.state = {
       loading: false
       // upload: null
-    }
+    };
   }
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
+    document.title = this.pageTitle;
   }
 
   render() {
@@ -26,7 +26,7 @@ export default class UploadNow extends PureComponent {
       <div>
         <h1 className="title">{this.pageTitle}</h1>
 
-        {store.hasPermission('upload.view_all_uploads') ? (
+        {store.hasPermission("upload.view_all_uploads") ? (
           <div className="tabs is-centered">
             <ul>
               <li>
@@ -83,7 +83,7 @@ export default class UploadNow extends PureComponent {
           </div>
         </div>
       </div>
-    )
+    );
   }
 }
 
@@ -92,9 +92,9 @@ class AboutCommandLineUpload extends PureComponent {
     return (
       <div>
         <p>
-          To upload via the command line, you need an{' '}
-          <Link to="/tokens">API Token</Link> that has the{' '}
-          <code>Upload Symbols Files</code> (or{' '}
+          To upload via the command line, you need an{" "}
+          <Link to="/tokens">API Token</Link> that has the{" "}
+          <code>Upload Symbols Files</code> (or{" "}
           <code>Upload Try Symbols Files</code>) permission attached to it.
         </p>
 
@@ -104,78 +104,78 @@ class AboutCommandLineUpload extends PureComponent {
             rel="noopener noreferrer"
           >
             Use the official documentation
-          </a>{' '}
+          </a>{" "}
           for how to use <code>curl</code> or Python.
         </p>
       </div>
-    )
+    );
   }
 }
 
 class UploadForm extends PureComponent {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       loading: false,
       fileInfo: null,
       warning: null,
       validationError: null
-    }
+    };
   }
   submitForm = event => {
-    event.preventDefault()
+    event.preventDefault();
     if (!this.filesInput.files.length) {
-      return
+      return;
     }
-    const formData = new FormData()
-    const file = this.filesInput.files[0]
-    formData.append(file.name, file)
+    const formData = new FormData();
+    const file = this.filesInput.files[0];
+    formData.append(file.name, file);
     if (this.refs.try.checked) {
-      formData.append('try', true)
+      formData.append("try", true);
     }
-    this.setState({ loading: true, validationError: null })
-    return fetch('/upload/', {
-      method: 'POST',
+    this.setState({ loading: true, validationError: null });
+    return fetch("/upload/", {
+      method: "POST",
       body: formData,
-      credentials: 'same-origin'
+      credentials: "same-origin"
     }).then(r => {
       if (store.fetchError) {
-        store.fetchError = null
+        store.fetchError = null;
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 201) {
         this.setState({
           validationError: null,
           warning: null
-        })
+        });
         r.json().then(data => {
-          const upload = data.upload
+          const upload = data.upload;
           store.setRedirectTo(`/uploads/upload/${upload.id}`, {
-            message: 'Symbols uploaded.',
+            message: "Symbols uploaded.",
             success: true
-          })
-        })
+          });
+        });
       } else if (r.status === 400) {
         r.json().then(data => {
           this.setState({
             validationError: data.error,
             warning: null
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   onFileInputChange = event => {
-    const file = this.filesInput.files[0]
+    const file = this.filesInput.files[0];
     if (!/\.(zip|tar|tag\.gz)$/i.test(file.name)) {
       this.setState({
-        warning: 'Make sure the file is a zip, tar.gz or tar file.'
-      })
+        warning: "Make sure the file is a zip, tar.gz or tar file."
+      });
     } else if (this.state.warning) {
-      this.setState({ warning: null })
+      this.setState({ warning: null });
     }
     this.setState({
       fileInfo: {
@@ -183,8 +183,8 @@ class UploadForm extends PureComponent {
         size: file.size,
         type: file.type
       }
-    })
-  }
+    });
+  };
 
   render() {
     return (
@@ -203,7 +203,7 @@ class UploadForm extends PureComponent {
                 name="archive"
                 onChange={this.onFileInputChange}
                 ref={input => {
-                  this.filesInput = input
+                  this.filesInput = input;
                 }}
               />
               <span className="file-cta">
@@ -226,7 +226,7 @@ class UploadForm extends PureComponent {
         <div className="field">
           <div className="control">
             <label className="checkbox">
-              <input type="checkbox" name="try" ref="try" value="yes" /> This is{' '}
+              <input type="checkbox" name="try" ref="try" value="yes" /> This is{" "}
               <b>Try</b> build symbols
             </label>
           </div>
@@ -242,8 +242,8 @@ class UploadForm extends PureComponent {
               type="submit"
               className={
                 this.state.loading
-                  ? 'button is-primary is-loading'
-                  : 'button is-primary'
+                  ? "button is-primary is-loading"
+                  : "button is-primary"
               }
               disabled={this.state.loading}
             >
@@ -257,83 +257,83 @@ class UploadForm extends PureComponent {
           </p>
         </div>
       </form>
-    )
+    );
   }
 }
 
 const ShowFileInfo = ({ info }) => (
   <span>
-    {info.name}{' '}
+    {info.name}{" "}
     <small>
       ({formatFileSize(info.size)} {info.type})
     </small>
   </span>
-)
+);
 
 class UploadByDownloadForm extends UploadForm {
   constructor(props) {
-    super(props)
+    super(props);
     this.state = {
       url: null
-    }
+    };
   }
   submitForm = event => {
-    event.preventDefault()
-    const url = this.refs.url.value.trim()
+    event.preventDefault();
+    const url = this.refs.url.value.trim();
     if (!url) {
-      return
+      return;
     }
-    const formData = new FormData()
-    formData.append('url', url)
+    const formData = new FormData();
+    formData.append("url", url);
     if (this.refs.try.checked) {
-      formData.append('try', true)
+      formData.append("try", true);
     }
-    this.setState({ loading: true, validationError: null })
-    return fetch('/upload/', {
-      method: 'POST',
+    this.setState({ loading: true, validationError: null });
+    return fetch("/upload/", {
+      method: "POST",
       body: formData,
-      credentials: 'same-origin'
+      credentials: "same-origin"
     }).then(r => {
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (store.fetchError) {
-        store.fetchError = null
+        store.fetchError = null;
       }
       if (r.status === 201) {
         this.setState({
           validationError: null,
           warning: null
-        })
+        });
         r.json().then(data => {
-          const upload = data.upload
+          const upload = data.upload;
           store.setRedirectTo(`/uploads/upload/${upload.id}`, {
-            message: 'Symbols URL downloaded.',
+            message: "Symbols URL downloaded.",
             success: true
-          })
-        })
+          });
+        });
       } else if (r.status === 400) {
         r.json().then(data => {
           this.setState({
             validationError: data.error,
             warning: null
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   onFileInputChange = event => {
-    const file = this.filesInput.files[0]
+    const file = this.filesInput.files[0];
     if (!/\.(zip|tar|tag\.gz)$/i.test(file.name)) {
       this.setState({
-        warning: 'Make sure the file is a zip, tar.gz or tar file.'
-      })
+        warning: "Make sure the file is a zip, tar.gz or tar file."
+      });
     } else if (this.state.warning) {
-      this.setState({ warning: null })
+      this.setState({ warning: null });
     }
-    this.setState({ fileName: file.name })
-  }
+    this.setState({ fileName: file.name });
+  };
 
   render() {
     return (
@@ -358,7 +358,7 @@ class UploadByDownloadForm extends UploadForm {
         <div className="field">
           <div className="control">
             <label className="checkbox">
-              <input type="checkbox" name="try" ref="try" value="yes" /> This is{' '}
+              <input type="checkbox" name="try" ref="try" value="yes" /> This is{" "}
               <b>Try</b> build symbols
             </label>
           </div>
@@ -374,8 +374,8 @@ class UploadByDownloadForm extends UploadForm {
               type="submit"
               className={
                 this.state.loading
-                  ? 'button is-primary is-loading'
-                  : 'button is-primary'
+                  ? "button is-primary is-loading"
+                  : "button is-primary"
               }
               disabled={this.state.loading}
             >
@@ -389,6 +389,6 @@ class UploadByDownloadForm extends UploadForm {
           </p>
         </div>
       </form>
-    )
+    );
   }
 }

@@ -1,65 +1,65 @@
-import React, { PureComponent } from 'react'
-import { Link } from 'react-router-dom'
+import React, { PureComponent } from "react";
+import { Link } from "react-router-dom";
 
-import { Loading } from './Common'
-import Fetch from './Fetch'
-import store from './Store'
+import { Loading } from "./Common";
+import Fetch from "./Fetch";
+import store from "./Store";
 
 export default class User extends PureComponent {
   constructor(props) {
-    super(props)
-    this.pageTitle = 'User Management'
+    super(props);
+    this.pageTitle = "User Management";
     this.state = {
       loading: true,
       user: null,
       groups: null
-    }
+    };
   }
   componentWillMount() {
-    store.resetApiRequests()
+    store.resetApiRequests();
   }
 
   componentDidMount() {
-    document.title = this.pageTitle
-    this._fetchUser(this.props.match.params.id)
+    document.title = this.pageTitle;
+    this._fetchUser(this.props.match.params.id);
   }
 
   _fetchUser = id => {
-    this.setState({ loading: true })
-    Fetch(`/api/_users/user/${id}`, { credentials: 'same-origin' }).then(r => {
+    this.setState({ loading: true });
+    Fetch(`/api/_users/user/${id}`, { credentials: "same-origin" }).then(r => {
       if (r.status === 403 && !store.currentUser) {
-        store.setRedirectTo('/', 'You have to be signed in to edit this user')
-        return
+        store.setRedirectTo("/", "You have to be signed in to edit this user");
+        return;
       }
-      this.setState({ loading: false })
+      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
-          store.fetchError = null
+          store.fetchError = null;
         }
         return r.json().then(response => {
-          this.csrfToken = response.csrf_token
+          this.csrfToken = response.csrf_token;
           this.setState({
             user: response.user,
             groups: response.groups,
             loading: false
-          })
-        })
+          });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   goBack = () => {
-    store.setRedirectTo('/users')
-  }
+    store.setRedirectTo("/users");
+  };
 
   userSaved = () => {
-    store.setRedirectTo('/users', {
-      message: 'User changes saved.',
+    store.setRedirectTo("/users", {
+      message: "User changes saved.",
       success: true
-    })
-  }
+    });
+  };
 
   render() {
     return (
@@ -78,7 +78,7 @@ export default class User extends PureComponent {
         <hr />
         {this.state.groups && <ExplainGroups groups={this.state.groups} />}
       </div>
-    )
+    );
   }
 }
 
@@ -86,64 +86,64 @@ class EditUserForm extends PureComponent {
   state = {
     loading: false,
     validationErrors: null
-  }
+  };
   componentWillUnmount() {
-    this.dismounted = true
+    this.dismounted = true;
   }
   submitForm = event => {
-    event.preventDefault()
-    const groups = []
-    ;[...this.refs.groups.options].forEach(option => {
+    event.preventDefault();
+    const groups = [];
+    [...this.refs.groups.options].forEach(option => {
       if (option.selected) {
-        groups.push(option.value)
+        groups.push(option.value);
       }
-    })
-    const isActive = this.refs.active.checked
-    const isSuperuser = this.refs.superuser.checked
+    });
+    const isActive = this.refs.active.checked;
+    const isSuperuser = this.refs.superuser.checked;
 
-    this.setState({ loading: true })
-    const formData = new FormData()
-    formData.append('groups', groups)
-    formData.append('is_active', isActive)
-    formData.append('is_superuser', isSuperuser)
+    this.setState({ loading: true });
+    const formData = new FormData();
+    formData.append("groups", groups);
+    formData.append("is_active", isActive);
+    formData.append("is_superuser", isSuperuser);
     return fetch(`/api/_users/user/${this.props.user.id}`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
-      credentials: 'same-origin',
+      credentials: "same-origin",
       headers: new Headers({
-        'X-CSRFToken': this.props.csrfToken
+        "X-CSRFToken": this.props.csrfToken
       })
     }).then(r => {
       if (store.fetchError) {
-        store.fetchError = null
+        store.fetchError = null;
       }
       if (r.status === 200) {
-        this.setState({ loading: false, validationErrors: null })
+        this.setState({ loading: false, validationErrors: null });
         // this._resetForm()
-        this.props.userSaved(this.props.user.id)
+        this.props.userSaved(this.props.user.id);
       } else if (r.status === 400) {
         r.json().then(data => {
-          this.setState({ loading: false, validationErrors: data.errors })
-        })
+          this.setState({ loading: false, validationErrors: data.errors });
+        });
       } else {
-        store.fetchError = r
+        store.fetchError = r;
       }
-    })
-  }
+    });
+  };
 
   _resetForm = () => {
-    this.refs.notes.value = ''
-  }
+    this.refs.notes.value = "";
+  };
 
   render() {
-    let validationErrors = this.state.validationErrors
+    let validationErrors = this.state.validationErrors;
     if (validationErrors === null) {
       // makes it easier to reference in the JSX
-      validationErrors = {}
+      validationErrors = {};
     }
 
-    const { user, groups } = this.props
-    const userGroupIds = user.groups.map(group => group.id)
+    const { user, groups } = this.props;
+    const userGroupIds = user.groups.map(group => group.id);
 
     return (
       <form onSubmit={this.submitForm}>
@@ -152,7 +152,7 @@ class EditUserForm extends PureComponent {
           <div className="select is-multiple">
             <select
               multiple={true}
-              className={validationErrors.permissions ? 'is-danger' : ''}
+              className={validationErrors.permissions ? "is-danger" : ""}
               ref="groups"
               size={groups.length}
               defaultValue={userGroupIds}
@@ -162,7 +162,7 @@ class EditUserForm extends PureComponent {
                   <option key={group.id} value={group.id}>
                     {group.name}
                   </option>
-                )
+                );
               })}
             </select>
           </div>
@@ -177,7 +177,7 @@ class EditUserForm extends PureComponent {
               name="is_active"
               ref="active"
               defaultChecked={user.is_active}
-            />{' '}
+            />{" "}
             Active
           </label>
         </div>
@@ -188,7 +188,7 @@ class EditUserForm extends PureComponent {
               name="is_superuser"
               ref="superuser"
               defaultChecked={user.is_superuser}
-            />{' '}
+            />{" "}
             Superuser
           </label>
         </div>
@@ -198,8 +198,8 @@ class EditUserForm extends PureComponent {
               type="submit"
               className={
                 this.state.loading
-                  ? 'button is-primary is-loading'
-                  : 'button is-primary'
+                  ? "button is-primary is-loading"
+                  : "button is-primary"
               }
             >
               Save
@@ -212,7 +212,7 @@ class EditUserForm extends PureComponent {
           </div>
         </div>
       </form>
-    )
+    );
   }
 }
 
@@ -222,7 +222,7 @@ const ExplainGroups = ({ groups }) => {
       <h1 className="title">Groups</h1>
       <p>
         Every action requires a <b>permission</b> but to give users permissions,
-        this is done by putting the user in <b>groups</b> that <i>contain</i>{' '}
+        this is done by putting the user in <b>groups</b> that <i>contain</i>{" "}
         permissions.
       </p>
       <table className="table is-fullwidth">
@@ -245,10 +245,10 @@ const ExplainGroups = ({ groups }) => {
                   </ul>
                 </td>
               </tr>
-            )
+            );
           })}
         </tbody>
       </table>
     </div>
-  )
-}
+  );
+};

@@ -37,11 +37,14 @@ case $1 in
     yarn start | cat
     ;;
   lint)
-    # The options are in the .prettierrc file.
     # The --list-different (alias -l) will error the execution if there
     # was a any files that came out different from what they should
     # be with the current configuration.
     /node_modules/.bin/prettier -l "src/**/*.js" || grr_on_prettier
+    ;;
+  lintfix)
+    # Just Prettier format all the frontend files.
+    /node_modules/.bin/prettier --write "src/**/*.js"
     ;;
   *)
     exec "$@"

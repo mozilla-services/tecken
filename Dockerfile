@@ -1,4 +1,4 @@
-FROM node:6.14.4@sha256:68d8ca89524a21200e6a3ec0948893f3fe2c9e807ecc2a74319fbee59a13d2c4 as frontend
+FROM node:10.11.0-slim@sha256:14306ddcac608eb3e8359adecf0ecdfb2bf629e60e1bf4e096c6edb88f38c706 as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
