@@ -10,7 +10,7 @@ import {
   formatDistanceStrict,
   differenceInSeconds,
   differenceInMilliseconds
-} from 'date-fns/esm'
+} from 'date-fns'
 
 export const Loading = () => (
   <p className="has-text-centered">

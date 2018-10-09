@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react'
 import { Link } from 'react-router-dom'
 
-import { toDate, isBefore, formatDistanceStrict } from 'date-fns/esm'
+import { toDate, isBefore, formatDistanceStrict } from 'date-fns'
 
 import { Loading, filterToQueryString, parseQueryString } from './Common'
 import Fetch from './Fetch'

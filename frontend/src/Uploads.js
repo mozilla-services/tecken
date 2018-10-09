@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { format } from 'date-fns/esm'
+import { format } from 'date-fns'
 
 import {
   Loading,
@@ -287,14 +287,12 @@ class Uploads extends React.PureComponent {
             </ul>
           </div>
         )}
-
         <ShowNewUploadsCount
           count={this.state.newUploadsCount}
           refreshing={this.state.refreshing}
           refresh={this._refreshUploads}
         />
         <h1 className="title">{this.state.pageTitle}</h1>
-
         {this.state.loading ? (
           <Loading />
         ) : (
@@ -304,14 +302,12 @@ class Uploads extends React.PureComponent {
             batchSize={this.state.batchSize}
           />
         )}
-
         {this.state.validationErrors && (
           <ShowValidationErrors
             errors={this.state.validationErrors}
             resetAndReload={this.resetAndReload}
           />
         )}
-
         {this.state.uploads && (
           <DisplayUploads
             uploads={this.state.uploads}
