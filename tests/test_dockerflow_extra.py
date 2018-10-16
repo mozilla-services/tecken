@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import pytest
+from google.api_core.exceptions import BadRequest as google_BadRequest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from tecken import dockerflow_extra
@@ -12,7 +13,22 @@ def test_check_redis_store_connected_happy_path():
     assert not dockerflow_extra.check_redis_store_connected(None)
 
 
-def test_check_s3_urls_happy_path(botomock, settings):
+def test_check_s3_urls_happy_path(gcsmock, settings):
+    mock_bucket = gcsmock.MockBucket()
+    gcsmock.get_bucket = lambda name: mock_bucket
+
+    assert not dockerflow_extra.check_s3_urls(None)
+
+
+def test_check_s3_urls_happy_path_s3(botomock, settings):
+    settings.SYMBOL_URLS = [
+        "https://s3.example.com/public/prefix/?access=public",
+        "https://s3.example.com/private/prefix/",
+    ]
+    settings.UPLOAD_URL_EXCEPTIONS = {
+        "*@peterbe.com": "https://s3.example.com/peterbe-com"
+    }
+
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         # These come from settings.Test
@@ -24,7 +40,27 @@ def test_check_s3_urls_happy_path(botomock, settings):
         assert not dockerflow_extra.check_s3_urls(None)
 
 
-def test_check_s3_urls_client_error(botomock, settings):
+def test_check_s3_urls_client_error(gcsmock, settings):
+    def mock_get_bucket(name):
+        if name == "private":
+            raise google_BadRequest("Never heard of it!")
+        return gcsmock.MockBucket()
+
+    gcsmock.get_bucket = mock_get_bucket
+
+    errors = dockerflow_extra.check_s3_urls(None)
+    assert errors
+    error, = errors
+    assert "private" in error.msg
+    assert "Never heard of it!" in error.msg
+
+
+def test_check_s3_urls_client_error_s3(botomock, settings):
+    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
+    settings.UPLOAD_URL_EXCEPTIONS = {
+        "*@peterbe.com": "https://s3.example.com/peterbe-com"
+    }
+
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         if api_params["Bucket"] == "private":
@@ -40,7 +76,12 @@ def test_check_s3_urls_client_error(botomock, settings):
         assert "ClientError" in error.msg
 
 
-def test_check_s3_urls_endpointconnectionerror(botomock, settings):
+def test_check_s3_urls_endpointconnectionerror_s3(botomock, settings):
+    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
+    settings.UPLOAD_URL_EXCEPTIONS = {
+        "*@peterbe.com": "https://s3.example.com/peterbe-com"
+    }
+
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         if api_params["Bucket"] == "private":
@@ -55,7 +96,12 @@ def test_check_s3_urls_endpointconnectionerror(botomock, settings):
         assert "EndpointConnectionError" in error.msg
 
 
-def test_check_s3_urls_other_client_error(botomock, settings):
+def test_check_s3_urls_other_client_error_s3(botomock, settings):
+    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
+    settings.UPLOAD_URL_EXCEPTIONS = {
+        "*@peterbe.com": "https://s3.example.com/peterbe-com"
+    }
+
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         if api_params["Bucket"] == "private":

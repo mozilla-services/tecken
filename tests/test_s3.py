@@ -1,11 +1,13 @@
+# XXX rename this to something like test_storage.py
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import mock
 import pytest
+from google.cloud.storage.client import Client as google_Client
 
-from tecken.s3 import S3Bucket
+from tecken.s3 import S3Bucket, scrub_credentials
 
 
 def test_use_s3bucket():
@@ -87,3 +89,26 @@ def test_region_checking():
 
     with pytest.raises(ValueError):
         S3Bucket("https://s3-unheardof.amazonaws.com/some-bucket")
+
+
+def test_google_cloud_storage_client(gcsmock):
+    bucket = S3Bucket("https://storage.googleapis.com/foo-bar-bucket")
+    assert bucket.name == "foo-bar-bucket"
+    client = bucket.get_s3_client()
+    assert isinstance(client, google_Client)
+
+
+def test_google_cloud_storage_client_with_prefix():
+    bucket = S3Bucket("https://storage.googleapis.com/foo-bar-bucket/myprefix")
+    assert bucket.name == "foo-bar-bucket"
+    assert bucket.prefix == "myprefix"
+
+
+def test_scrub_credentials():
+    result = scrub_credentials("http://user:pass@storage.example.com/foo/bar?hey=ho")
+    # Exactly the same minus the "user:pass"
+    assert result == "http://storage.example.com/foo/bar?hey=ho"
+
+    result = scrub_credentials("http://storage.example.com/foo/bar?hey=ho")
+    # Exactly the same
+    assert result == "http://storage.example.com/foo/bar?hey=ho"
