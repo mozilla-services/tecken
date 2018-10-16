@@ -4,13 +4,14 @@
   "private": false,
   "license": "MPL-2.0",
   "dependencies": {
-    "bulma": "0.7.1",
+    "bulma": "0.7.2",
     "date-fns": "2.0.0-alpha.21",
     "font-awesome": "4.7.0",
     "mobx": "5.5.0",
     "mobx-react": "5.3.1",
     "raven-js": "3.27.0",
     "react": "16.5.2",
+    "react-copy-to-clipboard": "^5.0.1",
     "react-dom": "16.5.2",
     "react-fontawesome": "1.6.1",
     "react-router-dom": "4.3.1"
