@@ -3719,6 +3719,12 @@ hoist-non-react-statics@^2.5.0:
   version "2.5.5"
   resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-2.5.5.tgz#c5903cf409c0dfd908f388e619d86b9c1174cb47"
 
+hoist-non-react-statics@^3.0.0:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/hoist-non-react-statics/-/hoist-non-react-statics-3.0.1.tgz#fba3e7df0210eb9447757ca1a7cb607162f0a364"
+  dependencies:
+    react-is "^16.3.2"
+
 home-or-tmp@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/home-or-tmp/-/home-or-tmp-2.0.0.tgz#e36c3f2d2cae7d746a857e38d18d5f32a7882db8"
@@ -5293,11 +5299,11 @@ mkdirp@0.5.1, mkdirp@0.5.x, mkdirp@^0.5.0, mkdirp@^0.5.1, mkdirp@~0.5.0, mkdirp@
   dependencies:
     minimist "0.0.8"
 
-mobx-react@5.2.8:
-  version "5.2.8"
-  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-5.2.8.tgz#059c7f29254d7cd36e103d79113103b40348d3bf"
+mobx-react@5.3.1:
+  version "5.3.1"
+  resolved "https://registry.yarnpkg.com/mobx-react/-/mobx-react-5.3.1.tgz#444309742de7da4e6ec96f608b9e64dc8acc0a6c"
   dependencies:
-    hoist-non-react-statics "^2.5.0"
+    hoist-non-react-statics "^3.0.0"
     react-lifecycles-compat "^3.0.2"
 
 mobx@5.5.0:
@@ -6762,6 +6768,10 @@ react-fontawesome@1.6.1:
   resolved "https://registry.yarnpkg.com/react-fontawesome/-/react-fontawesome-1.6.1.tgz#eddce17e7dc731aa09fd4a186688a61793a16c5c"
   dependencies:
     prop-types "^15.5.6"
+
+react-is@^16.3.2:
+  version "16.5.2"
+  resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.5.2.tgz#e2a7b7c3f5d48062eb769fcb123505eb928722e3"
 
 react-lifecycles-compat@^3.0.2:
   version "3.0.4"
