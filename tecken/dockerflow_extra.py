@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from google.api_core.exceptions import BadRequest as google_BadRequest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from django.core import checks
@@ -51,36 +52,50 @@ def check_s3_urls(app_configs, **kwargs):
     checked = []
 
     def check_url(url, setting_key):
+        print("URL", url, setting_key)
         if url in checked:
             return
         bucket = S3Bucket(url)
         if not bucket.private:
             return
-        try:
-            bucket.s3_client.head_bucket(Bucket=bucket.name)
-        except ClientError as exception:
-            if exception.response["Error"]["Code"] in ("403", "404"):
+        if bucket.is_google_cloud_storage:
+            try:
+                bucket.s3_client.get_bucket(bucket.name)
+                checked.append(url)
+            except google_BadRequest as exception:
+                errors.append(
+                    checks.Error(
+                        f"Unable to connect to {url} (bucket={bucket.name!r}, "
+                        f"because bucket not found due to {exception}",
+                        id="tecken.health.E003",
+                    )
+                )
+        else:
+            try:
+                bucket.s3_client.head_bucket(Bucket=bucket.name)
+            except ClientError as exception:
+                if exception.response["Error"]["Code"] in ("403", "404"):
+                    errors.append(
+                        checks.Error(
+                            f"Unable to connect to {url} (bucket={bucket.name!r}, "
+                            f"found in settings.{setting_key}) due to "
+                            f"ClientError ({exception.response!r})",
+                            id="tecken.health.E002",
+                        )
+                    )
+                else:
+                    raise
+            except EndpointConnectionError:
                 errors.append(
                     checks.Error(
                         f"Unable to connect to {url} (bucket={bucket.name!r}, "
                         f"found in settings.{setting_key}) due to "
-                        f"ClientError ({exception.response!r})",
-                        id="tecken.health.E002",
+                        f"EndpointConnectionError",
+                        id="tecken.health.E001",
                     )
                 )
             else:
-                raise
-        except EndpointConnectionError:
-            errors.append(
-                checks.Error(
-                    f"Unable to connect to {url} (bucket={bucket.name!r}, "
-                    f"found in settings.{setting_key}) due to "
-                    f"EndpointConnectionError",
-                    id="tecken.health.E001",
-                )
-            )
-        else:
-            checked.append(url)
+                checked.append(url)
 
     for url in settings.SYMBOL_URLS:
         check_url(url, "SYMBOL_URLS")

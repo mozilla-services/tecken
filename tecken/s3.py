@@ -3,13 +3,22 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
+from google.cloud import storage
 import boto3
 from botocore.config import Config
 
+from django.conf import settings
+
 
 ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
+
+
+def scrub_credentials(url):
+    """return a URL with any possible credentials removed."""
+    parsed = urlparse(url)
+    return urlunparse(parsed._replace(netloc=parsed.netloc.split("@", 1)[-1]))
 
 
 class S3Bucket:
@@ -57,7 +66,9 @@ class S3Bucket:
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
-        if not parsed.netloc.endswith(".amazonaws.com"):
+        if "googleapis" in parsed.netloc:
+            self.endpoint_url = scrub_credentials(url)
+        elif not parsed.netloc.endswith(".amazonaws.com"):
             # the endpoint_url will be all but the path
             self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
         region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
@@ -66,8 +77,9 @@ class S3Bucket:
                 raise ValueError(f"Not valid S3 region {region[0]}")
             self.region = region[0]
 
-        # This is only created if/when needed
-        self._s3_client = None
+    @property
+    def is_google_cloud_storage(self):
+        return "googleapis" in self.netloc
 
     @property
     def base_url(self):
@@ -77,35 +89,56 @@ class S3Bucket:
     def __repr__(self):
         return (
             f"<{self.__class__.__name__} name={self.name!r} "
-            f"endpoint_url={self.endpoint_url!r} region={self.region!r}>"
+            f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
+            f"is_google_cloud_storage={self.is_google_cloud_storage}>"
         )
 
+    # XXX rename to something NOT with the word "s3" in it.
     @property
     def s3_client(self):
         """return a boto3 session client based on 'self'"""
-        if not self._s3_client:
+        if not getattr(self, "_s3_client", None):
             self._s3_client = get_s3_client(
-                endpoint_url=self.endpoint_url, region_name=self.region
+                endpoint_url=self.endpoint_url,
+                region_name=self.region,
+                is_google_cloud_storage=self.is_google_cloud_storage,
             )
         return self._s3_client
 
     def get_s3_client(self, **config_params):
         """return a boto3 session client with different config parameters"""
         return get_s3_client(
-            endpoint_url=self.endpoint_url, region_name=self.region, **config_params
+            endpoint_url=self.endpoint_url,
+            region_name=self.region,
+            is_google_cloud_storage=self.is_google_cloud_storage,
+            **config_params,
         )
 
+    def get_or_load_bucket(self):
+        if not hasattr(self, "_bucket"):
+            assert self.is_google_cloud_storage
+            self._bucket = self.s3_client.get_bucket(self.name)
+        return self._bucket
 
-def get_s3_client(endpoint_url=None, region_name=None, **config_params):
-    options = {"config": Config(**config_params)}
-    if endpoint_url:
-        # By default, if you don't specify an endpoint_url
-        # boto3 will automatically assume AWS's S3.
-        # For local development we are running a local S3
-        # fake service with minio. Then we need to
-        # specify the endpoint_url.
-        options["endpoint_url"] = endpoint_url
-    if region_name:
-        options["region_name"] = region_name
-    session = boto3.session.Session()
-    return session.client("s3", **options)
+
+def get_s3_client(
+    endpoint_url=None, region_name=None, is_google_cloud_storage=False, **config_params
+):
+    if is_google_cloud_storage:
+        client = storage.Client.from_service_account_json(
+            settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
+        )
+        return client
+    else:
+        options = {"config": Config(**config_params)}
+        if endpoint_url:
+            # By default, if you don't specify an endpoint_url
+            # boto3 will automatically assume AWS's S3.
+            # For local development we are running a local S3
+            # fake service with minio. Then we need to
+            # specify the endpoint_url.
+            options["endpoint_url"] = endpoint_url
+        if region_name:
+            options["region_name"] = region_name
+        session = boto3.session.Session()
+        return session.client("s3", **options)

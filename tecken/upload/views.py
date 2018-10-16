@@ -15,6 +15,7 @@ import requests
 from botocore.exceptions import ClientError
 import markus
 from encore.concurrent.futures.synchronous import SynchronousExecutor
+from google.api_core.exceptions import BadRequest as google_BadRequest
 
 from django import http
 from django.conf import settings
@@ -250,22 +251,32 @@ def upload_archive(request, upload_dir):
         read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
         connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
     )
-    try:
-        lookup_client.head_bucket(Bucket=bucket_info.name)
-    except ClientError as exception:
-        if exception.response["Error"]["Code"] == "404":
-            # This warning message hopefully makes it easier to see what
-            # you need to do to your configuration.
-            # XXX Is this the best exception for runtime'y type of
-            # bad configurations.
+    if bucket_info.is_google_cloud_storage:
+        try:
+            bucket = lookup_client.get_bucket(bucket_info.name)
+        except google_BadRequest as exception:
             raise ImproperlyConfigured(
-                "S3 bucket '{}' can not be found. "
-                "Connected with region={!r} endpoint_url={!r}".format(
-                    bucket_info.name, bucket_info.region, bucket_info.endpoint_url
-                )
+                f"GCS bucket {bucket_info.name!r} can not be found. "
+                f"Exception: {exception}"
             )
-        else:  # pragma: no cover
-            raise
+    else:
+        bucket = None
+        try:
+            lookup_client.head_bucket(Bucket=bucket_info.name)
+        except ClientError as exception:
+            if exception.response["Error"]["Code"] == "404":
+                # This warning message hopefully makes it easier to see what
+                # you need to do to your configuration.
+                # XXX Is this the best exception for runtime'y type of
+                # bad configurations.
+                raise ImproperlyConfigured(
+                    "S3 bucket '{}' can not be found. "
+                    "Connected with region={!r} endpoint_url={!r}".format(
+                        bucket_info.name, bucket_info.region, bucket_info.endpoint_url
+                    )
+                )
+            else:  # pragma: no cover
+                raise
 
     # Every key has a prefix. If the S3Bucket instance has it's own prefix
     # prefix that first :)
@@ -327,12 +338,12 @@ def upload_archive(request, upload_dir):
             future_to_key[
                 executor.submit(
                     upload_file_upload,
-                    client,
+                    bucket or client,
                     bucket_info.name,
                     key_name,
                     member.path,
                     upload=upload_obj,
-                    s3_client_lookup=lookup_client,
+                    s3_client_lookup=bucket or lookup_client,
                 )
             ] = key_name
         # Now lets wait for them all to finish and we'll see which ones
