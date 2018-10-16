@@ -167,6 +167,72 @@ def botomock():
 
 
 @pytest.fixture
+def gcsmock():
+    """Return a class where the fundamental google-cloud-storage client has been
+    mocked."""
+
+    # XXX can this move?
+    from google.cloud.storage.client import Client
+    from google.cloud.storage.bucket import Bucket
+
+    class MockBucket(Bucket):
+        def __init__(self, name=None):
+            # Basically, ignore everything.
+            self.name = name
+
+        def get_blob(self, key):
+            raise NotImplementedError("You're supposed to set this yourself.")
+
+        def blob(self, key):
+            raise NotImplementedError("You're supposed to set this yourself.")
+
+    class MockBlob:
+        def __init__(self, key, **options):
+            self.key = key
+            self.size = options.get("size", None)
+            self.metadata = options.get("metadata", None)
+            self.content_encoding = None
+            self.content_type = None
+            self.public_url = f"https://googleapis.example.com/bucket/{key}"
+
+        def upload_from_file(self, file):
+            # By default we pretend the upload worked.
+            # You can override this if you want to simulate other experiences
+            # or do assertions on the file sent in to it.
+            pass
+
+    # Inherit from google.cloud.storage.client.Client so it works to do things
+    # like...:
+    #
+    #     if isinstance(storage_client, google.cloud.storage.Client):
+    #         ...
+    #
+    class MockClient(Client):
+        def __init__(self, *args, **kwargs):
+            # Basically, ignore everything.
+            pass
+
+        def from_service_account_json(self, *args, **kwargs):
+            return self
+
+        def mock_blob_factory(self, key, **options):
+            return MockBlob(key, **options)
+
+    new_client = MockClient()
+
+    # Pass along the useful MockBlob class inside the client. Yes, it's a bit weird
+    # but the advantage is that you only need this one pytest ficture to
+    # get a thing that mock patches google.cloud.storage.Client AND it also has
+    # useful tools for creating mocked buckets and blobs etc.
+    new_client.MockBlob = MockBlob
+    # Same justification for passig along the MockBucket
+    new_client.MockBucket = MockBucket
+
+    with mock.patch("google.cloud.storage.Client", new=new_client):
+        yield new_client
+
+
+@pytest.fixture
 def fakeuser():
     return User.objects.create(username="peterbe", email="peterbe@example.com")
 

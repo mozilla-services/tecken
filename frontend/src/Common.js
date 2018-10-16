@@ -226,97 +226,111 @@ export const filterToQueryString = (filterObj, overrides) => {
 
 const URLTag = url => <span className="url">{url}</span>;
 
-export const ShowUploadMetadata = ({ upload }) => (
-  <table className="table is-fullwidth">
-    <tbody>
-      <tr>
-        <th>User</th>
-        <td>{upload.user.email}</td>
-      </tr>
-      <tr>
-        <th>Size</th>
-        <td>{formatFileSize(upload.size)}</td>
-      </tr>
-      <tr>
-        <th>Filename</th>
-        <td>{upload.filename}</td>
-      </tr>
-      <tr>
-        <th>Try Symbols</th>
-        <td>{upload.try_symbols ? "Yes" : "No"}</td>
-      </tr>
-      <tr>
-        <th>Download URL</th>
-        <td>
-          {upload.download_url ? URLTag(upload.download_url) : <i>null</i>}
-        </td>
-      </tr>
-      {upload.download_url && (
+export const ShowUploadMetadata = ({ upload }) => {
+  return (
+    <table className="table is-fullwidth">
+      <tbody>
         <tr>
-          <th>Redirect URLs</th>
+          <th>User</th>
+          <td>{upload.user.email}</td>
+        </tr>
+        <tr>
+          <th>Size</th>
+          <td>{formatFileSize(upload.size)}</td>
+        </tr>
+        <tr>
+          <th>Filename</th>
+          <td>{upload.filename}</td>
+        </tr>
+        <tr>
+          <th>Try Symbols</th>
+          <td>{upload.try_symbols ? "Yes" : "No"}</td>
+        </tr>
+        <tr>
+          <th>Download URL</th>
           <td>
-            {!upload.redirect_urls.length && <i>n/a</i>}
-            {upload.redirect_urls.length ? (
-              <ol start="0" className="redirect-urls">
-                <li>{URLTag(upload.download_url)}</li>
-                {upload.redirect_urls.map(url => (
-                  <li key={url}>{URLTag(url)}</li>
-                ))}
-              </ol>
+            {upload.download_url ? URLTag(upload.download_url) : <i>null</i>}
+          </td>
+        </tr>
+        {upload.download_url && (
+          <tr>
+            <th>Redirect URLs</th>
+            <td>
+              {!upload.redirect_urls.length && <i>n/a</i>}
+              {upload.redirect_urls.length ? (
+                <ol start="0" className="redirect-urls">
+                  <li>{URLTag(upload.download_url)}</li>
+                  {upload.redirect_urls.map(url => (
+                    <li key={url}>{URLTag(url)}</li>
+                  ))}
+                </ol>
+              ) : null}
+            </td>
+          </tr>
+        )}
+        <tr>
+          <th>Bucket Name</th>
+          <td>{upload.bucket_name}</td>
+        </tr>
+        <tr>
+          <th>Bucket Region</th>
+          <td>{upload.bucket_region ? upload.bucket_region : <i>null</i>}</td>
+        </tr>
+        <tr>
+          <th>Bucket Endpoint URL</th>
+          <td>
+            {upload.bucket_endpoint_url ? (
+              upload.bucket_endpoint_url
+            ) : (
+              <i>null</i>
+            )}
+          </td>
+        </tr>
+        <tr>
+          <th>Uploaded</th>
+          <td>
+            <DisplayDate date={upload.created_at} />
+          </td>
+        </tr>
+        <tr>
+          <th title="Time when its content was fully processed and uploaded, skipped or ignored">
+            Completed
+          </th>
+          <td>
+            {upload.completed_at ? (
+              <DisplayDate date={upload.completed_at} />
+            ) : (
+              <i>
+                Incomplete!{" "}
+                <DisplayIncompleteRatio files={upload.file_uploads} />
+              </i>
+            )}
+            {upload.completed_at ? (
+              <small>
+                {" "}
+                (took{" "}
+                <DisplayDateDifference
+                  from={upload.created_at}
+                  to={upload.completed_at}
+                />
+                )
+              </small>
             ) : null}
           </td>
         </tr>
-      )}
-      <tr>
-        <th>Bucket Name</th>
-        <td>{upload.bucket_name}</td>
-      </tr>
-      <tr>
-        <th>Bucket Region</th>
-        <td>{upload.bucket_region ? upload.bucket_region : <i>null</i>}</td>
-      </tr>
-      <tr>
-        <th>Bucket Endpoint URL</th>
-        <td>
-          {upload.bucket_endpoint_url ? (
-            upload.bucket_endpoint_url
-          ) : (
-            <i>null</i>
-          )}
-        </td>
-      </tr>
-      <tr>
-        <th>Uploaded</th>
-        <td>
-          <DisplayDate date={upload.created_at} />
-        </td>
-      </tr>
-      <tr>
-        <th title="Time when its content was fully processed and uploaded, skipped or ignored">
-          Completed
-        </th>
-        <td>
-          {upload.completed_at ? (
-            <DisplayDate date={upload.completed_at} />
-          ) : (
-            <i>Incomplete!</i>
-          )}
-          {upload.completed_at ? (
-            <small>
-              {" "}
-              (took{" "}
-              <DisplayDateDifference
-                from={upload.created_at}
-                to={upload.completed_at}
-              />
-              )
-            </small>
-          ) : null}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-);
+      </tbody>
+    </table>
+  );
+};
+
+const DisplayIncompleteRatio = ({ files }) => {
+  // Return a string like "56 of 103 (54%)" to mean that 56 of 103 files are complete.
+  const all = files.length;
+  const incomplete = files.filter(file => !!file.completed_at).length;
+  const complete = all - incomplete;
+  const percentage = (100 * complete) / all;
+  return `${complete} of ${all} (${Math.trunc(percentage)}%)`;
+};
 
 export const ShowFileMetadata = ({ file }) => (
   <table className="table is-fullwidth">
