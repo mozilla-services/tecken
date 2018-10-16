@@ -4,7 +4,6 @@
 
 import json
 import tempfile
-import functools
 
 import pytest
 import mock
@@ -227,7 +226,6 @@ def gcsmock():
     # useful tools for creating mocked buckets and blobs etc.
     new_client.MockBlob = MockBlob
     # Same justification for passig along the MockBucket
-    # new_client.MockBucket = functools.partial(MockBucket, client=new_client)
     new_client.MockBucket = MockBucket
 
     with mock.patch("google.cloud.storage.Client", new=new_client):
