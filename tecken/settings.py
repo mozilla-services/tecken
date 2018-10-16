@@ -28,8 +28,8 @@ class AWS:
 class GCP:
     """Google Cloud Platform"""
 
-    GOOGLE_APPLICATION_CREDENTIALS_PATH = values.PathValue(
-        "google_service_account.json"
+    GOOGLE_APPLICATION_CREDENTIALS = values.PathValue(
+        "google_service_account.json", environ_prefix=None
     )
 
 

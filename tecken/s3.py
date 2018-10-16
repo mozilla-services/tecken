@@ -126,7 +126,7 @@ def get_s3_client(
 ):
     if is_google_cloud_storage:
         client = storage.Client.from_service_account_json(
-            settings.GOOGLE_APPLICATION_CREDENTIALS_PATH
+            settings.GOOGLE_APPLICATION_CREDENTIALS
         )
         return client
     else:

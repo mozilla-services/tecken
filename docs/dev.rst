@@ -42,6 +42,61 @@ You run everything in Docker with:
 This will start a server that is exposed on port ``8000`` so now you can
 reach ``http://localhost:8000`` with your browser or curl.
 
+Google Cloud Platform
+=====================
+
+To use Google Cloud Storage, you need to a credentials ``.json`` file.
+You need to log in to your
+`Google Cloud Platform console <https://console.cloud.google.com/>`_ and
+you probably first need to create a "project".
+Then, go to `Service accounts <https://console.cloud.google.com/iam-admin/serviceaccounts>`_,
+for that project, create a new service account and when you're done it should
+generate a ``.json`` file for you to download. Put that file into the Tecken
+project root directory. The default name is ``google_service_account.json``
+but if you want to call it something else, set that name in your ``.env`` file
+like this:
+
+.. code-block:: shell
+
+    GOOGLE_APPLICATION_CREDENTIALS=my_special_google_service_account.json
+
+Next you need to create a Google Cloud Storage bucket. Suppose you created
+a bucket called ``my-gcs-bucket``, now you need to configure this in
+``DJANGO_SYMBOL_URLS`` and ``DJANGO_UPLOAD_DEFAULT_URL`` like this (in
+your ``.env`` file):
+
+.. code-block:: shell
+
+    DJANGO_SYMBOL_URLS=https://storage.googleapis.com/my-gcs-bucket
+    DJANGO_UPLOAD_DEFAULT_URL=https://storage.googleapis.com/my-gcs-bucket
+
+When you start the server, all of these values and configurations will be
+checked.
+
+.. note:: If you use docker-compose, you probably need to use a path that is
+          part of what is volume mounted.
+
+Google Cloud Storage Bucket Configuration
+=========================================
+
+Tecken will *not* attempt to correct or even check *how* your Google Cloud
+Storage buckets are configured. For example, to simulate production mode
+you might want to set a life-cycle configuration to delete symbols older
+than one year.
+
+A more important example, you might want to make your bucket, by default,
+is to make it publicly available. Meaning, files uploaded should
+be reachable, via HTTP, without authentication. You can make these
+kinds of configurations by installing the ``gsutil`` tool
+(e.g. ``brew install gsutil`` and ``gsutil config``).
+Suppose your bucket is called ``my-gcs-bucket`` you can make it
+public by default with:
+
+.. code-block:: shell
+
+    $ gsutil defacl set public-read gs://my-gcs-bucket
+
+
 Documentation
 =============
 

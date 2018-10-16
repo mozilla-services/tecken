@@ -63,6 +63,24 @@ configured (presumably different) on every deployment environment.
 They are: ``DJANGO_SYMBOL_URLS`` and ``DJANGO_UPLOAD_DEFAULT_URL``.
 See the section below about **AWS S3**.
 
+Google Cloud Platform
+=====================
+
+The only configuration varible you need to set is
+``GOOGLE_APPLICATION_CREDENTIALS`` and its value need to be the path to a
+``.json`` file that contains the (generated) Google Cloud Platform
+credential details. For example:
+
+.. code-block:: shell
+
+    GOOGLE_APPLICATION_CREDENTIALS=/path/to/google-service-account.json
+
+Watch out for the fact that this file needs to be available within the
+Docker container that runs the Python code.
+
+.. note:: This is one of those few environment variables that is *not*
+          prefixed with the string ``DJANGO_``.
+
 AWS
 ===
 
