@@ -1,5 +1,6 @@
 import React from "react";
 import { Loading, thousandFormat } from "./Common";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import Fetch from "./Fetch";
 import store from "./Store";
 
@@ -124,7 +125,11 @@ class Form extends React.PureComponent {
           })}
         <div className="field is-grouped is-grouped-centered">
           <p className="control">
-            <button className="button is-primary" onClick={this.submit}>
+            <button
+              className="button is-primary"
+              onClick={this.submit}
+              disabled={!this.state.jobs.length}
+            >
               Symbolicate!
             </button>
           </p>
@@ -154,13 +159,41 @@ class Form extends React.PureComponent {
   }
 }
 
-class PreviewJSONBody extends React.PureComponent {
+class CopyToClipboardPureComponent extends React.PureComponent {
+  state = { copied: false };
+
+  componentWillUnmount() {
+    this.dismounted = true;
+  }
+
+  setCopied = (truth = true) => {
+    this.setState({ copied: truth });
+  };
+
+  componentDidUpdate() {
+    if (this.state.copied) {
+      window.setTimeout(() => {
+        if (!this.dismounted) {
+          this.setCopied(false);
+        }
+      }, 3000);
+    }
+  }
+}
+
+class PreviewJSONBody extends CopyToClipboardPureComponent {
   render() {
     const json = JSON.stringify(JSON.parse(this.props.json), undefined, 2);
     return (
       <div className="box">
         <h4>JSON We're Sending</h4>
         <pre>{json}</pre>
+        <CopyToClipboard text={json} onCopy={this.setCopied}>
+          <button type="button" className="button">
+            Copy to clipboard
+          </button>
+        </CopyToClipboard>
+        {this.state.copied && <small> Copied!</small>}
       </div>
     );
   }
@@ -182,20 +215,26 @@ class ShowValidationError extends React.PureComponent {
   }
 }
 
-class ShowResult extends React.PureComponent {
+class ShowResult extends CopyToClipboardPureComponent {
   render() {
     const json = JSON.stringify(this.props.result, undefined, 2);
     return (
       <div className="box showresult">
         <h3>RESULT</h3>
         <pre>{json}</pre>
+
+        <CopyToClipboard text={json} onCopy={this.setCopied}>
+          <button type="button" className="button">
+            Copy to clipboard
+          </button>
+        </CopyToClipboard>
+        {this.state.copied && <small> Copied!</small>}
       </div>
     );
   }
 }
 
-class ShowCurl extends React.PureComponent {
-  state = { copyMode: false, copied: false };
+class ShowCurl extends CopyToClipboardPureComponent {
   render() {
     const { json } = this.props;
     const protocol = window.location.protocol;
@@ -211,24 +250,12 @@ class ShowCurl extends React.PureComponent {
           <code>curl</code> Command
         </h3>
         <pre>{command}</pre>
-        {this.state.copyMode ? (
-          <input type="text" name="command" readOnly={true} value={command} />
-        ) : null}
-        <button
-          type="button"
-          className="button"
-          onClick={event => {
-            this.setState({ copyMode: true }, () => {
-              const el = document.querySelector('input[name="command"]');
-              el.select();
-              document.execCommand("copy");
-              this.setState({ copyMode: false, copied: true });
-            });
-          }}
-        >
-          Copy to clipboard
-        </button>{" "}
-        {this.state.copied ? <small>Copied!</small> : null}
+        <CopyToClipboard text={command} onCopy={this.setCopied}>
+          <button type="button" className="button">
+            Copy to clipboard
+          </button>
+        </CopyToClipboard>
+        {this.state.copied && <small> Copied!</small>}
       </div>
     );
   }
@@ -274,16 +301,29 @@ class JobForm extends React.PureComponent {
         { memoryMaps: Array.from(valid), invalidMemoryMaps: [] },
         () => {
           this.refs.memoryMap.value = this.state.memoryMaps.join("\n");
+          // console.log("NEW VALUE:", { value: this.refs.memoryMap.value });
         }
       );
     }
   };
+
+  SESSION_STORAGE_MEMORYMAPS_KEY = "memoryMapValue";
+
   render() {
     const placeholder = `
 E.g. https://symbols.mozilla.org/GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233/GenerateOCSPResponse.sym
 or
 GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233
     `.trim();
+
+    const defaultDefaultValue = `
+    GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233
+https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0F52/AccessibleMarshal.sym
+
+  `.trim();
+    const defaultValue =
+      window.sessionStorage.getItem(this.SESSION_STORAGE_MEMORYMAPS_KEY) ||
+      defaultDefaultValue;
 
     return (
       <div>
@@ -294,11 +334,7 @@ GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233
               className="textarea"
               ref="memoryMap"
               placeholder={placeholder}
-              defaultValue={`
-                GenerateOCSPResponse.pdb/3AACAD4A42BD449B953B5222B3CEB7233
-https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0F52/AccessibleMarshal.sym
-
-              `.trim()}
+              defaultValue={defaultValue}
               onBlur={event => {
                 this.updateMemoryMap();
               }}
@@ -336,6 +372,17 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
                         this.state.memoryMaps,
                         this.state.stacks
                       );
+                      if (this.state.memoryMaps.length) {
+                        const memoryMapsString = this.state.memoryMaps.join(
+                          "\n"
+                        );
+                        if (memoryMapsString !== defaultDefaultValue) {
+                          window.sessionStorage.setItem(
+                            this.SESSION_STORAGE_MEMORYMAPS_KEY,
+                            memoryMapsString
+                          );
+                        }
+                      }
                     }
                   );
                 }}
