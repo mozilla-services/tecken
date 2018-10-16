@@ -326,8 +326,7 @@ export const ShowUploadMetadata = ({ upload }) => {
 const DisplayIncompleteRatio = ({ files }) => {
   // Return a string like "56 of 103 (54%)" to mean that 56 of 103 files are complete.
   const all = files.length;
-  const incomplete = files.filter(file => !!file.completed_at).length;
-  const complete = all - incomplete;
+  const complete = files.filter(file => !!file.completed_at).length;
   const percentage = (100 * complete) / all;
   return `${complete} of ${all} (${Math.trunc(percentage)}%)`;
 };
