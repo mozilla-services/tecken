@@ -91,7 +91,7 @@ def test_region_checking():
         S3Bucket("https://s3-unheardof.amazonaws.com/some-bucket")
 
 
-def test_google_cloud_storage_client():
+def test_google_cloud_storage_client(gcsmock):
     bucket = S3Bucket("https://storage.googleapis.com/foo-bar-bucket")
     assert bucket.name == "foo-bar-bucket"
     client = bucket.get_s3_client()
