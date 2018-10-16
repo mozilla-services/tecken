@@ -25,6 +25,14 @@ class AWS:
     }
 
 
+class GCP:
+    """Google Cloud Platform"""
+
+    GOOGLE_APPLICATION_CREDENTIALS_PATH = values.PathValue(
+        "google_service_account.json"
+    )
+
+
 class Celery:
 
     # Add a 5 minute soft timeout to all Celery tasks.
@@ -49,7 +57,14 @@ class S3:
     S3_PUT_READ_TIMEOUT = values.IntegerValue(30)  # seconds
 
 
-class Core(AWS, Configuration, Celery, S3):
+class GCS:  # Google Cloud Storage
+
+    pass
+
+    # XXX Need to figure out how to do all the things we do with S3 with timeouts.
+
+
+class Core(AWS, GCP, Celery, S3, GCS, Configuration):
     """Settings that will never change per-environment."""
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -201,11 +216,11 @@ class Core(AWS, Configuration, Celery, S3):
     # this can be cached. This value determines how long we do that caching.
     MEMOIZE_KEY_EXISTING_SIZE_SECONDS = values.IntegerValue(60 * 60 * 24)
 
-    # When we upload a .zip file, we iterate over the content and for
+    # When we upload a .zip file, we iterate over the content and for each
     # file within (that isn't immediately "ignorable") we kick off a
     # function which figures out what (and how) to process the file.
-    # That function involves doing a S3 GET (technically ListObjectsV2),
-    # (possible) gzipping the payload and (possibly) a S3 PUT.
+    # That function involves doing a S3/GCS GET (technically ListObjectsV2),
+    # (possible) gzipping the payload and (possibly) a S3/GCS PUT.
     # All of these function calls get put in a
     # concurrent.futures.ThreadPoolExecutor pool. This setting is about
     # how many of these to start, max.
@@ -411,8 +426,7 @@ class Base(Core):
     CSRF_FAILURE_VIEW = "tecken.views.csrf_failure"
     CSRF_USE_SESSIONS = values.BooleanValue(True)
 
-    # The order here matters. Symbol download goes through these one
-    # at a time.
+    # The order here matters. Symbol download goes through these one at a time.
     # Ideally you want the one most commonly hit first unless there's a
     # cascading reason you want other buckets first.
     # By default, each URL is assumed to be private!
@@ -464,11 +478,12 @@ class Base(Core):
     # anybody uploading with an @example.com email address.
     UPLOAD_URL_EXCEPTIONS = values.DictValue({})
 
+    # XXX Can this be deleted?
     # When an upload comes in, we need to store it somewhere that it
     # can be shared between the webapp and the Celery worker.
     # In production-like environments this can't be a local filesystem
     # path but needs to one that is shared across servers. E.g. EFS.
-    UPLOAD_INBOX_DIRECTORY = values.Value("./upload-inbox")
+    # UPLOAD_INBOX_DIRECTORY = values.Value("./upload-inbox")
 
     # The default prefix for locating all symbols
     SYMBOL_FILE_PREFIX = values.Value("v1")
@@ -627,7 +642,7 @@ class Localdev(Base):
                 "statsd_namespace": "",
             },
         },
-        {"class": "tecken.markus_extra.LogAllMetricsKeys"},
+        # {"class": "tecken.markus_extra.LogAllMetricsKeys"},
         # {
         #     'class': 'markus.backends.logging.LoggingRollupMetrics',
         #     'options': {
@@ -681,19 +696,25 @@ class Test(Localdev):
     PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 
     SYMBOL_URLS = [
-        "https://s3.example.com/public/prefix/?access=public",
-        "https://s3.example.com/private/prefix/",
+        "https://storage.googleapis.example.com/private/prefix/",
+        # "https://s3.example.com/public/prefix/?access=public",
+        # "https://s3.example.com/private/prefix/",
     ]
 
     AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
 
-    # This makes sure this is never a real valud
+    # This makes sure this is never a real valid URL.
     OIDC_OP_USER_ENDPOINT = "https://auth.example.com/authorize"
 
     SYMBOL_FILE_PREFIX = "v0"
-    UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-    UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
-    UPLOAD_URL_EXCEPTIONS = {"*@peterbe.com": "https://s3.example.com/peterbe-com"}
+    # UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
+    UPLOAD_DEFAULT_URL = "https://storage.googleapis.example.com/private/prefix/"
+    # UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
+    UPLOAD_TRY_SYMBOLS_URL = "https://storage.googleapis.example.com/try/prefix/"
+    # UPLOAD_URL_EXCEPTIONS = {"*@peterbe.com": "https://s3.example.com/peterbe-com"}
+    UPLOAD_URL_EXCEPTIONS = {
+        "*@peterbe.com": "https://storage.googleapis.example.com/peterbe-com"
+    }
 
     @property
     def CACHES(self):
