@@ -2380,9 +2380,9 @@ data-urls@^1.0.0, data-urls@^1.0.1:
     whatwg-mimetype "^2.1.0"
     whatwg-url "^7.0.0"
 
-date-fns@2.0.0-alpha.21:
-  version "2.0.0-alpha.21"
-  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.0.0-alpha.21.tgz#d928c3d595d9e607701d2b3682bd70f03f2efec0"
+date-fns@2.0.0-alpha.22:
+  version "2.0.0-alpha.22"
+  resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-2.0.0-alpha.22.tgz#c65f5dd7e959c59f8ea5591e458afc76a2a0d8d0"
 
 date-now@^0.1.4:
   version "0.1.4"
