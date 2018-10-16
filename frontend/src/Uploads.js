@@ -428,8 +428,8 @@ class DisplayUploads extends React.PureComponent {
   render() {
     const { uploads, aggregates } = this.props;
 
-    const todayStr = format(new Date(), "YYYY-MM-DD");
-    const todayFullStr = format(new Date(), "YYYY-MM-DDTHH:MM.SSSZ");
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayFullStr = format(new Date(), "yyyy-MM-ddTHH:MM.SSSZ");
     return (
       <form onSubmit={this.submitForm}>
         <table className="table is-fullwidth">
