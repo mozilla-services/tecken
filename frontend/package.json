@@ -5,7 +5,7 @@
   "license": "MPL-2.0",
   "dependencies": {
     "bulma": "0.7.2",
-    "date-fns": "2.0.0-alpha.22",
+    "date-fns": "2.0.0-alpha.23",
     "font-awesome": "4.7.0",
     "mobx": "5.5.0",
     "mobx-react": "5.3.1",
