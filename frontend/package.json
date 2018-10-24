@@ -7,7 +7,7 @@
     "bulma": "0.7.2",
     "date-fns": "2.0.0-alpha.23",
     "font-awesome": "4.7.0",
-    "mobx": "5.5.1",
+    "mobx": "5.5.2",
     "mobx-react": "5.3.4",
     "raven-js": "3.27.0",
     "react": "16.6.0",
