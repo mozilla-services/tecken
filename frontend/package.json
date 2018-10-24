@@ -10,9 +10,9 @@
     "mobx": "5.5.1",
     "mobx-react": "5.3.4",
     "raven-js": "3.27.0",
-    "react": "16.5.2",
+    "react": "16.6.0",
     "react-copy-to-clipboard": "5.0.1",
-    "react-dom": "16.5.2",
+    "react-dom": "16.6.0",
     "react-fontawesome": "1.6.1",
     "react-router-dom": "4.3.1"
   },
