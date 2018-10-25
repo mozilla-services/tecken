@@ -256,9 +256,9 @@ pytest-mock==1.10.0 \
 requests-mock==1.5.2 \
     --hash=sha256:7a5fa99db5e3a2a961b6f20ed40ee6baeff73503cf0a553cc4d679409e6170fb \
     --hash=sha256:8ca0628dc66d3f212878932fd741b02aa197ad53fd2228164800a169a4a826af
-pyflakes==1.6.0 \
-    --hash=sha256:08bd6a50edf8cffa9fa09a463063c425ecaaf10d1eb0335a7e8b1401aef89e6f \
-    --hash=sha256:8d616a382f243dbf19b54743f280b80198be0bca3a5396f1d2e1fca6223e8805
+pyflakes==2.0.0 \
+    --hash=sha256:f661252913bc1dbe7fcfcbf0af0db3f42ab65aabd1a6ca68fe5d466bace94dae \
+    --hash=sha256:9a7662ec724d0120012f6e29d6248ae3727d821bba522a0e6b356eff19126a49
 black==18.9b0 \
     --hash=sha256:817243426042db1d36617910df579a54f1afd659adb96fc5032fcf4b36209739 \
     --hash=sha256:e030a9a28f542debc08acceb273f228ac422798e5215ba2a791a6ddeaaca22a5
