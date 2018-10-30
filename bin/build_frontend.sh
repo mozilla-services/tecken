@@ -13,6 +13,9 @@ if [[ ! -z "${CI}" ]]; then
     # Because this is what create-react-app needs as a prefix
     export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
 
+    # We prefer to not leave any JavaScript as inline no matter how small.
+    export INLINE_RUNTIME_CHUNK=false
+
     pushd frontend
     yarn --no-progress
     yarn run --no-progress build
