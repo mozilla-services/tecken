@@ -15,7 +15,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import OperationalError
 
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 from tecken.boto_extra import reraise_clienterrors, reraise_endpointconnectionerrors
 from tecken.base.utils import requests_retry_session
 from tecken.download.models import MissingSymbol, MicrosoftDownload
@@ -145,14 +145,10 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
     uri = f"{symbol}/{debugid}/{filename}.sym"
     key_name = os.path.join(settings.SYMBOL_FILE_PREFIX, uri)
 
-    bucket_info = S3Bucket(settings.UPLOAD_DEFAULT_URL)
-    # lookup_client = bucket_info.get_s3_client(
-    #     read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
-    #     connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
-    # )
-    s3_client = bucket_info.s3_client
+    bucket_info = StorageBucket(settings.UPLOAD_DEFAULT_URL)
+    client = bucket_info.client
     if bucket_info.is_google_cloud_storage:
-        bucket = s3_client.get_bucket(bucket_info.name)
+        bucket = client.get_bucket(bucket_info.name)
     else:
         bucket = None
 
@@ -160,7 +156,7 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
 
     # The upload_file_upload creates an instance but doesn't save it
     file_upload = upload_file_upload(
-        bucket or s3_client, bucket_name, key_name, file_path, microsoft_download=True
+        bucket or client, bucket_name, key_name, file_path, microsoft_download=True
     )
     # The _create_file_upload() function might return None
     # which means it decided there is no need to make an upload

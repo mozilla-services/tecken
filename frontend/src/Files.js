@@ -364,7 +364,7 @@ const ShowAggregates = ({ aggregates }) => {
         </div>
       </div>
       <div className="level-item has-text-centered">
-        <div title="Files that got started upload to S3 but never finished for some reason">
+        <div title="Files that got started upload but never finished for some reason">
           <p className="heading">Incomplete Files</p>
           <p className="title">{thousandFormat(aggregates.files.incomplete)}</p>
         </div>
@@ -391,7 +391,7 @@ const ShowAggregates = ({ aggregates }) => {
       </div>
       <div
         className="level-item has-text-centered"
-        title="Average time to complete upload to S3 of completed files"
+        title="Average time to complete upload of completed files"
       >
         <div>
           <p className="heading">Upload Time Avg</p>

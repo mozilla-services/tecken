@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from requests.exceptions import ContentDecodingError
 from requests.packages.urllib3.response import HTTPResponse
 
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 from tecken.base.symboldownloader import (
     SymbolDownloader,
     SymbolNotFound,
@@ -30,7 +30,7 @@ def test_exists_in_source(botomock, settings):
             return {}
         return {"Contents": [{"Key": api_params["Prefix"]}]}
 
-    bucket = S3Bucket("https://s3.example.com/private")
+    bucket = StorageBucket("https://s3.example.com/private")
     with botomock(mock_api_call):
         assert not exists_in_source(bucket, "xxx.sym")
         assert exists_in_source(bucket, "xul.sym")

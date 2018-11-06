@@ -51,7 +51,7 @@ class MicrosoftDownload(models.Model):
     error = models.TextField(null=True)
     # Null in case it could never fully be turned into a file upload.
     file_upload = models.ForeignKey(FileUpload, null=True, on_delete=models.SET_NULL)
-    # When created but turns out we already had it in the S3 destination.
+    # When created but turns out we already had it in the S3/GCS destination.
     # Make this Null if it was never even attempted to upload.
     skipped = models.NullBooleanField()
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

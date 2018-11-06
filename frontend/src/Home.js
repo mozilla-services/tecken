@@ -428,7 +428,7 @@ const UploadsStatsTile = ({ loading, stats }) => (
             <th>
               <Link
                 to="/uploads/files"
-                title="Files from .zip uploads we actually upload to S3"
+                title="Files from .zip uploads we actually uploaded"
               >
                 Uploaded Files
               </Link>

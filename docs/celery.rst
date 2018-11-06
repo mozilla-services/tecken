@@ -8,9 +8,9 @@ Primary Use Case
 ================
 
 The primary use case for Celery is to be able to upload individual
-symbol files to S3. In Symbol Upload (XXX make link) ``.zip`` files
+symbol files to S3/GCS. In Symbol Upload (XXX make link) ``.zip`` files
 are uploaded that contain individual files that need to be uploaded
-to the appropriate S3 bucket(s).
+to the appropriate S3/GCS bucket(s).
 
 The default broker is Redis, and in configuration it uses the same
 Redis that is used as the default cache backend.

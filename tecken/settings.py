@@ -517,7 +517,7 @@ class Base(Core):
         "dockerflow.django.checks.check_migrations_applied",
         "dockerflow.django.checks.check_redis_connected",
         "tecken.dockerflow_extra.check_redis_store_connected",
-        "tecken.dockerflow_extra.check_s3_urls",
+        "tecken.dockerflow_extra.check_storage_urls",
     ]
 
     # We can cache quite aggressively here because the SymbolDownloader

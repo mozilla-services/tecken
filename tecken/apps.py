@@ -12,7 +12,7 @@ from django_redis import get_redis_connection
 from django.conf import settings
 from django.apps import AppConfig
 
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 
 
 logger = logging.getLogger("django")
@@ -34,9 +34,9 @@ class TeckenAppConfig(AppConfig):
 
         self._check_mandatory_settings()
 
-        self._check_s3_urls()
+        self._check_storage_urls()
 
-        self._check_upload_s3_url_is_download_s3_url()
+        self._check_upload_url_is_download_url()
 
     @staticmethod
     def _fix_settings_conn_max_age():
@@ -95,7 +95,7 @@ class TeckenAppConfig(AppConfig):
                 )
 
     @staticmethod
-    def _check_s3_urls():
+    def _check_storage_urls():
         """If you use minio to functionally test S3, since it's
         ephemeral the buckets you create disappear after a restart.
         Make sure they exist. That's what we expect to happen with the
@@ -109,7 +109,7 @@ class TeckenAppConfig(AppConfig):
         for url in _all_possible_urls:
             if not url or "minio" not in urlparse(url).netloc:
                 continue
-            bucket = S3Bucket(url)
+            bucket = StorageBucket(url)
             try:
                 bucket.s3_client.head_bucket(Bucket=bucket.name)
             except ClientError as exception:
@@ -135,7 +135,7 @@ class TeckenAppConfig(AppConfig):
                 )
 
     @staticmethod
-    def _check_upload_s3_url_is_download_s3_url():
+    def _check_upload_url_is_download_url():
         """If UPLOAD_DEFAULT_URL is not in SYMBOL_URLS it's just too
         weird. It means we'd upload to a S3 bucket we'd never read
         from and thus it'd be impossible to know the upload worked.

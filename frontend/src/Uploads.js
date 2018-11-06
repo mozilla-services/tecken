@@ -668,7 +668,7 @@ const ShowAggregates = ({ aggregates }) => {
       </div>
       <div className="level-item has-text-centered">
         <div>
-          <p className="heading" title="Files we definitely upload to S3">
+          <p className="heading" title="Files we definitely uploaded">
             Sum Uploaded Files
           </p>
           <p className="title">

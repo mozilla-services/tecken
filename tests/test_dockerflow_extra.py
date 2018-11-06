@@ -13,14 +13,14 @@ def test_check_redis_store_connected_happy_path():
     assert not dockerflow_extra.check_redis_store_connected(None)
 
 
-def test_check_s3_urls_happy_path(gcsmock, settings):
+def test_check_storage_urls_happy_path(gcsmock, settings):
     mock_bucket = gcsmock.MockBucket()
     gcsmock.get_bucket = lambda name: mock_bucket
 
-    assert not dockerflow_extra.check_s3_urls(None)
+    assert not dockerflow_extra.check_storage_urls(None)
 
 
-def test_check_s3_urls_happy_path_s3(botomock, settings):
+def test_check_storage_urls_happy_path_s3(botomock, settings):
     settings.SYMBOL_URLS = [
         "https://s3.example.com/public/prefix/?access=public",
         "https://s3.example.com/private/prefix/",
@@ -37,10 +37,10 @@ def test_check_s3_urls_happy_path_s3(botomock, settings):
         return {}
 
     with botomock(mock_api_call):
-        assert not dockerflow_extra.check_s3_urls(None)
+        assert not dockerflow_extra.check_storage_urls(None)
 
 
-def test_check_s3_urls_client_error(gcsmock, settings):
+def test_check_storage_urls_client_error(gcsmock, settings):
     def mock_get_bucket(name):
         if name == "private":
             raise google_BadRequest("Never heard of it!")
@@ -48,14 +48,14 @@ def test_check_s3_urls_client_error(gcsmock, settings):
 
     gcsmock.get_bucket = mock_get_bucket
 
-    errors = dockerflow_extra.check_s3_urls(None)
+    errors = dockerflow_extra.check_storage_urls(None)
     assert errors
     error, = errors
     assert "private" in error.msg
     assert "Never heard of it!" in error.msg
 
 
-def test_check_s3_urls_client_error_s3(botomock, settings):
+def test_check_storage_urls_client_error_s3(botomock, settings):
     settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
     settings.UPLOAD_URL_EXCEPTIONS = {
         "*@peterbe.com": "https://s3.example.com/peterbe-com"
@@ -69,14 +69,14 @@ def test_check_s3_urls_client_error_s3(botomock, settings):
         return {}
 
     with botomock(mock_api_call):
-        errors = dockerflow_extra.check_s3_urls(None)
+        errors = dockerflow_extra.check_storage_urls(None)
         assert errors
         error, = errors
         assert "private" in error.msg
         assert "ClientError" in error.msg
 
 
-def test_check_s3_urls_endpointconnectionerror_s3(botomock, settings):
+def test_check_storage_urls_endpointconnectionerror_s3(botomock, settings):
     settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
     settings.UPLOAD_URL_EXCEPTIONS = {
         "*@peterbe.com": "https://s3.example.com/peterbe-com"
@@ -89,14 +89,14 @@ def test_check_s3_urls_endpointconnectionerror_s3(botomock, settings):
         return {}
 
     with botomock(mock_api_call):
-        errors = dockerflow_extra.check_s3_urls(None)
+        errors = dockerflow_extra.check_storage_urls(None)
         assert errors
         error, = errors
         assert "private" in error.msg
         assert "EndpointConnectionError" in error.msg
 
 
-def test_check_s3_urls_other_client_error_s3(botomock, settings):
+def test_check_storage_urls_other_client_error_s3(botomock, settings):
     settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
     settings.UPLOAD_URL_EXCEPTIONS = {
         "*@peterbe.com": "https://s3.example.com/peterbe-com"
@@ -111,4 +111,4 @@ def test_check_s3_urls_other_client_error_s3(botomock, settings):
 
     with botomock(mock_api_call):
         with pytest.raises(ClientError):
-            dockerflow_extra.check_s3_urls(None)
+            dockerflow_extra.check_storage_urls(None)
