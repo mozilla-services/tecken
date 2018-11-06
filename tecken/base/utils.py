@@ -55,16 +55,16 @@ def filesizeformat(bytes):
     return dj_filesizeformat(bytes).replace("\xa0", " ")
 
 
-# See the docstring in invalid_s3_key_name_characters for an explanation
+# See the docstring in invalid_key_name_characters for an explanation
 # of this regex.
-INVALID_S3_CHARS_REGEX = re.compile(
+INVALID_CHARS_REGEX = re.compile(
     # \x00-\x1f is the "ASCII control characters". That's 00 (Null character)
     # until 31 (Unit separator) (whatever that is).
     r'[\x00-\x1f\x80-\xff\\\^`><{}\[\]#%"\'\~\|]'
 )
 
 
-def invalid_s3_key_name_characters(key):
+def invalid_key_name_characters(key):
     """Return true if there are characters in the key name that is
     considered invalid.
     Invalid is based on the official S3 documentation.
@@ -99,9 +99,9 @@ def invalid_s3_key_name_characters(key):
     it's important that this function is as fast as it can be. Therefore,
     consider the following pre-optimization observations:
 
-        * Doing `invalid_s3_key_name_characters('foo.pdb' + hex + 'foo.sym')`
+        * Doing `invalid_key_name_characters('foo.pdb' + hex + 'foo.sym')`
           is 25% slower than doing
-          `invalid_s3_key_name_characters('foo.pdb'  'foo.sym')`.
+          `invalid_key_name_characters('foo.pdb'  'foo.sym')`.
           I.e. the fewer characters to check, the faster. The debug ID
           can be checked differently.
 
@@ -111,8 +111,8 @@ def invalid_s3_key_name_characters(key):
           about 25% slower.
 
         * Since the key is usually made up of a symbol +/+ debugid +/+ filename
-          you might be tempted to do `(invalid_s3_key_name_characters(symbol)
-          OR invalid_s3_key_name_characters(filename))` but this is
+          you might be tempted to do `(invalid_key_name_characters(symbol)
+          OR invalid_key_name_characters(filename))` but this is
           empirically slower than making a new string like this:
           `invalid_s3_key_name_characters(symbol + filename)`.
 
@@ -124,4 +124,4 @@ def invalid_s3_key_name_characters(key):
     `cookié` is not valid, but `🍪` is valid. This might seem odd but
     it's entirely based on the above mentioned official S3 documentation.
     """
-    return bool(INVALID_S3_CHARS_REGEX.findall(key))
+    return bool(INVALID_CHARS_REGEX.findall(key))

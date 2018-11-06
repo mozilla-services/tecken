@@ -774,20 +774,20 @@ def test_key_existing_caching_s3(botomock, metricsmock, settings):
 
         raise NotImplementedError
 
-    s3_client = bucket_info.s3_client
+    client = bucket_info.client
     with botomock(mock_api_call):
-        size, metadata = key_existing(s3_client, "mybucket", "filename")
+        size, metadata = key_existing(client, "mybucket", "filename")
         assert size == 1234
         assert metadata is None
         assert len(lookups) == 1
 
-        size, metadata = key_existing(s3_client, "mybucket", "filename")
+        size, metadata = key_existing(client, "mybucket", "filename")
         assert size == 1234
         assert metadata is None
         assert len(lookups) == 1
 
-        key_existing.invalidate(s3_client, "mybucket", "filename")
-        size, metadata = key_existing(s3_client, "mybucket", "filename")
+        key_existing.invalidate(client, "mybucket", "filename")
+        size, metadata = key_existing(client, "mybucket", "filename")
         assert size == 6789
         assert metadata is None
         assert len(lookups) == 2
@@ -851,20 +851,20 @@ def test_key_existing_size_caching_not_found_s3(botomock, metricsmock, settings)
 
         raise NotImplementedError
 
-    s3_client = bucket_info.s3_client
+    client = bucket_info.client
     with botomock(mock_api_call):
-        size, metadata = key_existing(s3_client, "mybucket", "filename")
+        size, metadata = key_existing(client, "mybucket", "filename")
         assert size is 0
         assert metadata is None
         assert len(lookups) == 1
 
-        size, metadata = key_existing(s3_client, "mybucket", "filename")
+        size, metadata = key_existing(client, "mybucket", "filename")
         assert size is 0
         assert metadata is None
         assert len(lookups) == 1
 
-        key_existing.invalidate(s3_client, "mybucket", "filename")
-        size, metadata = key_existing(s3_client, "mybucket", "filename")
+        key_existing.invalidate(client, "mybucket", "filename")
+        size, metadata = key_existing(client, "mybucket", "filename")
         assert size is 0
         assert metadata is None
         assert len(lookups) == 2

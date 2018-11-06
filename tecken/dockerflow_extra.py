@@ -14,7 +14,7 @@ from dockerflow.health import (
     ERROR_MISCONFIGURED_REDIS,
     ERROR_REDIS_PING_FAILED,
 )
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 
 
 def check_redis_store_connected(app_configs, **kwargs):
@@ -47,20 +47,19 @@ def check_redis_store_connected(app_configs, **kwargs):
     return errors
 
 
-def check_s3_urls(app_configs, **kwargs):
+def check_storage_urls(app_configs, **kwargs):
     errors = []
     checked = []
 
     def check_url(url, setting_key):
-        print("URL", url, setting_key)
         if url in checked:
             return
-        bucket = S3Bucket(url)
+        bucket = StorageBucket(url)
         if not bucket.private:
             return
         if bucket.is_google_cloud_storage:
             try:
-                bucket.s3_client.get_bucket(bucket.name)
+                bucket.client.get_bucket(bucket.name)
                 checked.append(url)
             except google_BadRequest as exception:
                 errors.append(
@@ -72,7 +71,7 @@ def check_s3_urls(app_configs, **kwargs):
                 )
         else:
             try:
-                bucket.s3_client.head_bucket(Bucket=bucket.name)
+                bucket.client.head_bucket(Bucket=bucket.name)
             except ClientError as exception:
                 if exception.response["Error"]["Code"] in ("403", "404"):
                     errors.append(

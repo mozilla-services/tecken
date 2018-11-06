@@ -15,7 +15,7 @@ from django.utils.encoding import force_bytes
 from django.core.cache import caches
 from django.core.exceptions import PermissionDenied
 
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 from . import forms
 
 
@@ -44,7 +44,7 @@ def caching_vs_boto(request):
 
     # Setting up for boto lookup.
     s3_key = f"{settings.SYMBOL_FILE_PREFIX}/{symbol_path}"
-    s3_info = S3Bucket(settings.SYMBOL_URLS[0])
+    s3_info = StorageBucket(settings.SYMBOL_URLS[0])
     s3_client = s3_info.s3_client
     bucket_name = s3_info.name
 

@@ -16,7 +16,7 @@ from cache_memoize import cache_memoize
 
 from django.conf import settings
 
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 
 
 logger = logging.getLogger("tecken")
@@ -95,7 +95,7 @@ def exists_in_source(source, key):
             return blob.public_url
         return False
     else:
-        response = source.s3_client.list_objects_v2(Bucket=source.name, Prefix=key)
+        response = source.client.list_objects_v2(Bucket=source.name, Prefix=key)
     for obj in response.get("Contents", []):
         if obj["Key"] == key:
             # It exists!
@@ -180,7 +180,7 @@ class SymbolDownloader:
             # The URL is expected to have the bucket name as the first
             # part of the pathname.
             # In the future we might expand to a more elaborate scheme.
-            yield S3Bucket(url, file_prefix=self.file_prefix)
+            yield StorageBucket(url, file_prefix=self.file_prefix)
 
     @property
     def sources(self):
@@ -311,7 +311,7 @@ class SymbolDownloader:
                 else:
                     try:
                         with metrics.timer("symboldownloader_get_object"):
-                            response = source.s3_client.get_object(
+                            response = source.client.get_object(
                                 Bucket=source.name, Key=key
                             )
                         stream = response["Body"]
@@ -423,7 +423,7 @@ class SymbolDownloader:
             key = found["key"]
             # generate_presigned_url() actually works for both private
             # and public buckets.
-            return found["source"].s3_client.generate_presigned_url(
+            return found["source"].client.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": bucket_name, "Key": key},
                 # Left commented-in to remind us of what the default is

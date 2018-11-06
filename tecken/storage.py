@@ -21,7 +21,7 @@ def scrub_credentials(url):
     return urlunparse(parsed._replace(netloc=parsed.netloc.split("@", 1)[-1]))
 
 
-class S3Bucket:
+class StorageBucket:
     """
     Deconstructs a URL about an S3 bucket and breaks it into parts that
     can be used for various purposes. Also, contains a convenient method
@@ -29,7 +29,7 @@ class S3Bucket:
 
     Usage::
 
-        >>> s = S3Bucket(
+        >>> s = StorageBucket(
         ...    'https://s3-us-west-2.amazonaws.com/bucky/prfx?access=public'
         )
         >>> s.netloc
@@ -40,7 +40,7 @@ class S3Bucket:
         False
         >>> s.prefix
         'prfx'
-        >>> s.s3_client.list_objects_v2(Bucket=s.name, Prefix='some/key.ext')
+        >>> s.client.list_objects_v2(Bucket=s.name, Prefix='some/key.ext')
 
     """
 
@@ -93,21 +93,20 @@ class S3Bucket:
             f"is_google_cloud_storage={self.is_google_cloud_storage}>"
         )
 
-    # XXX rename to something NOT with the word "s3" in it.
     @property
-    def s3_client(self):
+    def client(self):
         """return a boto3 session client based on 'self'"""
-        if not getattr(self, "_s3_client", None):
-            self._s3_client = get_s3_client(
+        if not getattr(self, "_client", None):
+            self._client = get_storage_client(
                 endpoint_url=self.endpoint_url,
                 region_name=self.region,
                 is_google_cloud_storage=self.is_google_cloud_storage,
             )
-        return self._s3_client
+        return self._client
 
-    def get_s3_client(self, **config_params):
+    def get_storage_client(self, **config_params):
         """return a boto3 session client with different config parameters"""
-        return get_s3_client(
+        return get_storage_client(
             endpoint_url=self.endpoint_url,
             region_name=self.region,
             is_google_cloud_storage=self.is_google_cloud_storage,
@@ -117,11 +116,11 @@ class S3Bucket:
     def get_or_load_bucket(self):
         if not hasattr(self, "_bucket"):
             assert self.is_google_cloud_storage
-            self._bucket = self.s3_client.get_bucket(self.name)
+            self._bucket = self.client.get_bucket(self.name)
         return self._bucket
 
 
-def get_s3_client(
+def get_storage_client(
     endpoint_url=None, region_name=None, is_google_cloud_storage=False, **config_params
 ):
     if is_google_cloud_storage:

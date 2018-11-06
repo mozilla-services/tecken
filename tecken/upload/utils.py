@@ -157,13 +157,13 @@ def get_key_content_type(key_name):
 
 @metrics.timer_decorator("upload_file_upload")
 def upload_file_upload(
-    s3_client,
+    client,
     bucket_name,
     key_name,
     file_path,
     upload=None,
     microsoft_download=False,
-    s3_client_lookup=None,
+    client_lookup=None,
 ):
     # The reason you might want to pass a different client for
     # looking up existing sizes is because you perhaps want to use
@@ -175,7 +175,7 @@ def upload_file_upload(
     # to take too long. Because if it times out, it's safe to just
     # assume the file doesn't already exist.
     existing_size, existing_metadata = key_existing(
-        s3_client_lookup or s3_client, bucket_name, key_name
+        client_lookup or client, bucket_name, key_name
     )
 
     size = os.stat(file_path).st_size
@@ -268,8 +268,8 @@ def upload_file_upload(
     logger.debug("Uploading file {!r} into {!r}".format(key_name, bucket_name))
     with metrics.timer("upload_put_object"):
         with open(file_path, "rb") as f:
-            if isinstance(s3_client, google_Bucket):
-                blob = s3_client.blob(key_name)
+            if isinstance(client, google_Bucket):
+                blob = client.blob(key_name)
 
                 # This is an effect of moving from S3 to GCS.
                 if "ContentEncoding" in extras:
@@ -282,7 +282,7 @@ def upload_file_upload(
                 blob.metadata = metadata
                 blob.upload_from_file(f)
             else:
-                s3_client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
+                client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
     FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
     logger.info(f"Uploaded key {key_name}")
     metrics.incr("upload_file_upload_upload", 1)
@@ -290,7 +290,7 @@ def upload_file_upload(
     # If we managed to upload a file, different or not,
     # cache invalidate the key_existing_size() lookup.
     try:
-        key_existing.invalidate(s3_client, bucket_name, key_name)
+        key_existing.invalidate(client, bucket_name, key_name)
     except Exception as exception:  # pragma: no cover
         if settings.DEBUG:
             raise

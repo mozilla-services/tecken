@@ -65,7 +65,7 @@ class Help extends PureComponent {
           </li>
           <li>
             The only exception is files like <code>foo-symbols.txt</code> which
-            are accepted but not uploaded to S3 or logged.
+            are accepted but not uploaded or logged.
           </li>
         </ul>
         <p>

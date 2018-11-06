@@ -23,7 +23,7 @@ from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 
-from tecken.base.utils import filesizeformat, invalid_s3_key_name_characters
+from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.base.decorators import (
     api_login_required,
     api_any_permission_required,
@@ -40,7 +40,7 @@ from tecken.symbolicate.tasks import invalidate_symbolicate_cache_task
 from tecken.upload.models import Upload
 from tecken.upload.tasks import update_uploads_created_task
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
-from tecken.s3 import S3Bucket
+from tecken.storage import StorageBucket
 
 
 logger = logging.getLogger("tecken")
@@ -69,7 +69,7 @@ def check_symbols_archive_file_listing(file_listings):
             # Check the symbol and the filename part of it to make sure
             # it doesn't contain any, considered, invalid S3 characters
             # when it'd become a key.
-            if invalid_s3_key_name_characters(split[0] + split[2]):
+            if invalid_key_name_characters(split[0] + split[2]):
                 return f"Invalid character in filename {file_listing.name!r}"
             # Check that the middle part is only hex characters.
             if not _not_hex_characters.findall(split[1]):
@@ -128,7 +128,7 @@ def get_bucket_info(user, try_symbols=None):
     if exception:
         url = exception
 
-    return S3Bucket(url, try_symbols=try_symbols)
+    return StorageBucket(url, try_symbols=try_symbols)
 
 
 def _ignore_member_file(filename):
@@ -237,17 +237,17 @@ def upload_archive(request, upload_dir):
     else:
         # In case it's passed in as a string
         is_try_upload = bool(is_try_upload)
-    client = bucket_info.get_s3_client(
+    client = bucket_info.get_storage_client(
         read_timeout=settings.S3_PUT_READ_TIMEOUT,
         connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
     )
-    # Use a different s3 client for doing the lookups.
+    # Use a different client for doing the lookups.
     # That's because we don't want the size lookup to severly accumulate
     # in the case of there being some unpredictable slowness.
     # When that happens the lookup is quickly cancelled and it assumes
     # the file does not exist.
     # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
-    lookup_client = bucket_info.get_s3_client(
+    lookup_client = bucket_info.get_storage_client(
         read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
         connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
     )
@@ -278,7 +278,7 @@ def upload_archive(request, upload_dir):
             else:  # pragma: no cover
                 raise
 
-    # Every key has a prefix. If the S3Bucket instance has it's own prefix
+    # Every key has a prefix. If the StorageBucket instance has it's own prefix
     # prefix that first :)
     prefix = settings.SYMBOL_FILE_PREFIX
     if bucket_info.prefix:
@@ -343,7 +343,7 @@ def upload_archive(request, upload_dir):
                     key_name,
                     member.path,
                     upload=upload_obj,
-                    s3_client_lookup=bucket or lookup_client,
+                    client_lookup=bucket or lookup_client,
                 )
             ] = key_name
         # Now lets wait for them all to finish and we'll see which ones
