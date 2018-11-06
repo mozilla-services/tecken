@@ -312,6 +312,7 @@ class Uploads extends React.PureComponent {
         )}
         {this.state.uploads && (
           <DisplayUploads
+            loading={this.state.loading}
             uploads={this.state.uploads}
             canViewAll={this.state.canViewAll}
             aggregates={this.state.aggregates}
@@ -426,7 +427,7 @@ class DisplayUploads extends React.PureComponent {
   };
 
   render() {
-    const { uploads, aggregates } = this.props;
+    const { loading, uploads, aggregates } = this.props;
 
     const todayStr = format(new Date(), "yyyy-MM-dd");
     const todayFullStr = format(new Date(), "yyyy-MM-ddTHH:MM.SSSZ");
@@ -509,62 +510,65 @@ class DisplayUploads extends React.PureComponent {
             </tr>
           </tfoot>
           <tbody>
-            {uploads.map(upload => (
-              <tr key={upload.id}>
-                <td>
-                  <Link
-                    to={`/uploads/upload/${upload.id}`}
-                    title="Click to see detailed information about all uploads"
-                  >
-                    {DisplayFilesSummary(
-                      upload.files_count,
-                      upload.files_incomplete_count,
-                      upload.skipped_keys.length,
-                      upload.ignored_keys.length
-                    )}
-                  </Link>{" "}
-                  {upload.try_symbols ? (
-                    <span
-                      className="tag is-info"
-                      title="Uploads for a Try build"
+            {!loading &&
+              uploads.map(upload => (
+                <tr key={upload.id}>
+                  <td>
+                    <Link
+                      to={`/uploads/upload/${upload.id}`}
+                      title="Click to see detailed information about all uploads"
                     >
-                      Try
-                    </span>
-                  ) : null}
-                </td>
-                <td>{upload.user.email}</td>
-                <td>{formatFileSize(upload.size)}</td>
-                <td>
-                  <DisplayDate date={upload.created_at} />{" "}
-                  {this.isNew(upload.created_at) && (
-                    <span className="tag is-light">new</span>
-                  )}
-                </td>
-                <td>
-                  {upload.completed_at ? (
-                    <DisplayDateDifference
-                      from={upload.created_at}
-                      to={upload.completed_at}
-                      suffix="after"
-                    />
-                  ) : (
-                    <i>Incomplete!</i>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      {DisplayFilesSummary(
+                        upload.files_count,
+                        upload.files_incomplete_count,
+                        upload.skipped_keys.length,
+                        upload.ignored_keys.length
+                      )}
+                    </Link>{" "}
+                    {upload.try_symbols ? (
+                      <span
+                        className="tag is-info"
+                        title="Uploads for a Try build"
+                      >
+                        Try
+                      </span>
+                    ) : null}
+                  </td>
+                  <td>{upload.user.email}</td>
+                  <td>{formatFileSize(upload.size)}</td>
+                  <td>
+                    <DisplayDate date={upload.created_at} />{" "}
+                    {this.isNew(upload.created_at) && (
+                      <span className="tag is-light">new</span>
+                    )}
+                  </td>
+                  <td>
+                    {upload.completed_at ? (
+                      <DisplayDateDifference
+                        from={upload.created_at}
+                        to={upload.completed_at}
+                        suffix="after"
+                      />
+                    ) : (
+                      <i>Incomplete!</i>
+                    )}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
 
-        <Pagination
-          location={this.props.location}
-          total={this.props.total}
-          batchSize={this.props.batchSize}
-          updateFilter={this.props.updateFilter}
-          currentPage={this.props.filter.page}
-        />
+        {!loading && (
+          <Pagination
+            location={this.props.location}
+            total={this.props.total}
+            batchSize={this.props.batchSize}
+            updateFilter={this.props.updateFilter}
+            currentPage={this.props.filter.page}
+          />
+        )}
 
-        <ShowAggregates aggregates={aggregates} />
+        {!loading && <ShowAggregates aggregates={aggregates} />}
 
         <ExamplesOfFiltering todayStr={todayStr} todayFullStr={todayFullStr} />
       </form>

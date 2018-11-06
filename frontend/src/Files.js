@@ -165,6 +165,7 @@ class Files extends React.PureComponent {
 
         {this.state.files && (
           <DisplayFiles
+            loading={this.state.loading}
             files={this.state.files}
             aggregates={this.state.aggregates}
             total={this.state.total}
@@ -214,7 +215,7 @@ class DisplayFiles extends React.PureComponent {
     this.submitForm(event);
   };
   render() {
-    const { files, aggregates } = this.props;
+    const { loading, files, aggregates } = this.props;
 
     return (
       <form onSubmit={this.submitForm}>
@@ -292,59 +293,64 @@ class DisplayFiles extends React.PureComponent {
             </tr>
           </tfoot>
           <tbody>
-            {files.map(file => (
-              <tr key={file.id}>
-                <td className="file-key">
-                  <Link to={`/uploads/files/file/${file.id}`}>{file.key}</Link>
-                </td>
-                <td>{formatFileSize(file.size)}</td>
-                <td>{file.bucket_name}</td>
-                <td>
-                  {file.upload ? (
-                    <Link
-                      to={`/uploads/upload/${file.upload.id}`}
-                      title={`Uploaded by ${file.upload.user.email}`}
-                    >
-                      <DisplayDate date={file.created_at} />
+            {!loading &&
+              files.map(file => (
+                <tr key={file.id}>
+                  <td className="file-key">
+                    <Link to={`/uploads/files/file/${file.id}`}>
+                      {file.key}
                     </Link>
-                  ) : (
-                    <DisplayDate date={file.created_at} />
-                  )}{" "}
-                  {file.upload && file.upload.try_symbols ? (
-                    <span
-                      className="tag is-info"
-                      title="Part of a Try build upload"
-                    >
-                      Try
-                    </span>
-                  ) : null}
-                </td>
-                <td>{BooleanIcon(file.update)}</td>
-                <td>{BooleanIcon(file.compressed)}</td>
-                <td>
-                  {file.completed_at ? (
-                    <DisplayDateDifference
-                      from={file.created_at}
-                      to={file.completed_at}
-                    />
-                  ) : (
-                    <i>Incomplete!</i>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td>{formatFileSize(file.size)}</td>
+                  <td>{file.bucket_name}</td>
+                  <td>
+                    {file.upload ? (
+                      <Link
+                        to={`/uploads/upload/${file.upload.id}`}
+                        title={`Uploaded by ${file.upload.user.email}`}
+                      >
+                        <DisplayDate date={file.created_at} />
+                      </Link>
+                    ) : (
+                      <DisplayDate date={file.created_at} />
+                    )}{" "}
+                    {file.upload && file.upload.try_symbols ? (
+                      <span
+                        className="tag is-info"
+                        title="Part of a Try build upload"
+                      >
+                        Try
+                      </span>
+                    ) : null}
+                  </td>
+                  <td>{BooleanIcon(file.update)}</td>
+                  <td>{BooleanIcon(file.compressed)}</td>
+                  <td>
+                    {file.completed_at ? (
+                      <DisplayDateDifference
+                        from={file.created_at}
+                        to={file.completed_at}
+                      />
+                    ) : (
+                      <i>Incomplete!</i>
+                    )}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
 
-        <Pagination
-          location={this.props.location}
-          total={this.props.total}
-          batchSize={this.props.batchSize}
-          updateFilter={this.props.updateFilter}
-          currentPage={this.props.filter.page}
-        />
+        {!loading && (
+          <Pagination
+            location={this.props.location}
+            total={this.props.total}
+            batchSize={this.props.batchSize}
+            updateFilter={this.props.updateFilter}
+            currentPage={this.props.filter.page}
+          />
+        )}
 
-        <ShowAggregates aggregates={aggregates} />
+        {!loading && <ShowAggregates aggregates={aggregates} />}
       </form>
     );
   }
