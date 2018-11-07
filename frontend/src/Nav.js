@@ -118,15 +118,14 @@ const Nav = observer(
                     Sign Out
                   </button>
                 )}
-                {!store.currentUser &&
-                  store.signInUrl && (
-                    <button
-                      onClick={this.props.signIn}
-                      className="button is-info"
-                    >
-                      Sign In
-                    </button>
-                  )}
+                {!store.currentUser && store.signInUrl && (
+                  <button
+                    onClick={this.props.signIn}
+                    className="button is-info"
+                  >
+                    Sign In
+                  </button>
+                )}
               </span>
             </div>
           </div>

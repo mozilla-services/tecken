@@ -185,12 +185,9 @@ export default class Upload extends React.PureComponent {
               </button>
             </p>
           )}
-        {this.state.upload &&
-          this.state.refreshingInterval && (
-            <DisplayRefreshingInterval
-              interval={this.state.refreshingInterval}
-            />
-          )}
+        {this.state.upload && this.state.refreshingInterval && (
+          <DisplayRefreshingInterval interval={this.state.refreshingInterval} />
+        )}
         {this.state.upload && <DisplayUpload upload={this.state.upload} />}
       </div>
     );
