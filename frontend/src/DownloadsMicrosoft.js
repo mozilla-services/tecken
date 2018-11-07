@@ -324,8 +324,9 @@ class DisplayDownloads extends React.PureComponent {
                     />
                   )}
                   {!download.completed_at && download.error && "n/a"}
-                  {!download.completed_at &&
-                    !download.error && <i>Incomplete!</i>}
+                  {!download.completed_at && !download.error && (
+                    <i>Incomplete!</i>
+                  )}
                 </td>
               </tr>
             ))}
