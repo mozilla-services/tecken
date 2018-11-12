@@ -157,8 +157,8 @@ ujson==1.35 \
 markus==1.2.0 \
     --hash=sha256:86bbeb16de1b1920d291c81a39b7a7c61c94b665cd8d10c6b69c994ce4fd5bcc \
     --hash=sha256:9bce7bd152578703a8e4aa5a765c7c0d94bcdd69f7bc5e42d29b893e3abf2e5a
-datadog==0.23.0 \
-    --hash=sha256:6ed9aec2b3a26722b74465c2ed36d2efdb9c9fac1a07a84d81fa2fc0cfa66ae4
+datadog==0.24.0 \
+    --hash=sha256:ed60b5f6058cd1706ab4da0dcde336d6851bf52f64206d3063fe30a7f0022b9c
 celery==4.2.1 \
     --hash=sha256:77dab4677e24dc654d42dfbdfed65fa760455b6bb563a0877ecc35f4cfcfc678 \
     --hash=sha256:ad7a7411772b80a4d6c64f2f7f723200e39fb66cf614a7fdfab76d345acc7b13
