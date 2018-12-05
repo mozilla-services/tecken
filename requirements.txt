@@ -1,8 +1,8 @@
 -c requirements-constraints.txt
 
-Django==2.1.3 \
-    --hash=sha256:dd46d87af4c1bf54f4c926c3cfa41dc2b5c15782f15e4329752ce65f5dad1c37 \
-    --hash=sha256:1ffab268ada3d5684c05ba7ce776eaeedef360712358d6a6b340ae9f16486916
+Django==2.1.4 \
+    --hash=sha256:55409a056b27e6d1246f19ede41c6c610e4cab549c005b62cbeefabc6433356b \
+    --hash=sha256:068d51054083d06ceb32ce02b7203f1854256047a0d58682677dd4f81bceabd7
 dj-database-url==0.5.0 \
     --hash=sha256:851785365761ebe4994a921b433062309eb882fedd318e1b0fcecc607ed02da9 \
     --hash=sha256:4aeaeb1f573c74835b0686a2b46b85990571159ffc21aa57ecd4d1e1cb334163
@@ -46,8 +46,8 @@ whitenoise==4.1.1 \
 pytz==2018.7 \
     --hash=sha256:8e0f8568c118d3077b46be7d654cc8167fa916092e28320cde048e54bfc9f1e6 \
     --hash=sha256:31cb35c89bd7d333cd32c5f278fca91b523b0834369e757f4c5641ea252236ca
-newrelic==4.6.0.106 \
-    --hash=sha256:b6d10cb2e6a0efddd7145ef30b923249443d14b9bea4217cfe96d806a80a94b1
+newrelic==4.8.0.110 \
+    --hash=sha256:b528adb0e6a9e4e3b62a87cf154087f70c837a879b3222a5a2664796e1263564
 requests==2.20.1 \
     --hash=sha256:65b3a120e4329e33c9889db89c80976c5272f56ea92d3e74da8a463992e3ff54 \
     --hash=sha256:ea881206e59f41dbd0bd445437d792e43906703fff75ca8ff43ccdb11f33f263
@@ -179,8 +179,8 @@ chardet==3.0.4 \
 pyOpenSSL==18.0.0 \
     --hash=sha256:26ff56a6b5ecaf3a2a59f132681e2a80afcc76b4f902f612f518f92c2a1bf854 \
     --hash=sha256:6488f1423b00f73b7ad5167885312bb0ce410d3312eb212393795b53c8caa580
-django-cache-memoize==0.1.3 \
-    --hash=sha256:45c1261ed91cedf863a3f55d9cf1e30cd7bd3221f92235f0a79c4bef7a0889da
+django-cache-memoize==0.1.5 \
+    --hash=sha256:fe72f087f8e3c1a77e1152c38f6fb6c36b99626d3683a4c844eea99e03a7d885
 encore==0.7.0 \
     --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6
 msgpack==0.5.1 \
