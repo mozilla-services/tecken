@@ -7,32 +7,36 @@ Celery
 Primary Use Case
 ================
 
-The primary use case for Celery is to be able to upload individual
-symbol files to S3/GCS. In Symbol Upload (XXX make link) ``.zip`` files
-are uploaded that contain individual files that need to be uploaded
-to the appropriate S3/GCS bucket(s).
+Celery is used for the following tasks:
 
-The default broker is Redis, and in configuration it uses the same
-Redis that is used as the default cache backend.
+1. Every time an upload is made, a piece of code is triggered that
+   counts how many uploads have been done in that UTC 24 day. This
+   populates the ``UploadsCreated`` model. By querying that you can
+   see how much was uploaded by date rather than having to do heavy
+   aggregates on the main ``Upload`` model.
+
+2. Every time a symbol URL is attempted to be retrieved but we find out
+   it's not in our storage backend, we need to write this down in the
+   database. We do that by calling ``store_missing_symbol`` which is
+   synchronous. However, if any operational error happens, instead of
+   giving up we send the same parameters to a wrapped function that runs
+   as a Celery task. That task is wrapped with a patient decorator that
+   retries repeatedly.
+   Note that all of this is "guarded" by a memoization wrapper that tries
+   to make sure we only all of this only happens once per 24 per
+   symbol signature.
+
+3. (NOT enabled as of Dec 2018) If a symbol is missing and its signature
+   looks like we *might* be able to download it from Microsoft, we attempt
+   to do all this work in a Celery task.
+
 
 
 Testing Celery
 ==============
 
-There's a sample task called ``sample_task``. All it does is that it
-sets a key to a value in the cache. That way you can read the cache
-after the task has finished to see if the task run successfully.
-
-This ``sample_task`` task is exposed at :base_url:`__task_tester__`
-and you have to first make a ``POST`` and then a ``GET``.
-For example:
-
-.. code-block:: shell
-
-    $ curl -X POST http://localhost:8000/__task_tester__
-    Now make a GET request to this URL
-    $ curl http://localhost:8000/__task_tester__
-    It works!
+For more information about how to end-to-end test the Celery tasks see the
+:ref:`End-to-end testing Celery <endtoendtesting-celery>` section.
 
 Unit Testing with Celery
 ========================
