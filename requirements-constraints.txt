@@ -81,7 +81,7 @@ pycparser==2.19 \
 asn1crypto==0.24.0 \
     --hash=sha256:2f1adbb7546ed199e3c90ef23ec95c5cf3585bac7d11fb7eb562a3fe89c64e87 \
     --hash=sha256:9d5c20441baf0cb60a4ac34cc447c6c189024b6b4c6cd7877034f4965c464e49
-packaging==18.0 \
+packang==18.0 \
     --hash=sha256:f95a1e147590f204328170981833854229bb2912ac3d5f89e2a8ccd2834800c9 \
     --hash=sha256:0886227f54515e592aaa2e5a553332c73962917f2831f1b0f9b9f4380a4b9807
 pyparsing==2.3.0 \
@@ -139,15 +139,15 @@ amqp==2.3.2 \
 kombu==4.2.2 \
     --hash=sha256:9bf7d37b93249b76a03afb7bbcf7149a358b6079ca2431e725414b1caa10922c \
     --hash=sha256:52763f41077e25fe7e2f17b8319d8a7b7ab953a888c49d9e4e0464fceb716896
-google-cloud-core==0.29.1 \
-    --hash=sha256:9bee63e0991be9801a4baf0b7841cf54f86c6e7fec922f45ea74cd4032ed4ee4 \
-    --hash=sha256:d85b1aaaf3bad9415ad1d8ee5eadce96d7007a82f13ce0a0629a003a11e83f29
+google-cloud-core==0.28.1 \
+    --hash=sha256:0090df83dbc5cb2405fa90844366d13176d1c0b48181c1807ab15f53be403f73 \
+    --hash=sha256:89e8140a288acec20c5e56159461d3afa4073570c9758c05d4e6cb7f2f8cc440
 google-resumable-media==0.3.1 \
     --hash=sha256:116de90b9cd483b17c53618ee6a5a20f33e741c648140c8cc9c2141e07616ff1 \
     --hash=sha256:97de518f8166d442cc0b61fab308bcd319dbb970981e667ec8ded44f5ce49836
-google-api-core==1.7.0 \
-    --hash=sha256:eea2d223f7bdc6d68dd1c4681e17cded5a00b5a8e686e1597b89f27f58cf2980 \
-    --hash=sha256:85693e163a1a6faea69a74f8feaf35d54dfa2559fbdbbe389c93ffb3bb4c9a79
+google-api-core==1.4.1 \
+    --hash=sha256:67fcea8865fae31c42228bf227c90ad293b5c519a3c6fd8d8c9850bebaef59f2 \
+    --hash=sha256:a9ae625afd0ea5a4618604675d1fc140998c9c2b17f1d91817a7a7f5b33f7484
 protobuf==3.6.1 \
     --hash=sha256:10394a4d03af7060fa8a6e1cbf38cea44be1467053b0aea5bbfcb4b13c4b88c4 \
     --hash=sha256:1489b376b0f364bcc6f89519718c057eb191d7ad6f1b395ffd93d1aa45587811 \
