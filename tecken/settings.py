@@ -312,7 +312,8 @@ class Base(Core):
                 "LOCATION": self.REDIS_URL,
                 "OPTIONS": {
                     "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
-                    "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
+                    # "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
+                    "SERIALIZER": "tecken.cache_extra.MSGPackSerializer",  # noqa
                     "SOCKET_CONNECT_TIMEOUT": self.REDIS_SOCKET_CONNECT_TIMEOUT,
                     "SOCKET_TIMEOUT": self.REDIS_SOCKET_TIMEOUT,
                     "IGNORE_EXCEPTIONS": self.REDIS_IGNORE_EXCEPTIONS,
@@ -323,7 +324,7 @@ class Base(Core):
                 "LOCATION": self.REDIS_STORE_URL,
                 "OPTIONS": {
                     "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
-                    "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
+                    "SERIALIZER": "tecken.cache_extra.MSGPackSerializer",  # noqa
                     "SOCKET_CONNECT_TIMEOUT": self.REDIS_STORE_SOCKET_CONNECT_TIMEOUT,
                     "SOCKET_TIMEOUT": self.REDIS_STORE_SOCKET_TIMEOUT,
                 },

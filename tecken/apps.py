@@ -111,10 +111,10 @@ class TeckenAppConfig(AppConfig):
                 continue
             bucket = StorageBucket(url)
             try:
-                bucket.s3_client.head_bucket(Bucket=bucket.name)
+                bucket.client.head_bucket(Bucket=bucket.name)
             except ClientError as exception:
                 if exception.response["Error"]["Code"] == "404":
-                    bucket.s3_client.create_bucket(Bucket=bucket.name)
+                    bucket.client.create_bucket(Bucket=bucket.name)
                     logger.info(f"Created minio bucket {bucket.name!r}")
                 else:
                     # The most comment problem is that the S3 doesn't match
