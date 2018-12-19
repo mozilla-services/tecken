@@ -4,6 +4,9 @@
 
 import re
 
+import msgpack
+from django_redis.serializers.msgpack import MSGPackSerializer as _MSGPackSerializer
+
 from django.core.cache.backends.locmem import LocMemCache
 
 
@@ -41,3 +44,19 @@ class RedisLocMemCache(LocMemCache):
     @property
     def client(self):
         return MockClient()
+
+
+class MSGPackSerializer(_MSGPackSerializer):
+    """The only reason for this class is to be able to override the `loads` method
+    in the original django_redis.serializers.msg.MSGPackSerializer class.
+
+    In django_redis is uses `msgpack.loads(value, encoding='utf-8')` which is
+    deprecated in msgpack 0.6.0.
+
+    The reason django_redis can't easily make this change is that it would break
+    things for people who use msgpack <=0.5.1.
+    See https://github.com/niwinz/django-redis/issues/310
+    """
+
+    def loads(self, value):
+        return msgpack.loads(value, raw=False)

@@ -86,7 +86,7 @@ def csrf_failure(request, reason=""):
 @csrf_exempt
 def task_tester(request):
     if request.method == "POST":
-        cache.set("marco", "ping", 100)
+        cache.set("marco", "ping", 10)
         value = request.POST.get("value", "polo")
         sample_task.delay("marco", value, 10)
         return http.HttpResponse("Now make a GET request to this URL\n", status=201)
@@ -97,7 +97,7 @@ def task_tester(request):
             )
         for i in range(3):
             value = cache.get("marco")
-            if value:
+            if value and value != "ping":
                 return http.HttpResponse("It works!\n")
             time.sleep(1)
 
