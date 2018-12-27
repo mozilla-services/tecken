@@ -3,7 +3,7 @@
 #
 
 # This should match what we have in the Node section of the main Dockerfile.
-FROM node:10.13.0-slim@sha256:fefd53d3e2bceeac151d1bb65b4e45238aca5a19bc5cfade099038f7c2449fc1
+FROM node:10.14.2-slim@sha256:7e6741b8b25881f50c6294b907d8ee9e63c735438e4d62b96ce019050df256bf
 
 ADD frontend/yarn.lock /yarn.lock
 ADD frontend/package.json /package.json

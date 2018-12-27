@@ -43,3 +43,37 @@ it will output something like this:
     To see it, go to: https://symbols.stage.mozaws.net/uploads/upload/1186
 
     It worked! 🎉 🎊 👍🏼 🌈
+
+.. _endtoendtesting-celery:
+
+Celery
+======
+
+To test that the relationship between the web app and the Celery worker is
+worker you can use a special, and public, endpoint called ``/__task_tester__``.
+When you send a HTTP POST request to it, it starts a Celery job that
+writes to the main cache (Redis). Then, if you do a HTTP GET request
+afterwards, it will either respond with 200 OK if the cache got updated
+or 500 Internal Server Error if the cache did not get updated.
+
+To run the test, first HTTP POST as per this example...:
+
+.. code-block:: shell
+
+    ▶ curl -v -XPOST localhost:8000/__task_tester__
+    > POST /__task_tester__ HTTP/1.1
+    >
+    < HTTP/1.1 201 Created
+    <
+    Now make a GET request to this URL
+
+Then, the HTTP GET:
+
+.. code-block:: shell
+
+    ▶ curl -v localhost:8000/__task_tester__
+    > GET /__task_tester__ HTTP/1.1
+    >
+    < HTTP/1.1 200 OK
+    <
+    It works!
