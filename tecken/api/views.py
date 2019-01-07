@@ -867,113 +867,120 @@ def stats(request):
     start_this_month = today.replace(day=1)
 
     if not all_uploads:
-        # If it's an individual user, they can only see their own uploads and
-        # thus can't use UploadsCreated.
-        upload_qs = Upload.objects.filter(user=request.user)
-        files_qs = FileUpload.objects.filter(upload__user=request.user)
+        with metrics.timer("api_stats", tags=["section:your_uploads"]):
+            # If it's an individual user, they can only see their own uploads and
+            # thus can't use UploadsCreated.
+            upload_qs = Upload.objects.filter(user=request.user)
+            files_qs = FileUpload.objects.filter(upload__user=request.user)
 
-        def count_and_size(qs, start, end):
-            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-            return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
+            def count_and_size(qs, start, end):
+                sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
+                return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
 
-        def count(qs, start, end):
-            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-            return sub_qs.aggregate(count=Count("id"))
+            def count(qs, start, end):
+                sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
+                return sub_qs.aggregate(count=Count("id"))
 
-        numbers["uploads"] = {
-            "all_uploads": all_uploads,
-            "today": count_and_size(upload_qs, start_today, today),
-            "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
-            "this_month": count_and_size(upload_qs, start_this_month, today),
-        }
-        numbers["files"] = {
-            "today": count(files_qs, start_today, today),
-            "yesterday": count(files_qs, start_yesterday, start_today),
-            "this_month": count(files_qs, start_this_month, today),
-        }
+            numbers["uploads"] = {
+                "all_uploads": all_uploads,
+                "today": count_and_size(upload_qs, start_today, today),
+                "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
+                "this_month": count_and_size(upload_qs, start_this_month, today),
+            }
+            numbers["files"] = {
+                "today": count(files_qs, start_today, today),
+                "yesterday": count(files_qs, start_yesterday, start_today),
+                "this_month": count(files_qs, start_this_month, today),
+            }
     else:
+        with metrics.timer("api_stats", tags=["section:all_uploads"]):
 
-        def count_and_size(start, end):
-            return UploadsCreated.objects.filter(
-                date__gte=start.date(), date__lt=end.date()
-            ).aggregate(count=Sum("count"), total_size=Sum("size"), files=Sum("files"))
+            def count_and_size(start, end):
+                return UploadsCreated.objects.filter(
+                    date__gte=start.date(), date__lt=end.date()
+                ).aggregate(
+                    count=Sum("count"), total_size=Sum("size"), files=Sum("files")
+                )
 
-        _today = count_and_size(today, today + datetime.timedelta(days=1))
-        _yesterday = count_and_size(today - datetime.timedelta(days=1), today)
-        _this_month = count_and_size(
-            start_this_month, today + datetime.timedelta(days=1)
-        )
+            _today = count_and_size(today, today + datetime.timedelta(days=1))
+            _yesterday = count_and_size(today - datetime.timedelta(days=1), today)
+            _this_month = count_and_size(
+                start_this_month, today + datetime.timedelta(days=1)
+            )
 
-        numbers["uploads"] = {
-            "all_uploads": all_uploads,
-            "today": {"count": _today["count"], "total_size": _today["total_size"]},
-            "yesterday": {
-                "count": _yesterday["count"],
-                "total_size": _yesterday["total_size"],
+            numbers["uploads"] = {
+                "all_uploads": all_uploads,
+                "today": {"count": _today["count"], "total_size": _today["total_size"]},
+                "yesterday": {
+                    "count": _yesterday["count"],
+                    "total_size": _yesterday["total_size"],
+                },
+                "this_month": {
+                    "count": _this_month["count"],
+                    "total_size": _this_month["total_size"],
+                },
+            }
+            numbers["files"] = {
+                "today": {"count": _today["files"]},
+                "yesterday": {"count": _yesterday["files"]},
+                "this_month": {"count": _this_month["files"]},
+            }
+
+    with metrics.timer("api_stats", tags=["section:all_missing_downloads"]):
+        # When doing aggregates on rows that don't exist you can get a None instead
+        # of 0. Only really happens in cases where you have extremely little in the
+        # database.
+        def nones_to_zero(obj):
+            for key, value in obj.items():
+                if isinstance(value, dict):
+                    nones_to_zero(value)
+                elif value is None:
+                    obj[key] = 0
+
+        nones_to_zero(numbers)
+
+        missing_qs = MissingSymbol.objects.all()
+        microsoft_qs = MicrosoftDownload.objects.all()
+
+        def count_missing(start, end):
+            qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
+            return {"count": qs.count()}
+
+        def count_microsoft(start, end):
+            qs = microsoft_qs.filter(created_at__gte=start, created_at__lt=end)
+            return {"count": qs.count()}
+
+        numbers["downloads"] = {
+            "missing": {
+                "today": count_missing(start_today, today),
+                "yesterday": count_missing(start_yesterday, start_today),
+                "this_month": count_missing(start_this_month, today),
             },
-            "this_month": {
-                "count": _this_month["count"],
-                "total_size": _this_month["total_size"],
+            "microsoft": {
+                "today": count_microsoft(start_today, today),
+                "yesterday": count_microsoft(start_yesterday, start_today),
+                "this_month": count_microsoft(start_this_month, today),
             },
         }
-        numbers["files"] = {
-            "today": {"count": _today["files"]},
-            "yesterday": {"count": _yesterday["files"]},
-            "this_month": {"count": _this_month["files"]},
+
+    with metrics.timer("api_stats", tags=["section:your_tokens"]):
+        # Gather some numbers about tokens
+        tokens_qs = Token.objects.filter(user=request.user)
+        numbers["tokens"] = {
+            "total": tokens_qs.count(),
+            "expired": tokens_qs.filter(expires_at__lt=today).count(),
         }
-
-    # When doing aggregates on rows that don't exist you can get a None instead
-    # of 0. Only really happens in cases where you have extremely little in the
-    # database.
-    def nones_to_zero(obj):
-        for key, value in obj.items():
-            if isinstance(value, dict):
-                nones_to_zero(value)
-            elif value is None:
-                obj[key] = 0
-
-    nones_to_zero(numbers)
-
-    missing_qs = MissingSymbol.objects.all()
-    microsoft_qs = MicrosoftDownload.objects.all()
-
-    def count_missing(start, end):
-        qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
-        return {"count": qs.count()}
-
-    def count_microsoft(start, end):
-        qs = microsoft_qs.filter(created_at__gte=start, created_at__lt=end)
-        return {"count": qs.count()}
-
-    numbers["downloads"] = {
-        "missing": {
-            "today": count_missing(start_today, today),
-            "yesterday": count_missing(start_yesterday, start_today),
-            "this_month": count_missing(start_this_month, today),
-        },
-        "microsoft": {
-            "today": count_microsoft(start_today, today),
-            "yesterday": count_microsoft(start_yesterday, start_today),
-            "this_month": count_microsoft(start_this_month, today),
-        },
-    }
-
-    # Gather some numbers about tokens
-    tokens_qs = Token.objects.filter(user=request.user)
-    numbers["tokens"] = {
-        "total": tokens_qs.count(),
-        "expired": tokens_qs.filter(expires_at__lt=today).count(),
-    }
 
     # Gather some numbers about users
     if request.user.is_superuser:
-        users_qs = User.objects.all()
-        numbers["users"] = {
-            "total": users_qs.count(),
-            "superusers": users_qs.filter(is_superuser=True).count(),
-            "active": users_qs.filter(is_active=True).count(),
-            "not_active": users_qs.filter(is_active=False).count(),
-        }
+        with metrics.timer("api_stats", tags=["section:all_users"]):
+            users_qs = User.objects.all()
+            numbers["users"] = {
+                "total": users_qs.count(),
+                "superusers": users_qs.filter(is_superuser=True).count(),
+                "active": users_qs.filter(is_active=True).count(),
+                "not_active": users_qs.filter(is_active=False).count(),
+            }
 
     context = {"stats": numbers}
     return http.JsonResponse(context)
