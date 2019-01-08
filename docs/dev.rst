@@ -695,6 +695,29 @@ if there were multiple files:
     -rw-r--r--  1 peterbe  staff  40945250 Aug 10 14:54 mysymbols.zip
 
 
+How to make a Zip file from downloading
+=======================================
+
+The above section was about how to create a valid symbol zip file using
+basic UNIX/bash tools. Another, more convenient, way is to use the
+script ``bin/make-a-zip.py``. You specify the names of symbols from
+``https://symbols.mozilla.org``, by default, and it downloads them and
+packages it up in the right way. This is useful if you want to reproduce
+a problem with a symbol file locally for example. E.g.
+
+.. code-block:: shell
+
+    $ ./bin/make-a-zip.py --help
+    $ ./bin/make-a-zip.py qipcap.pdb/54EB115B9E735A17A87BCA540732CE171 fake.dll/5C34D92C63000/fake.dl_
+    Downloaded 3670 bytes (3.6KB, 10.6KB on disk) into /tmp/tmpti3fksrr/qipcap.pdb/54EB115B9E735A17A87BCA540732CE171
+    Downloaded 199535 bytes (194.9KB, 194.9KB on disk) into /tmp/tmpti3fksrr/fake.dll/5C34D92C63000
+    Wrote /Users/peterbe/Desktop/symbols.zip
+
+Note that if you omit the filename of the symbol file, it assumes
+``modulename + .sym``.
+E.g. ``qipcap.pdb/54EB115B9E735A17A87BCA540732CE171/qipcap.sym``.
+
+
 ``black``
 =========
 
