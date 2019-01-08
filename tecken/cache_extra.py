@@ -59,4 +59,17 @@ class MSGPackSerializer(_MSGPackSerializer):
     """
 
     def loads(self, value):
-        return msgpack.loads(value, raw=False)
+        # By default, msgpack.unpackb (which msgpack.loads is an alias for)
+        # has a limit to the max size of an array (a python list) and its
+        # value is 2**31 - 1 (=2,147,483,647) but we have seem symbol files
+        # with many more keys than that.
+        # Since we store the whole big list of ALL possible keys in the Redis
+        # cache, transported as a compressed msgpack byte stream, when we extract
+        # it back out we can hit this limit which results in an error like this:
+        #    `ValueError: 204599 exceeds max_array_len(131072)`
+        # So, because of the nature of our content, increase that default to
+        # 2**32 -1 (=4,294,967,295) which is double that. [Don't know what the
+        # point of the -1 is for]
+        # See documentation about overriding the default arguments:
+        # https://msgpack-python.readthedocs.io/en/latest/api.html#msgpack.Unpacker
+        return msgpack.loads(value, max_array_len=2 ** 32 - 1, raw=False)
