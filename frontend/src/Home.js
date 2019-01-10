@@ -499,7 +499,9 @@ const DownloadsStatsTile = ({ loading, stats }) => (
           </tr>
           <tr>
             <th>Last 30 days</th>
-            <TableCountCell count={stats.downloads.missing.last_30_days.count} />
+            <TableCountCell
+              count={stats.downloads.missing.last_30_days.count}
+            />
             <TableCountCell
               count={stats.downloads.microsoft.last_30_days.count}
             />
