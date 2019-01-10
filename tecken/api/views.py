@@ -885,16 +885,12 @@ def stats(request):
                 "all_uploads": all_uploads,
                 "today": count_and_size(upload_qs, start_today, today),
                 "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
-                "last_30_days": count_and_size(
-                    upload_qs, last_30_days, today
-                ),
+                "last_30_days": count_and_size(upload_qs, last_30_days, today),
             }
             numbers["files"] = {
                 "today": count(files_qs, start_today, today),
                 "yesterday": count(files_qs, start_yesterday, start_today),
-                "last_30_days": count(
-                    files_qs, last_30_days, today
-                ),
+                "last_30_days": count(files_qs, last_30_days, today),
             }
     else:
         with metrics.timer("api_stats", tags=["section:all_uploads"]):
