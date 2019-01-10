@@ -864,7 +864,7 @@ def stats(request):
     today = timezone.now()
     start_today = today.replace(hour=0, minute=0, second=0)
     start_yesterday = start_today - datetime.timedelta(days=1)
-    start_this_month = today.replace(day=1)
+    last_30_days = today - datetime.timedelta(days=30)
 
     if not all_uploads:
         with metrics.timer("api_stats", tags=["section:your_uploads"]):
@@ -885,12 +885,16 @@ def stats(request):
                 "all_uploads": all_uploads,
                 "today": count_and_size(upload_qs, start_today, today),
                 "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
-                "this_month": count_and_size(upload_qs, start_this_month, today),
+                "last_30_days": count_and_size(
+                    upload_qs, last_30_days, today
+                ),
             }
             numbers["files"] = {
                 "today": count(files_qs, start_today, today),
                 "yesterday": count(files_qs, start_yesterday, start_today),
-                "this_month": count(files_qs, start_this_month, today),
+                "last_30_days": count(
+                    files_qs, last_30_days, today
+                ),
             }
     else:
         with metrics.timer("api_stats", tags=["section:all_uploads"]):
@@ -904,8 +908,8 @@ def stats(request):
 
             _today = count_and_size(today, today + datetime.timedelta(days=1))
             _yesterday = count_and_size(today - datetime.timedelta(days=1), today)
-            _this_month = count_and_size(
-                start_this_month, today + datetime.timedelta(days=1)
+            count_last_30_days = count_and_size(
+                last_30_days, today + datetime.timedelta(days=1)
             )
 
             numbers["uploads"] = {
@@ -915,15 +919,15 @@ def stats(request):
                     "count": _yesterday["count"],
                     "total_size": _yesterday["total_size"],
                 },
-                "this_month": {
-                    "count": _this_month["count"],
-                    "total_size": _this_month["total_size"],
+                "last_30_days": {
+                    "count": count_last_30_days["count"],
+                    "total_size": count_last_30_days["total_size"],
                 },
             }
             numbers["files"] = {
                 "today": {"count": _today["files"]},
                 "yesterday": {"count": _yesterday["files"]},
-                "this_month": {"count": _this_month["files"]},
+                "last_30_days": {"count": count_last_30_days["files"]},
             }
 
     with metrics.timer("api_stats", tags=["section:all_missing_downloads"]):
@@ -954,12 +958,12 @@ def stats(request):
             "missing": {
                 "today": count_missing(start_today, today),
                 "yesterday": count_missing(start_yesterday, start_today),
-                "this_month": count_missing(start_this_month, today),
+                "last_30_days": count_missing(last_30_days, today),
             },
             "microsoft": {
                 "today": count_microsoft(start_today, today),
                 "yesterday": count_microsoft(start_yesterday, start_today),
-                "this_month": count_microsoft(start_this_month, today),
+                "last_30_days": count_microsoft(last_30_days, today),
             },
         }
 

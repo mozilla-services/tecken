@@ -447,9 +447,9 @@ const UploadsStatsTile = ({ loading, stats }) => (
             files={stats.files.yesterday}
           />
           <UploadsRow
-            title="This Month"
-            uploads={stats.uploads.this_month}
-            files={stats.files.this_month}
+            title="Last 30 days"
+            uploads={stats.uploads.last_30_days}
+            files={stats.files.last_30_days}
           />
         </tbody>
       </table>
@@ -498,10 +498,10 @@ const DownloadsStatsTile = ({ loading, stats }) => (
             <TableCountCell count={stats.downloads.microsoft.yesterday.count} />
           </tr>
           <tr>
-            <th>This Month</th>
-            <TableCountCell count={stats.downloads.missing.this_month.count} />
+            <th>Last 30 days</th>
+            <TableCountCell count={stats.downloads.missing.last_30_days.count} />
             <TableCountCell
-              count={stats.downloads.microsoft.this_month.count}
+              count={stats.downloads.microsoft.last_30_days.count}
             />
           </tr>
         </tbody>
