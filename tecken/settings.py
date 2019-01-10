@@ -355,7 +355,7 @@ class Base(Core):
                 "sentry": {
                     "level": "ERROR",
                     "class": (
-                        "raven.contrib.django.raven_compat.handlers" ".SentryHandler"
+                        "raven.contrib.django.raven_compat.handlers.SentryHandler"
                     ),
                 },
                 "null": {"class": "logging.NullHandler"},
@@ -414,6 +414,11 @@ class Base(Core):
                 },
                 "django.security.DisallowedHost": {
                     "handlers": ["null"],
+                    "propagate": False,
+                },
+                "django_redis.cache": {
+                    "level": "INFO",
+                    "handlers": ["console"],
                     "propagate": False,
                 },
             },
