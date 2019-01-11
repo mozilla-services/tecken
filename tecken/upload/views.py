@@ -49,6 +49,12 @@ metrics = markus.get_metrics("tecken")
 
 _not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
 
+# This list of filenames is used to validate a zip and also when iterating
+# over the extracted zip.
+# The names of files in this list are considered harmless and something that
+# can simply be ignored.
+_ignorable_filenames = (".DS_Store",)
+
 
 def check_symbols_archive_file_listing(file_listings):
     """return a string (the error) if there was something not as expected"""
@@ -65,6 +71,8 @@ def check_symbols_archive_file_listing(file_listings):
         # Anything else should be considered and unrecognized file pattern
         # and thus rejected.
         split = file_listing.name.split("/")
+        if split[-1] in _ignorable_filenames:
+            continue
         if len(split) == 3:
             # Check the symbol and the filename part of it to make sure
             # it doesn't contain any, considered, invalid S3 characters
@@ -141,6 +149,8 @@ def _ignore_member_file(filename):
     processed and uploaded to S3 unless it meets certain checks.
     """
     if filename.lower().endswith("-symbols.txt"):
+        return True
+    if os.path.basename(filename) in _ignorable_filenames:
         return True
     return False
 
