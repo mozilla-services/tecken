@@ -36,6 +36,7 @@ def _join(x):
 
 
 ZIP_FILE = _join("sample.zip")
+ZIP_FILE_WITH_IGNORABLE_FILES = _join("sample-with-ignorable-files.zip")
 INVALID_ZIP_FILE = _join("invalid.zip")
 INVALID_CHARACTERS_ZIP_FILE = _join("invalid-characters.zip")
 ACTUALLY_NOT_ZIP_FILE = _join("notazipdespiteitsname.zip")
@@ -257,6 +258,88 @@ def test_upload_archive_happy_path(
         ("flag", "deadbeef"),
         ("xpcshell.dbg", "A7D6F1BB18CD4CB48"),
     ]
+
+
+@pytest.mark.django_db
+def test_upload_archive_with_ignorable_files(
+    client,
+    gcsmock,
+    fakeuser,
+    metricsmock,
+    upload_mock_invalidate_symbolicate_cache,
+    upload_mock_update_uploads_created_task,
+    settings,
+):
+    # The default upload URL setting uses Google Cloud Storage.
+    assert "googleapis" in settings.UPLOAD_DEFAULT_URL
+
+    token = Token.objects.create(user=fakeuser)
+    permission, = Permission.objects.filter(codename="upload_symbols")
+    token.permissions.add(permission)
+    url = reverse("upload:upload_archive")
+
+    mock_bucket = gcsmock.MockBucket()
+
+    gcsmock.get_bucket = lambda name: mock_bucket
+
+    def mock_get_blob(key):
+        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
+            # Note that this size is not the correct for that fixture file.
+            return gcsmock.mock_blob_factory(key, size=1000)
+        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
+            return None
+        raise Exception(key)
+
+    mock_bucket.get_blob = mock_get_blob
+
+    blobs_created = {}
+
+    def mocked_create_blob(key):
+        blob = gcsmock.MockBlob(key)
+        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
+
+            def mock_upload_from_file(file):
+                body = file.read()
+                assert isinstance(body, bytes)
+                # If you look at the fixture 'sample.zip', which is used in
+                # these tests you'll see that the file 'xpcshell.sym' is
+                # 1156 originally. But we asser that it's now *less* because
+                # it should have been gzipped.
+                assert len(body) < 1156
+                original_content = gzip.decompress(body)
+                assert len(original_content) == 1156
+
+            blob.upload_from_file = mock_upload_from_file
+
+        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
+
+            def mock_upload_from_file(file):
+                content = file.read()
+                # based on `unzip -l tests/sample.zip` knowledge
+                assert len(content) == 69183
+
+            blob.upload_from_file = mock_upload_from_file
+
+        else:
+            raise NotImplementedError(key)
+
+        blobs_created[key] = blob
+        return blob
+
+    mock_bucket.blob = mocked_create_blob
+
+    with open(ZIP_FILE_WITH_IGNORABLE_FILES, "rb") as f:
+        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
+        assert response.status_code == 201
+
+        upload, = Upload.objects.all()
+        assert sorted(upload.ignored_keys) == [
+            "build-symbols.txt",
+            "flag/.DS_Store",
+            "xpcshell.dbg/A7D6F1BB18CD4CB48/.DS_Store",
+        ]
+
+    assert FileUpload.objects.all().count() == 2
 
 
 @pytest.mark.django_db
