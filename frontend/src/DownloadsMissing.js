@@ -397,22 +397,6 @@ const ShowAggregates = ({ aggregates }) => {
       </div>
       <div className="level-item has-text-centered">
         <div>
-          <p className="heading">Last 5 Days</p>
-          <p className="title">
-            {thousandFormat(aggregates.missing.last_5_days)}
-          </p>
-        </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">Last 10 Days</p>
-          <p className="title">
-            {thousandFormat(aggregates.missing.last_10_days)}
-          </p>
-        </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
           <p className="heading">Last 30 Days</p>
           <p className="title">
             {thousandFormat(aggregates.missing.last_30_days)}
