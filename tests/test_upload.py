@@ -1984,7 +1984,8 @@ def test_upload_client_bad_request(fakeuser, client, settings):
         assert response.status_code == 400
         error_msg = (
             "Unrecognized file pattern. Should only be "
-            "<module>/<hex>/<file> or <name>-symbols.txt and nothing else."
+            "<module>/<hex>/<file> or <name>-symbols.txt and nothing else. "
+            "(First unrecognized pattern was xpcshell.sym)"
         )
         assert response.json()["error"] == error_msg
 
