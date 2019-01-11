@@ -77,11 +77,13 @@ def check_symbols_archive_file_listing(file_listings):
         elif len(split) == 1:
             if file_listing.name.lower().endswith("-symbols.txt"):
                 continue
+
         # If it didn't get "continued" above, it's an unrecognized file
         # pattern.
         return (
             "Unrecognized file pattern. Should only be <module>/<hex>/<file> "
-            "or <name>-symbols.txt and nothing else."
+            "or <name>-symbols.txt and nothing else. "
+            f"(First unrecognized pattern was {file_listing.name})"
         )
 
 
