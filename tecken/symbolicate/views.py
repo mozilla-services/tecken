@@ -36,6 +36,9 @@ downloader = SymbolDownloader(
     file_prefix=settings.SYMBOL_FILE_PREFIX,
 )
 
+# What to put for the module if a stack points to a negative module index.
+UNKNOWN_MODULE = "(unknown)"
+
 # This lists all the possible exceptions that the SymbolDownloader
 # might raise that we swallow in runtime.
 # Any failure to download a symbol from S3, that is considered operational,
@@ -297,7 +300,7 @@ class SymbolicateJSON:
                     response_stack.append(
                         {
                             "module_offset": module_offset,
-                            "module": symbol_filename,
+                            "module": UNKNOWN_MODULE,
                             "frame": j,
                         }
                     )

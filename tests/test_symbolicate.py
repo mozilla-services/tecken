@@ -85,6 +85,25 @@ PUBLIC 3338 0 _ZL10do_preload
 PUBLIC 3340 0 _ZL14xpcomFunctions
 
     """,
+    "ws2_32.sym": """
+MODULE windows x86 9A8C8930C5E935E3B441CC9D6E72BB990 ws2_32.sym
+
+FUNC eb0 699 0 main
+FUNC 1550 cf 0 Output
+1550 6f 60 1
+15bf 2e 62 1
+15ed 12 65 1
+15ff 12 65 1
+1611 e 97 1
+FUNC 1620 d6 0 int SprintfLiteral<1024ul>(char (&) [1024ul], char const*, ...)
+1620 6f 32 3
+168f 36 34 3
+16c5 10 24 3
+16d5 11 25 3
+16e6 10 37 3
+FUNC 1700 149 0 mozilla::BinaryPath::GetFile(char const*, nsIFile**)
+PUBLIC 0 0 _mh_execute_header
+    """,
 }
 
 
@@ -105,6 +124,7 @@ def default_mock_api_call(self, operation_name, api_params):
         filename = api_params["Key"].split("/")[-1]
         if filename in SAMPLE_SYMBOL_CONTENT:
             return {"Body": BytesIO(SAMPLE_SYMBOL_CONTENT[filename].encode("utf-8"))}
+        print((filename, SAMPLE_SYMBOL_CONTENT.keys()))
         raise NotImplementedError(api_params)
 
     raise NotImplementedError(operation_name)
@@ -485,6 +505,97 @@ def test_v5_first_download_address_missing(
     }
 
 
+def test_v5_module_index_is_negative(
+    json_poster, clear_redis_store, botomock, metricsmock
+):
+    """This test stems from that sometimes the module index is a negative number
+    and can thus not be mapped to a module. In that case, it should say "(unknown)"
+    instead.
+    See https://github.com/mozilla-services/tecken/issues/1475
+    """
+
+    reload_downloader("https://s3.example.com/public/prefix/")
+    url = reverse("symbolicate:symbolicate_v5_json")
+    with botomock(default_mock_api_call):
+        job = {
+            "memoryMap": [
+                # ["mozglue.pdb", "E160ACAB977F93F52AF4015ADD8B844E1"],
+                # ["kernelbase.pdb", "D396875654E9416CBA16E51F8B0A8B1E2"],
+                # ["ws2_32.pdb", "5D9C92DA00D24235AD321A8810C80B022"],
+                ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+                ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+                ["ws2_32.pdb", "5D9C92DA00D24235AD321A8810C80B022"],
+            ],
+            "stacks": [
+                [[0, 21180], [1, 131_446], [-1, 0]],
+                [[0, 21180], [1, 131_446], [2, 23643], [-1, 0], [1, 131_446]],
+            ],
+        }
+        response = json_poster(url, {"jobs": [job]})
+
+    assert response.status_code == 200
+    result = response.json()
+    assert len(result["results"]) == 1
+    result1 = result["results"][0]
+    assert result1["stacks"] == [
+        [
+            {
+                "frame": 0,
+                "function": "KiRaiseUserExceptionDispatcher",
+                "function_offset": "-0xaeb8",
+                "module": "wntdll.pdb",
+                "module_offset": "0x52bc",
+            },
+            {
+                "frame": 1,
+                "function": "XREMain::XRE_mainRun()",
+                "function_offset": "-0xb0e281",
+                "module": "xul.pdb",
+                "module_offset": "0x20176",
+            },
+            # NOTE! The "module" is "(unknown)"
+            {"frame": 2, "module": "(unknown)", "module_offset": "0x0"},
+        ],
+        [
+            {
+                "frame": 0,
+                "function": "KiRaiseUserExceptionDispatcher",
+                "function_offset": "-0xaeb8",
+                "module": "xul.pdb",
+                "module_offset": "0x52bc",
+            },
+            {
+                "frame": 1,
+                "function": "XREMain::XRE_mainRun()",
+                "function_offset": "-0xb0e281",
+                "module": "xul.pdb",
+                "module_offset": "0x20176",
+            },
+            {
+                "frame": 2,
+                "function": "mozilla::BinaryPath::GetFile(char const*, nsIFile**)",
+                "function_offset": "0x455b",
+                "module": "ws2_32.pdb",
+                "module_offset": "0x5c5b",
+            },
+            # NOTE! The "module" is "(unknown)"
+            {"frame": 3, "module": "(unknown)", "module_offset": "0x0"},
+            {
+                "frame": 4,
+                "function": "XREMain::XRE_mainRun()",
+                "function_offset": "-0xb0e281",
+                "module": "ws2_32.pdb",
+                "module_offset": "0x20176",
+            },
+        ],
+    ]
+    assert result1["found_modules"] == {
+        "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": True,
+        "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
+        "ws2_32.pdb/5D9C92DA00D24235AD321A8810C80B022": True,
+    }
+
+
 def test_client_happy_path_v4(
     json_poster, clear_redis_store, requestsmock, metricsmock
 ):
@@ -712,7 +823,7 @@ def test_symbolicate_v4_json_bad_module_indexes(
     result = response.json()
     assert result["knownModules"] == [None, True]
     assert result["symbolicatedStacks"] == [
-        [f"{hex(11723767)} (in wntdll.pdb)", "KiUserCallbackDispatcher (in wntdll.pdb)"]
+        [f"{hex(11723767)} (in (unknown))", "KiUserCallbackDispatcher (in wntdll.pdb)"]
     ]
 
 
