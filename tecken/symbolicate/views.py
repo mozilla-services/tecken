@@ -37,7 +37,7 @@ downloader = SymbolDownloader(
 )
 
 # What to put for the module if a stack points to a negative module index.
-UNKNOWN_MODULE = "(unknown)"
+UNKNOWN_MODULE = "<unknown>"
 
 # This lists all the possible exceptions that the SymbolDownloader
 # might raise that we swallow in runtime.

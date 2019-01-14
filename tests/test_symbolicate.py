@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from tecken.base.symboldownloader import SymbolDownloader, SymbolDownloadError
 from tecken.symbolicate import views
+from tecken.symbolicate.views import UNKNOWN_MODULE
 from tecken.symbolicate.tasks import invalidate_symbolicate_cache
 
 
@@ -509,7 +510,7 @@ def test_v5_module_index_is_negative(
     json_poster, clear_redis_store, botomock, metricsmock
 ):
     """This test stems from that sometimes the module index is a negative number
-    and can thus not be mapped to a module. In that case, it should say "(unknown)"
+    and can thus not be mapped to a module. In that case, it should say "<unknown>"
     instead.
     See https://github.com/mozilla-services/tecken/issues/1475
     """
@@ -553,8 +554,8 @@ def test_v5_module_index_is_negative(
                 "module": "xul.pdb",
                 "module_offset": "0x20176",
             },
-            # NOTE! The "module" is "(unknown)"
-            {"frame": 2, "module": "(unknown)", "module_offset": "0x0"},
+            # NOTE! The "module" is "unknown"
+            {"frame": 2, "module": UNKNOWN_MODULE, "module_offset": "0x0"},
         ],
         [
             {
@@ -578,8 +579,8 @@ def test_v5_module_index_is_negative(
                 "module": "ws2_32.pdb",
                 "module_offset": "0x5c5b",
             },
-            # NOTE! The "module" is "(unknown)"
-            {"frame": 3, "module": "(unknown)", "module_offset": "0x0"},
+            # NOTE! The "module" is "unknown"
+            {"frame": 3, "module": UNKNOWN_MODULE, "module_offset": "0x0"},
             {
                 "frame": 4,
                 "function": "XREMain::XRE_mainRun()",
@@ -823,7 +824,10 @@ def test_symbolicate_v4_json_bad_module_indexes(
     result = response.json()
     assert result["knownModules"] == [None, True]
     assert result["symbolicatedStacks"] == [
-        [f"{hex(11723767)} (in (unknown))", "KiUserCallbackDispatcher (in wntdll.pdb)"]
+        [
+            f"{hex(11723767)} (in {UNKNOWN_MODULE})",
+            "KiUserCallbackDispatcher (in wntdll.pdb)",
+        ]
     ]
 
 
