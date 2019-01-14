@@ -2,6 +2,7 @@ import React, { PureComponent } from "react";
 import { Link } from "react-router-dom";
 
 import { Loading, formatFileSize } from "./Common";
+import Fetch from "./Fetch";
 import store from "./Store";
 
 export default class UploadNow extends PureComponent {
@@ -9,7 +10,8 @@ export default class UploadNow extends PureComponent {
     super(props);
     this.pageTitle = "Symbol Upload Now";
     this.state = {
-      loading: false
+      loading: false,
+      possibleUploadUrls: []
       // upload: null
     };
   }
@@ -19,7 +21,30 @@ export default class UploadNow extends PureComponent {
 
   componentDidMount() {
     document.title = this.pageTitle;
+    this.fetchPossibleUploadUrls();
   }
+
+  fetchPossibleUploadUrls = () => {
+    Fetch("/api/uploads/_possible_upload_urls/", {
+      credentials: "same-origin"
+    }).then(r => {
+      if (store.fetchError) {
+        store.fetchError = null;
+      }
+      this.setState({ loading: false });
+      if (r.ok) {
+        this.setState({
+          validationError: null,
+          warning: null
+        });
+        r.json().then(data => {
+          this.setState({ possibleUploadUrls: data.urls });
+        });
+      } else {
+        store.fetchError = r;
+      }
+    });
+  };
 
   render() {
     return (
@@ -65,14 +90,16 @@ export default class UploadNow extends PureComponent {
         <div className="section">
           <div className="container">
             <h3 className="title is-3">Upload archive file via web</h3>
-            <UploadForm />
+            <UploadForm possibleUploadUrls={this.state.possibleUploadUrls} />
           </div>
         </div>
 
         <div className="section">
           <div className="container">
             <h3 className="title is-3">Upload by download URL</h3>
-            <UploadByDownloadForm />
+            <UploadByDownloadForm
+              possibleUploadUrls={this.state.possibleUploadUrls}
+            />
           </div>
         </div>
 
@@ -132,6 +159,9 @@ class UploadForm extends PureComponent {
     formData.append(file.name, file);
     if (this.refs.try.checked) {
       formData.append("try", true);
+    }
+    if (this.preferredBucketName && this.preferredBucketName.value) {
+      formData.append("bucket_name", this.preferredBucketName.value);
     }
     this.setState({ loading: true, validationError: null });
     return fetch("/upload/", {
@@ -231,6 +261,10 @@ class UploadForm extends PureComponent {
             </label>
           </div>
         </div>
+        <PossibleUploadUrlsField
+          possibleUploadUrls={this.props.possibleUploadUrls}
+          preferredBucketName={input => (this.preferredBucketName = input)}
+        />
         {this.state.warning && (
           <article className="message is-warning">
             <div className="message-body">{this.state.warning}</div>
@@ -287,6 +321,9 @@ class UploadByDownloadForm extends UploadForm {
     formData.append("url", url);
     if (this.refs.try.checked) {
       formData.append("try", true);
+    }
+    if (this.preferredBucketName && this.preferredBucketName.value) {
+      formData.append("bucket_name", this.preferredBucketName.value);
     }
     this.setState({ loading: true, validationError: null });
     return fetch("/upload/", {
@@ -363,6 +400,10 @@ class UploadByDownloadForm extends UploadForm {
             </label>
           </div>
         </div>
+        <PossibleUploadUrlsField
+          possibleUploadUrls={this.props.possibleUploadUrls}
+          preferredBucketName={input => (this.preferredBucketName = input)}
+        />
         {this.state.warning && (
           <article className="message is-warning">
             <div className="message-body">{this.state.warning}</div>
@@ -391,4 +432,28 @@ class UploadByDownloadForm extends UploadForm {
       </form>
     );
   }
+}
+
+function PossibleUploadUrlsField({ possibleUploadUrls, preferredBucketName }) {
+  if (!possibleUploadUrls || possibleUploadUrls.length < 2) {
+    return null;
+  }
+  return (
+    <div className="field">
+      <div className="control">
+        <div className="select">
+          <select ref={preferredBucketName}>
+            {possibleUploadUrls.map(item => {
+              return (
+                <option value={item.bucket_name} key={item.url}>
+                  {item.bucket_name}
+                  {item.private ? " (private)" : ""}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
 }
