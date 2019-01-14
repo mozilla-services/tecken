@@ -495,7 +495,7 @@ def test_v5_first_download_address_missing(
                 "frame": 2,
                 "function": "KiUserExceptionDispatcher",
                 "function_offset": "0x4f",
-                "module": "xul.pdb",
+                "module": "wntdll.pdb",
                 "module_offset": "0x10173",
             },
         ]
@@ -520,9 +520,6 @@ def test_v5_module_index_is_negative(
     with botomock(default_mock_api_call):
         job = {
             "memoryMap": [
-                # ["mozglue.pdb", "E160ACAB977F93F52AF4015ADD8B844E1"],
-                # ["kernelbase.pdb", "D396875654E9416CBA16E51F8B0A8B1E2"],
-                # ["ws2_32.pdb", "5D9C92DA00D24235AD321A8810C80B022"],
                 ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
                 ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
                 ["ws2_32.pdb", "5D9C92DA00D24235AD321A8810C80B022"],
@@ -562,7 +559,7 @@ def test_v5_module_index_is_negative(
                 "frame": 0,
                 "function": "KiRaiseUserExceptionDispatcher",
                 "function_offset": "-0xaeb8",
-                "module": "xul.pdb",
+                "module": "wntdll.pdb",
                 "module_offset": "0x52bc",
             },
             {
@@ -585,7 +582,7 @@ def test_v5_module_index_is_negative(
                 "frame": 4,
                 "function": "XREMain::XRE_mainRun()",
                 "function_offset": "-0xb0e281",
-                "module": "ws2_32.pdb",
+                "module": "xul.pdb",
                 "module_offset": "0x20176",
             },
         ],
