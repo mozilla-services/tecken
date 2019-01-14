@@ -535,8 +535,6 @@ def test_v5_module_index_is_negative(
     result = response.json()
     assert len(result["results"]) == 1
     result1 = result["results"][0]
-    from pprint import pprint
-    pprint(result1["stacks"])
     assert result1["stacks"] == [
         [
             {
