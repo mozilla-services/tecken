@@ -36,7 +36,18 @@ downloader = SymbolDownloader(
     file_prefix=settings.SYMBOL_FILE_PREFIX,
 )
 
-# What to put for the module if a stack points to a negative module index.
+# The way Firefox serializes its CombinedStacks object, a negative module index
+# indicates that the stack frame's program counter was not found in any known
+# module. In this case, no symbolication occurs, but we support this case as a
+# convenience so clients don't need to filter this case out of stack frames and
+# re-add them after symbolication.
+#
+# We don't return a null module name in order to further simplify the logic for
+# clients. By always returning a valid module name string, clients aren't forced
+# to always check for this condition.
+#
+# Angle brackets '<' and '>' cannot appear in real module names, so clients can
+# test for this string to detect this condition 100% reliably.
 UNKNOWN_MODULE = "<unknown>"
 
 # This lists all the possible exceptions that the SymbolDownloader
@@ -296,7 +307,8 @@ class SymbolicateJSON:
             for j, (module_index, module_offset) in enumerate(stack):
                 total_stacks += 1
                 if module_index < 0:
-                    # Exit early
+                    # Exit early. See declaration of UNKNOWN_MODULE for details
+                    # about this case.
                     response_stack.append(
                         {
                             "module_offset": module_offset,
