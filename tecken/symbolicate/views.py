@@ -320,9 +320,10 @@ class SymbolicateJSON:
 
                 real_stacks += 1
 
+                symbol_filename, debug_id = memory_map[module_index]
+
                 symbol_offset_list = _symbol_offset_list_cache.get(module_index)
                 if symbol_offset_list is None:
-                    symbol_filename, debug_id = memory_map[module_index]
                     symbol_key = (symbol_filename, debug_id)
 
                     # This 'stacks_per_module' will only be used in the debug
