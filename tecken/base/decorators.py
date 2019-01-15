@@ -148,7 +148,21 @@ api_require_safe.__doc__ = (
 )
 
 
-def set_cors_headers(origin="*", methods="GET"):
+# Same default as https://github.com/ottoyiu/django-cors-headers#cors_allow_headers
+DEFAULT_ALLOW_HEADERS = (
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+)
+
+
+def set_cors_headers(origin="*", methods="GET", allow_headers=DEFAULT_ALLOW_HEADERS):
     """Decorator function that sets CORS headers on the response."""
     if isinstance(methods, str):
         methods = [methods]
@@ -159,6 +173,7 @@ def set_cors_headers(origin="*", methods="GET"):
             response = func(*args, **kwargs)
             response["Access-Control-Allow-Origin"] = origin
             response["Access-Control-Allow-Methods"] = ",".join(methods)
+            response["Access-Control-Allow-Headers"] = ",".join(allow_headers)
             return response
 
         return inner

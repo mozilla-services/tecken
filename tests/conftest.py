@@ -36,12 +36,16 @@ def json_poster(client):
 
     def inner(url, data, **extra):
         debug = extra.pop("debug", None)
+        options = extra.pop("options", False)
         if not isinstance(data, str):
             data = json.dumps(data)
         extra["content_type"] = "application/json"
         if debug is not None:
             extra["HTTP_DEBUG"] = str(debug)
-        return client.post(url, data, **extra)
+        if options:
+            return client.options(url, data, **extra)
+        else:
+            return client.post(url, data, **extra)
 
     return inner
 

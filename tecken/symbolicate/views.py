@@ -779,6 +779,8 @@ def json_post(view_function):
 
     @wraps(view_function)
     def inner(request):
+        if request.method == "OPTIONS":
+            return http.HttpResponse("")
         if request.method != "POST":
             return JsonResponse({"error": "Must use HTTP POST"}, status=405)
 
@@ -887,7 +889,7 @@ def symbolicate_v4_json(request, json_body):
     return JsonResponse(result)
 
 
-@set_cors_headers(origin="*", methods="POST")
+@set_cors_headers(origin="*", methods=["OPTIONS", "POST"])
 @csrf_exempt
 @set_request_debug
 @metrics.timer_decorator("symbolicate_json", tags=["version:v5"])
