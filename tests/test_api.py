@@ -1572,3 +1572,31 @@ def test_stats_symbolication(client):
     assert "yesterday" in data["symbolications"]["v4"]
     assert "today" in data["symbolications"]["v5"]
     assert "yesterday" in data["symbolications"]["v5"]
+
+
+@pytest.mark.django_db
+def test_possible_upload_urls(client, settings):
+    url = reverse("api:possible_upload_urls")
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.get(url)
+    assert response.status_code == 200
+    urls = response.json()["urls"]
+    assert len(urls) == 1
+    assert urls[0]["url"] == settings.UPLOAD_DEFAULT_URL
+
+    user.is_superuser = True
+    user.save()
+
+    response = client.get(url)
+    assert response.status_code == 200
+    urls = response.json()["urls"]
+    assert len(urls) == 2
+    # Public one first
+    assert urls[0]["url"] == settings.UPLOAD_DEFAULT_URL

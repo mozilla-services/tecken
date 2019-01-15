@@ -26,6 +26,8 @@ from django.core.cache import cache
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.views import get_possible_bucket_urls
+from tecken.storage import StorageBucket
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.symbolicate.views import get_symbolication_count_key
 from tecken.base.decorators import (
@@ -129,6 +131,30 @@ def auth(request):
             reverse("oidc_authentication_init")
         )
         context["user"] = None
+    return http.JsonResponse(context)
+
+
+@api_login_required
+@metrics.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
+def possible_upload_urls(request):
+    context = {"urls": []}
+    for url, private_or_public in get_possible_bucket_urls(request.user):
+        bucket_info = StorageBucket(url)
+
+        # In this context, a "private bucket" is one we *don't* just talk to via
+        # plain HTTP. I.e. we *can* upload to it at all.
+        assert bucket_info.private
+
+        context["urls"].append(
+            {
+                "url": url,
+                "bucket_name": bucket_info.name,
+                "is_google_cloud_storage": bucket_info.is_google_cloud_storage,
+                "private": private_or_public == "private",
+                "default": url == settings.UPLOAD_DEFAULT_URL,
+            }
+        )
+        context["urls"].reverse()  # Default first
     return http.JsonResponse(context)
 
 
