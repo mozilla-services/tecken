@@ -329,6 +329,7 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
     }
 
     assert response["Access-Control-Allow-Origin"] == "*"
+    assert "content-type" in response["Access-Control-Allow-Headers"]
 
     metrics_records = metricsmock.get_records()
     metricsmock.print_records()
@@ -369,6 +370,22 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
 
     symbolication_count_after = cache.get(count_cache_key)
     assert symbolication_count_after == symbolication_count + 1
+
+
+def test_client_preflight_v5(json_poster):
+    reload_downloader("https://s3.example.com/public/prefix/")
+
+    url = reverse("symbolicate:symbolicate_v5_json")
+    job = {
+        "stacks": [[[0, 11_723_767], [1, 65802]]],
+        "memoryMap": [
+            ["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"],
+            ["wntdll.pdb", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+        ],
+    }
+    response = json_poster(url, {"jobs": [job]}, options=True)
+    assert response.status_code == 200
+    assert response.content == b""
 
 
 def test_client_happy_path_v5_with_debug(

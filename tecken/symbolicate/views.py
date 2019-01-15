@@ -779,8 +779,8 @@ def json_post(view_function):
 
     @wraps(view_function)
     def inner(request):
-        if request.method == 'OPTIONS':
-            return http.HttpResponse('')
+        if request.method == "OPTIONS":
+            return http.HttpResponse("")
         if request.method != "POST":
             return JsonResponse({"error": "Must use HTTP POST"}, status=405)
 
