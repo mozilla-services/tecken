@@ -1299,6 +1299,7 @@ def test_downloads_missing(client):
     MissingSymbol.objects.create(
         hash="x2", symbol="foo.pdb", debugid="01010101", filename="foo.ex_", count=2
     )
+    MissingSymbol.total_count(refresh=True)
     response = client.get(url)
     data = response.json()
     assert data["total"] == 2
