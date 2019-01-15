@@ -1100,6 +1100,35 @@ def test_stats(client):
 
 
 @pytest.mark.django_db
+def test_stats_missing_symbols_count(client):
+    url = reverse("api:stats")
+    response = client.get(url)
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    missing = data["stats"]["downloads"]["missing"]
+    assert missing["today"]["count"] == 0
+    assert missing["yesterday"]["count"] == 0
+    assert missing["last_30_days"]["count"] == 0
+
+    MissingSymbol.objects.create(
+        hash="x1", symbol="foo.pdb", debugid="ADEF12345", filename="foo.sym", count=1
+    )
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    missing = data["stats"]["downloads"]["missing"]
+    assert missing["today"]["count"] == 1
+    assert missing["yesterday"]["count"] == 0
+    assert missing["last_30_days"]["count"] == 1
+
+
+@pytest.mark.django_db
 def test_stats_uploads(client):
     url = reverse("api:stats_uploads")
     response = client.get(url)

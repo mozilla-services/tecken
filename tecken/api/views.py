@@ -968,9 +968,18 @@ def stats(request):
         missing_qs = MissingSymbol.objects.all()
         microsoft_qs = MicrosoftDownload.objects.all()
 
-        def count_missing(start, end):
-            qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
-            return {"count": qs.count()}
+        def count_missing(start, end, use_cache=True):
+            count = None
+            if use_cache:
+                fmt = "%Y%m%d"
+                cache_key = f"count_missing:{start.strftime(fmt)}:{end.strftime(fmt)}"
+                count = cache.get(cache_key)
+            if count is None:
+                qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
+                count = qs.count()
+                if use_cache:
+                    cache.set(cache_key, count, 60 * 60 * 24)
+            return {"count": count}
 
         def count_microsoft(start, end):
             qs = microsoft_qs.filter(created_at__gte=start, created_at__lt=end)
@@ -978,9 +987,9 @@ def stats(request):
 
         numbers["downloads"] = {
             "missing": {
-                "today": count_missing(start_today, today),
+                "today": count_missing(start_today, today, use_cache=False),
                 "yesterday": count_missing(start_yesterday, start_today),
-                "last_30_days": count_missing(last_30_days, today),
+                "last_30_days": count_missing(last_30_days, start_today),
             },
             "microsoft": {
                 "today": count_microsoft(start_today, today),
@@ -988,6 +997,12 @@ def stats(request):
                 "last_30_days": count_microsoft(last_30_days, today),
             },
         }
+        # A clever trick! Instead of counting the last_30_days to include now,
+        # we count the last 29 days instead up until the start of today.
+        # Then, to make it the last 30 days we *add* the "today" count.
+        numbers["downloads"]["missing"]["last_30_days"]["count"] += numbers[
+            "downloads"
+        ]["missing"]["today"]["count"]
 
     with metrics.timer("api_stats", tags=["section:your_tokens"]):
         # Gather some numbers about tokens
