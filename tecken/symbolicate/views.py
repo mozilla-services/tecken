@@ -36,6 +36,20 @@ downloader = SymbolDownloader(
     file_prefix=settings.SYMBOL_FILE_PREFIX,
 )
 
+# The way Firefox serializes its CombinedStacks object, a negative module index
+# indicates that the stack frame's program counter was not found in any known
+# module. In this case, no symbolication occurs, but we support this case as a
+# convenience so clients don't need to filter this case out of stack frames and
+# re-add them after symbolication.
+#
+# We don't return a null module name in order to further simplify the logic for
+# clients. By always returning a valid module name string, clients aren't forced
+# to always check for this condition.
+#
+# Angle brackets '<' and '>' cannot appear in real module names, so clients can
+# test for this string to detect this condition 100% reliably.
+UNKNOWN_MODULE = "<unknown>"
+
 # This lists all the possible exceptions that the SymbolDownloader
 # might raise that we swallow in runtime.
 # Any failure to download a symbol from S3, that is considered operational,
@@ -293,11 +307,12 @@ class SymbolicateJSON:
             for j, (module_index, module_offset) in enumerate(stack):
                 total_stacks += 1
                 if module_index < 0:
-                    # Exit early
+                    # Exit early. See declaration of UNKNOWN_MODULE for details
+                    # about this case.
                     response_stack.append(
                         {
                             "module_offset": module_offset,
-                            "module": symbol_filename,
+                            "module": UNKNOWN_MODULE,
                             "frame": j,
                         }
                     )
@@ -305,9 +320,10 @@ class SymbolicateJSON:
 
                 real_stacks += 1
 
+                symbol_filename, debug_id = memory_map[module_index]
+
                 symbol_offset_list = _symbol_offset_list_cache.get(module_index)
                 if symbol_offset_list is None:
-                    symbol_filename, debug_id = memory_map[module_index]
                     symbol_key = (symbol_filename, debug_id)
 
                     # This 'stacks_per_module' will only be used in the debug
@@ -763,6 +779,8 @@ def json_post(view_function):
 
     @wraps(view_function)
     def inner(request):
+        if request.method == "OPTIONS":
+            return http.HttpResponse("")
         if request.method != "POST":
             return JsonResponse({"error": "Must use HTTP POST"}, status=405)
 
@@ -871,7 +889,7 @@ def symbolicate_v4_json(request, json_body):
     return JsonResponse(result)
 
 
-@set_cors_headers(origin="*", methods="POST")
+@set_cors_headers(origin="*", methods=["OPTIONS", "POST"])
 @csrf_exempt
 @set_request_debug
 @metrics.timer_decorator("symbolicate_json", tags=["version:v5"])

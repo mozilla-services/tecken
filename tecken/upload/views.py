@@ -47,6 +47,11 @@ logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
 
 
+class NoPossibleBucketName(Exception):
+    """When you tried to specify a preferred bucket name but it never
+    matched to one you can use."""
+
+
 _not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
 
 # This list of filenames is used to validate a zip and also when iterating
@@ -95,7 +100,7 @@ def check_symbols_archive_file_listing(file_listings):
         )
 
 
-def get_bucket_info(user, try_symbols=None):
+def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
     """return an object that has 'bucket', 'endpoint_url',
     'region'.
     Only 'bucket' is mandatory in the response object.
@@ -123,22 +128,48 @@ def get_bucket_info(user, try_symbols=None):
         url = settings.UPLOAD_DEFAULT_URL
 
     exceptions = settings.UPLOAD_URL_EXCEPTIONS
-    if user.email.lower() in exceptions:
-        # easy
-        exception = exceptions[user.email.lower()]
+    if preferred_bucket_name:
+        # If the user has indicated a preferred bucket name, check that they have
+        # permission to use it.
+        for url, _ in get_possible_bucket_urls(user):
+            if preferred_bucket_name in url:
+                return StorageBucket(url, try_symbols=try_symbols)
+        raise NoPossibleBucketName(preferred_bucket_name)
     else:
-        # match against every possible wildcard
-        exception = None  # assume no match
-        for email_or_wildcard in settings.UPLOAD_URL_EXCEPTIONS:
-            if fnmatch.fnmatch(user.email.lower(), email_or_wildcard.lower()):
-                # a match!
-                exception = settings.UPLOAD_URL_EXCEPTIONS[email_or_wildcard]
-                break
-
-    if exception:
-        url = exception
+        if user.email.lower() in exceptions:
+            # easy
+            exception = exceptions[user.email.lower()]
+        else:
+            # match against every possible wildcard
+            exception = None  # assume no match
+            for email_or_wildcard in settings.UPLOAD_URL_EXCEPTIONS:
+                if fnmatch.fnmatch(user.email.lower(), email_or_wildcard.lower()):
+                    # a match!
+                    exception = settings.UPLOAD_URL_EXCEPTIONS[email_or_wildcard]
+                    break
+        if exception:
+            url = exception
 
     return StorageBucket(url, try_symbols=try_symbols)
+
+
+def get_possible_bucket_urls(user):
+    """return a list of tuples. Each tuple is the URL and a string to
+    denote whether it's "private" or "public".
+    """
+    urls = []
+    exceptions = settings.UPLOAD_URL_EXCEPTIONS
+    email_lower = user.email.lower()
+    for email_pattern in exceptions:
+        if (
+            email_lower == email_pattern.lower()
+            or fnmatch.fnmatch(email_lower, email_pattern.lower())
+            or user.is_superuser
+        ):
+            urls.append((exceptions[email_pattern], "private"))
+    if not urls or user.is_superuser:
+        urls.append((settings.UPLOAD_DEFAULT_URL, "public"))
+    return urls
 
 
 def _ignore_member_file(filename):
@@ -240,7 +271,18 @@ def upload_archive(request, upload_dir):
     # then we definitely knows this is a Try symbols upload.
     is_try_upload = request.POST.get("try")
 
-    bucket_info = get_bucket_info(request.user, try_symbols=is_try_upload)
+    # If you have special permission, you can affect which bucket to upload to.
+    preferred_bucket_name = request.POST.get("bucket_name")
+    try:
+        bucket_info = get_bucket_info(
+            request.user,
+            try_symbols=is_try_upload,
+            preferred_bucket_name=preferred_bucket_name,
+        )
+    except NoPossibleBucketName as exception:
+        logger.warning(f"No possible bucket for {request.user!r} ({exception})")
+        return http.JsonResponse({"error": "No valid bucket"}, status=403)
+
     if is_try_upload is None:
         # If 'is_try_upload' isn't immediately true by looking at the
         # request.POST parameters, the get_bucket_info() function can
@@ -386,7 +428,9 @@ def upload_archive(request, upload_dir):
     # Re-calculate the UploadsCreated for today.
     update_uploads_created_task.delay()
 
-    metrics.incr("upload_uploads", tags=[f"try:{is_try_upload}"])
+    metrics.incr(
+        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{bucket_info.name}"]
+    )
 
     return http.JsonResponse({"upload": _serialize_upload(upload_obj)}, status=201)
 

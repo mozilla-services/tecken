@@ -26,6 +26,8 @@ from django.core.cache import cache
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.views import get_possible_bucket_urls
+from tecken.storage import StorageBucket
 from tecken.download.models import MissingSymbol, MicrosoftDownload
 from tecken.symbolicate.views import get_symbolication_count_key
 from tecken.base.decorators import (
@@ -129,6 +131,30 @@ def auth(request):
             reverse("oidc_authentication_init")
         )
         context["user"] = None
+    return http.JsonResponse(context)
+
+
+@api_login_required
+@metrics.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
+def possible_upload_urls(request):
+    context = {"urls": []}
+    for url, private_or_public in get_possible_bucket_urls(request.user):
+        bucket_info = StorageBucket(url)
+
+        # In this context, a "private bucket" is one we *don't* just talk to via
+        # plain HTTP. I.e. we *can* upload to it at all.
+        assert bucket_info.private
+
+        context["urls"].append(
+            {
+                "url": url,
+                "bucket_name": bucket_info.name,
+                "is_google_cloud_storage": bucket_info.is_google_cloud_storage,
+                "private": private_or_public == "private",
+                "default": url == settings.UPLOAD_DEFAULT_URL,
+            }
+        )
+        context["urls"].reverse()  # Default first
     return http.JsonResponse(context)
 
 
@@ -942,9 +968,18 @@ def stats(request):
         missing_qs = MissingSymbol.objects.all()
         microsoft_qs = MicrosoftDownload.objects.all()
 
-        def count_missing(start, end):
-            qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
-            return {"count": qs.count()}
+        def count_missing(start, end, use_cache=True):
+            count = None
+            if use_cache:
+                fmt = "%Y%m%d"
+                cache_key = f"count_missing:{start.strftime(fmt)}:{end.strftime(fmt)}"
+                count = cache.get(cache_key)
+            if count is None:
+                qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
+                count = qs.count()
+                if use_cache:
+                    cache.set(cache_key, count, 60 * 60 * 24)
+            return {"count": count}
 
         def count_microsoft(start, end):
             qs = microsoft_qs.filter(created_at__gte=start, created_at__lt=end)
@@ -952,9 +987,9 @@ def stats(request):
 
         numbers["downloads"] = {
             "missing": {
-                "today": count_missing(start_today, today),
+                "today": count_missing(start_today, today, use_cache=False),
                 "yesterday": count_missing(start_yesterday, start_today),
-                "last_30_days": count_missing(last_30_days, today),
+                "last_30_days": count_missing(last_30_days, start_today),
             },
             "microsoft": {
                 "today": count_microsoft(start_today, today),
@@ -962,6 +997,12 @@ def stats(request):
                 "last_30_days": count_microsoft(last_30_days, today),
             },
         }
+        # A clever trick! Instead of counting the last_30_days to include now,
+        # we count the last 29 days instead up until the start of today.
+        # Then, to make it the last 30 days we *add* the "today" count.
+        numbers["downloads"]["missing"]["last_30_days"]["count"] += numbers[
+            "downloads"
+        ]["missing"]["today"]["count"]
 
     with metrics.timer("api_stats", tags=["section:your_tokens"]):
         # Gather some numbers about tokens
@@ -1165,9 +1206,20 @@ def downloads_missing(request):
     start = (page - 1) * batch_size
     end = start + batch_size
 
-    context["aggregates"] = {"missing": {"total": qs.count()}}
+    # The MissingSymbol class has a classmethod called `total_count`
+    # which returns basically the same as `MissingSymbol.objects.count()`
+    # but it comes from a counter in the cache instead.
+    if any(v for v in form.cleaned_data.values()):
+        # Use the queryset
+        total_count = qs.count()
+    else:
+        # No specific filtering was done, we can use the increment counter.
+        total_count = MissingSymbol.total_count()
+
+    context["aggregates"] = {"missing": {"total": total_count}}
+
     today = timezone.now()
-    for days in (1, 5, 10, 30):
+    for days in (1, 30):
         count = qs.filter(
             modified_at__gte=today - datetime.timedelta(days=days)
         ).count()

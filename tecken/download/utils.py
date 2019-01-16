@@ -6,8 +6,6 @@ import logging
 
 import markus
 
-from django.db import connection
-
 from tecken.download.models import MissingSymbol
 
 
@@ -34,9 +32,8 @@ def store_missing_symbol(symbol, debugid, filename, code_file=None, code_id=None
         logger.info(f"Ignoring log missing symbol (code_file ${len(code_id)} chars)")
         return
     hash_ = MissingSymbol.make_md5_hash(symbol, debugid, filename, code_file, code_id)
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
+    for missing_symbol in MissingSymbol.objects.raw(
+        """
             INSERT INTO download_missingsymbol (
                 hash, symbol, debugid, filename, code_file, code_id,
                 count, created_at, modified_at
@@ -49,15 +46,20 @@ def store_missing_symbol(symbol, debugid, filename, code_file=None, code_id=None
                 count = download_missingsymbol.count + 1,
                 modified_at = CLOCK_TIMESTAMP()
             WHERE download_missingsymbol.hash = %s
+            RETURNING id, created_at, modified_at
             """,
-            [
-                hash_,
-                symbol,
-                debugid,
-                filename,
-                code_file or None,
-                code_id or None,
-                hash_,
-            ],
-        )
+        (hash_, symbol, debugid, filename, code_file or None, code_id or None, hash_),
+    ):
+        # You can now use the created_at and modified_at to see if it caused an
+        # update or a creation.
+        # Because there is a miniscule delay, in PostgreSQL, between calling
+        # CLOCK_TIMESTAMP() one time and CLOCK_TIMESTAMP() immediately after,
+        # we can't compare the dates after the upsert.
+        equal = (
+            missing_symbol.modified_at - missing_symbol.created_at
+        ).total_seconds() < 0.0001
+        if equal:
+            # it was an insert!
+            MissingSymbol.incr_total_count()
+
     return hash_

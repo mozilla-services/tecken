@@ -1100,6 +1100,35 @@ def test_stats(client):
 
 
 @pytest.mark.django_db
+def test_stats_missing_symbols_count(client):
+    url = reverse("api:stats")
+    response = client.get(url)
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    missing = data["stats"]["downloads"]["missing"]
+    assert missing["today"]["count"] == 0
+    assert missing["yesterday"]["count"] == 0
+    assert missing["last_30_days"]["count"] == 0
+
+    MissingSymbol.objects.create(
+        hash="x1", symbol="foo.pdb", debugid="ADEF12345", filename="foo.sym", count=1
+    )
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    missing = data["stats"]["downloads"]["missing"]
+    assert missing["today"]["count"] == 1
+    assert missing["yesterday"]["count"] == 0
+    assert missing["last_30_days"]["count"] == 1
+
+
+@pytest.mark.django_db
 def test_stats_uploads(client):
     url = reverse("api:stats_uploads")
     response = client.get(url)
@@ -1299,6 +1328,7 @@ def test_downloads_missing(client):
     MissingSymbol.objects.create(
         hash="x2", symbol="foo.pdb", debugid="01010101", filename="foo.ex_", count=2
     )
+    MissingSymbol.total_count(refresh=True)
     response = client.get(url)
     data = response.json()
     assert data["total"] == 2
@@ -1572,3 +1602,31 @@ def test_stats_symbolication(client):
     assert "yesterday" in data["symbolications"]["v4"]
     assert "today" in data["symbolications"]["v5"]
     assert "yesterday" in data["symbolications"]["v5"]
+
+
+@pytest.mark.django_db
+def test_possible_upload_urls(client, settings):
+    url = reverse("api:possible_upload_urls")
+    response = client.get(url)
+    assert response.status_code == 403
+
+    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="peterbe", password="secret")
+
+    response = client.get(url)
+    assert response.status_code == 200
+    urls = response.json()["urls"]
+    assert len(urls) == 1
+    assert urls[0]["url"] == settings.UPLOAD_DEFAULT_URL
+
+    user.is_superuser = True
+    user.save()
+
+    response = client.get(url)
+    assert response.status_code == 200
+    urls = response.json()["urls"]
+    assert len(urls) == 2
+    # Public one first
+    assert urls[0]["url"] == settings.UPLOAD_DEFAULT_URL
