@@ -176,9 +176,9 @@ certifi==2018.11.29 \
 chardet==3.0.4 \
     --hash=sha256:84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae \
     --hash=sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691
-pyOpenSSL==18.0.0 \
-    --hash=sha256:26ff56a6b5ecaf3a2a59f132681e2a80afcc76b4f902f612f518f92c2a1bf854 \
-    --hash=sha256:6488f1423b00f73b7ad5167885312bb0ce410d3312eb212393795b53c8caa580
+pyOpenSSL==19.0.0 \
+    --hash=sha256:c727930ad54b10fc157015014b666f2d8b41f70c0d03e83ab67624fd3dd5d1e6 \
+    --hash=sha256:aeca66338f6de19d1aa46ed634c3b9ae519a64b458f8468aec688e7e3c20f200
 django-cache-memoize==0.1.6 \
     --hash=sha256:d239e8c37734b0a70b74f94fa33b180b3b0c82c3784beb21209bb4ab64a3e6fb \
     --hash=sha256:7f271be70b11155929ee8a4a2b5f53c9fb46b9befa1b546caffa3298e6ac8f7d
