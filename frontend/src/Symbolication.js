@@ -1,36 +1,39 @@
 import React from "react";
+import { observer } from "mobx-react";
 import { Loading, thousandFormat } from "./Common";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import Fetch from "./Fetch";
 import store from "./Store";
 
-class Symbolication extends React.PureComponent {
-  pageTitle = "Symbolication";
-  componentDidMount() {
-    document.title = this.pageTitle;
-  }
-  render() {
-    return (
-      <div className="content">
-        <h1 className="title">{this.pageTitle}</h1>
+const Symbolication = observer(
+  class Symbolication extends React.Component {
+    pageTitle = "Symbolication";
+    componentDidMount() {
+      document.title = this.pageTitle;
+    }
+    render() {
+      return (
+        <div className="content">
+          <h1 className="title">{this.pageTitle}</h1>
 
-        <p>
-          Symbolication is when you send names of symbol file and stacks that
-          refer to addresses. What you get back is the stack addresses converted
-          to information from within the symbol file. In particular you get the
-          code signature at that address.
-        </p>
-        <p>
-          Symbolication is best done with tooling such as <code>curl</code>
-          or Python <code>requests.post(…)</code>. This application here is to
-          help you understand the API and sample it.
-        </p>
-        <Form />
-        <Stats />
-      </div>
-    );
+          <p>
+            Symbolication is when you send names of symbol file and stacks that
+            refer to addresses. What you get back is the stack addresses
+            converted to information from within the symbol file. In particular
+            you get the code signature at that address.
+          </p>
+          <p>
+            Symbolication is best done with tooling such as <code>curl</code>
+            or Python <code>requests.post(…)</code>. This application here is to
+            help you understand the API and sample it.
+          </p>
+          <Form />
+          {store.currentUser && <Stats />}
+        </div>
+      );
+    }
   }
-}
+);
 
 export default Symbolication;
 
@@ -463,6 +466,7 @@ class Stats extends React.PureComponent {
   };
 
   async componentDidMount() {
+    // Note! This endpoint requires that the user is logged in.
     const response = await Fetch("/api/stats/symbolication", {
       credentials: "same-origin"
     });
