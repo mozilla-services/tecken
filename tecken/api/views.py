@@ -138,13 +138,16 @@ def auth(request):
 @metrics.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
 def possible_upload_urls(request):
     context = {"urls": []}
+    seen = set()
     for url, private_or_public in get_possible_bucket_urls(request.user):
         bucket_info = StorageBucket(url)
 
         # In this context, a "private bucket" is one we *don't* just talk to via
         # plain HTTP. I.e. we *can* upload to it at all.
         assert bucket_info.private
-
+        if bucket_info.name in seen:
+            continue
+        seen.add(bucket_info.name)
         context["urls"].append(
             {
                 "url": url,
