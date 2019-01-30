@@ -11,6 +11,11 @@ import {
   differenceInSeconds,
   differenceInMilliseconds
 } from "date-fns";
+import parseISO from "date-fns/parseISO";
+
+export function parseISODate(input) {
+  return toDate(parseISO(input));
+}
 
 export const Loading = () => (
   <p className="has-text-centered">
@@ -25,18 +30,18 @@ export const DisplayDate = ({ date }) => {
   if (date === null) {
     throw new Error("date is null");
   }
-  const dateObj = toDate(date);
+  const dateObj = parseISODate(date);
   const now = new Date();
   if (isBefore(dateObj, now)) {
-    return <span title={date}>{formatDistance(date, now)} ago</span>;
+    return <span title={date}>{formatDistance(dateObj, now)} ago</span>;
   } else {
-    return <span title={date}>in {formatDistance(date, now)}</span>;
+    return <span title={date}>in {formatDistance(dateObj, now)}</span>;
   }
 };
 
 export const DisplayDateDifference = ({ from, to, suffix = "" }) => {
-  const fromObj = toDate(from);
-  const toObj = toDate(to);
+  const fromObj = parseISODate(from);
+  const toObj = parseISODate(to);
   const secDiff = differenceInSeconds(toObj, fromObj);
   if (secDiff === 0) {
     const msecDiff = differenceInMilliseconds(toObj, fromObj);
