@@ -262,7 +262,7 @@ def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
             return store_missing_symbol(
                 symbol, debugid, filename, code_file=code_file, code_id=code_id
             )
-        except OperationalError as exception:
+        except OperationalError:
             # Note that this doesn't return. The reason is because it's
             # a background job. We can only fire-and-forget sending it.
             # That's why we only do this in the unusual case of an

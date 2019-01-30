@@ -966,18 +966,18 @@ def test_key_existing_size_caching_not_found(gcsmock, metricsmock):
     storage_bucket.get_blob = mock_get_blob
 
     size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size is 0
+    assert size == 0
     assert metadata is None
     assert len(lookups) == 1
 
     size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size is 0
+    assert size == 0
     assert metadata is None
     assert len(lookups) == 1
 
     key_existing.invalidate(storage_bucket, "mybucket", "filename")
     size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size is 0
+    assert size == 0
     assert metadata is None
     assert len(lookups) == 2
 
@@ -1002,18 +1002,18 @@ def test_key_existing_size_caching_not_found_s3(botomock, metricsmock, settings)
     client = bucket_info.client
     with botomock(mock_api_call):
         size, metadata = key_existing(client, "mybucket", "filename")
-        assert size is 0
+        assert size == 0
         assert metadata is None
         assert len(lookups) == 1
 
         size, metadata = key_existing(client, "mybucket", "filename")
-        assert size is 0
+        assert size == 0
         assert metadata is None
         assert len(lookups) == 1
 
         key_existing.invalidate(client, "mybucket", "filename")
         size, metadata = key_existing(client, "mybucket", "filename")
-        assert size is 0
+        assert size == 0
         assert metadata is None
         assert len(lookups) == 2
 
