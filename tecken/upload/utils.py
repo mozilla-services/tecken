@@ -291,7 +291,7 @@ def upload_file_upload(
     # cache invalidate the key_existing_size() lookup.
     try:
         key_existing.invalidate(client, bucket_name, key_name)
-    except Exception as exception:  # pragma: no cover
+    except Exception:  # pragma: no cover
         if settings.DEBUG:
             raise
         logger.error(f"Unable to invalidate key size {key_name}", exc_info=True)
@@ -303,7 +303,7 @@ def upload_file_upload(
     ].split("/")
     try:
         downloader.invalidate_cache(symbol, debugid, filename)
-    except Exception as exception:  # pragma: no cover
+    except Exception:  # pragma: no cover
         if settings.DEBUG:
             raise
         logger.error(
