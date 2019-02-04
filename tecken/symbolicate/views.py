@@ -788,7 +788,7 @@ def json_post(view_function):
             json_body = json.loads(request.body.decode("utf-8"))
             if not isinstance(json_body, dict):
                 return JsonResponse({"error": "Not a dict"}, status=400)
-        except ValueError as exception:
+        except ValueError:
             return JsonResponse({"error": "Invalid JSON passed in"}, status=400)
 
         return view_function(request, json_body)

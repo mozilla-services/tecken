@@ -1,9 +1,14 @@
 import React, { PureComponent } from "react";
 import { Link } from "react-router-dom";
 
-import { toDate, isBefore, formatDistanceStrict } from "date-fns";
+import { isBefore, formatDistanceStrict } from "date-fns";
 
-import { Loading, filterToQueryString, parseQueryString } from "./Common";
+import {
+  parseISODate,
+  Loading,
+  filterToQueryString,
+  parseQueryString
+} from "./Common";
 import Fetch from "./Fetch";
 import store from "./Store";
 
@@ -548,7 +553,7 @@ class DisplayKey extends PureComponent {
 }
 
 const DisplayExpires = ({ expires }) => {
-  const date = toDate(expires);
+  const date = parseISODate(expires);
   const now = new Date();
   if (isBefore(date, now)) {
     return (
