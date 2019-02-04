@@ -163,8 +163,8 @@ datadog==0.26.0 \
 celery==4.2.1 \
     --hash=sha256:77dab4677e24dc654d42dfbdfed65fa760455b6bb563a0877ecc35f4cfcfc678 \
     --hash=sha256:ad7a7411772b80a4d6c64f2f7f723200e39fb66cf614a7fdfab76d345acc7b13
-billiard==3.5.0.5 \
-    --hash=sha256:42d9a227401ac4fba892918bba0a0c409def5435c4b483267ebfe821afaaba0e
+billiard==3.6.0.0 \
+    --hash=sha256:756bf323f250db8bf88462cd042c992ba60d8f5e07fc5636c24ba7d6f4261d84
 mozilla-django-oidc==1.2.1 \
     --hash=sha256:a7805792e86c247ad31a626b9e497aeb4b8e247704cd3e0aa9317dc1d650fb4f \
     --hash=sha256:5760b55757e9de234e44b0b58457cd9443dd64ec2f5a9cf686c50669ac66f13e
