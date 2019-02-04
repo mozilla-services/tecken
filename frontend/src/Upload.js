@@ -1,11 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-import {
-  toDate,
-  differenceInMinutes,
-  differenceInMilliseconds
-} from "date-fns";
+import { differenceInMinutes, differenceInMilliseconds } from "date-fns";
 
 import {
   Loading,
@@ -16,7 +12,8 @@ import {
   BooleanIcon,
   thousandFormat,
   DisplayFilesSummary,
-  ShowUploadMetadata
+  ShowUploadMetadata,
+  parseISODate
 } from "./Common";
 import "./Upload.css";
 import Fetch from "./Fetch";
@@ -134,7 +131,7 @@ export default class Upload extends React.PureComponent {
 
   recentAndIncompleteUpload = () => {
     if (!this.state.upload.completed_at) {
-      const dateObj = toDate(this.state.upload.created_at);
+      const dateObj = parseISODate(this.state.upload.created_at);
       return differenceInMinutes(new Date(), dateObj) < 3;
     }
     return false;
@@ -344,8 +341,8 @@ class ShowUploadFiles extends React.PureComponent {
     return files.map(file => {
       if (file.completed_at) {
         file._time = differenceInMilliseconds(
-          toDate(file.completed_at),
-          toDate(file.created_at)
+          parseISODate(file.completed_at),
+          parseISODate(file.created_at)
         );
       }
       return file;
@@ -499,15 +496,15 @@ const ShowUploadTimes = ({ upload }) => {
   if (!upload.completed_at) {
     return null;
   }
-  const uploadStart = toDate(upload.created_at);
-  const uploadEnd = toDate(upload.completed_at);
+  const uploadStart = parseISODate(upload.created_at);
+  const uploadEnd = parseISODate(upload.completed_at);
   const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart);
   const uploadTimes = [];
   let longestFileUpload = null;
   upload.file_uploads.forEach(file => {
     if (file.completed_at) {
-      const start = toDate(file.created_at);
-      const end = toDate(file.completed_at);
+      const start = parseISODate(file.created_at);
+      const end = parseISODate(file.completed_at);
       const diff = differenceInMilliseconds(end, start);
       if (longestFileUpload === null || longestFileUpload < diff) {
         longestFileUpload = diff;
