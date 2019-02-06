@@ -13,7 +13,7 @@ COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
 
-FROM python:3.6-slim@sha256:6bbf1f1802313bd654a1b80efc3117b242ca1b4616bcd09e1e10cef9a8b17b96
+FROM python:3.6-slim@sha256:5bacc93b300020adcc85467908dc191e488efd5679acd381bcf87510ed64e537
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
