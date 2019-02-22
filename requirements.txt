@@ -78,10 +78,9 @@ django-redis==4.10.0 \
 raven==6.10.0 \
     --hash=sha256:44a13f87670836e153951af9a3c80405d36b43097db869a36e92809673692ce4 \
     --hash=sha256:3fa6de6efa2493a7c827472e984ce9b020797d0da16f1db67197bcc23c8fae54
-configparser==3.7.1 \
-    --hash=sha256:c114ff90ee2e762db972fa205f02491b1f5cf3ff950decd8542c62970c9bedac \
-    --hash=sha256:df28e045fbff307a28795b18df6ac8662be3219435560ddb068c283afab1ea7a \
-    --hash=sha256:5bd5fa2a491dc3cfe920a3f2a107510d65eceae10e9c6e547b90261a4710df32
+configparser==3.7.2 \
+    --hash=sha256:3bdab5c38acb71c4e9b8508d11ac8e2fa6eeb1cf97e072a3c3d7f87db02302a9 \
+    --hash=sha256:d5f1d063e24c700e9809394853ebbabe6093d6842cbfcda1729bf40b126bcc18
 django-configurations==2.1 \
     --hash=sha256:71d9acdff33aa034f0157b0b3d23629fe0cd499bf4d0b6d699b9ca0701d952e8 \
     --hash=sha256:e70433eeed10549d30bf5ca386c962505ff9f492893dd2483c52af536347adce
