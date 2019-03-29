@@ -14,7 +14,7 @@
     "react-copy-to-clipboard": "5.0.1",
     "react-dom": "16.8.6",
     "react-fontawesome": "1.6.1",
-    "react-router-dom": "4.4.0"
+    "react-router-dom": "4.4.0-beta.8"
   },
   "devDependencies": {
     "prettier": "1.16.4",
