@@ -158,12 +158,12 @@ ujson==1.35 \
 markus==1.2.0 \
     --hash=sha256:86bbeb16de1b1920d291c81a39b7a7c61c94b665cd8d10c6b69c994ce4fd5bcc \
     --hash=sha256:9bce7bd152578703a8e4aa5a765c7c0d94bcdd69f7bc5e42d29b893e3abf2e5a
-datadog==0.27.0 \
-    --hash=sha256:9487480fd4b5898b665384f95eeb0cbca4ec998bb58224b7bb60fff3978191ad \
-    --hash=sha256:d28251dd28f51f27e942bb23fe15349e5223aef75246a94ff7233fb174b74bb9
-celery==4.2.1 \
-    --hash=sha256:77dab4677e24dc654d42dfbdfed65fa760455b6bb563a0877ecc35f4cfcfc678 \
-    --hash=sha256:ad7a7411772b80a4d6c64f2f7f723200e39fb66cf614a7fdfab76d345acc7b13
+datadog==0.28.0 \
+    --hash=sha256:eb6f2707151be8851f7da3768e605ac92ec45464fc48d5a878d0b6e08610dd8b \
+    --hash=sha256:f0c3260654cf1c9a4a610aee6282ee62688e734f7d59ebc830560ca0cc0ef81d
+celery==4.2.2 \
+    --hash=sha256:373d6544c8d6ee66b9c1c9ba61ec4c74334c9a861306002662252bd5fd0ff6a1 \
+    --hash=sha256:b1b7da98be6b4082abfa6e18282ece450271f366bce81d0d521342a0db862506
 billiard==3.5.0.5 \
     --hash=sha256:42d9a227401ac4fba892918bba0a0c409def5435c4b483267ebfe821afaaba0e
 mozilla-django-oidc==1.2.1 \
@@ -259,9 +259,9 @@ coverage==4.5.3 \
 pytest-django==3.4.8 \
     --hash=sha256:30d773f1768e8f214a3106f1090e00300ce6edfcac8c55fd13b675fe1cbd1c85 \
     --hash=sha256:4d3283e774fe1d40630ee58bf34929b83875e4751b525eeb07a7506996eb42ee
-pytest-mock==1.10.1 \
-    --hash=sha256:bfdf02789e3d197bd682a758cae0a4a18706566395fbe2803badcd1335e0173e \
-    --hash=sha256:4d0d06d173eecf172703219a71dbd4ade0e13904e6bbce1ce660e2e0dc78b5c4
+pytest-mock==1.10.2 \
+    --hash=sha256:3cbae151d5885bb7565ba5a1e6e44cc3d6f72f44de3be21a11a587e2d5f9155f \
+    --hash=sha256:cbec53e7cb0f2b57275220cb4f2822093ac89e486095555105ffe1a4e2f11df4
 requests-mock==1.5.2 \
     --hash=sha256:7a5fa99db5e3a2a961b6f20ed40ee6baeff73503cf0a553cc4d679409e6170fb \
     --hash=sha256:8ca0628dc66d3f212878932fd741b02aa197ad53fd2228164800a169a4a826af
