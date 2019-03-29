@@ -1,4 +1,4 @@
-FROM node:10.15.3-slim@sha256:5a48598688f771a9140fdef31585dbe67b313b1e29439cbd9b81ebb25aeca517 as frontend
+FROM node:10.15.3-slim@sha256:88da5cd281ece24309c4e6fcce000a8001b17804e19f94a0439954568716a668 as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
@@ -13,7 +13,7 @@ COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
 
-FROM python:3.6-slim@sha256:3603dd0f95c7e04974c2eaaf0427470c342ea7284ae45401674fd490c8ce83f4
+FROM python:3.6-slim@sha256:90167f0d52404dfdd9e4c4ea17f2623571f8e51be0ac230325f77b9f2b401adf
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
