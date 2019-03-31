@@ -161,9 +161,9 @@ markus==1.2.0 \
 datadog==0.28.0 \
     --hash=sha256:eb6f2707151be8851f7da3768e605ac92ec45464fc48d5a878d0b6e08610dd8b \
     --hash=sha256:f0c3260654cf1c9a4a610aee6282ee62688e734f7d59ebc830560ca0cc0ef81d
-celery==4.2.2 \
-    --hash=sha256:373d6544c8d6ee66b9c1c9ba61ec4c74334c9a861306002662252bd5fd0ff6a1 \
-    --hash=sha256:b1b7da98be6b4082abfa6e18282ece450271f366bce81d0d521342a0db862506
+celery==4.3.0 \
+    --hash=sha256:4c4532aa683f170f40bd76f928b70bc06ff171a959e06e71bf35f2f9d6031ef9 \
+    --hash=sha256:528e56767ae7e43a16cfef24ee1062491f5754368d38fcfffa861cdb9ef219be
 billiard==3.5.0.5 \
     --hash=sha256:42d9a227401ac4fba892918bba0a0c409def5435c4b483267ebfe821afaaba0e
 mozilla-django-oidc==1.2.1 \
