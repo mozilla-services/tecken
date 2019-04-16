@@ -4,11 +4,12 @@
 [![Updates](https://pyup.io/repos/github/mozilla-services/tecken/shield.svg)](https://pyup.io/repos/github/mozilla-services/tecken/)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovateapp.com/)
 [![What's Deployed](https://img.shields.io/badge/whatsdeployed-dev,stage,prod-green.svg)](https://whatsdeployed.io/s-5HY)
-[![Code style](https://img.shields.io/badge/Code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-Please use the documentation on: **https://tecken.readthedocs.io**
+* [Code style](https://github.com/ambv/black)
+* [Community Participation Guidelines](https://github.com/mozilla-services/tecken/blob/master/CODE_OF_CONDUCT.md)
+* [Documentation](https://tecken.readthedocs.io/)
 
-The **production server** is: https://symbols.mozilla.org
+The **production server** is: https://symbols.mozilla.org/
 
 ## To Get Coding
 
@@ -31,15 +32,7 @@ If you have access to a Mozilla Cloud Ops Datadog account, use this to
 consume the metrics Tecken sends via `statsd`. One is for staying health, the other is for
 keeping track how it does things.
 
-[Tecken Operations](https://app.datadoghq.com/dash/286319/tecken)
-
-[Tecken Performance](https://app.datadoghq.com/dash/339351/tecken-performance)
-
-[Tecken Redis](https://app.datadoghq.com/screen/190509/tecken-redis)
-
-[Redis Store Prod](https://app.datadoghq.com/dash/857077?live=true&page=0&is_auto=false&from_ts=1533210569870&to_ts=1533296969870&tile_size=m)
-
-[Symbols RDS](https://app.datadoghq.com/screen/280710/symbols-rds)
+[Tecken dashboards](https://app.datadoghq.com/dashboard/lists?q=tecken)
 
 ## New Relic
 
