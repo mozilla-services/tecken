@@ -166,9 +166,9 @@ celery==4.2.2 \
     --hash=sha256:b1b7da98be6b4082abfa6e18282ece450271f366bce81d0d521342a0db862506
 billiard==3.5.0.5 \
     --hash=sha256:42d9a227401ac4fba892918bba0a0c409def5435c4b483267ebfe821afaaba0e
-mozilla-django-oidc==1.2.1 \
-    --hash=sha256:a7805792e86c247ad31a626b9e497aeb4b8e247704cd3e0aa9317dc1d650fb4f \
-    --hash=sha256:5760b55757e9de234e44b0b58457cd9443dd64ec2f5a9cf686c50669ac66f13e
+mozilla-django-oidc==1.2.2 \
+    --hash=sha256:2ab8b5ee3d46b50a818cbc009043be2d068f80dc093eb1fb3aa3a3af504d749b \
+    --hash=sha256:b916dc452408e23b7c4947f3721b46e4f20717298861a4deaa7d2f3f171e9ad1
 # As of Oct 25, 2018, botocore requires urllib3 <1.24
 urllib3==1.24.1 \
     --hash=sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39 \
