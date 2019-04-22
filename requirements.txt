@@ -170,9 +170,9 @@ mozilla-django-oidc==1.2.1 \
     --hash=sha256:a7805792e86c247ad31a626b9e497aeb4b8e247704cd3e0aa9317dc1d650fb4f \
     --hash=sha256:5760b55757e9de234e44b0b58457cd9443dd64ec2f5a9cf686c50669ac66f13e
 # As of Oct 25, 2018, botocore requires urllib3 <1.24
-urllib3==1.24.1 \
-    --hash=sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39 \
-    --hash=sha256:de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22
+urllib3==1.25 \
+    --hash=sha256:a08afe8b057ba35963364711a1f36d346375da0c118f611f35c0252375338c7c \
+    --hash=sha256:f03eeb431c77b88cf8747d47e94233a91d0e0fdae1cf09e0b21405a885700266
 certifi==2019.3.9 \
     --hash=sha256:59b7658e26ca9c7339e00f8f4636cdfe59d34fa37b9b04f6f9e9926b3cece1a5 \
     --hash=sha256:b26104d6835d1f5e49452a26eb2ff87fe7090b89dfcaee5ea2212697e1e1d7ae
