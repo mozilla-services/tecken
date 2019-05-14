@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # Tasks run after the Heroku buildpack compile, but prior to the deploy.
 # Failures will block the deploy unless `IGNORE_PREDEPLOY_ERRORS` is set.
 if [[ -v SKIP_PREDEPLOY ]]; then
