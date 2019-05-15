@@ -77,11 +77,13 @@ case $1 in
     coverage erase
     coverage run -m py.test "${@:2}"
     coverage report -m
-    if [[ -z ${CI+check} ]]; then  # when doing local `make test`
-      # generate code coverage to disk
-      coverage html --skip-covered
-    fi
-    # Temporarily disabled. The team is small and codecov's report inside
+    # FIXME(willkg): this doesn't work with fs permissions on Linux
+    # if [[ -z ${CI+check} ]]; then  # when doing local `make test`
+    #   # generate code coverage to disk
+    #   coverage html --skip-covered
+    # fi
+
+    # FIXME(peterbe) The team is small and codecov's report inside
     # pull requests (as comments) is more noise than help.
     # Also, code coverage is mostly useful when contributors help and
     # add more code without adding tests to cover.
