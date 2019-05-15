@@ -1,6 +1,6 @@
-=======================
-Developer Documentation
-=======================
+=============================
+Admin/Developer Documentation
+=============================
 
 Code
 ====
@@ -45,36 +45,54 @@ reach ``http://localhost:8000`` with your browser or curl.
 Google Cloud Platform
 =====================
 
-To use Google Cloud Storage, you need to a credentials ``.json`` file.
-You need to log in to your
-`Google Cloud Platform console <https://console.cloud.google.com/>`_ and
-you probably first need to create a "project".
-Then, go to `Service accounts <https://console.cloud.google.com/iam-admin/serviceaccounts>`_,
-for that project, create a new service account and when you're done it should
-generate a ``.json`` file for you to download. Put that file into the Tecken
-project root directory. The default name is ``google_service_account.json``
-but if you want to call it something else, set that name in your ``.env`` file
-like this:
+First, you need to set up a project.
 
-.. code-block:: shell
+1. log into your `Google Cloud Platform console <https://console.cloud.google.com/>`_
+2. create a project
 
-    GOOGLE_APPLICATION_CREDENTIALS=my_special_google_service_account.json
+Then you need to create a service account and generate a JSON key file.
 
-Next you need to create a Google Cloud Storage bucket. Suppose you created
-a bucket called ``my-gcs-bucket``, now you need to configure this in
-``DJANGO_SYMBOL_URLS`` and ``DJANGO_UPLOAD_DEFAULT_URL`` like this (in
-your ``.env`` file):
+1. in the project, go to "IAM & admin" and then "Service accounts" and click on
+   "CREATE SERVICE ACCOUNT"
+2. name it something useful
+3. give it the "Storage Admin" role
+4. click on "CONTINUE"
+5. click on "CREATE KEY", generate a JSON file, and download it
+6. click on "DONE"
+7. rename the JSON file as ``google_service_account.json`` and put it into the
+   Tecken project root directory
 
-.. code-block:: shell
+.. Note::
 
-    DJANGO_SYMBOL_URLS=https://storage.googleapis.com/my-gcs-bucket
-    DJANGO_UPLOAD_DEFAULT_URL=https://storage.googleapis.com/my-gcs-bucket
+   You can name the JSON file something else. If you do, set the ``GOOGLE_APPLICATION_CREDENTIALS``
+   key in your ``.env`` file with the file name.
 
-When you start the server, all of these values and configurations will be
-checked.
+Then you need to create a Google Cloud Storage bucket.
 
-.. note:: If you use docker-compose, you probably need to use a path that is
-          part of what is volume mounted.
+1. in the project, go to "Storage"
+2. click on "CREATE BUCKET"
+3. name it something like "tecken-dev-bucket"
+4. click on "Permissions" tab
+5. click on "Add member" button, type in the full service account email address, and then
+   add the "Storage admin" role
+6. set the ``DJANGO_SYMBOL_URLS`` and ``DJANGO_UPLOAD_DEFAULT_URL`` variables
+   in your ``.env`` file:
+
+   .. code-block:: shell
+
+       DJANGO_SYMBOL_URLS=https://storage.googleapis.com/my-gcs-bucket
+       DJANGO_UPLOAD_DEFAULT_URL=https://storage.googleapis.com/my-gcs-bucket
+
+Give the service account access to the bucket.
+
+1. In the project, go to "Storage"
+2. click on the bucket
+3. click on the "Permissions" tab
+4. click on "Add members" button
+5. paste in the entire service account address and add "Storage admin" role
+
+Once all that's done, then everything should be set. The configuration settings
+are checked when you start the Tecken server.
 
 Google Cloud Storage Bucket Configuration
 =========================================
@@ -387,24 +405,6 @@ at ``http://localhost:8000/static/js.main.6d3b4de8.js``.
 
 When you're done you can delete ``frontend/build`` and
 ``frontend/node_modules``.
-
-Shells and ``hack.py``
-======================
-
-There are a couple of good ways to get into the Python environment and
-be able to "hack around" and try stuff. For example, you might want to just
-poke around in the ORM, or test various performance tricks and as it
-gets more complicated it gets messy in a shell. Especially if you want to
-re-run something on multiple lines repeatedly.
-
-Instead, copy the file ``hack.py-dist`` to ``hack.py`` and start editing it.
-Then, to run it, start a shell and execute it:
-
-.. code-block:: shell
-
-    $ make shell
-    # python hack.py
-
 
 Running things in background vs foreground
 ==========================================
@@ -788,3 +788,24 @@ For example, all things related to authentication, such as your session cookie
 should continue to work because we use the ``cached_db`` backend in
 ``settings.SESSION_ENGINE``. It just means we have to rely on PostgreSQL to
 verify the session cookie value on each and every request.
+
+
+Giving users upload permission
+==============================
+
+The user should write up a bug. See :ref:`upload-basics`.
+
+If the user is a Mozilla employee, needinfo the user's manager and verify the
+user needs upload permission.
+
+If the user is not a Mozilla employee, find someone to vouch for the user.
+
+Once vouched:
+
+1. Log in to `<https://symbols.mozilla.org/users>`_
+2. Use the search filter at the bottom of the page to find the user
+3. Click to edit and make give them the "Uploaders" group (only).
+4. Respond and say that they now have permission and should be able to either
+   upload via the web or create an API Token with the "Upload Symbol Files"
+   permission.
+5. Resolve the bug.

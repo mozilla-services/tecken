@@ -1,14 +1,15 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
+
 """
 Django settings for tecken project.
 """
+
 import logging
 import subprocess
 import os
 from urllib.parse import urlparse
-
 
 from configurations import Configuration, values
 from dockerflow.version import get_version

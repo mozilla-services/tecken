@@ -1,6 +1,12 @@
-.PHONY: build clean migrate redis-cache-cli redis-store-cli revision shell currentshell stop test run django-shell docs psql build-frontend
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-help:
+.PHONY: help
+help: default
+
+.PHONY: default
+default:
 	@echo "Welcome to the tecken\n"
 	@echo "The list of commands for local development:\n"
 	@echo "  build            Builds the docker images for the docker-compose setup"
@@ -27,69 +33,81 @@ help:
 .env:
 	./bin/cp-env-file.sh
 
+.PHONY: build
 build: .env
 	docker-compose build base
 	touch .docker-build
 
+.PHONY: clean
 clean: .env stop
 	docker-compose rm -f
 	rm -rf coverage/ .coverage
 	rm -fr .docker-build
 
+.PHONY: migrate
 migrate: .env
 	docker-compose run web python manage.py migrate --run-syncdb
 
+.PHONY: shell
 shell: .env .docker-build
 	# Use `-u 0` to automatically become root in the shell
 	docker-compose run --user 0 web bash
 
+.PHONY: currentshell
 currentshell: .env .docker-build
 	# Use `-u 0` to automatically become root in the shell
 	docker-compose exec --user 0 web bash
 
+.PHONY: redis-cache-cli
 redis-cache-cli: .env .docker-build
 	docker-compose run redis-cache redis-cli -h redis-cache
 
+.PHONY: redis-store-cli
 redis-store-cli: .env .docker-build
 	docker-compose run redis-store redis-cli -h redis-store
 
+.PHONY: psql
 psql: .env .docker-build
 	docker-compose run db psql -h db -U postgres
 
+.PHONY: stop
 stop: .env
 	docker-compose stop
 
+.PHONY: test
 test: .env .docker-build
 	@bin/test.sh
 
+.PHONY: run
 run: .env .docker-build
 	docker-compose up web worker frontend
 
+.PHONY: gunicorn
 gunicorn: .env .docker-build
 	docker-compose run --service-ports web web
 
+.PHONY: django-shell
 django-shell: .env .docker-build
 	docker-compose run web python manage.py shell
 
+.PHONY: docs
 docs:
 	@bin/build-docs-locally.sh
 
+.PHONY: tags
 tag:
 	@bin/make-tag.py
 
-#lint-frontend:
-#	docker-compose run frontend lint
-
-#lint-frontend-ci:
-#	docker-compose run frontend-ci lint
-
+.PHONY: build-frontend
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
 
+.PHONY: lintcheck
 lintcheck: .env .docker-build
 	docker-compose run linting lintcheck
 	docker-compose run frontend lint
 
+.PHONY: lintfix
 lintfix: .env .docker-build
 	docker-compose run linting blackfix
 	docker-compose run frontend lintfix

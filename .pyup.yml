@@ -1,9 +1,12 @@
+schedule: "every month"
 search: False
 label_prs: update
 requirements:
   - requirements.txt
+      update: all
+      pin: true
   - requirements-constraints.txt:
       update: insecure
-  - tests/systemtest/requirements.txt
+      pin: true
   - docs-requirements.txt:
       pin: False

@@ -1,7 +1,12 @@
 """
 This blocks all HTTP requests via httplib (which includes requests).
 
-this is a fixed copy of pytest-blockage, called "blockade"
+This is a fixed copy of pytest-blockage, called "blockade".
+
+https://pypi.org/project/pytest-blockage/
+
+License: https://github.com/rob-b/pytest-blockage/blob/master/LICENSE
+
 """
 import logging
 import sys
