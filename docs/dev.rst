@@ -1,6 +1,6 @@
-=======================
-Developer Documentation
-=======================
+=============================
+Admin/Developer Documentation
+=============================
 
 Code
 ====
@@ -806,3 +806,24 @@ For example, all things related to authentication, such as your session cookie
 should continue to work because we use the ``cached_db`` backend in
 ``settings.SESSION_ENGINE``. It just means we have to rely on PostgreSQL to
 verify the session cookie value on each and every request.
+
+
+Giving users upload permission
+==============================
+
+The user should write up a bug. See :ref:`upload-basics`.
+
+If the user is a Mozilla employee, needinfo the user's manager and verify the
+user needs upload permission.
+
+If the user is not a Mozilla employee, find someone to vouch for the user.
+
+Once vouched:
+
+1. Log in to `<https://symbols.mozilla.org/users>`_
+2. Use the search filter at the bottom of the page to find the user
+3. Click to edit and make give them the "Uploaders" group (only).
+4. Respond and say that they now have permission and should be able to either
+   upload via the web or create an API Token with the "Upload Symbol Files"
+   permission.
+5. Resolve the bug.

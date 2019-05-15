@@ -2,41 +2,54 @@
 Upload
 ======
 
-
 History
 =======
 
-Symbol upload was originally done in Socorro as part of the
-`crash-stats.mozilla.com web app`_.
-
-.. note: As of September 2017, Socorro is still the point where symbol uploads happen.
-
-The *original* way this worked is the same as Tecken except the following key
-differences:
-Every individual file within the ``.zip`` files are logged in the ORM.
+Prior to 2018, Symbol upload was originally done in Socorro as part of Crash Stats.
+Now it's handled by Tecken in much the same way except Tecken additionally logs
+every individual file inside the ZIP file in the ORM.
 
 
-.. _`crash-stats.mozilla.com web app`: https://github.com/mozilla-services/socorro/tree/master/webapp-django/crashstats/symbols
+.. _upload-basics:
+
+Uploading basics
+================
+
+Uploading requires special permission. The process for requesting access to
+upload symbols is roughly the following:
+
+1. `Create a bug <https://bugzilla.mozilla.org/enter_bug.cgi?format=__standard__&product=Socorro&component=Tecken>`
+   requesting access to upload symbols.
+
+2. A Tecken admin will process the request.
+
+   If you are a Mozilla employee, your manager will be needinfo'd to verify you need
+   upload access.
+
+   If you are not a Mozilla employee, we'll need to find someone to vouch for you.
+
+3. After that's been worked out, the Tecken admin will give you permission to upload
+   symbols.
 
 
-How It Works
-============
-
-The upload has to be done with an API token.
-Not only is it important to secure the upload, we also remember *who* made
-every symbol upload. This way you can find out what email uploaded what
-file when. The user associated with that API token needs to have the permission
-``upload.add_upload``.
+Once you have permission to upload symbols, you will additionally need an API token.
+Once you log in, you can `create an API token <https://symbols.mozilla.org/tokens>`_.
+It needs to have the "Upload Symbols" permission.
 
 
-The upload is done with a ``multipart/form-data`` HTTP POST request.
-With ``curl`` it can look like this:
+How to upload by HTTP POST
+==========================
+
+Uploads by HTTP POST must have a ``multipart/form-data`` payload with a ZIP
+file containing the symbols files.
+
+Here's a ``curl`` example:
 
 .. code-block:: shell
 
     $ curl -X POST -H 'auth-token: xxx' --form myfile.zip=@myfile.zip https://symbols.mozilla.org/upload/
 
-Or if you do it in Python ``requests``:
+Here's a ``Python`` example using ``requests``:
 
 .. code-block:: python
 
@@ -47,10 +60,51 @@ Or if you do it in Python ``requests``:
     >>> response.status_code
     201
 
-.. note:: Read on for how to upload by posting a URL to a file instead.
 
-Now, on the inside; what happens next
--------------------------------------
+How to upload by download URL
+=============================
+
+Instead of uploading the symbols file by HTTP POST, you can POST the url to
+where the symbols file is and Tecken will download the file from that location
+and process it.
+
+This is helpful if the symbols file is very big and is already available at a
+publicly available URL.
+
+An example with ``curl``:
+
+.. code-block:: shell
+
+    $ curl -X POST -H 'auth-token: xxx' -d url="https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip" https://symbols.mozilla.org/upload/
+
+An example with ``Python`` and the ``requests`` library:
+
+.. code-block:: python
+
+    >>> import requests
+    >>> url = 'https://symbols.mozilla.org/upload/'
+    >>> data = {'url': 'https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip'}
+    >>> response = requests.post(url, data=data, headers={'Auth-token': 'xxx'})
+    >>> response.status_code
+    201
+
+
+Domains that Tecken will download from is specified in the
+``DJANGO_ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS`` environment variable and at the time
+of this writing is set to::
+
+    queue.taskcluster.net
+    public-artifacts.taskcluster.net
+
+If you need another domain supported,
+`file a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Tecken>`_.
+
+Note that Tecken will check redirects. At first a HEAD request is made with the
+URL and Tecken will check both the original URL and the redirected URL against
+the list of allowed URLs.
+
+Symbols processing
+==================
 
 Once the ``.zip`` file is uploaded, it's processed. The first part of the
 processing is validation. See section below on "Checks and Validation".
@@ -63,46 +117,6 @@ If it does not exist, it proceeds to upload it to S3.
 
 Once the upload processing is complete it creates one ``Upload`` object
 and one ``FileUpload`` object for every file that is uploaded to S3.
-
-Upload by download URL
-======================
-
-If you have a ``my-symbols.zip`` file on disk, you should HTTPS POST it as
-mentioned above. However, a possible optimization is to instead let Tecken
-**download** the archive file into itself instead.
-If it's already available on a public URL, you can just HTTP POST that URL.
-For example:
-
-.. code-block:: shell
-
-    $ curl -X POST -H 'auth-token: xxx' -d url="https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip" https://symbols.mozilla.org/upload/
-
-Or with Python:
-
-.. code-block:: python
-
-    >>> import requests
-    >>> url = 'https://symbols.mozilla.org/upload/'
-    >>> data = {'url': 'https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip'}
-    >>> response = requests.post(url, data=data, headers={'Auth-token': 'xxx'})
-    >>> response.status_code
-    201
-
-
-The list of domains that are allowed depends on a whitelist. It's maintained
-in the ``DJANGO_ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS`` environment variable and
-currently defaults to::
-
-    queue.taskcluster.net
-    public-artifacts.taskcluster.net
-
-If you need it to be something else, `file a bug`_.
-
-Note that the whitelist will check redirects. At first a HEAD request is made
-with whichever URL you supply. That needs to be whitelisted. If that URL
-redirects to a different domain that needs to be whitelisted too.
-
-.. _`file a bug`: https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols
 
 Which S3 Bucket
 ===============
