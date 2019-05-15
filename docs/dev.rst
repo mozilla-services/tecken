@@ -406,24 +406,6 @@ at ``http://localhost:8000/static/js.main.6d3b4de8.js``.
 When you're done you can delete ``frontend/build`` and
 ``frontend/node_modules``.
 
-Shells and ``hack.py``
-======================
-
-There are a couple of good ways to get into the Python environment and
-be able to "hack around" and try stuff. For example, you might want to just
-poke around in the ORM, or test various performance tricks and as it
-gets more complicated it gets messy in a shell. Especially if you want to
-re-run something on multiple lines repeatedly.
-
-Instead, copy the file ``hack.py-dist`` to ``hack.py`` and start editing it.
-Then, to run it, start a shell and execute it:
-
-.. code-block:: shell
-
-    $ make shell
-    # python hack.py
-
-
 Running things in background vs foreground
 ==========================================
 
