@@ -336,6 +336,22 @@ Details at `mozilla-services/tecken-loader
 This is useful for sending somewhat realistic symbolication requests
 that reference symbols that are often slightly different.
 
+
+webapp
+------
+
+Here's a rough webapp test script:
+
+1. go to website
+2. wait for front page to load
+3. log in
+4. click on "downloads" in navbar
+5. click on "user management" in navbar
+6. click on "API tokens" in navbar
+7. click on "uploads" in navbar
+8. click on "symbolication" in navbar
+9. click on "help" in navbar
+
 Prod-like running locally
 =========================
 
