@@ -2,6 +2,9 @@
 Admin/Developer Documentation
 =============================
 
+.. contents::
+
+
 Getting started
 ===============
 
@@ -264,8 +267,8 @@ after ``--`` like this:
   > ptw -- -x --other-option
 
 
-Python Requirements
-===================
+Managing Python Requirements
+============================
 
 All Python requirements needed for development and production needs to be
 listed in ``requirements.txt`` with sha256 hashes.
@@ -317,54 +320,21 @@ To run ``gunicorn`` locally, which has concurrency, run:
 You might want to temporarily edit ``.env`` and set ``DJANGO_DEBUG=False``
 to run it in a more production realistic way.
 
+Integration Testing
+===================
 
-Manual Integration Testing for symbolication
-============================================
+tecken-loader
+-------------
 
-To do integration testing pasting lots of ``curl`` commands gets
-tedious. Instead use `tecken-loader`_. It's a simple script that
-sends symbolication requests to your local server. Run this in a separate
-terminal when you have started the development server:
+Use `tecken-loader`_ for integration testing uploading, downloading,
+and symbolication APIs. It contains a series of scripts and molotov
+loadtests.
 
-.. code-block:: shell
-
-   $ git clone https://github.com/peterbe/tecken-loader.git
-   $ cd tecken-loader
-   $ python3.5 main.py stacks http://localhost:8000/
-
-It will keep going for ages. If you kill it with ``Ctrl-C`` it will
-print out a summary of what it has done.
+Details at `mozilla-services/tecken-loader
+<https://github.com/mozilla-services/tecken-loader>`_.
 
 This is useful for sending somewhat realistic symbolication requests
 that reference symbols that are often slightly different.
-
-.. _`tecken-loader`: https://github.com/peterbe/tecken-loader
-
-
-Testing Statsd
-==============
-
-By default, the docker image starts a Graphite server that metrics are
-sent to. You can run it locally by visiting ``http://localhost:9000``.
-
-A much better interface for local development is to start a Grafana_
-server. When you run it locally, note that you will be asked to log in
-and the username is ``admin`` and password ``admin``. This is safe because
-it's an Grafana instance only on your laptop. To start it:
-
-.. code-block:: shell
-
-    $ docker run -i -p 3000:3000 grafana/grafana
-    $ open http://localhost:3000
-
-Explaining all of Grafana is hard and they have direct links to the
-documentation within the UI.
-
-The first thing to do is to create a "Data Source" for Graphite. The
-only parameter you need is the URL which should be ``http://localhost:9000``.
-
-.. _Grafana: https://hub.docker.com/r/grafana/grafana/
-
 
 Prod-like running locally
 =========================
