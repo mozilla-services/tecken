@@ -27,8 +27,6 @@ whitenoise==4.1.2 \
 pytz==2019.1 \
     --hash=sha256:303879e36b721603cc54604edcac9d20401bdbe31e1e4fdee5b9f98d5d31dfda \
     --hash=sha256:d747dd3d23d77ef44c6a3526e274af6efeb0a6f1afd5a69ba4d5be4098c8e141
-newrelic==4.14.0.115 \
-    --hash=sha256:b0f2ef6c817d9b5389cb3ef0f06037abbd1c1ed1a4ae04f293dadeb0f78ea924
 requests==2.21.0 \
     --hash=sha256:7bf2a778576d825600030a110f3c0e3e8edc51dfaafe1c146e39a2027784957b \
     --hash=sha256:502a824f31acdacb3a35b6690b5fbf0bc41d63a24a45c4004352b0242707598e
