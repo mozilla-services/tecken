@@ -25,6 +25,11 @@ To test the symbolication run::
 Development services
 ====================
 
+What's Deployed
+---------------
+
+Check out https://whatsdeployed.io/s-5HY
+
 Datadog
 -------
 
@@ -34,20 +39,16 @@ health, the other is for keeping track how it does things.
 
 `Tecken dashboards <https://app.datadoghq.com/dashboard/lists?q=tecken>`_
 
-New Relic
----------
+Sentry
+------
 
-This requires you have access to the `Mozilla_25 New Relic
-account <https://rpm.newrelic.com/accounts/1402187/applications>`_
+Prod: https://sentry.prod.mozaws.net/operations/symbols-prod/
 
-`symbols-prod <https://rpm.newrelic.com/accounts/1402187/applications/62681492>`_
+Stage: https://sentry.prod.mozaws.net/operations/symbols-stage/
 
-`symbols-stage <https://rpm.newrelic.com/accounts/1402187/applications/52227224>`_
+Dev: https://sentry.prod.mozaws.net/operations/symbols-dev/
 
-What's Deployed
----------------
-
-Check out https://whatsdeployed.io/s-5HY
+Frontend: https://sentry.prod.mozaws.net/operations/symbols-frontend/
 
 Code Conventions
 ================
