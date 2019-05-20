@@ -35,3 +35,5 @@ To do that look at the code of ``tecken/benchmarking/urls.py`` and
 ``tecken/benchmarking/views.py``
 
 But basically the idea is that every benchmark is started by querying a
+key in S3, priming the cache, and then querying the key and the cache
+a bunch of times and summarizing the results.
