@@ -2,7 +2,12 @@
 Authentication
 ==============
 
-We use Auth0 to handle all authentication. See :ref:`Auth0 configuration <auth0-configuration>`.
+In the production, stage, and development deployments, Tecken uses Mozilla SSO,
+a self-hosted Auth0 instance that integrates with Mozilla's LDAP system.
+
+For local development, Tecken uses a test OpenID Connect (OIDC) provider.
+This can be overridden to use an Auth0 or other OIDC account.
+See :ref:`Authentication configuration <auth-configuration>`.
 
 Authentication **will let anybody** become a signed in user. But note, the
 user will **not have any useful permissions** to do anything more than

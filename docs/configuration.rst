@@ -338,46 +338,75 @@ The three environment variables to control the statsd are as follows
 3. ``DJANGO_STATSD_NAMESPACE`` (*''* (empty string))
 
 
-.. _auth0-configuration:
+.. _auth-configuration:
 
-Auth0
-=====
+Authentication
+==============
+In the production, stage, and development deployments, Tecken uses Mozilla SSO,
+a self-hosted Auth0 instance that integrates with Mozilla's LDAP system.
 
-For authentication to work, you need to have an Auth0 account and its
-credentials. You also need a domain so you can figure out certain
-URLs. You need the client ID and the client secret. Put these into
-the environment variables like this:
+For local development, Tecken uses a test OpenID Connect (OIDC) provider.
+This can be overridden to use an Auth0 account or other OIDC provider.
+
+oidcprovider
+------------
+Local developement is configured to use ``oidcprovider``, a containerized
+OpenID Connect provider that allows self-created accounts. The default
+configuration is:
+
+.. code-block:: shell
+
+    DJANGO_OIDC_RP_CLIENT_ID=1
+    DJANGO_OIDC_RP_CLIENT_SECRET=bd01adf93cfb
+    DJANGO_OIDC_OP_AUTHORIZATION_ENDPOINT=http://oidc.127.0.0.1.nip.io:8081/openid/authorize
+    DJANGO_OIDC_OP_TOKEN_ENDPOINT=http://oidcprovider:8080/openid/token
+    DJANGO_OIDC_OP_USER_ENDPOINT=http://oidcprovider:8080/openid/userinfo
+    DJANGO_OIDC_VERIFY_SSL=False
+    DJANGO_ENABLE_AUTH0_BLOCKED_CHECK=False
+
+To use the provider:
+
+1. Load http://localhost:3000
+2. Click "Sign In" to start an OpenID Connect session on ``oidcprovider``
+3. Click "Sign up" to create an ``oidcprovider`` account:
+    * Username: A non-email username, like ``username``
+    * Email: Your email address
+    * Password: Any password, like ``password``
+4. Click "Authorize" to authorize Tecken to use your ``oidcprovider`` account
+5. You are returned to http://localhost:3000. If needed, a parallel Tecken User
+   will be created, with default permissions and identified by email address.
+
+You'll remain logged in to ``oidcprovider``, and the account will persist until
+the ``oidcprovider`` container is stopped.
+You can visit http://oidc.127.0.0.1.nip.io:8081/account/logout to manually log
+out.
+
+Auth0 and other OIDC providers
+------------------------------
+Mozilla SSO, a self-hosted instance of Auth0_, is used in the production, stage,
+and development deployments, and Tecken has additional functionality that uses
+SSO / Auth0 features. See :doc:`authentication` for details.
+
+To use Auth0 in local development, customize your environment:
 
 .. code-block:: shell
 
     DJANGO_OIDC_RP_CLIENT_ID=clientidhereclientidhere
     DJANGO_OIDC_RP_CLIENT_SECRET=clientsecrethereclientsecrethere
-
-The default domain is ``auth.mozilla.auth0.com``. That has consequently
-been used to set up the following defaults:
-
-.. code-block:: shell
-
     DJANGO_OIDC_OP_AUTHORIZATION_ENDPOINT=https://auth.mozilla.auth0.com/authorize
     DJANGO_OIDC_OP_TOKEN_ENDPOINT=https://auth.mozilla.auth0.com/oauth/token
     DJANGO_OIDC_OP_USER_ENDPOINT=https://auth.mozilla.auth0.com/userinfo
+    DJANGO_OIDC_VERIFY_SSL=True
+    DJANGO_ENABLE_AUTH0_BLOCKED_CHECK=True
 
-If your domain is different, override these above three environment
-variables with your domain.
-
-Note! Tecken uses `Auth0`_ which follows the OpenID Connect protocol.
-The configuration actually requires the above mentioned URLs and when
-you use Auth0, the URLs are quite constant. But if you use another OpenID
-Connect provider, use the domain (e.g. ``myoidc.example.com``) and go to
-``https://myoidc.example.com/.well-known/openid-configuration`` and from
-there it should publish the authorization, token and user endpoints.
+Any OpenID Connect (OIDC) provider can be used. Many OIDC providers publish
+their endpoints, for example
+https://auth.mozilla.auth0.com/.well-known/openid-configuration.
 
 .. _`Auth0`: https://auth0.com/
 
-
 First Superuser
-===============
-
+---------------
 Users need to create their own API tokens but before they can do that they
 need to be promoted to have that permission at all. The only person/people
 who can give other users permissions is the superuser. To bootstrap

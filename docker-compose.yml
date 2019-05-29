@@ -43,6 +43,7 @@ services:
       - redis-store
       - redis-cache
       - minio
+      - oidcprovider
       - statsd
     volumes:
       - $PWD:/app
@@ -144,3 +145,11 @@ services:
     volumes:
       - $PWD/miniodata:/export
     command: server /export
+
+  # OpenID Connect provider
+  oidcprovider:
+    build:
+      context: docker/images/oidcprovider
+    image: local/tecken_oidcprovider
+    ports:
+      - "8081:8080"
