@@ -16,7 +16,7 @@ Git clone and then run::
    $ make run
 
 Now a development server should be available at
-``http://localhost:8000``.
+``http://localhost:3000``.
 
 To test the symbolication run::
 

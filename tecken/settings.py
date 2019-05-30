@@ -665,6 +665,26 @@ class Localdev(Base):
     API_UPLOADS_BATCH_SIZE = 10
     API_FILES_BATCH_SIZE = 20
 
+    #
+    # Default to the test oidcprovider container for Open ID Connect
+    #
+    # Client ID and secret must match oidcprovider database
+    OIDC_RP_CLIENT_ID = values.IntegerValue(1)
+    OIDC_RP_CLIENT_SECRET = values.Value("bd01adf93cfb")
+    # Load oidcprovider on public port 8081, without /etc/hosts changes
+    OIDC_OP_AUTHORIZATION_ENDPOINT = values.URLValue(
+        "http://oidc.127.0.0.1.nip.io:8081/openid/authorize"
+    )
+    # The backend connects to oidcprovider on docker port 8080
+    # Django's URL validator, used in URLValue, doesn't like docker hostnames
+    OIDC_OP_TOKEN_ENDPOINT = values.Value("http://oidcprovider:8080/openid/token")
+    # Same as token switch from URLValue to Value
+    OIDC_OP_USER_ENDPOINT = values.Value("http://oidcprovider:8080/openid/userinfo")
+    # Allow non-SSL connection to oidcprovider
+    OIDC_VERIFY_SSL = values.BooleanValue(False)
+    # Disable NotBlockedInAuth0Middleware
+    ENABLE_AUTH0_BLOCKED_CHECK = values.BooleanValue(False)
+
 
 class Test(Localdev):
     """Configuration to be used during testing"""
