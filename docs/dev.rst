@@ -5,22 +5,36 @@ Admin/Developer Documentation
 .. contents::
 
 
-Getting started
-===============
+Setting up a development environment
+====================================
 
-You need to be able to run Docker.
+You can set up a development environment with:
 
-Git clone and then run::
+.. code-block:: shell
 
+   # Builds Docker containers
    $ make build
+
+   # Initializes service state (db)
+   $ make setup
+
+
+Tecken has a webapp.
+
+To run the webapp, do:
+
+.. code-block:: shell
+
+   # Runs web and ui and required services
    $ make run
+
 
 Now a development server should be available at
 ``http://localhost:3000``.
 
 To test the symbolication run::
 
-   $ curl -d '{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]],"version":4}' http://localhost:8000/symbolicate/v5
+   $ curl -d '{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]],"version":4}' http://localhost:3000/symbolicate/v5
 
 Development services
 ====================
