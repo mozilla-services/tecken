@@ -841,3 +841,32 @@ Once vouched:
    upload via the web or create an API Token with the "Upload Symbol Files"
    permission.
 5. Resolve the bug.
+
+
+Deployment
+==========
+
+Dev
+---
+
+Dev is at: https://symbols.dev.mozaws.net
+
+Dev deploys every time someone lands something in the master branch.
+
+
+Stage
+-----
+
+Stage is at: https://symbols.stage.mozaws.net
+
+To deploy to stage, create a tag::
+
+    $ make tag
+
+
+Prod
+----
+
+Prod is at: https://symbols.mozilla.org
+
+To deploy to prod, ask an ops person to deploy the tag you pushed to stage.

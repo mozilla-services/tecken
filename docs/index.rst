@@ -25,7 +25,6 @@ User docs:
    download
    upload
    configuration
-   deployment
    celery
 
 
