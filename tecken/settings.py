@@ -282,7 +282,7 @@ class Base(Core):
 
     ALLOWED_HOSTS = values.ListValue([])
 
-    DATABASES = values.DatabaseURLValue("postgres://postgres@db/postgres")
+    DATABASES = values.DatabaseURLValue("postgres://postgres@db/tecken")
     CONN_MAX_AGE = values.IntegerValue(60)
 
     REDIS_URL = values.Value("redis://redis-cache:6379/0")
