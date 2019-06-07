@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from botocore.exceptions import ClientError
 import markus
 from django_redis import get_redis_connection
+from google.cloud.exceptions import NotFound
 
 from django.conf import settings
 from django.apps import AppConfig
@@ -96,10 +97,15 @@ class TeckenAppConfig(AppConfig):
 
     @staticmethod
     def _check_storage_urls():
-        """If you use minio to functionally test S3, since it's
+        """Ensure emulated storage buckets exist.
+
+        If you use minio to functionally test S3, since it's
         ephemeral the buckets you create disappear after a restart.
         Make sure they exist. That's what we expect to happen with the
         real production S3 buckets.
+
+        The emulated GCS may also have missing buckets that can be created
+        during initialization.
         """
         _all_possible_urls = set(
             list(settings.SYMBOL_URLS)
@@ -107,21 +113,31 @@ class TeckenAppConfig(AppConfig):
             + list(settings.UPLOAD_URL_EXCEPTIONS.values())
         )
         for url in _all_possible_urls:
-            if not url or "minio" not in urlparse(url).netloc:
+            if not url:
                 continue
-            bucket = StorageBucket(url)
-            try:
-                bucket.client.head_bucket(Bucket=bucket.name)
-            except ClientError as exception:
-                if exception.response["Error"]["Code"] == "404":
-                    bucket.client.create_bucket(Bucket=bucket.name)
-                    logger.info(f"Created minio bucket {bucket.name!r}")
-                else:
-                    # The most comment problem is that the S3 doesn't match
-                    # the AWS credentials configured.
-                    # If that's the case, this will raise a 403 Forbidden
-                    # ClientError.
-                    raise
+            netloc = urlparse(url).netloc
+            is_minio = "minio" in netloc
+            is_emulated_gcs = "gcs-emulator" in netloc
+            if is_minio:
+                bucket = StorageBucket(url)
+                try:
+                    bucket.client.head_bucket(Bucket=bucket.name)
+                except ClientError as exception:
+                    if exception.response["Error"]["Code"] == "404":
+                        bucket.client.create_bucket(Bucket=bucket.name)
+                        logger.info(f"Created minio bucket {bucket.name!r}")
+                    else:
+                        # The most common problem is that the S3 doesn't match
+                        # the AWS credentials configured.
+                        # If that's the case, this will raise a 403 Forbidden
+                        # ClientError.
+                        raise
+            elif is_emulated_gcs:
+                bucket = StorageBucket(url)
+                try:
+                    bucket = bucket.client.get_bucket(bucket.name)
+                except NotFound:
+                    bucket.client.create_bucket(bucket.name)
 
     @staticmethod
     def _check_mandatory_settings():

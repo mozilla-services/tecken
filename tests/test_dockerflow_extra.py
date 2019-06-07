@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from unittest.mock import call, patch, Mock
 import pytest
 from google.api_core.exceptions import BadRequest as google_BadRequest
 from botocore.exceptions import ClientError, EndpointConnectionError
@@ -112,3 +113,16 @@ def test_check_storage_urls_other_client_error_s3(botomock, settings):
     with botomock(mock_api_call):
         with pytest.raises(ClientError):
             dockerflow_extra.check_storage_urls(None)
+
+
+def test_check_storage_urls_emulated_gcs(settings):
+    settings.SYMBOL_URLS = ["https://gcs-emulator.example.com/bucket"]
+    settings.UPLOAD_URL_EXCEPTIONS = {
+        "*@peterbe.com": "https://gcs-emulator.example.com/peterbe-com"
+    }
+    mock_client = Mock(spec_set=("get_bucket",))
+    with patch("tecken.storage.FakeGCSClient") as mock_class:
+        mock_class.return_value = mock_client
+        dockerflow_extra.check_storage_urls(None)
+    assert mock_class.call_count == 2
+    mock_client.get_bucket.assert_has_calls((call("bucket"), call("peterbe-com")))
