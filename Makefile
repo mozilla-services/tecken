@@ -17,6 +17,7 @@ default:
 	@echo "  clean            Stops and removes all docker containers"
 	@echo "  redis-cache-cli  Opens a Redis CLI to the cache Redis server"
 	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
+	@echo "  clear-caches     Clear Redis caches"
 	@echo "  shell            Opens a Bash shell"
 	@echo "  currentshell     Opens a Bash shell into existing running 'web' container"
 	@echo "  test             Runs the Python test suite"
@@ -44,6 +45,11 @@ clean: .env stop
 	docker-compose rm -f
 	rm -rf coverage/ .coverage
 	rm -fr .docker-build
+
+.PHONY: clear-caches
+clear-caches:
+	docker-compose run --rm redis-cache redis-cli -h redis-cache FLUSHDB
+	docker-compose run --rm redis-store redis-cli -h redis-store FLUSHDB
 
 .PHONY: setup
 setup: .env
