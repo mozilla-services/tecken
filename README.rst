@@ -21,12 +21,16 @@ Project details
 .. image:: https://img.shields.io/badge/whatsdeployed-dev,stage,prod-green.svg
    :alt: What's Deployed
    :target: https://whatsdeployed.io/s-5HY
+.. image:: https://readthedocs.org/projects/tecken/badge/?version=latest
+   :alt: ReadTheDocs status
+   :target: https://tecken.readthedocs.io/
 
 * License: MPLv2
 * Documentation: `<https://tecken.readthedocs.io/>`_
 * Community Participation Guidelines: `<https://github.com/mozilla-services/tecken/blob/master/CODE_OF_CONDUCT.md>`_
+* Code style: `Black <https://github.com/ambv/black>`_
 
-The **production server** is: https://symbols.mozilla.org/
+Production server: https://symbols.mozilla.org/
 
 
 The Logo
