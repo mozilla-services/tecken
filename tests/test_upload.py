@@ -16,6 +16,7 @@ from django.contrib.auth.models import Permission, User
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 
+from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload import utils
@@ -111,7 +112,7 @@ def test_upload_archive_happy_path(
     settings,
 ):
     # The default upload URL setting uses Google Cloud Storage.
-    assert "googleapis" in settings.UPLOAD_DEFAULT_URL
+    assert StorageBucket.URL_FINGERPRINT["gcs"] in settings.UPLOAD_DEFAULT_URL
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -336,7 +337,7 @@ def test_upload_archive_with_ignorable_files(
     settings,
 ):
     # The default upload URL setting uses Google Cloud Storage.
-    assert "googleapis" in settings.UPLOAD_DEFAULT_URL
+    assert StorageBucket.URL_FINGERPRINT["gcs"] in settings.UPLOAD_DEFAULT_URL
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")

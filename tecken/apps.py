@@ -116,16 +116,16 @@ class TeckenAppConfig(AppConfig):
             if not url:
                 continue
             netloc = urlparse(url).netloc
-            is_minio = "minio" in netloc
-            is_emulated_gcs = "gcs-emulator" in netloc
-            if is_minio:
+            is_emulated_s3 = StorageBucket.URL_FINGERPRINT["emulated-s3"] in netloc
+            is_emulated_gcs = StorageBucket.URL_FINGERPRINT["emulated-gcs"] in netloc
+            if is_emulated_s3:
                 bucket = StorageBucket(url)
                 try:
                     bucket.client.head_bucket(Bucket=bucket.name)
                 except ClientError as exception:
                     if exception.response["Error"]["Code"] == "404":
                         bucket.client.create_bucket(Bucket=bucket.name)
-                        logger.info(f"Created minio bucket {bucket.name!r}")
+                        logger.info(f"Created emulated S3 bucket {bucket.name!r}")
                     else:
                         # The most common problem is that the S3 doesn't match
                         # the AWS credentials configured.
