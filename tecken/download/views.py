@@ -28,6 +28,7 @@ from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
 from tecken.download.tasks import download_microsoft_symbol, store_missing_symbol_task
 from tecken.download.forms import DownloadForm
+from tecken.storage import StorageBucket
 
 logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
@@ -150,6 +151,7 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             # from the host.
             if (
                 settings.DEBUG
+                and StorageBucket.URL_FINGERPRINT["emulated-s3"] in url
                 and "http://minio:9000" in url
                 and request.get_host() == "localhost:8000"
             ):  # pragma: no cover

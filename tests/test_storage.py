@@ -4,9 +4,10 @@
 
 import mock
 import pytest
+from google.cloud.storage import _http, blob
 from google.cloud.storage.client import Client as google_Client
 
-from tecken.storage import StorageBucket, scrub_credentials
+from tecken.storage import StorageBucket, scrub_credentials, FakeGCSClient
 
 
 def test_use_StorageBucket():
@@ -101,6 +102,96 @@ def test_google_cloud_storage_client_with_prefix():
     bucket = StorageBucket("https://storage.googleapis.com/foo-bar-bucket/myprefix")
     assert bucket.name == "foo-bar-bucket"
     assert bucket.prefix == "myprefix"
+
+
+def test_emulated_gcs_client():
+    bucket = StorageBucket("https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket")
+    assert bucket.name == "emulated-bucket"
+    assert bucket.is_google_cloud_storage
+    assert bucket.is_emulated_gcs
+
+    # Google Cloud Storage constants before creating a client
+    orig = {
+        "api_base_url": "https://www.googleapis.com",
+        "api_access_endpoint": "https://storage.googleapis.com",
+        "download_url_template": (
+            "https://www.googleapis.com/download/storage/v1{path}?alt=media"
+        ),
+        "multipart_url_template": (
+            "https://www.googleapis.com"
+            "/upload/storage/v1{bucket_path}/o?uploadType=multipart"
+        ),
+        "resumable_url_template": (
+            "https://www.googleapis.com"
+            "/upload/storage/v1{bucket_path}/o?uploadType=resumable"
+        ),
+    }
+    assert _http.Connection.API_BASE_URL == orig["api_base_url"]
+    assert blob._API_ACCESS_ENDPOINT == orig["api_access_endpoint"]
+    assert blob._DOWNLOAD_URL_TEMPLATE == orig["download_url_template"]
+    assert blob._MULTIPART_URL_TEMPLATE == orig["multipart_url_template"]
+    assert blob._RESUMABLE_URL_TEMPLATE == orig["resumable_url_template"]
+
+    # Constants after creating a client
+    fake = {
+        "api_base_url": "https://gcs-emulator.127.0.0.1.nip.io:4443",
+        "api_access_endpoint": "https://storage.gcs-emulator.127.0.0.1.nip.io:4443",
+        "download_url_template": (
+            "https://gcs-emulator.127.0.0.1.nip.io:4443"
+            "/download/storage/v1{path}?alt=media"
+        ),
+        "multipart_url_template": (
+            "https://gcs-emulator.127.0.0.1.nip.io:4443"
+            "/upload/storage/v1{bucket_path}/o?uploadType=multipart"
+        ),
+        "resumable_url_template": (
+            "https://gcs-emulator.127.0.0.1.nip.io:4443"
+            "/upload/storage/v1{bucket_path}/o?uploadType=resumable"
+        ),
+    }
+
+    with bucket.get_storage_client() as client:
+        assert isinstance(client, FakeGCSClient)
+        assert _http.Connection.API_BASE_URL == fake["api_base_url"]
+        assert blob._API_ACCESS_ENDPOINT == fake["api_access_endpoint"]
+        assert blob._DOWNLOAD_URL_TEMPLATE == fake["download_url_template"]
+        assert blob._MULTIPART_URL_TEMPLATE == fake["multipart_url_template"]
+        assert blob._RESUMABLE_URL_TEMPLATE == fake["resumable_url_template"]
+
+    # Exiting client-as-context returns the constants to the original values
+    assert _http.Connection.API_BASE_URL == orig["api_base_url"]
+    assert blob._API_ACCESS_ENDPOINT == orig["api_access_endpoint"]
+    assert blob._DOWNLOAD_URL_TEMPLATE == orig["download_url_template"]
+    assert blob._MULTIPART_URL_TEMPLATE == orig["multipart_url_template"]
+    assert blob._RESUMABLE_URL_TEMPLATE == orig["resumable_url_template"]
+
+
+def test_fake_gcs_client_init_fake_urls():
+    """URL faking can be done outside of using the FakeGCSClient."""
+    server_url = "https://gcs-emulator.127.0.0.1.nip.io:4443"
+    public_host = "storage.gcs-emulator.127.0.0.1.nip.io:4443"
+    orig_api_base_url = "https://www.googleapis.com"
+    fake_api_base_url = "https://gcs-emulator.127.0.0.1.nip.io:4443"
+
+    # URLs can be manually faked
+    FakeGCSClient.init_fake_urls(server_url, public_host)
+    assert _http.Connection.API_BASE_URL == fake_api_base_url
+    # A second call with the same URLs is OK
+    FakeGCSClient.init_fake_urls(server_url, public_host)
+    assert _http.Connection.API_BASE_URL == fake_api_base_url
+    # URLs can not be changed, since they are shared with all clients
+    with pytest.raises(ValueError):
+        FakeGCSClient.init_fake_urls("https://example.com", public_host)
+    with pytest.raises(ValueError):
+        FakeGCSClient.init_fake_urls(server_url, "storage.example.com")
+
+    # Faked URLs are undone as many times as they were faked (twice now)
+    assert not FakeGCSClient.undo_fake_urls()  # False = still fake
+    assert _http.Connection.API_BASE_URL == fake_api_base_url
+    assert FakeGCSClient.undo_fake_urls()  # True = back to original
+    assert _http.Connection.API_BASE_URL == orig_api_base_url
+    assert FakeGCSClient.undo_fake_urls()  # OK to undo too many times
+    assert _http.Connection.API_BASE_URL == orig_api_base_url
 
 
 def test_scrub_credentials():

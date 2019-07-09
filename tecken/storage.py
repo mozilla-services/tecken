@@ -5,9 +5,12 @@
 import re
 from urllib.parse import urlparse, urlunparse
 
+from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 import boto3
 from botocore.config import Config
+import requests
+import urllib3
 
 from django.conf import settings
 
@@ -44,6 +47,20 @@ class StorageBucket:
 
     """
 
+    # A substring match of the domain is used to recognize storage backends.
+    # For emulated backends, the name should be present in the docker-compose
+    # service name.
+    URL_FINGERPRINT = {
+        # Google Cloud Storage, like storage.googleapis.com or www.googleapis.com
+        "gcs": "googleapis",
+        # GCS Emulator
+        "emulated-gcs": "gcs-emulator",
+        # AWS S3, like bucket-name.s3.amazonaws.com
+        "s3": ".amazonaws.com",
+        # Minio S3 Emulator
+        "emulated-s3": "minio",
+    }
+
     def __init__(self, url, try_symbols=False, file_prefix=""):
         parsed = urlparse(url)
         self.scheme = parsed.scheme
@@ -66,9 +83,9 @@ class StorageBucket:
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
-        if "googleapis" in parsed.netloc:
+        if self.URL_FINGERPRINT["gcs"] in parsed.netloc:
             self.endpoint_url = scrub_credentials(url)
-        elif not parsed.netloc.endswith(".amazonaws.com"):
+        elif not self.URL_FINGERPRINT["s3"] in parsed.netloc:
             # the endpoint_url will be all but the path
             self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
         region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
@@ -79,7 +96,12 @@ class StorageBucket:
 
     @property
     def is_google_cloud_storage(self):
-        return "googleapis" in self.netloc
+        return self.URL_FINGERPRINT["gcs"] in self.netloc or self.is_emulated_gcs
+
+    @property
+    def is_emulated_gcs(self):
+        """Is the URL for the emulated Google Cloud Storage?"""
+        return self.URL_FINGERPRINT["emulated-gcs"] in self.netloc
 
     @property
     def base_url(self):
@@ -90,7 +112,8 @@ class StorageBucket:
         return (
             f"<{self.__class__.__name__} name={self.name!r} "
             f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
-            f"is_google_cloud_storage={self.is_google_cloud_storage}>"
+            f"is_google_cloud_storage={self.is_google_cloud_storage} "
+            f"is_emulated_gcs={self.is_emulated_gcs}> "
         )
 
     @property
@@ -101,6 +124,7 @@ class StorageBucket:
                 endpoint_url=self.endpoint_url,
                 region_name=self.region,
                 is_google_cloud_storage=self.is_google_cloud_storage,
+                is_emulated_gcs=self.is_emulated_gcs,
             )
         return self._client
 
@@ -110,6 +134,7 @@ class StorageBucket:
             endpoint_url=self.endpoint_url,
             region_name=self.region,
             is_google_cloud_storage=self.is_google_cloud_storage,
+            is_emulated_gcs=self.is_emulated_gcs,
             **config_params,
         )
 
@@ -121,9 +146,18 @@ class StorageBucket:
 
 
 def get_storage_client(
-    endpoint_url=None, region_name=None, is_google_cloud_storage=False, **config_params
+    endpoint_url=None,
+    region_name=None,
+    is_google_cloud_storage=False,
+    is_emulated_gcs=False,
+    **config_params,
 ):
-    if is_google_cloud_storage:
+    if is_emulated_gcs:
+        endpoint_host = urlparse(endpoint_url).netloc
+        public_host = "storage." + endpoint_host
+        client = FakeGCSClient(server_url=endpoint_url, public_host=public_host)
+        return client
+    elif is_google_cloud_storage:
         client = storage.Client.from_service_account_json(
             settings.GOOGLE_APPLICATION_CREDENTIALS
         )
@@ -141,3 +175,101 @@ def get_storage_client(
             options["region_name"] = region_name
         session = boto3.session.Session()
         return session.client("s3", **options)
+
+
+class FakeGCSClient(storage.Client):
+    """Client to bundle configuration needed for API requests to faked GCS."""
+
+    def __init__(self, server_url, public_host, project="fake"):
+        """Initialize a FakeGCSClient."""
+
+        self.server_url = server_url
+        self.public_host = public_host
+        self.init_fake_urls(server_url, public_host)
+
+        # Create a session that is OK talking over insecure HTTPS
+        weak_http = requests.Session()
+        weak_http.verify = False
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        # Initialize the base class
+        super().__init__(
+            project=project, credentials=AnonymousCredentials(), _http=weak_http
+        )
+
+    _FAKED_URLS = None
+
+    @classmethod
+    def init_fake_urls(cls, server_url, public_host):
+        """
+        Update URL variables in classes and modules.
+
+        This is ugly, but the Google Cloud Storage Python library doesn't
+        support setting these as instance variables.
+        """
+        if cls._FAKED_URLS:
+            # Check that we're not changing the value, which would affect other
+            # instances of FakeGKSClient
+            if cls._FAKED_URLS["server_url"] != server_url:
+                raise ValueError(
+                    'server_url already "%s", can\'t change to "%s"'
+                    % (cls._FAKED_URLS["server_url"], server_url)
+                )
+            if cls._FAKED_URLS["public_host"] != public_host:
+                raise ValueError(
+                    'public_host already "%s", can\'t change to "%s"'
+                    % (cls._FAKED_URLS["public_host"], public_host)
+                )
+            cls._FAKED_URLS["depth"] += 1
+        else:
+            cls._FAKED_URLS = {
+                "server_url": server_url,
+                "public_host": public_host,
+                "depth": 1,
+                "old_api_base_url": storage._http.Connection.API_BASE_URL,
+                "old_api_access_endpoint": storage.blob._API_ACCESS_ENDPOINT,
+                "old_download_tmpl": storage.blob._DOWNLOAD_URL_TEMPLATE,
+                "old_multipart_tmpl": storage.blob._MULTIPART_URL_TEMPLATE,
+                "old_resumable_tmpl": storage.blob._RESUMABLE_URL_TEMPLATE,
+            }
+
+            storage._http.Connection.API_BASE_URL = server_url
+            storage.blob._API_ACCESS_ENDPOINT = "https://" + public_host
+            storage.blob._DOWNLOAD_URL_TEMPLATE = (
+                "%s/download/storage/v1{path}?alt=media" % server_url
+            )
+            base_tmpl = "%s/upload/storage/v1{bucket_path}/o?uploadType=" % server_url
+            storage.blob._MULTIPART_URL_TEMPLATE = base_tmpl + "multipart"
+            storage.blob._RESUMABLE_URL_TEMPLATE = base_tmpl + "resumable"
+
+    @classmethod
+    def undo_fake_urls(cls):
+        """
+        Reset the faked URL variables in classes and modules.
+
+        Returns True if we've returned to original,
+        False if still on faked URLs due to nested clients.
+        """
+        if cls._FAKED_URLS is None:
+            return True
+        cls._FAKED_URLS["depth"] -= 1
+        if cls._FAKED_URLS["depth"] <= 0:
+            storage._http.Connection.API_BASE_URL = cls._FAKED_URLS["old_api_base_url"]
+            storage.blob._API_ACCESS_ENDPOINT = cls._FAKED_URLS[
+                "old_api_access_endpoint"
+            ]
+            storage.blob._DOWNLOAD_URL_TEMPLATE = cls._FAKED_URLS["old_download_tmpl"]
+            storage.blob._MULTIPART_URL_TEMPLATE = cls._FAKED_URLS["old_multipart_tmpl"]
+            storage.blob._RESUMABLE_URL_TEMPLATE = cls._FAKED_URLS["old_resumable_tmpl"]
+            cls._FAKED_URLS = None
+            return True
+        else:
+            return False
+
+    def __enter__(self):
+        """Allow FakeGCSClient to be used as a context manager."""
+        return self
+
+    def __exit__(self, *args):
+        """Undo setting fake URLs when exiting context."""
+        self.undo_fake_urls()
