@@ -50,7 +50,7 @@ class StorageBucket:
     # A substring match of the domain is used to recognize storage backends.
     # For emulated backends, the name should be present in the docker-compose
     # service name.
-    URL_FINGERPRINT = {
+    _URL_FINGERPRINT = {
         # Google Cloud Storage, like storage.googleapis.com or www.googleapis.com
         "gcs": "googleapis",
         # GCS Emulator
@@ -59,12 +59,24 @@ class StorageBucket:
         "s3": ".amazonaws.com",
         # Minio S3 Emulator
         "emulated-s3": "minio",
+        # S3 test domain
+        "test-s3": "s3.example.com",
     }
 
     def __init__(self, url, try_symbols=False, file_prefix=""):
         parsed = urlparse(url)
         self.scheme = parsed.scheme
         self.netloc = parsed.netloc
+
+        # Determine the backend from the netloc (domain plus port)
+        self.backend = None
+        for backend, fingerprint in self._URL_FINGERPRINT.items():
+            if fingerprint in self.netloc:
+                self.backend = backend
+                break
+        if self.backend is None:
+            raise ValueError("Storage backend not recognized in {!r}".format(url))
+
         try:
             name, prefix = parsed.path[1:].split("/", 1)
             if prefix.endswith("/"):
@@ -83,9 +95,9 @@ class StorageBucket:
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
-        if self.URL_FINGERPRINT["gcs"] in parsed.netloc:
+        if self.backend == "gcs":
             self.endpoint_url = scrub_credentials(url)
-        elif not self.URL_FINGERPRINT["s3"] in parsed.netloc:
+        elif not self.backend == "s3":
             # the endpoint_url will be all but the path
             self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
         region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
@@ -96,12 +108,12 @@ class StorageBucket:
 
     @property
     def is_google_cloud_storage(self):
-        return self.URL_FINGERPRINT["gcs"] in self.netloc or self.is_emulated_gcs
+        return self.backend in ("gcs", "emulated-gcs")
 
     @property
     def is_emulated_gcs(self):
         """Is the URL for the emulated Google Cloud Storage?"""
-        return self.URL_FINGERPRINT["emulated-gcs"] in self.netloc
+        return self.backend == "emulated-gcs"
 
     @property
     def base_url(self):
@@ -112,8 +124,7 @@ class StorageBucket:
         return (
             f"<{self.__class__.__name__} name={self.name!r} "
             f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
-            f"is_google_cloud_storage={self.is_google_cloud_storage} "
-            f"is_emulated_gcs={self.is_emulated_gcs}> "
+            f"backend={self.backend!r}>"
         )
 
     @property

@@ -112,7 +112,7 @@ def test_upload_archive_happy_path(
     settings,
 ):
     # The default upload URL setting uses Google Cloud Storage.
-    assert StorageBucket.URL_FINGERPRINT["gcs"] in settings.UPLOAD_DEFAULT_URL
+    assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "gcs"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -337,7 +337,7 @@ def test_upload_archive_with_ignorable_files(
     settings,
 ):
     # The default upload URL setting uses Google Cloud Storage.
-    assert StorageBucket.URL_FINGERPRINT["gcs"] in settings.UPLOAD_DEFAULT_URL
+    assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "gcs"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")

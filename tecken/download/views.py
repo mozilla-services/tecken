@@ -151,7 +151,7 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             # from the host.
             if (
                 settings.DEBUG
-                and StorageBucket.URL_FINGERPRINT["emulated-s3"] in url
+                and StorageBucket(url).backend == "emulated-s3"
                 and "http://minio:9000" in url
                 and request.get_host() == "localhost:8000"
             ):  # pragma: no cover

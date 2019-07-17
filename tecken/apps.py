@@ -3,7 +3,6 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
-from urllib.parse import urlparse
 
 from botocore.exceptions import ClientError
 import markus
@@ -115,11 +114,8 @@ class TeckenAppConfig(AppConfig):
         for url in _all_possible_urls:
             if not url:
                 continue
-            netloc = urlparse(url).netloc
-            is_emulated_s3 = StorageBucket.URL_FINGERPRINT["emulated-s3"] in netloc
-            is_emulated_gcs = StorageBucket.URL_FINGERPRINT["emulated-gcs"] in netloc
-            if is_emulated_s3:
-                bucket = StorageBucket(url)
+            bucket = StorageBucket(url)
+            if bucket.backend == "emulated-s3":
                 try:
                     bucket.client.head_bucket(Bucket=bucket.name)
                 except ClientError as exception:
@@ -132,8 +128,7 @@ class TeckenAppConfig(AppConfig):
                         # If that's the case, this will raise a 403 Forbidden
                         # ClientError.
                         raise
-            elif is_emulated_gcs:
-                bucket = StorageBucket(url)
+            elif bucket.backend == "emulated-gcs":
                 try:
                     bucket = bucket.client.get_bucket(bucket.name)
                 except NotFound:

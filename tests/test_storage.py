@@ -12,6 +12,7 @@ from tecken.storage import StorageBucket, scrub_credentials, FakeGCSClient
 
 INIT_CASES = {
     "https://s3.amazonaws.com/some-bucket": {
+        "backend": "s3",
         "base_url": "https://s3.amazonaws.com/some-bucket",
         "endpoint_url": None,
         "name": "some-bucket",
@@ -20,6 +21,7 @@ INIT_CASES = {
         "region": None,
     },
     "https://s3.amazonaws.com/some-bucket?access=public": {
+        "backend": "s3",
         "base_url": "https://s3.amazonaws.com/some-bucket",
         "endpoint_url": None,
         "name": "some-bucket",
@@ -28,6 +30,7 @@ INIT_CASES = {
         "region": None,
     },
     "https://s3-eu-west-2.amazonaws.com/some-bucket": {
+        "backend": "s3",
         "base_url": "https://s3-eu-west-2.amazonaws.com/some-bucket",
         "endpoint_url": None,
         "name": "some-bucket",
@@ -36,6 +39,7 @@ INIT_CASES = {
         "region": "eu-west-2",
     },
     "http://s3.example.com/buck/prfx": {
+        "backend": "test-s3",
         "base_url": "http://s3.example.com/buck",
         "endpoint_url": "http://s3.example.com",
         "name": "buck",
@@ -43,7 +47,17 @@ INIT_CASES = {
         "private": True,
         "region": None,
     },
+    "http://minio:9000/testbucket": {
+        "backend": "emulated-s3",
+        "base_url": "http://minio:9000/testbucket",
+        "endpoint_url": "http://minio:9000",
+        "name": "testbucket",
+        "prefix": "",
+        "private": True,
+        "region": None,
+    },
     "https://storage.googleapis.com/foo-bar-bucket": {
+        "backend": "gcs",
         "base_url": "https://storage.googleapis.com/foo-bar-bucket",
         "endpoint_url": "https://storage.googleapis.com/foo-bar-bucket",
         "name": "foo-bar-bucket",
@@ -52,6 +66,7 @@ INIT_CASES = {
         "region": None,
     },
     "https://storage.googleapis.com/foo-bar-bucket/myprefix": {
+        "backend": "gcs",
         "base_url": "https://storage.googleapis.com/foo-bar-bucket",
         "endpoint_url": "https://storage.googleapis.com/foo-bar-bucket/myprefix",
         "name": "foo-bar-bucket",
@@ -60,6 +75,7 @@ INIT_CASES = {
         "region": None,
     },
     "https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket": {
+        "backend": "emulated-gcs",
         "base_url": "https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket",
         "endpoint_url": "https://gcs-emulator.127.0.0.1.nip.io:4443",
         "name": "emulated-bucket",
@@ -76,6 +92,7 @@ INIT_CASES = {
 def test_init(url, expected):
     """The URL is processed during initialization."""
     bucket = StorageBucket(url)
+    assert bucket.backend == expected["backend"]
     assert bucket.base_url == expected["base_url"]
     assert bucket.endpoint_url == expected["endpoint_url"]
     assert bucket.name == expected["name"]
@@ -89,6 +106,12 @@ def test_init_unknown_region_raises():
     """An exception is raised by a S3 URL with an unknown region."""
     with pytest.raises(ValueError):
         StorageBucket("https://s3-unheardof.amazonaws.com/some-bucket")
+
+
+def test_init_unknown_backend_raises():
+    """An exception is raised if the backend can't be determined from the URL."""
+    with pytest.raises(ValueError):
+        StorageBucket("https://unknown-backend.example.com/some-bucket")
 
 
 def test_StorageBucket_client():
