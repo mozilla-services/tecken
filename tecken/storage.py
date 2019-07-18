@@ -5,6 +5,8 @@
 import re
 from urllib.parse import urlparse, urlunparse
 
+from botocore.exceptions import ClientError
+from google.api_core.exceptions import NotFound
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 import boto3
@@ -154,6 +156,43 @@ class StorageBucket:
             assert self.is_google_cloud_storage
             self._bucket = self.client.get_bucket(self.name)
         return self._bucket
+
+    def exists(self):
+        """Check that the bucket exists in the backend.
+
+        :raises botocore.exceptions.ClientError: a S3 exception that implies a
+          misconfiguration or bad credentials.
+        :raises google.api_core.exceptions.GoogleAPICallError: a GCS exception
+          that implies a misconfiguration or bad credentials.
+        :returns: True if the bucket exists, False if it does not
+        """
+        # Use lower lookup timeouts on S3, to fail quickly when there are network issues
+        client = self.get_storage_client(
+            read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
+            connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
+        )
+
+        if self.is_google_cloud_storage:
+            try:
+                client.get_bucket(self.name)
+            except NotFound:
+                return False
+            else:
+                return True
+        else:
+            try:
+                client.head_bucket(Bucket=self.name)
+            except ClientError as exception:
+                # A generic ClientError can be raised if:
+                # - The bucket doesn't exist (code 404)
+                # - The user doesn't have s3:ListBucket perm (code 403)
+                # - Other credential issues (code 403, maybe others)
+                if exception.response["Error"]["Code"] == "404":
+                    return False
+                else:
+                    raise
+            else:
+                return True
 
 
 def get_storage_client(

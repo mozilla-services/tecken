@@ -5,10 +5,13 @@
 from unittest import mock
 
 import pytest
+from botocore.exceptions import ClientError
+from google.api_core.exceptions import Forbidden, NotFound
 from google.cloud.storage import _http, blob
 from google.cloud.storage.client import Client as google_Client
 
 from tecken.storage import StorageBucket, scrub_credentials, FakeGCSClient
+
 
 INIT_CASES = {
     "https://s3.amazonaws.com/some-bucket": {
@@ -112,6 +115,74 @@ def test_init_unknown_backend_raises():
     """An exception is raised if the backend can't be determined from the URL."""
     with pytest.raises(ValueError):
         StorageBucket("https://unknown-backend.example.com/some-bucket")
+
+
+def test_exists_s3(botomock):
+    """If the S3 API returns 200, exists() return True."""
+
+    def return_200(self, operation_name, api_params):
+        assert operation_name == "HeadBucket"
+        return {"ReponseMetadata": {"HTTPStatusCode": 200}}
+
+    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
+    with botomock(return_200):
+        assert bucket.exists()
+
+
+def test_exists_s3_not_found(botomock):
+    """If the S3 API raises a 404, exists() returns False."""
+
+    def raise_not_found(self, operation_name, api_params):
+        assert operation_name == "HeadBucket"
+        parsed_response = {
+            "Error": {"Code": "404", "Message": "The specified bucket does not exist"}
+        }
+        raise ClientError(parsed_response, operation_name)
+
+    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
+    with botomock(raise_not_found):
+        assert not bucket.exists()
+
+
+def test_exists_s3_forbidden_raises(botomock):
+    """If the S3 API raises a 403, it is raised as an exception."""
+
+    def raise_forbidden(self, operation_name, api_params):
+        assert operation_name == "HeadBucket"
+        parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
+        raise ClientError(parsed_response, operation_name)
+
+    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
+    with botomock(raise_forbidden), pytest.raises(ClientError):
+        bucket.exists()
+
+
+def test_exists_gcs(gcsmock):
+    """If the GCS API returns a bucket, exists() return True."""
+
+    gcsmock.get_bucket = mock.Mock(return_value=gcsmock.MockBucket())
+    bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
+    assert bucket.exists()
+    gcsmock.get_bucket.assert_called_once_with("test-bucket")
+
+
+def test_exists_gcs_not_found(gcsmock):
+    """If the GCS API raises a 404, exists() returns False."""
+
+    gcsmock.get_bucket = mock.Mock(side_effect=NotFound("Not Found"))
+    bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
+    assert not bucket.exists()
+    gcsmock.get_bucket.assert_called_once_with("test-bucket")
+
+
+def test_exists_gcs_forbidden_raises(gcsmock):
+    """If the GCS API raises a 403, it is raised as an exception."""
+
+    gcsmock.get_bucket = mock.Mock(side_effect=Forbidden("BadCreds"))
+    bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
+    with pytest.raises(Forbidden):
+        bucket.exists()
+    gcsmock.get_bucket.assert_called_once_with("test-bucket")
 
 
 def test_StorageBucket_client():
