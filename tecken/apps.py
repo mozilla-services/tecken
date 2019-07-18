@@ -4,10 +4,8 @@
 
 import logging
 
-from botocore.exceptions import ClientError
 import markus
 from django_redis import get_redis_connection
-from google.cloud.exceptions import NotFound
 
 from django.conf import settings
 from django.apps import AppConfig
@@ -115,24 +113,13 @@ class TeckenAppConfig(AppConfig):
             if not url:
                 continue
             bucket = StorageBucket(url)
-            if bucket.backend == "emulated-s3":
-                try:
-                    bucket.client.head_bucket(Bucket=bucket.name)
-                except ClientError as exception:
-                    if exception.response["Error"]["Code"] == "404":
+            if bucket.backend in ("emulated-s3", "emulated-gcs"):
+                if not bucket.exists():
+                    if bucket.backend == "emulated-s3":
                         bucket.client.create_bucket(Bucket=bucket.name)
-                        logger.info(f"Created emulated S3 bucket {bucket.name!r}")
                     else:
-                        # The most common problem is that the S3 doesn't match
-                        # the AWS credentials configured.
-                        # If that's the case, this will raise a 403 Forbidden
-                        # ClientError.
-                        raise
-            elif bucket.backend == "emulated-gcs":
-                try:
-                    bucket = bucket.client.get_bucket(bucket.name)
-                except NotFound:
-                    bucket.client.create_bucket(bucket.name)
+                        bucket.client.create_bucket(bucket.name)
+                    logger.info(f"Created {bucket.backend} bucket {bucket.name!r}")
 
     @staticmethod
     def _check_mandatory_settings():
