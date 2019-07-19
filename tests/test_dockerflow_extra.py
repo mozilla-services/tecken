@@ -4,7 +4,7 @@
 
 from unittest.mock import call, patch, Mock
 import pytest
-from google.api_core.exceptions import BadRequest as google_BadRequest
+from google.api_core.exceptions import NotFound, BadRequest as google_BadRequest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from tecken import dockerflow_extra
@@ -41,6 +41,21 @@ def test_check_storage_urls_happy_path_s3(botomock, settings):
         assert not dockerflow_extra.check_storage_urls(None)
 
 
+def test_check_storage_urls_missing(gcsmock, settings):
+    def mock_get_bucket(name):
+        if name == "private":
+            raise NotFound("Never heard of it!")
+        return gcsmock.MockBucket()
+
+    gcsmock.get_bucket = mock_get_bucket
+
+    errors = dockerflow_extra.check_storage_urls(None)
+    assert errors
+    error, = errors
+    assert "private" in error.msg
+    assert "bucket not found" in error.msg
+
+
 def test_check_storage_urls_client_error(gcsmock, settings):
     def mock_get_bucket(name):
         if name == "private":
@@ -65,7 +80,7 @@ def test_check_storage_urls_client_error_s3(botomock, settings):
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         if api_params["Bucket"] == "private":
-            response = {"Error": {"Code": "404", "Message": "Not found"}}
+            response = {"Error": {"Code": "403", "Message": "Not allowed"}}
             raise ClientError(response, operation_name)
         return {}
 
@@ -106,12 +121,11 @@ def test_check_storage_urls_other_client_error_s3(botomock, settings):
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         if api_params["Bucket"] == "private":
-            response = {"Error": {"Code": "500", "Message": "Other"}}
-            raise ClientError(response, operation_name)
+            raise RuntimeError("A different error")
         return {}
 
     with botomock(mock_api_call):
-        with pytest.raises(ClientError):
+        with pytest.raises(RuntimeError):
             dockerflow_extra.check_storage_urls(None)
 
 
