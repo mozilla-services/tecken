@@ -9,7 +9,7 @@ from io import BytesIO
 import pytest
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError, RetryError
-from google.api_core.exceptions import BadRequest as google_BadRequest
+from google.api_core.exceptions import NotFound
 
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
@@ -2185,7 +2185,7 @@ def test_upload_client_unrecognized_bucket(gcsmock, fakeuser, client):
     url = reverse("upload:upload_archive")
 
     def mocked_get_bucket(name):
-        raise google_BadRequest("Never heard of it")
+        raise NotFound("Never heard of it")
 
     gcsmock.get_bucket = mocked_get_bucket
 

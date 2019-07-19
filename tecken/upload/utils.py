@@ -174,6 +174,8 @@ def upload_file_upload(
     # files, we don't want this rather simple operation to be allowed
     # to take too long. Because if it times out, it's safe to just
     # assume the file doesn't already exist.
+    # TODO(jwhitlock): Create StorageBucket API rather than directly use
+    # backend clients.
     existing_size, existing_metadata = key_existing(
         client_lookup or client, bucket_name, key_name
     )
