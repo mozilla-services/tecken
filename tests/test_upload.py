@@ -5,11 +5,11 @@
 import gzip
 import os
 from io import BytesIO
+from unittest import mock
 
 import pytest
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError, RetryError
-from google.api_core.exceptions import NotFound
 
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
@@ -945,15 +945,6 @@ def test_key_existing_caching_s3(botomock, metricsmock, settings):
 def test_key_existing_size_caching_not_found(gcsmock, metricsmock):
 
     lookups = []
-
-    def mock_api_call(self, operation_name, api_params):
-        lookups.append((operation_name, api_params))
-
-        if operation_name == "HeadObject" and api_params["Key"] == "filename":
-            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
-            raise ClientError(parsed_response, operation_name)
-
-        raise NotImplementedError
 
     def mock_get_blob(key):
         lookups.append(key)
@@ -2176,7 +2167,7 @@ def test_upload_duplicate_files_in_zip_different_name(fakeuser, client, settings
 
 
 @pytest.mark.django_db
-def test_upload_client_unrecognized_bucket(gcsmock, fakeuser, client):
+def test_upload_client_unrecognized_bucket(fakeuser, client):
     """The upload view raises an error if you try to upload into a bucket
     that doesn't exist."""
     token = Token.objects.create(user=fakeuser)
@@ -2184,40 +2175,10 @@ def test_upload_client_unrecognized_bucket(gcsmock, fakeuser, client):
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    def mocked_get_bucket(name):
-        raise NotFound("Never heard of it")
-
-    gcsmock.get_bucket = mocked_get_bucket
-
-    with open(ZIP_FILE, "rb") as f:
-        with pytest.raises(ImproperlyConfigured):
-            client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-
-
-@pytest.mark.django_db
-def test_upload_client_unrecognized_bucket_s3(botomock, fakeuser, client, settings):
-    """The upload view raises an error if you try to upload into a bucket
-    that doesn't exist."""
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    def mock_api_call(self, operation_name, api_params):
-        # This comes for the setting UPLOAD_DEFAULT_URL specifically
-        # for tests.
-        assert api_params["Bucket"] == "private"
-        if operation_name == "HeadBucket":
-            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
-            raise ClientError(parsed_response, operation_name)
-
-        raise NotImplementedError((operation_name, api_params))
-
-    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
-        with pytest.raises(ImproperlyConfigured):
-            client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
+    with open(ZIP_FILE, "rb") as f, mock.patch(
+        "tecken.storage.StorageBucket.exists", return_value=False
+    ), pytest.raises(ImproperlyConfigured):
+        client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
 
 
 def test_get_bucket_info(settings):
