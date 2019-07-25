@@ -144,7 +144,11 @@ class StorageBucket:
 
     @property
     def client(self):
-        """return a boto3 session client based on 'self'"""
+        """Return a backend-specific client, cached on first access.
+
+        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        the backend-specific clients (bug 1564452).
+        """
         if not getattr(self, "_client", None):
             self._client = get_storage_client(
                 endpoint_url=self.endpoint_url,
@@ -155,7 +159,11 @@ class StorageBucket:
         return self._client
 
     def get_storage_client(self, **config_params):
-        """return a boto3 session client with different config parameters"""
+        """Return a backend-specific client, overriding default config parameters.
+
+        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        the backend-specific clients (bug 1564452).
+        """
         return get_storage_client(
             endpoint_url=self.endpoint_url,
             region_name=self.region,
@@ -165,6 +173,11 @@ class StorageBucket:
         )
 
     def get_or_load_bucket(self):
+        """Return a Google Storage Bucket instance, cached on first access.
+
+        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        the backend-specific clients (bug 1564452).
+        """
         if not hasattr(self, "_bucket"):
             assert self.is_google_cloud_storage
             self._bucket = self.client.get_bucket(self.name)

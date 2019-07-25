@@ -77,6 +77,15 @@ INIT_CASES = {
         "private": True,
         "region": None,
     },
+    "https://user:pass@storage.googleapis.com/foo/bar?hey=ho": {
+        "backend": "gcs",
+        "base_url": "https://user:pass@storage.googleapis.com/foo",
+        "endpoint_url": "https://storage.googleapis.com/foo/bar?hey=ho",
+        "name": "foo",
+        "prefix": "bar",
+        "private": True,
+        "region": None,
+    },
     "https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket": {
         "backend": "emulated-gcs",
         "base_url": "https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket",
@@ -115,6 +124,20 @@ def test_init_unknown_backend_raises():
     """An exception is raised if the backend can't be determined from the URL."""
     with pytest.raises(ValueError):
         StorageBucket("https://unknown-backend.example.com/some-bucket")
+
+
+@pytest.mark.parametrize(
+    "url,file_prefix,prefix",
+    (
+        ("http://s3.example.com/bucket", "v0", "v0"),
+        ("http://s3.example.com/bucket/try", "v0", "try/v0"),
+        ("http://s3.example.com/bucket/fail/", "v1", "fail/v1"),
+    ),
+)
+def test_init_file_prefix(url, file_prefix, prefix):
+    """A file_prefix is optionally combined with the URL prefix."""
+    bucket = StorageBucket(url, file_prefix=file_prefix)
+    assert bucket.prefix == prefix
 
 
 def test_exists_s3(botomock):
@@ -209,6 +232,22 @@ def test_storageerror_msg():
         " operation: Forbidden"
     )
     assert str(error) == expected
+
+
+def test_get_or_load_bucket():
+    """StorageBucket.get_or_load_bucket returns a cached GCS bucket instance."""
+    bucket = StorageBucket("https://storage.googleapis.com/gcs-bucket")
+    mock_gcs_client = mock.Mock(specset=("get_bucket"))
+    bucket._client = mock_gcs_client  # Fake a call to bucket.client
+    mock_gcs_bucket = mock.Mock()
+    mock_gcs_client.get_bucket.return_value = mock_gcs_bucket
+
+    assert bucket.get_or_load_bucket() == mock_gcs_bucket
+    mock_gcs_client.get_bucket.assert_called_once_with("gcs-bucket")
+
+    # A cached bucket is returned, so get_bucket is not called again
+    assert bucket.get_or_load_bucket() == mock_gcs_bucket
+    mock_gcs_client.get_bucket.assert_called_once_with("gcs-bucket")
 
 
 def test_StorageBucket_client():
