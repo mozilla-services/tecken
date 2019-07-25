@@ -5,8 +5,8 @@
 import re
 from urllib.parse import urlparse, urlunparse
 
-from botocore.exceptions import ClientError
-from google.api_core.exceptions import NotFound
+from botocore.exceptions import BotoCoreError, ClientError
+from google.api_core.exceptions import GoogleAPIError, NotFound
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 import boto3
@@ -24,6 +24,18 @@ def scrub_credentials(url):
     """return a URL with any possible credentials removed."""
     parsed = urlparse(url)
     return urlunparse(parsed._replace(netloc=parsed.netloc.split("@", 1)[-1]))
+
+
+class StorageError(Exception):
+    """A backend-specific client reported an error."""
+
+    def __init__(self, bucket, backend_error):
+        self.backend = bucket.backend
+        self.url = bucket.url
+        self.backend_msg = f"{type(backend_error).__name__}: {backend_error}"
+
+    def __str__(self):
+        return f"{self.backend} backend ({self.url}) raised {self.backend_msg}"
 
 
 class StorageBucket:
@@ -66,6 +78,7 @@ class StorageBucket:
     }
 
     def __init__(self, url, try_symbols=False, file_prefix=""):
+        self.url = url
         parsed = urlparse(url)
         self.scheme = parsed.scheme
         self.netloc = parsed.netloc
@@ -160,10 +173,7 @@ class StorageBucket:
     def exists(self):
         """Check that the bucket exists in the backend.
 
-        :raises botocore.exceptions.ClientError: a S3 exception that implies a
-          misconfiguration or bad credentials.
-        :raises google.api_core.exceptions.GoogleAPICallError: a GCS exception
-          that implies a misconfiguration or bad credentials.
+        :raises StorageError: An unexpected backed-specific error was raised.
         :returns: True if the bucket exists, False if it does not
         """
         # Use lower lookup timeouts on S3, to fail quickly when there are network issues
@@ -177,20 +187,24 @@ class StorageBucket:
                 client.get_bucket(self.name)
             except NotFound:
                 return False
+            except GoogleAPIError as error:
+                raise StorageError(self, error)
             else:
                 return True
         else:
             try:
                 client.head_bucket(Bucket=self.name)
-            except ClientError as exception:
+            except ClientError as error:
                 # A generic ClientError can be raised if:
                 # - The bucket doesn't exist (code 404)
                 # - The user doesn't have s3:ListBucket perm (code 403)
                 # - Other credential issues (code 403, maybe others)
-                if exception.response["Error"]["Code"] == "404":
+                if error.response["Error"]["Code"] == "404":
                     return False
                 else:
-                    raise
+                    raise StorageError(self, error)
+            except BotoCoreError as error:
+                raise StorageError(self, error)
             else:
                 return True
 

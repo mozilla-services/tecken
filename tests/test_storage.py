@@ -5,12 +5,12 @@
 from unittest import mock
 
 import pytest
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, EndpointConnectionError
 from google.api_core.exceptions import Forbidden, NotFound
 from google.cloud.storage import _http, blob
 from google.cloud.storage.client import Client as google_Client
 
-from tecken.storage import StorageBucket, scrub_credentials, FakeGCSClient
+from tecken.storage import StorageBucket, StorageError, scrub_credentials, FakeGCSClient
 
 
 INIT_CASES = {
@@ -118,7 +118,7 @@ def test_init_unknown_backend_raises():
 
 
 def test_exists_s3(botomock):
-    """If the S3 API returns 200, exists() return True."""
+    """exists() returns True when then S3 API returns 200."""
 
     def return_200(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
@@ -130,7 +130,7 @@ def test_exists_s3(botomock):
 
 
 def test_exists_s3_not_found(botomock):
-    """If the S3 API raises a 404, exists() returns False."""
+    """exists() returns False when the S3 API raises a 404 ClientError."""
 
     def raise_not_found(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
@@ -145,7 +145,7 @@ def test_exists_s3_not_found(botomock):
 
 
 def test_exists_s3_forbidden_raises(botomock):
-    """If the S3 API raises a 403, it is raised as an exception."""
+    """exists() raises StorageError when the S3 API raises a 403 ClientError."""
 
     def raise_forbidden(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
@@ -153,12 +153,24 @@ def test_exists_s3_forbidden_raises(botomock):
         raise ClientError(parsed_response, operation_name)
 
     bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
-    with botomock(raise_forbidden), pytest.raises(ClientError):
+    with botomock(raise_forbidden), pytest.raises(StorageError):
+        bucket.exists()
+
+
+def test_exists_s3_non_client_error_raises(botomock):
+    """exists() raises StorageError when the S3 API raises a non-client error."""
+
+    def raise_conn_error(self, operation_name, api_params):
+        assert operation_name == "HeadBucket"
+        raise EndpointConnectionError(endpoint_url="https://s3.amazonaws.com/")
+
+    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
+    with botomock(raise_conn_error), pytest.raises(StorageError):
         bucket.exists()
 
 
 def test_exists_gcs(gcsmock):
-    """If the GCS API returns a bucket, exists() return True."""
+    """exists() returns True if the GCS API returns a bucket."""
 
     gcsmock.get_bucket = mock.Mock(return_value=gcsmock.MockBucket())
     bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
@@ -167,7 +179,7 @@ def test_exists_gcs(gcsmock):
 
 
 def test_exists_gcs_not_found(gcsmock):
-    """If the GCS API raises a 404, exists() returns False."""
+    """exists() returns False if the GCS API raises a NotFound error."""
 
     gcsmock.get_bucket = mock.Mock(side_effect=NotFound("Not Found"))
     bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
@@ -176,13 +188,27 @@ def test_exists_gcs_not_found(gcsmock):
 
 
 def test_exists_gcs_forbidden_raises(gcsmock):
-    """If the GCS API raises a 403, it is raised as an exception."""
+    """exists() raises StorageError if the GCS API raises a Forbidden error."""
 
     gcsmock.get_bucket = mock.Mock(side_effect=Forbidden("BadCreds"))
     bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
-    with pytest.raises(Forbidden):
+    with pytest.raises(StorageError):
         bucket.exists()
     gcsmock.get_bucket.assert_called_once_with("test-bucket")
+
+
+def test_storageerror_msg():
+    """The StorageError message includes the URL and the backend error message."""
+    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket?access=public")
+    parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
+    backend_error = ClientError(parsed_response, "HeadBucket")
+    error = StorageError(bucket, backend_error)
+    expected = (
+        "s3 backend (https://s3.amazonaws.com/some-bucket?access=public)"
+        " raised ClientError: An error occurred (403) when calling the HeadBucket"
+        " operation: Forbidden"
+    )
+    assert str(error) == expected
 
 
 def test_StorageBucket_client():
