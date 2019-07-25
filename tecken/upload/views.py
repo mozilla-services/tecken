@@ -12,10 +12,8 @@ import time
 import concurrent.futures
 
 import requests
-from botocore.exceptions import ClientError
 import markus
 from encore.concurrent.futures.synchronous import SynchronousExecutor
-from google.api_core.exceptions import BadRequest as google_BadRequest
 
 from django import http
 from django.conf import settings
@@ -291,46 +289,31 @@ def upload_archive(request, upload_dir):
     else:
         # In case it's passed in as a string
         is_try_upload = bool(is_try_upload)
+
+    if not bucket_info.exists():
+        raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
+
+    # Setup the backend-specific clients (S3 or GCS) for upload_file_upload
+    # TODO(jwhitlock): implement backend details in StorageBucket API
     client = bucket_info.get_storage_client(
         read_timeout=settings.S3_PUT_READ_TIMEOUT,
         connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
     )
-    # Use a different client for doing the lookups.
-    # That's because we don't want the size lookup to severly accumulate
-    # in the case of there being some unpredictable slowness.
-    # When that happens the lookup is quickly cancelled and it assumes
-    # the file does not exist.
-    # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
-    lookup_client = bucket_info.get_storage_client(
-        read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
-        connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
-    )
     if bucket_info.is_google_cloud_storage:
-        try:
-            bucket = lookup_client.get_bucket(bucket_info.name)
-        except google_BadRequest as exception:
-            raise ImproperlyConfigured(
-                f"GCS bucket {bucket_info.name!r} can not be found. "
-                f"Exception: {exception}"
-            )
+        bucket = client.get_bucket(bucket_info.name)
+        lookup_client = None
     else:
         bucket = None
-        try:
-            lookup_client.head_bucket(Bucket=bucket_info.name)
-        except ClientError as exception:
-            if exception.response["Error"]["Code"] == "404":
-                # This warning message hopefully makes it easier to see what
-                # you need to do to your configuration.
-                # XXX Is this the best exception for runtime'y type of
-                # bad configurations.
-                raise ImproperlyConfigured(
-                    "S3 bucket '{}' can not be found. "
-                    "Connected with region={!r} endpoint_url={!r}".format(
-                        bucket_info.name, bucket_info.region, bucket_info.endpoint_url
-                    )
-                )
-            else:  # pragma: no cover
-                raise
+        # Use a different client for doing the lookups.
+        # That's because we don't want the size lookup to severly accumulate
+        # in the case of there being some unpredictable slowness.
+        # When that happens the lookup is quickly cancelled and it assumes
+        # the file does not exist.
+        # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
+        lookup_client = bucket_info.get_storage_client(
+            read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
+            connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
+        )
 
     # Every key has a prefix. If the StorageBucket instance has it's own prefix
     # prefix that first :)

@@ -5,6 +5,8 @@
 import re
 from urllib.parse import urlparse, urlunparse
 
+from botocore.exceptions import BotoCoreError, ClientError
+from google.api_core.exceptions import GoogleAPIError, NotFound
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 import boto3
@@ -22,6 +24,18 @@ def scrub_credentials(url):
     """return a URL with any possible credentials removed."""
     parsed = urlparse(url)
     return urlunparse(parsed._replace(netloc=parsed.netloc.split("@", 1)[-1]))
+
+
+class StorageError(Exception):
+    """A backend-specific client reported an error."""
+
+    def __init__(self, bucket, backend_error):
+        self.backend = bucket.backend
+        self.url = bucket.url
+        self.backend_msg = f"{type(backend_error).__name__}: {backend_error}"
+
+    def __str__(self):
+        return f"{self.backend} backend ({self.url}) raised {self.backend_msg}"
 
 
 class StorageBucket:
@@ -50,7 +64,7 @@ class StorageBucket:
     # A substring match of the domain is used to recognize storage backends.
     # For emulated backends, the name should be present in the docker-compose
     # service name.
-    URL_FINGERPRINT = {
+    _URL_FINGERPRINT = {
         # Google Cloud Storage, like storage.googleapis.com or www.googleapis.com
         "gcs": "googleapis",
         # GCS Emulator
@@ -59,12 +73,25 @@ class StorageBucket:
         "s3": ".amazonaws.com",
         # Minio S3 Emulator
         "emulated-s3": "minio",
+        # S3 test domain
+        "test-s3": "s3.example.com",
     }
 
     def __init__(self, url, try_symbols=False, file_prefix=""):
+        self.url = url
         parsed = urlparse(url)
         self.scheme = parsed.scheme
         self.netloc = parsed.netloc
+
+        # Determine the backend from the netloc (domain plus port)
+        self.backend = None
+        for backend, fingerprint in self._URL_FINGERPRINT.items():
+            if fingerprint in self.netloc:
+                self.backend = backend
+                break
+        if self.backend is None:
+            raise ValueError("Storage backend not recognized in {!r}".format(url))
+
         try:
             name, prefix = parsed.path[1:].split("/", 1)
             if prefix.endswith("/"):
@@ -83,9 +110,9 @@ class StorageBucket:
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
-        if self.URL_FINGERPRINT["gcs"] in parsed.netloc:
+        if self.backend == "gcs":
             self.endpoint_url = scrub_credentials(url)
-        elif not self.URL_FINGERPRINT["s3"] in parsed.netloc:
+        elif not self.backend == "s3":
             # the endpoint_url will be all but the path
             self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
         region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
@@ -96,12 +123,12 @@ class StorageBucket:
 
     @property
     def is_google_cloud_storage(self):
-        return self.URL_FINGERPRINT["gcs"] in self.netloc or self.is_emulated_gcs
+        return self.backend in ("gcs", "emulated-gcs")
 
     @property
     def is_emulated_gcs(self):
         """Is the URL for the emulated Google Cloud Storage?"""
-        return self.URL_FINGERPRINT["emulated-gcs"] in self.netloc
+        return self.backend == "emulated-gcs"
 
     @property
     def base_url(self):
@@ -112,13 +139,16 @@ class StorageBucket:
         return (
             f"<{self.__class__.__name__} name={self.name!r} "
             f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
-            f"is_google_cloud_storage={self.is_google_cloud_storage} "
-            f"is_emulated_gcs={self.is_emulated_gcs}> "
+            f"backend={self.backend!r}>"
         )
 
     @property
     def client(self):
-        """return a boto3 session client based on 'self'"""
+        """Return a backend-specific client, cached on first access.
+
+        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        the backend-specific clients (bug 1564452).
+        """
         if not getattr(self, "_client", None):
             self._client = get_storage_client(
                 endpoint_url=self.endpoint_url,
@@ -129,7 +159,11 @@ class StorageBucket:
         return self._client
 
     def get_storage_client(self, **config_params):
-        """return a boto3 session client with different config parameters"""
+        """Return a backend-specific client, overriding default config parameters.
+
+        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        the backend-specific clients (bug 1564452).
+        """
         return get_storage_client(
             endpoint_url=self.endpoint_url,
             region_name=self.region,
@@ -139,10 +173,53 @@ class StorageBucket:
         )
 
     def get_or_load_bucket(self):
+        """Return a Google Storage Bucket instance, cached on first access.
+
+        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        the backend-specific clients (bug 1564452).
+        """
         if not hasattr(self, "_bucket"):
             assert self.is_google_cloud_storage
             self._bucket = self.client.get_bucket(self.name)
         return self._bucket
+
+    def exists(self):
+        """Check that the bucket exists in the backend.
+
+        :raises StorageError: An unexpected backed-specific error was raised.
+        :returns: True if the bucket exists, False if it does not
+        """
+        # Use lower lookup timeouts on S3, to fail quickly when there are network issues
+        client = self.get_storage_client(
+            read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
+            connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
+        )
+
+        if self.is_google_cloud_storage:
+            try:
+                client.get_bucket(self.name)
+            except NotFound:
+                return False
+            except GoogleAPIError as error:
+                raise StorageError(self, error)
+            else:
+                return True
+        else:
+            try:
+                client.head_bucket(Bucket=self.name)
+            except ClientError as error:
+                # A generic ClientError can be raised if:
+                # - The bucket doesn't exist (code 404)
+                # - The user doesn't have s3:ListBucket perm (code 403)
+                # - Other credential issues (code 403, maybe others)
+                if error.response["Error"]["Code"] == "404":
+                    return False
+                else:
+                    raise StorageError(self, error)
+            except BotoCoreError as error:
+                raise StorageError(self, error)
+            else:
+                return True
 
 
 def get_storage_client(

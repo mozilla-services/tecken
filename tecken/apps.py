@@ -3,12 +3,9 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
-from urllib.parse import urlparse
 
-from botocore.exceptions import ClientError
 import markus
 from django_redis import get_redis_connection
-from google.cloud.exceptions import NotFound
 
 from django.conf import settings
 from django.apps import AppConfig
@@ -115,29 +112,14 @@ class TeckenAppConfig(AppConfig):
         for url in _all_possible_urls:
             if not url:
                 continue
-            netloc = urlparse(url).netloc
-            is_emulated_s3 = StorageBucket.URL_FINGERPRINT["emulated-s3"] in netloc
-            is_emulated_gcs = StorageBucket.URL_FINGERPRINT["emulated-gcs"] in netloc
-            if is_emulated_s3:
-                bucket = StorageBucket(url)
-                try:
-                    bucket.client.head_bucket(Bucket=bucket.name)
-                except ClientError as exception:
-                    if exception.response["Error"]["Code"] == "404":
+            bucket = StorageBucket(url)
+            if bucket.backend in ("emulated-s3", "emulated-gcs"):
+                if not bucket.exists():
+                    if bucket.backend == "emulated-s3":
                         bucket.client.create_bucket(Bucket=bucket.name)
-                        logger.info(f"Created emulated S3 bucket {bucket.name!r}")
                     else:
-                        # The most common problem is that the S3 doesn't match
-                        # the AWS credentials configured.
-                        # If that's the case, this will raise a 403 Forbidden
-                        # ClientError.
-                        raise
-            elif is_emulated_gcs:
-                bucket = StorageBucket(url)
-                try:
-                    bucket = bucket.client.get_bucket(bucket.name)
-                except NotFound:
-                    bucket.client.create_bucket(bucket.name)
+                        bucket.client.create_bucket(bucket.name)
+                    logger.info(f"Created {bucket.backend} bucket {bucket.name!r}")
 
     @staticmethod
     def _check_mandatory_settings():
