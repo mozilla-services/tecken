@@ -13,7 +13,9 @@ COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
 
-FROM python:3.6-slim@sha256:c680e3cc5c639e829367d4dc3874d7bcbe5f4af3490dcd4d5db7069e9f5f3538
+# NOTE(willkg): stick with stretch because it has gcc-6 which we need
+# to build dump_syms.
+FROM python:3.7.4-slim-stretch@sha256:6c42b2688b7c31bfdd106746212b6bcbf5a8c4ea01e2b0c31bcdc83e8b68bec9
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
