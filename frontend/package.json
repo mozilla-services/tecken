@@ -4,23 +4,24 @@
   "private": false,
   "license": "MPL-2.0",
   "dependencies": {
-    "bulma": "0.7.4",
-    "date-fns": "2.0.0-alpha.27",
+    "bulma": "0.7.5",
+    "date-fns": "2.0.0-beta.3",
     "font-awesome": "4.7.0",
-    "mobx": "5.9.0",
-    "mobx-react": "5.4.3",
-    "raven-js": "3.27.0",
+    "mobx": "5.13.0",
+    "mobx-react": "6.1.1",
+    "raven-js": "3.27.2",
     "react": "16.8.6",
     "react-copy-to-clipboard": "5.0.1",
     "react-dom": "16.8.6",
     "react-fontawesome": "1.6.1",
-    "react-router-dom": "5.0.0"
+    "react-router-dom": "5.0.1"
   },
   "devDependencies": {
-    "prettier": "1.16.4",
-    "react-scripts": "2.1.8"
+    "prettier": "1.18.2",
+    "react-scripts": "3.0.1"
   },
   "resolutions": {
+    "babel-eslint": "10.0.1",
     "braces": ">=2.3.1",
     "handlebars": ">=4.0.13",
     "js-yaml": ">=3.13.1",
