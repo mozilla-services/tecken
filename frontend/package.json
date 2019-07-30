@@ -17,7 +17,7 @@
     "react-router-dom": "5.0.0"
   },
   "devDependencies": {
-    "prettier": "1.16.4",
+    "prettier": "1.18.2",
     "react-scripts": "2.1.8"
   },
   "resolutions": {
