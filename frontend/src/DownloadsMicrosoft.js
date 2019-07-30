@@ -290,9 +290,7 @@ class DisplayDownloads extends React.PureComponent {
               <tr key={download.id}>
                 <td
                   className="file-key"
-                  title={`code_file=${
-                    download.missing_symbol.code_file
-                  }   code_id=${download.missing_symbol.code_id}`}
+                  title={`code_file=${download.missing_symbol.code_file} code_id=${download.missing_symbol.code_id}`}
                 >
                   {download.missing_symbol.symbol}/
                   {download.missing_symbol.debugid}/

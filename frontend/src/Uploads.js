@@ -191,9 +191,7 @@ class Uploads extends React.PureComponent {
         if (r.status === 200) {
           r.json().then(response => {
             if (response.total) {
-              document.title = `(${response.total} new) ${
-                this.state.pageTitle
-              }`;
+              document.title = `(${response.total} new) ${this.state.pageTitle}`;
               this.setState({ newUploadsCount: response.total });
             }
             window.setTimeout(() => {
