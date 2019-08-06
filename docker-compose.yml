@@ -158,11 +158,12 @@ services:
 
   # Fake Google Cloud Storage
   gcs-emulator:
-    # TODO: Switch to official image, when it is ready (bug 1563036)
-    image: jwhitlock/gc-fake-storage:test
-    environment:
-      - GCS_FAKE_EXTERNAL_URL=https://gcs-emulator.127.0.0.1.nip.io:4443
-      - GCS_FAKE_PUBLIC_HOST=storage.gcs-emulator.127.0.0.1.nip.io:4443
+    image: fsouza/fake-gcs-server:latest
+    command:
+      - -host=0.0.0.0
+      - -port=4443
+      - -external-url=https://gcs-emulator.127.0.0.1.nip.io:4443
+      - -public-host=storage.gcs-emulator.127.0.0.1.nip.io:4443
     ports:
       - "4443:4443"
     volumes:
