@@ -101,10 +101,6 @@ django-shell: .env .docker-build
 docs:
 	@bin/build-docs-locally.sh
 
-.PHONY: tags
-tag:
-	@bin/make-tag.py
-
 .PHONY: build-frontend
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
