@@ -8,7 +8,7 @@
     "date-fns": "2.0.0-beta.3",
     "font-awesome": "4.7.0",
     "mobx": "5.13.0",
-    "mobx-react": "6.1.1",
+    "mobx-react": "6.1.2",
     "raven-js": "3.27.2",
     "react": "16.8.6",
     "react-copy-to-clipboard": "5.0.1",
