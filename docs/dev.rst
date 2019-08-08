@@ -901,7 +901,7 @@ Stage is at: https://symbols.stage.mozaws.net
 
 To deploy to stage, create a tag::
 
-    $ make tag
+    $ ./bin/release.py make-tag
 
 
 Prod
