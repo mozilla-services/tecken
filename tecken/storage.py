@@ -269,9 +269,15 @@ class FakeGCSClient(storage.Client):
         weak_http.verify = False
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+        # Override the default API endpoint
+        client_options = {"api_endpoint": server_url}
+
         # Initialize the base class
         super().__init__(
-            project=project, credentials=AnonymousCredentials(), _http=weak_http
+            project=project,
+            credentials=AnonymousCredentials(),
+            _http=weak_http,
+            client_options=client_options,
         )
 
     _FAKED_URLS = None
@@ -303,14 +309,12 @@ class FakeGCSClient(storage.Client):
                 "server_url": server_url,
                 "public_host": public_host,
                 "depth": 1,
-                "old_api_base_url": storage._http.Connection.API_BASE_URL,
                 "old_api_access_endpoint": storage.blob._API_ACCESS_ENDPOINT,
                 "old_download_tmpl": storage.blob._DOWNLOAD_URL_TEMPLATE,
                 "old_multipart_tmpl": storage.blob._MULTIPART_URL_TEMPLATE,
                 "old_resumable_tmpl": storage.blob._RESUMABLE_URL_TEMPLATE,
             }
 
-            storage._http.Connection.API_BASE_URL = server_url
             storage.blob._API_ACCESS_ENDPOINT = "https://" + public_host
             storage.blob._DOWNLOAD_URL_TEMPLATE = (
                 "%s/download/storage/v1{path}?alt=media" % server_url
@@ -331,7 +335,6 @@ class FakeGCSClient(storage.Client):
             return True
         cls._FAKED_URLS["depth"] -= 1
         if cls._FAKED_URLS["depth"] <= 0:
-            storage._http.Connection.API_BASE_URL = cls._FAKED_URLS["old_api_base_url"]
             storage.blob._API_ACCESS_ENDPOINT = cls._FAKED_URLS[
                 "old_api_access_endpoint"
             ]
