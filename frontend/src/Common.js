@@ -202,9 +202,6 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
 export const parseQueryString = qs => {
   const searchParams = new URLSearchParams(qs);
   const parsed = {};
-  // NOTE(willkg): babel-eslint 10.0.2 erroneously kicks up this error. Once we
-  // upgrade to 10.0.3, we can get rid of this.
-  /* eslint-disable no-unused-vars */
   for (let [key, value] of searchParams) {
     const already = parsed[key];
     if (already === undefined) {
@@ -215,7 +212,6 @@ export const parseQueryString = qs => {
       parsed[key] = [already, value];
     }
   }
-  /* eslint-enable no-unused-vars */
   return parsed;
 };
 
