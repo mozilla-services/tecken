@@ -163,47 +163,6 @@ public by default with:
 
     $ gsutil defacl set public-read gs://my-gcs-bucket
 
-Emulated Google Cloud Storage
-=============================
-
-The ``gcs-emulator`` container provides an emulated Google Cloud Storage service
-as well as a public host for downloads. It supports the operations needed by
-Tecken, such as creating and listing buckets, uploading and reading files, and
-serving files via the public host. Further GCS features may not be supported,
-but can be added to `fsouza/fake-gcs-server`_.
-
-To use the emulator, set the URLs in your ``.env`` file:
-
-.. code-block:: shell
-
-    DJANGO_SYMBOL_URLS=https://gcs-emulator.127.0.0.1.nip.io:4443/tecken
-    DJANGO_UPLOAD_DEFAULT_URL=https://gcs-emulator.127.0.0.1.nip.io:4443/tecken
-
-The bucket (``tecken`` in this example) will be created when the web server
-starts.
-
-Tecken changes the Google Cloud Storage client libraries to use the
-``gcs-emulator`` URLs rather than the official URLs. It is not possible to mix
-real and emulated GCS usage in the same Tecken instance, so ensure that all
-the URL settings (``DJANGO_SYMBOL_URLS``, ``DJANGO_UPLOAD_DEFAULT_URL``,
-``DJANGO_UPLOAD_TRY_SYMBOLS_URL``, and ``DJANGO_UPLOAD_URL_EXCEPTIONS``)
-are consistantly set to real or emulated GCS URLs.
-
-The public host at https://storage.gcs-emulator.127.0.0.1.nip.io:4443 uses a
-self-signed certificate.  You will need to add an SSL exception when downloading
-a symbol file for the first time.
-
-Files are persisted in a volume created by ``docker-compose``. To clear old
-uploads, delete the ``gcs-emulator`` container and volumes:
-
-.. code-block:: shell
-
-    $ docker-compose rm --force --stop -v gcs-emulator
-
-A fresh volume with no files will be created on the next startup of ``gcs-emulator``.
-
-.. _`fsouza/fake-gcs-server`: https://github.com/fsouza/fake-gcs-server
-
 Documentation
 =============
 

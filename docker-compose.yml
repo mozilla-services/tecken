@@ -45,7 +45,6 @@ services:
       - minio
       - oidcprovider
       - statsd
-      - "gcs-emulator:gcs-emulator.127.0.0.1.nip.io"
     volumes:
       - $PWD:/app
     command: web-dev
@@ -113,7 +112,6 @@ services:
     links:
       - db
       - redis-cache
-      - "gcs-emulator:gcs-emulator.127.0.0.1.nip.io"
     volumes:
       - $PWD:/app
     command: worker-purge
@@ -155,16 +153,3 @@ services:
     image: local/tecken_oidcprovider
     ports:
       - "8081:8080"
-
-  # Fake Google Cloud Storage
-  gcs-emulator:
-    image: fsouza/fake-gcs-server:latest
-    command:
-      - -host=0.0.0.0
-      - -port=4443
-      - -external-url=https://gcs-emulator.127.0.0.1.nip.io:4443
-      - -public-host=storage.gcs-emulator.127.0.0.1.nip.io:4443
-    ports:
-      - "4443:4443"
-    volumes:
-      - /storage

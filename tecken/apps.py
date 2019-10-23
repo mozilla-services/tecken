@@ -101,8 +101,7 @@ class TeckenAppConfig(AppConfig):
         Make sure they exist. That's what we expect to happen with the
         real production S3 buckets.
 
-        The emulated GCS may also have missing buckets that can be created
-        during initialization.
+        TODO: Move to "make setup" (bug 1556775)
         """
         _all_possible_urls = set(
             list(settings.SYMBOL_URLS)
@@ -113,13 +112,9 @@ class TeckenAppConfig(AppConfig):
             if not url:
                 continue
             bucket = StorageBucket(url)
-            if bucket.backend in ("emulated-s3", "emulated-gcs"):
-                if not bucket.exists():
-                    if bucket.backend == "emulated-s3":
-                        bucket.client.create_bucket(Bucket=bucket.name)
-                    else:
-                        bucket.client.create_bucket(bucket.name)
-                    logger.info(f"Created {bucket.backend} bucket {bucket.name!r}")
+            if bucket.backend == "emulated-s3" and not bucket.exists():
+                bucket.client.create_bucket(Bucket=bucket.name)
+                logger.info(f"Created {bucket.backend} bucket {bucket.name!r}")
 
     @staticmethod
     def _check_mandatory_settings():
