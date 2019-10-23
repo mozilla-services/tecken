@@ -1,8 +1,4 @@
-# Derived from the "testprovider" container from
-# https://github.com/mozilla-parsys/docker-test-mozilla-django-oidc.
-# Only the redirect_urls specified in "fixtures.json" are being
-# modified to fit the needs of the docker setup.
+FROM mozilla/oidc-testprovider:oidc_testprovider-v0.9.3@sha256:0d275fcbbf27bd901cd739a4ad6753161f78be8fce3b51eb1fe2d75f9f352773
 
-FROM mozillaparsys/oidc_testprovider@sha256:876268f57a7932b3fc671bdb70eb79bfb283e567a13ff5ba2616af876554a8f3
-
+# Modify redirect_urls specified in "fixtures.json" to fit our needs.
 COPY fixtures.json /code/fixtures.json
