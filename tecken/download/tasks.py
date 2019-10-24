@@ -146,17 +146,12 @@ def upload_microsoft_symbol(symbol, debugid, file_path, download_obj):
     key_name = os.path.join(settings.SYMBOL_FILE_PREFIX, uri)
 
     bucket_info = StorageBucket(settings.UPLOAD_DEFAULT_URL)
-    client = bucket_info.client
-    if bucket_info.is_google_cloud_storage:
-        bucket = client.get_bucket(bucket_info.name)
-    else:
-        bucket = None
-
+    s3_client = bucket_info.client
     bucket_name = bucket_info.name
 
     # The upload_file_upload creates an instance but doesn't save it
     file_upload = upload_file_upload(
-        bucket or client, bucket_name, key_name, file_path, microsoft_download=True
+        s3_client, bucket_name, key_name, file_path, microsoft_download=True
     )
     # The _create_file_upload() function might return None
     # which means it decided there is no need to make an upload

@@ -4,7 +4,6 @@
 
 from unittest.mock import patch
 import pytest
-from google.api_core.exceptions import BadRequest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from tecken import dockerflow_extra
@@ -34,7 +33,6 @@ def test_check_storage_urls_missing():
 @pytest.mark.parametrize(
     "exception",
     (
-        BadRequest("Never heard of it!"),
         ClientError({"Error": {"Code": "403", "Message": "Not allowed"}}, "HeadBucket"),
         EndpointConnectionError(endpoint_url="http://s3.example.com"),
     ),

@@ -29,4 +29,3 @@ miniodata/
 .pytest_cache/
 .cache/
 docsvenv
-google_service_account.json

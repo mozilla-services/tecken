@@ -11,6 +11,7 @@ from io import StringIO
 
 import pytest
 import mock
+from botocore.exceptions import ClientError
 from markus import INCR
 
 from django.utils import timezone
@@ -51,49 +52,7 @@ def reload_downloaders(urls, try_downloader=None):
         views.try_downloader = SymbolDownloader([try_downloader])
 
 
-def test_client_happy_path(client, gcsmock, metricsmock):
-    reload_downloaders("https://storage.googleapis.example.com/private/prefix/")
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(bucket_name):
-        assert bucket_name == "private"
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym":
-            # As if it exists happily
-            blob = gcsmock.mock_blob_factory(key)
-            blob.public_url = "https://googleapis.example.com/private/" + key
-            return blob
-
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    response = client.get(url)
-    assert response.status_code == 302
-    parsed = urlparse(response["location"])
-    assert parsed.netloc == "googleapis.example.com"
-    # the pre-signed URL will have the bucket in the path
-    assert parsed.path == (
-        "/private/prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
-    )
-    response = client.head(url)
-    assert response.status_code == 200
-    assert response.content == b""
-
-    assert response["Access-Control-Allow-Origin"] == "*"
-    assert response["Access-Control-Allow-Methods"] == "GET"
-
-
-def test_client_happy_path_s3(client, botomock, metricsmock, settings):
+def test_client_happy_path(client, botomock):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
@@ -125,38 +84,29 @@ def test_client_happy_path_s3(client, botomock, metricsmock, settings):
         assert response["Access-Control-Allow-Methods"] == "GET"
 
 
-def test_client_legacy_product_prefix(client, gcsmock, metricsmock):
-    reload_downloaders("https://storage.googleapis.example.com/private/prefix/")
+def test_client_legacy_product_prefix(client, botomock):
+    reload_downloaders("https://s3.example.com/private/prefix/")
 
-    mock_bucket = gcsmock.MockBucket()
-
-    gcsmock.get_bucket = lambda name: mock_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym":
-            # As if it exists happily
-            blob = gcsmock.mock_blob_factory(key)
-            blob.public_url = "https://googleapis.example.com/private/" + key
-            return blob
-
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
+    def mock_api_call(self, operation_name, api_params):
+        assert operation_name == "ListObjectsV2"
+        return {"Contents": [{"Key": api_params["Prefix"]}]}
 
     url = reverse(
         "download:download_symbol_legacy",
         args=("firefox", "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
     )
-    response = client.get(url)
+    with botomock(mock_api_call):
+        response = client.get(url)
     assert response.status_code == 302
     parsed = urlparse(response["location"])
-    assert parsed.netloc == "googleapis.example.com"
+    assert parsed.netloc == "s3.example.com"
     # the pre-signed URL will have the bucket in the path
     assert parsed.path == (
         "/private/prefix/v0/" "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
 
-    response = client.head(url)
+    with botomock(mock_api_call):
+        response = client.head(url)
     assert response.status_code == 200
     assert response.content == b""
 
@@ -169,86 +119,13 @@ def test_client_legacy_product_prefix(client, gcsmock, metricsmock):
         "download:download_symbol_legacy",
         args=("gobblygook", "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
     )
-    response = client.get(url)
+    with botomock(mock_api_call):
+        response = client.get(url)
     assert response.status_code == 404
 
 
 @pytest.mark.django_db
-def test_client_try_download(client, gcsmock, settings):
-    """Suppose there's a file that doesn't exist in any of the
-    settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
-    then to reach that file you need to use ?try on the URL.
-    """
-    reload_downloaders(
-        "https://storage.googleapis.example.com/private/prefix/",
-        try_downloader="https://storage.googleapis.example.com/private/trying",
-    )
-    mock_calls = []
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(name):
-        mock_bucket.name = name
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        mock_calls.append(key)
-        if key == "prefix/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym":
-            return None
-        if key == "trying/v0/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym":
-            # As if it exists happily
-            blob = gcsmock.mock_blob_factory(key)
-            # blob.public_url = "https://googleapis.example.com/trying/" + key
-            return blob
-
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    try_url = reverse(
-        "download:download_symbol_try",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    response = client.get(url)
-    assert response.status_code == 404
-    assert len(mock_calls) == 1
-
-    response = client.get(try_url)
-    assert response.status_code == 302
-    assert len(mock_calls) == 2
-    # Also note that the headers are the same as for regular downloads
-    assert response["Access-Control-Allow-Origin"] == "*"
-    # And like regular download, you're only allowed to use GET or HEAD
-    response = client.put(try_url)
-    assert response.status_code == 405
-    # And calling it with DEBUG header should return a header with
-    # some debug info. Just like regular download.
-    response = client.get(try_url, HTTP_DEBUG="true")
-    assert response.status_code == 302
-    assert float(response["debug-time"]) > 0
-
-    # You can also use the regular URL but add ?try to the URL
-    response = client.get(url, {"try": True})
-    assert response.status_code == 302
-    assert len(mock_calls) == 2
-
-    # Do it again, to make sure the caches work in our favor
-    response = client.get(url)
-    assert response.status_code == 404
-    assert len(mock_calls) == 2
-
-    response = client.get(try_url)
-    assert response.status_code == 302
-    assert len(mock_calls) == 2
-
-
-@pytest.mark.django_db
-def test_client_try_download_s3(client, botomock, settings):
+def test_client_try_download(client, botomock):
     """Suppose there's a file that doesn't exist in any of the
     settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
     then to reach that file you need to use ?try on the URL.
@@ -314,7 +191,7 @@ def test_client_try_download_s3(client, botomock, settings):
         assert len(mock_calls) == 2
 
 
-def test_client_with_debug(client, botomock, metricsmock):
+def test_client_with_debug(client, botomock):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
@@ -388,7 +265,7 @@ def test_client_with_ignorable_file_extensions(client, botomock):
         assert response.status_code == 404
 
 
-def test_client_with_debug_with_cache(client, botomock, metricsmock):
+def test_client_with_debug_with_cache(client, botomock):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     mock_api_calls = []
@@ -418,7 +295,7 @@ def test_client_with_debug_with_cache(client, botomock, metricsmock):
         assert len(mock_api_calls) == 1
 
 
-def test_client_with_cache_refreshed(client, botomock, metricsmock):
+def test_client_with_cache_refreshed(client, botomock):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     mock_api_calls = []
@@ -712,7 +589,7 @@ def test_store_missing_symbol_task_happy_path():
 
 
 @pytest.mark.django_db
-def test_download_microsoft_symbol_task_happy_path(gcsmock, metricsmock, requestsmock):
+def test_download_microsoft_symbol_task_happy_path(botomock, metricsmock, requestsmock):
     with open(PD__FILE, "rb") as f:
         content = f.read()
         # just checking that the fixture file is sane
@@ -723,51 +600,48 @@ def test_download_microsoft_symbol_task_happy_path(gcsmock, metricsmock, request
             content=content,
         )
 
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(bucket_name):
-        assert bucket_name == "private"
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym":
-            # As if it doesn't exist
-            return None
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
     files_uploaded = []
 
-    def mocked_create_blob(key):
-        if key == "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym":
-            blob = gcsmock.MockBlob(key)
+    def mock_api_call(self, operation_name, api_params):
+        # this comes from the UPLOAD_DEFAULT_URL in settings.Test
+        assert api_params["Bucket"] == "private"
 
-            def mock_upload_from_file(file):
-                files_uploaded.append(key)
-                content = file.read()
-                assert isinstance(content, bytes)
-                # We know what the expected size is based on having run:
-                #   $ cabextract ksproxy.pd_
-                #   $ dump_syms ksproxy.pdb > ksproxy.sym
-                #   $ ls -l ksproxy.sym
-                #   1721
-                assert len(content) == 729
-                original_content = gzip.decompress(content)
-                assert len(original_content) == 1721
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
+        ):
+            # Pretend we've never heard of this
+            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
+            raise ClientError(parsed_response, operation_name)
 
-            blob.upload_from_file = mock_upload_from_file
-            return blob
+        if operation_name == "PutObject" and api_params["Key"] == (
+            "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
+        ):
 
-        raise NotImplementedError(key)
+            # Because .sym is in settings.COMPRESS_EXTENSIONS
+            assert api_params["ContentEncoding"] == "gzip"
+            # Because .sym is in settings.MIME_OVERRIDES
+            assert api_params["ContentType"] == "text/plain"
+            content = api_params["Body"].read()
+            assert isinstance(content, bytes)
+            # We know what the expected size is based on having run:
+            #   $ cabextract ksproxy.pd_
+            #   $ dump_syms ksproxy.pdb > ksproxy.sym
+            #   $ ls -l ksproxy.sym
+            #   1721
+            assert len(content) == 729
+            original_content = gzip.decompress(content)
+            assert len(original_content) == 1721
 
-    mock_bucket.blob = mocked_create_blob
+            # ...pretend to actually upload it.
+            files_uploaded.append(api_params["Key"])
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
 
     symbol = "ksproxy.pdb"
     debugid = "A7D6F1BB18CD4CB48"
-    download_microsoft_symbol(symbol, debugid)
+    with botomock(mock_api_call):
+        download_microsoft_symbol(symbol, debugid)
 
     assert files_uploaded == ["v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"]
 
@@ -804,7 +678,7 @@ def test_download_microsoft_symbol_task_happy_path(gcsmock, metricsmock, request
 
 
 @pytest.mark.django_db
-def test_download_microsoft_symbol_task_skipped(gcsmock, metricsmock, requestsmock):
+def test_download_microsoft_symbol_task_skipped(botomock, metricsmock, requestsmock):
     with open(PD__FILE, "rb") as f:
         content = f.read()
         # just checking that the fixture file is sane
@@ -815,30 +689,20 @@ def test_download_microsoft_symbol_task_skipped(gcsmock, metricsmock, requestsmo
             content=content,
         )
 
-    mock_bucket = gcsmock.MockBucket()
+    def mock_api_call(self, operation_name, api_params):
+        # this comes from the UPLOAD_DEFAULT_URL in settings.Test
+        assert api_params["Bucket"] == "private"
 
-    def mock_get_bucket(bucket_name):
-        assert bucket_name == "private"
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym":
-            return gcsmock.mock_blob_factory(key, size=729)
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    def mocked_create_blob(key):
-        # Nothing should be uploaded.
-        raise NotImplementedError(key)
-
-    mock_bucket.blob = mocked_create_blob
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
+        ):
+            return {"ContentLength": 729}
+        raise NotImplementedError((operation_name, api_params))
 
     symbol = "ksproxy.pdb"
     debugid = "A7D6F1BB18CD4CB48"
-    download_microsoft_symbol(symbol, debugid)
+    with botomock(mock_api_call):
+        download_microsoft_symbol(symbol, debugid)
 
     download_obj, = MicrosoftDownload.objects.all()
     assert not download_obj.error
@@ -853,7 +717,7 @@ def test_download_microsoft_symbol_task_skipped(gcsmock, metricsmock, requestsmo
 
 
 @pytest.mark.django_db
-def test_download_microsoft_symbol_task_not_found(gcsmock, metricsmock, requestsmock):
+def test_download_microsoft_symbol_task_not_found(botomock, requestsmock):
     requestsmock.get(
         "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
         "/A7D6F1BB18CD4CB48/ksproxy.pd_",
@@ -861,26 +725,32 @@ def test_download_microsoft_symbol_task_not_found(gcsmock, metricsmock, requests
         status_code=404,
     )
 
+    def mock_api_call(self, operation_name, api_params):
+        raise NotImplementedError((operation_name, api_params))
+
     symbol = "ksproxy.pdb"
     debugid = "A7D6F1BB18CD4CB48"
-    download_microsoft_symbol(symbol, debugid)
+    with botomock(mock_api_call):
+        download_microsoft_symbol(symbol, debugid)
     assert not FileUpload.objects.all().exists()
     assert not MicrosoftDownload.objects.all().exists()
 
 
 @pytest.mark.django_db
-def test_download_microsoft_symbol_task_wrong_file_header(
-    gcsmock, metricsmock, requestsmock
-):
+def test_download_microsoft_symbol_task_wrong_file_header(botomock, requestsmock):
     requestsmock.get(
         "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
         "/A7D6F1BB18CD4CB48/ksproxy.pd_",
         content=b"some other junk",
     )
 
+    def mock_api_call(self, operation_name, api_params):
+        raise NotImplementedError((operation_name, api_params))
+
     symbol = "ksproxy.pdb"
     debugid = "A7D6F1BB18CD4CB48"
-    download_microsoft_symbol(symbol, debugid)
+    with botomock(mock_api_call):
+        download_microsoft_symbol(symbol, debugid)
     assert not FileUpload.objects.all().exists()
 
     download_obj, = MicrosoftDownload.objects.all()
@@ -888,18 +758,20 @@ def test_download_microsoft_symbol_task_wrong_file_header(
 
 
 @pytest.mark.django_db
-def test_download_microsoft_symbol_task_cabextract_failing(
-    gcsmock, metricsmock, requestsmock
-):
+def test_download_microsoft_symbol_task_cabextract_failing(botomock, requestsmock):
     requestsmock.get(
         "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
         "/A7D6F1BB18CD4CB48/ksproxy.pd_",
         content=b"MSCF but not a real binary",
     )
 
+    def mock_api_call(self, operation_name, api_params):
+        raise NotImplementedError((operation_name, api_params))
+
     symbol = "ksproxy.pdb"
     debugid = "A7D6F1BB18CD4CB48"
-    download_microsoft_symbol(symbol, debugid)
+    with botomock(mock_api_call):
+        download_microsoft_symbol(symbol, debugid)
     assert not FileUpload.objects.all().exists()
 
     download_obj, = MicrosoftDownload.objects.all()
@@ -908,7 +780,7 @@ def test_download_microsoft_symbol_task_cabextract_failing(
 
 @pytest.mark.django_db
 def test_download_microsoft_symbol_task_dump_syms_failing(
-    gcsmock, settings, metricsmock, requestsmock
+    botomock, settings, requestsmock
 ):
     settings.DUMP_SYMS_PATH = FAKE_BROKEN_DUMP_SYMS
 
@@ -922,9 +794,12 @@ def test_download_microsoft_symbol_task_dump_syms_failing(
             content=content,
         )
 
+    def mock_api_call(self, operation_name, api_params):
+        raise NotImplementedError((operation_name, api_params))
+
     symbol = "ksproxy.pdb"
     debugid = "A7D6F1BB18CD4CB48"
-    with pytest.raises(DumpSymsError):
+    with pytest.raises(DumpSymsError), botomock(mock_api_call):
         download_microsoft_symbol(symbol, debugid)
 
     download_obj, = MicrosoftDownload.objects.all()
@@ -977,7 +852,7 @@ def test_store_missing_symbol_happy_path(metricsmock):
 
 
 @pytest.mark.django_db
-def test_store_missing_symbol_skips(metricsmock):
+def test_store_missing_symbol_skips():
     # If either symbol, debugid or filename are too long nothing is stored
     views.store_missing_symbol("x" * 200, "ABCDEF12345", "foo.sym")
     views.store_missing_symbol("foo.pdb", "x" * 200, "foo.sym")
@@ -986,7 +861,7 @@ def test_store_missing_symbol_skips(metricsmock):
 
 
 @pytest.mark.django_db
-def test_store_missing_symbol_skips_bad_code_file_or_id(metricsmock):
+def test_store_missing_symbol_skips_bad_code_file_or_id():
     # If the code_file or code_id is too long don't bother storing it.
     views.store_missing_symbol("foo.pdb", "ABCDEF12345", "foo.sym", code_file="x" * 200)
     views.store_missing_symbol("foo.pdb", "ABCDEF12345", "foo.sym", code_id="x" * 200)
@@ -1082,7 +957,7 @@ def test_store_missing_symbol_client_operationalerror(client, botomock, settings
         assert MissingSymbol.objects.all().count() == 1
 
 
-def test_client_with_bad_filenames(client, botomock, metricsmock):
+def test_client_with_bad_filenames(client, botomock):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     def mock_api_call(self, operation_name, api_params):

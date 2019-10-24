@@ -152,7 +152,6 @@ def possible_upload_urls(request):
             {
                 "url": url,
                 "bucket_name": bucket_info.name,
-                "is_google_cloud_storage": bucket_info.is_google_cloud_storage,
                 "private": private_or_public == "private",
                 "default": url == settings.UPLOAD_DEFAULT_URL,
             }

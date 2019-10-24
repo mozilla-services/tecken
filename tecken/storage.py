@@ -3,11 +3,9 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import re
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 from botocore.exceptions import BotoCoreError, ClientError
-from google.api_core.exceptions import GoogleAPIError, NotFound
-from google.cloud import storage
 import boto3
 from botocore.config import Config
 
@@ -15,12 +13,6 @@ from django.conf import settings
 
 
 ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
-
-
-def scrub_credentials(url):
-    """return a URL with any possible credentials removed."""
-    parsed = urlparse(url)
-    return urlunparse(parsed._replace(netloc=parsed.netloc.split("@", 1)[-1]))
 
 
 class StorageError(Exception):
@@ -62,8 +54,6 @@ class StorageBucket:
     # For emulated backends, the name should be present in the docker-compose
     # service name.
     _URL_FINGERPRINT = {
-        # Google Cloud Storage, like storage.googleapis.com or www.googleapis.com
-        "gcs": "googleapis",
         # AWS S3, like bucket-name.s3.amazonaws.com
         "s3": ".amazonaws.com",
         # Minio S3 Emulator
@@ -105,9 +95,7 @@ class StorageBucket:
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None
-        if self.backend == "gcs":
-            self.endpoint_url = scrub_credentials(url)
-        elif not self.backend == "s3":
+        if not self.backend == "s3":
             # the endpoint_url will be all but the path
             self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
         region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
@@ -115,10 +103,6 @@ class StorageBucket:
             if region[0] not in ALL_POSSIBLE_S3_REGIONS:
                 raise ValueError(f"Not valid S3 region {region[0]}")
             self.region = region[0]
-
-    @property
-    def is_google_cloud_storage(self):
-        return self.backend == "gcs"
 
     @property
     def base_url(self):
@@ -141,9 +125,7 @@ class StorageBucket:
         """
         if not getattr(self, "_client", None):
             self._client = get_storage_client(
-                endpoint_url=self.endpoint_url,
-                region_name=self.region,
-                is_google_cloud_storage=self.is_google_cloud_storage,
+                endpoint_url=self.endpoint_url, region_name=self.region
             )
         return self._client
 
@@ -154,22 +136,8 @@ class StorageBucket:
         the backend-specific clients (bug 1564452).
         """
         return get_storage_client(
-            endpoint_url=self.endpoint_url,
-            region_name=self.region,
-            is_google_cloud_storage=self.is_google_cloud_storage,
-            **config_params,
+            endpoint_url=self.endpoint_url, region_name=self.region, **config_params
         )
-
-    def get_or_load_bucket(self):
-        """Return a Google Storage Bucket instance, cached on first access.
-
-        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
-        the backend-specific clients (bug 1564452).
-        """
-        if not hasattr(self, "_bucket"):
-            assert self.is_google_cloud_storage
-            self._bucket = self.client.get_bucket(self.name)
-        return self._bucket
 
     def exists(self):
         """Check that the bucket exists in the backend.
@@ -183,51 +151,33 @@ class StorageBucket:
             connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
         )
 
-        if self.is_google_cloud_storage:
-            try:
-                client.get_bucket(self.name)
-            except NotFound:
+        try:
+            client.head_bucket(Bucket=self.name)
+        except ClientError as error:
+            # A generic ClientError can be raised if:
+            # - The bucket doesn't exist (code 404)
+            # - The user doesn't have s3:ListBucket perm (code 403)
+            # - Other credential issues (code 403, maybe others)
+            if error.response["Error"]["Code"] == "404":
                 return False
-            except GoogleAPIError as error:
-                raise StorageError(self, error)
             else:
-                return True
+                raise StorageError(self, error)
+        except BotoCoreError as error:
+            raise StorageError(self, error)
         else:
-            try:
-                client.head_bucket(Bucket=self.name)
-            except ClientError as error:
-                # A generic ClientError can be raised if:
-                # - The bucket doesn't exist (code 404)
-                # - The user doesn't have s3:ListBucket perm (code 403)
-                # - Other credential issues (code 403, maybe others)
-                if error.response["Error"]["Code"] == "404":
-                    return False
-                else:
-                    raise StorageError(self, error)
-            except BotoCoreError as error:
-                raise StorageError(self, error)
-            else:
-                return True
+            return True
 
 
-def get_storage_client(
-    endpoint_url=None, region_name=None, is_google_cloud_storage=False, **config_params
-):
-    if is_google_cloud_storage:
-        client = storage.Client.from_service_account_json(
-            settings.GOOGLE_APPLICATION_CREDENTIALS
-        )
-        return client
-    else:
-        options = {"config": Config(**config_params)}
-        if endpoint_url:
-            # By default, if you don't specify an endpoint_url
-            # boto3 will automatically assume AWS's S3.
-            # For local development we are running a local S3
-            # fake service with minio. Then we need to
-            # specify the endpoint_url.
-            options["endpoint_url"] = endpoint_url
-        if region_name:
-            options["region_name"] = region_name
-        session = boto3.session.Session()
-        return session.client("s3", **options)
+def get_storage_client(endpoint_url=None, region_name=None, **config_params):
+    options = {"config": Config(**config_params)}
+    if endpoint_url:
+        # By default, if you don't specify an endpoint_url
+        # boto3 will automatically assume AWS's S3.
+        # For local development we are running a local S3
+        # fake service with minio. Then we need to
+        # specify the endpoint_url.
+        options["endpoint_url"] = endpoint_url
+    if region_name:
+        options["region_name"] = region_name
+    session = boto3.session.Session()
+    return session.client("s3", **options)
