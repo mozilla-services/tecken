@@ -293,7 +293,7 @@ def upload_archive(request, upload_dir):
     if not bucket_info.exists():
         raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
 
-    # Setup the backend-specific clients (S3 or GCS) for upload_file_upload
+    # Create the client for upload_file_upload
     # TODO(jwhitlock): implement backend details in StorageBucket API
     client = bucket_info.get_storage_client(
         read_timeout=settings.S3_PUT_READ_TIMEOUT,
