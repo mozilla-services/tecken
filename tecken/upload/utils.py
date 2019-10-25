@@ -14,7 +14,6 @@ import markus
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 from cache_memoize import cache_memoize
-from google.cloud.storage.client import Bucket as google_Bucket
 
 from django.conf import settings
 from django.utils import timezone
@@ -121,25 +120,19 @@ def key_existing(client, bucket, key):
     If the file doesn't exist, return None for the metadata.
     """
     # Return 0 if the key can't be found so the memoize cache can cope
-    if isinstance(client, google_Bucket):
-        blob = client.get_blob(key)
-        if blob:
-            return blob.size, blob.metadata
-        return 0, None
-    else:
-        try:
-            response = client.head_object(Bucket=bucket, Key=key)
-            return response["ContentLength"], response.get("Metadata")
-        except ClientError as exception:
-            if exception.response["Error"]["Code"] == "404":
-                return 0, None
-            raise
-        except (ReadTimeout, socket.timeout) as exception:
-            logger.info(
-                f"ReadTimeout trying to list_objects_v2 for {bucket}:"
-                f"{key} ({exception})"
-            )
+    try:
+        response = client.head_object(Bucket=bucket, Key=key)
+        return response["ContentLength"], response.get("Metadata")
+    except ClientError as exception:
+        if exception.response["Error"]["Code"] == "404":
             return 0, None
+        raise
+    except (ReadTimeout, socket.timeout) as exception:
+        logger.info(
+            f"ReadTimeout trying to list_objects_v2 for {bucket}:"
+            f"{key} ({exception})"
+        )
+        return 0, None
 
 
 def should_compressed_key(key_name):
@@ -270,21 +263,7 @@ def upload_file_upload(
     logger.debug("Uploading file {!r} into {!r}".format(key_name, bucket_name))
     with metrics.timer("upload_put_object"):
         with open(file_path, "rb") as f:
-            if isinstance(client, google_Bucket):
-                blob = client.blob(key_name)
-
-                # This is an effect of moving from S3 to GCS.
-                if "ContentEncoding" in extras:
-                    blob.content_encoding = extras["ContentEncoding"]
-                    extras.pop("ContentEncoding")
-                if "ContentType" in extras:
-                    blob.content_type = extras["ContentType"]
-                    extras.pop("ContentType")
-
-                blob.metadata = metadata
-                blob.upload_from_file(f)
-            else:
-                client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
+            client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
     FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
     logger.info(f"Uploaded key {key_name}")
     metrics.incr("upload_file_upload_upload", 1)

@@ -6,11 +6,8 @@ from unittest import mock
 
 import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
-from google.api_core.exceptions import Forbidden, NotFound
-from google.cloud.storage import blob
-from google.cloud.storage.client import Client as google_Client
 
-from tecken.storage import StorageBucket, StorageError, scrub_credentials, FakeGCSClient
+from tecken.storage import StorageBucket, StorageError
 
 
 INIT_CASES = {
@@ -55,42 +52,6 @@ INIT_CASES = {
         "base_url": "http://minio:9000/testbucket",
         "endpoint_url": "http://minio:9000",
         "name": "testbucket",
-        "prefix": "",
-        "private": True,
-        "region": None,
-    },
-    "https://storage.googleapis.com/foo-bar-bucket": {
-        "backend": "gcs",
-        "base_url": "https://storage.googleapis.com/foo-bar-bucket",
-        "endpoint_url": "https://storage.googleapis.com/foo-bar-bucket",
-        "name": "foo-bar-bucket",
-        "prefix": "",
-        "private": True,
-        "region": None,
-    },
-    "https://storage.googleapis.com/foo-bar-bucket/myprefix": {
-        "backend": "gcs",
-        "base_url": "https://storage.googleapis.com/foo-bar-bucket",
-        "endpoint_url": "https://storage.googleapis.com/foo-bar-bucket/myprefix",
-        "name": "foo-bar-bucket",
-        "prefix": "myprefix",
-        "private": True,
-        "region": None,
-    },
-    "https://user:pass@storage.googleapis.com/foo/bar?hey=ho": {
-        "backend": "gcs",
-        "base_url": "https://user:pass@storage.googleapis.com/foo",
-        "endpoint_url": "https://storage.googleapis.com/foo/bar?hey=ho",
-        "name": "foo",
-        "prefix": "bar",
-        "private": True,
-        "region": None,
-    },
-    "https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket": {
-        "backend": "emulated-gcs",
-        "base_url": "https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket",
-        "endpoint_url": "https://gcs-emulator.127.0.0.1.nip.io:4443",
-        "name": "emulated-bucket",
         "prefix": "",
         "private": True,
         "region": None,
@@ -192,34 +153,6 @@ def test_exists_s3_non_client_error_raises(botomock):
         bucket.exists()
 
 
-def test_exists_gcs(gcsmock):
-    """exists() returns True if the GCS API returns a bucket."""
-
-    gcsmock.get_bucket = mock.Mock(return_value=gcsmock.MockBucket())
-    bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
-    assert bucket.exists()
-    gcsmock.get_bucket.assert_called_once_with("test-bucket")
-
-
-def test_exists_gcs_not_found(gcsmock):
-    """exists() returns False if the GCS API raises a NotFound error."""
-
-    gcsmock.get_bucket = mock.Mock(side_effect=NotFound("Not Found"))
-    bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
-    assert not bucket.exists()
-    gcsmock.get_bucket.assert_called_once_with("test-bucket")
-
-
-def test_exists_gcs_forbidden_raises(gcsmock):
-    """exists() raises StorageError if the GCS API raises a Forbidden error."""
-
-    gcsmock.get_bucket = mock.Mock(side_effect=Forbidden("BadCreds"))
-    bucket = StorageBucket("https://storage.googleapis.com/test-bucket")
-    with pytest.raises(StorageError):
-        bucket.exists()
-    gcsmock.get_bucket.assert_called_once_with("test-bucket")
-
-
 def test_storageerror_msg():
     """The StorageError message includes the URL and the backend error message."""
     bucket = StorageBucket("https://s3.amazonaws.com/some-bucket?access=public")
@@ -232,22 +165,6 @@ def test_storageerror_msg():
         " operation: Forbidden"
     )
     assert str(error) == expected
-
-
-def test_get_or_load_bucket():
-    """StorageBucket.get_or_load_bucket returns a cached GCS bucket instance."""
-    bucket = StorageBucket("https://storage.googleapis.com/gcs-bucket")
-    mock_gcs_client = mock.Mock(specset=("get_bucket"))
-    bucket._client = mock_gcs_client  # Fake a call to bucket.client
-    mock_gcs_bucket = mock.Mock()
-    mock_gcs_client.get_bucket.return_value = mock_gcs_bucket
-
-    assert bucket.get_or_load_bucket() == mock_gcs_bucket
-    mock_gcs_client.get_bucket.assert_called_once_with("gcs-bucket")
-
-    # A cached bucket is returned, so get_bucket is not called again
-    assert bucket.get_or_load_bucket() == mock_gcs_bucket
-    mock_gcs_client.get_bucket.assert_called_once_with("gcs-bucket")
 
 
 def test_StorageBucket_client():
@@ -285,105 +202,3 @@ def test_StorageBucket_client():
         bucket = StorageBucket("https://s3-eu-west-2.amazonaws.com/some-bucket")
         bucket.client
         assert client_kwargs_calls[-1]["region_name"] == ("eu-west-2")
-
-
-def test_google_cloud_storage_client(gcsmock):
-    bucket = StorageBucket("https://storage.googleapis.com/foo-bar-bucket")
-    client = bucket.get_storage_client()
-    assert isinstance(client, google_Client)
-
-
-def test_emulated_gcs_client():
-    bucket = StorageBucket("https://gcs-emulator.127.0.0.1.nip.io:4443/emulated-bucket")
-    assert bucket.is_google_cloud_storage
-    assert bucket.is_emulated_gcs
-
-    # Google Cloud Storage constants before creating a client
-    orig = {
-        "api_access_endpoint": "https://storage.googleapis.com",
-        "download_url_template": (
-            "https://www.googleapis.com/download/storage/v1{path}?alt=media"
-        ),
-        "multipart_url_template": (
-            "https://www.googleapis.com"
-            "/upload/storage/v1{bucket_path}/o?uploadType=multipart"
-        ),
-        "resumable_url_template": (
-            "https://www.googleapis.com"
-            "/upload/storage/v1{bucket_path}/o?uploadType=resumable"
-        ),
-    }
-    assert blob._API_ACCESS_ENDPOINT == orig["api_access_endpoint"]
-    assert blob._DOWNLOAD_URL_TEMPLATE == orig["download_url_template"]
-    assert blob._MULTIPART_URL_TEMPLATE == orig["multipart_url_template"]
-    assert blob._RESUMABLE_URL_TEMPLATE == orig["resumable_url_template"]
-
-    # Constants after creating a client
-    fake = {
-        "api_base_url": "https://gcs-emulator.127.0.0.1.nip.io:4443",
-        "api_access_endpoint": "https://storage.gcs-emulator.127.0.0.1.nip.io:4443",
-        "download_url_template": (
-            "https://gcs-emulator.127.0.0.1.nip.io:4443"
-            "/download/storage/v1{path}?alt=media"
-        ),
-        "multipart_url_template": (
-            "https://gcs-emulator.127.0.0.1.nip.io:4443"
-            "/upload/storage/v1{bucket_path}/o?uploadType=multipart"
-        ),
-        "resumable_url_template": (
-            "https://gcs-emulator.127.0.0.1.nip.io:4443"
-            "/upload/storage/v1{bucket_path}/o?uploadType=resumable"
-        ),
-    }
-
-    with bucket.get_storage_client() as client:
-        assert isinstance(client, FakeGCSClient)
-        assert client._connection.API_BASE_URL == fake["api_base_url"]
-        assert blob._API_ACCESS_ENDPOINT == fake["api_access_endpoint"]
-        assert blob._DOWNLOAD_URL_TEMPLATE == fake["download_url_template"]
-        assert blob._MULTIPART_URL_TEMPLATE == fake["multipart_url_template"]
-        assert blob._RESUMABLE_URL_TEMPLATE == fake["resumable_url_template"]
-
-    # Exiting client-as-context returns the constants to the original values
-    assert blob._API_ACCESS_ENDPOINT == orig["api_access_endpoint"]
-    assert blob._DOWNLOAD_URL_TEMPLATE == orig["download_url_template"]
-    assert blob._MULTIPART_URL_TEMPLATE == orig["multipart_url_template"]
-    assert blob._RESUMABLE_URL_TEMPLATE == orig["resumable_url_template"]
-
-
-def test_fake_gcs_client_init_fake_urls():
-    """URL faking can be done outside of using the FakeGCSClient."""
-    server_url = "https://gcs-emulator.127.0.0.1.nip.io:4443"
-    public_host = "storage.gcs-emulator.127.0.0.1.nip.io:4443"
-    orig_api_access_endpoint = "https://storage.googleapis.com"
-    fake_api_access_endpoint = "https://storage.gcs-emulator.127.0.0.1.nip.io:4443"
-
-    # URLs can be manually faked
-    FakeGCSClient.init_fake_urls(server_url, public_host)
-    assert blob._API_ACCESS_ENDPOINT == fake_api_access_endpoint
-    # A second call with the same URLs is OK
-    FakeGCSClient.init_fake_urls(server_url, public_host)
-    assert blob._API_ACCESS_ENDPOINT == fake_api_access_endpoint
-    # URLs can not be changed, since they are shared with all clients
-    with pytest.raises(ValueError):
-        FakeGCSClient.init_fake_urls("https://example.com", public_host)
-    with pytest.raises(ValueError):
-        FakeGCSClient.init_fake_urls(server_url, "storage.example.com")
-
-    # Faked URLs are undone as many times as they were faked (twice now)
-    assert not FakeGCSClient.undo_fake_urls()  # False = still fake
-    assert blob._API_ACCESS_ENDPOINT == fake_api_access_endpoint
-    assert FakeGCSClient.undo_fake_urls()  # True = back to original
-    assert blob._API_ACCESS_ENDPOINT == orig_api_access_endpoint
-    assert FakeGCSClient.undo_fake_urls()  # OK to undo too many times
-    assert blob._API_ACCESS_ENDPOINT == orig_api_access_endpoint
-
-
-def test_scrub_credentials():
-    result = scrub_credentials("http://user:pass@storage.example.com/foo/bar?hey=ho")
-    # Exactly the same minus the "user:pass"
-    assert result == "http://storage.example.com/foo/bar?hey=ho"
-
-    result = scrub_credentials("http://storage.example.com/foo/bar?hey=ho")
-    # Exactly the same
-    assert result == "http://storage.example.com/foo/bar?hey=ho"

@@ -26,14 +26,6 @@ class AWS:
     }
 
 
-class GCP:
-    """Google Cloud Platform"""
-
-    GOOGLE_APPLICATION_CREDENTIALS = values.PathValue(
-        "google_service_account.json", environ_prefix=None
-    )
-
-
 class Celery:
 
     # Add a 5 minute soft timeout to all Celery tasks.
@@ -58,14 +50,7 @@ class S3:
     S3_PUT_READ_TIMEOUT = values.IntegerValue(30)  # seconds
 
 
-class GCS:  # Google Cloud Storage
-
-    pass
-
-    # XXX Need to figure out how to do all the things we do with S3 with timeouts.
-
-
-class Core(AWS, GCP, Celery, S3, GCS, Configuration):
+class Core(AWS, Celery, S3, Configuration):
     """Settings that will never change per-environment."""
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -220,8 +205,8 @@ class Core(AWS, GCP, Celery, S3, GCS, Configuration):
     # When we upload a .zip file, we iterate over the content and for each
     # file within (that isn't immediately "ignorable") we kick off a
     # function which figures out what (and how) to process the file.
-    # That function involves doing a S3/GCS GET (technically ListObjectsV2),
-    # (possible) gzipping the payload and (possibly) a S3/GCS PUT.
+    # That function involves doing a S3 GET (technically ListObjectsV2),
+    # (possible) gzipping the payload and (possibly) a S3 PUT.
     # All of these function calls get put in a
     # concurrent.futures.ThreadPoolExecutor pool. This setting is about
     # how many of these to start, max.
@@ -723,9 +708,8 @@ class Test(Localdev):
     PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 
     SYMBOL_URLS = [
-        "https://storage.googleapis.example.com/private/prefix/",
-        # "https://s3.example.com/public/prefix/?access=public",
-        # "https://s3.example.com/private/prefix/",
+        "https://s3.example.com/public/prefix/?access=public",
+        "https://s3.example.com/private/prefix/",
     ]
 
     AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
@@ -734,14 +718,9 @@ class Test(Localdev):
     OIDC_OP_USER_ENDPOINT = "https://auth.example.com/authorize"
 
     SYMBOL_FILE_PREFIX = "v0"
-    # UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-    UPLOAD_DEFAULT_URL = "https://storage.googleapis.example.com/private/prefix/"
-    # UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
-    UPLOAD_TRY_SYMBOLS_URL = "https://storage.googleapis.example.com/try/prefix/"
-    # UPLOAD_URL_EXCEPTIONS = {"*@peterbe.com": "https://s3.example.com/peterbe-com"}
-    UPLOAD_URL_EXCEPTIONS = {
-        "*@peterbe.com": "https://storage.googleapis.example.com/peterbe-com"
-    }
+    UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
+    UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
+    UPLOAD_URL_EXCEPTIONS = {"*@peterbe.com": "https://s3.example.com/peterbe-com"}
 
     @property
     def CACHES(self):

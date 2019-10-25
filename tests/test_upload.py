@@ -102,176 +102,10 @@ def test_get_key_content_type(settings):
 
 
 @pytest.mark.django_db
-def test_upload_archive_happy_path(
-    client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
-    settings,
-):
-    # The default upload URL setting uses Google Cloud Storage.
-    assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "gcs"
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    mock_bucket = gcsmock.MockBucket()
-
-    gcsmock.get_bucket = lambda name: mock_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            # Note that this size is not the correct for that fixture file.
-            return gcsmock.mock_blob_factory(key, size=1000)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return None
-        raise Exception(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    blobs_created = {}
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-
-            def mock_upload_from_file(file):
-                body = file.read()
-                assert isinstance(body, bytes)
-                # If you look at the fixture 'sample.zip', which is used in
-                # these tests you'll see that the file 'xpcshell.sym' is
-                # 1156 originally. But we asser that it's now *less* because
-                # it should have been gzipped.
-                assert len(body) < 1156
-                original_content = gzip.decompress(body)
-                assert len(original_content) == 1156
-
-            blob.upload_from_file = mock_upload_from_file
-
-        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
-
-            def mock_upload_from_file(file):
-                content = file.read()
-                # based on `unzip -l tests/sample.zip` knowledge
-                assert len(content) == 69183
-
-            blob.upload_from_file = mock_upload_from_file
-
-        else:
-            raise NotImplementedError(key)
-
-        blobs_created[key] = blob
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        upload, = Upload.objects.all()
-        assert upload.user == fakeuser
-        assert upload.filename == "file.zip"
-        assert upload.completed_at
-        # Based on `ls -l tests/sample.zip` knowledge
-        assert upload.size == 70398
-        # This is predictable and shouldn't change unless the fixture
-        # file used changes.
-        assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
-        assert upload.bucket_name == "private"
-        assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == settings.UPLOAD_DEFAULT_URL
-        assert upload.skipped_keys is None
-        assert upload.ignored_keys == ["build-symbols.txt"]
-
-    # We can also check that the blob created and upload were done so with the
-    # expected and correct metadata.
-    sym_blob = blobs_created["prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"]
-    assert sym_blob.content_encoding == "gzip"
-    assert sym_blob.content_type == "text/plain"
-    assert sym_blob.metadata["original_size"] == "1156"
-    assert sym_blob.metadata["original_md5_hash"]
-
-    assert len(upload_mock_update_uploads_created_task.all_delay_arguments) == 1
-
-    assert FileUpload.objects.all().count() == 2
-    file_upload = FileUpload.objects.get(
-        upload=upload,
-        bucket_name="private",
-        key="prefix/v0/flag/deadbeef/flag.jpeg",
-        compressed=False,
-        update=True,
-        size=69183,  # based on `unzip -l tests/sample.zip` knowledge
-    )
-    assert file_upload.completed_at
-
-    file_upload = FileUpload.objects.get(
-        upload=upload,
-        bucket_name="private",
-        key="prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
-        compressed=True,
-        update=False,
-        # Based on `unzip -l tests/sample.zip` knowledge, but note that
-        # it's been compressed.
-        size__lt=1156,
-        completed_at__isnull=False,
-    )
-
-    # Manually execute 'update_uploads_created_task' because it's mocked
-    # in the context of the view function.
-    update_uploads_created_task()
-    uploads_created = UploadsCreated.objects.all().get()
-    assert uploads_created.date == timezone.now().date()
-    assert uploads_created.count == 1
-    assert uploads_created.files == 2
-    assert uploads_created.skipped == 0
-    assert uploads_created.ignored == 1
-    assert uploads_created.size == 70398
-    assert uploads_created.size_avg > 0
-
-    # Check that markus caught timings of the individual file processing
-    records = metricsmock.get_records()
-    assert len(records) == 13
-    # It's impossible to predict, the order of some metrics records
-    # because of the use of ThreadPoolExecutor. So we can't look at them
-    # in the exact order.
-    all_tags = [x[1] for x in records]
-    assert all_tags.count("tecken.upload_file_exists") == 2
-    assert all_tags.count("tecken.upload_gzip_payload") == 1  # only 1 .sym
-    assert all_tags.count("tecken.upload_put_object") == 2
-    assert all_tags.count("tecken.upload_dump_and_extract") == 1
-    assert all_tags.count("tecken.upload_file_upload_upload") == 2
-    assert all_tags.count("tecken.upload_file_upload") == 2
-    assert all_tags.count("tecken.upload_uploads") == 1
-    assert all_tags.count("tecken.uploads_created_update") == 1
-    assert all_tags[-2] == "tecken.upload_archive"
-
-    invalidate_symbolicate_cache_args = [
-        x[0] for x in upload_mock_invalidate_symbolicate_cache.all_delay_arguments
-    ]
-    # The upload should have triggered a call to
-    # tecken.symbolicate.tasks.invalidate_symbolicate_cache
-    # one time for these uploaded files
-    call_args, = invalidate_symbolicate_cache_args
-    # And the first (and only argument) should be a list of tuples
-    first_arg, = call_args
-    # Use `sorted()` because the order is unpredictable.
-    assert sorted(first_arg) == [
-        ("flag", "deadbeef"),
-        ("xpcshell.dbg", "A7D6F1BB18CD4CB48"),
-    ]
-
-
-@pytest.mark.django_db
 def test_upload_archive_custom_bucket_name(
     client,
-    gcsmock,
+    botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
     settings,
@@ -283,6 +117,32 @@ def test_upload_archive_custom_bucket_name(
         url for url in settings.UPLOAD_URL_EXCEPTIONS.values() if bucket_name in url
     ], list(settings.UPLOAD_URL_EXCEPTIONS.values())
 
+    def mock_api_call(self, operation_name, api_params):
+        assert api_params["Bucket"] == bucket_name
+        if operation_name == "HeadBucket":
+            # yep, bucket exists
+            return {}
+
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "v0/flag/deadbeef/flag.jpeg"
+        ):
+            # correct size, no need to upload
+            return {"ContentLength": 69183}
+
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        ):
+            # wrong size, code will upload it as a changed file
+            return {"ContentLength": 100}
+
+        if operation_name == "PutObject" and api_params["Key"] == (
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        ):
+            # pretend we actually uploaded it
+            return {}
+
+        raise NotImplementedError((operation_name, api_params))
+
     fakeuser.is_superuser = False  # NOTE!
     fakeuser.save()
     token = Token.objects.create(user=fakeuser)
@@ -290,23 +150,7 @@ def test_upload_archive_custom_bucket_name(
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    mock_bucket = gcsmock.MockBucket()
-
-    gcsmock.get_bucket = lambda name: mock_bucket
-
-    def mock_get_blob(key):
-        return None
-
-    mock_bucket.get_blob = mock_get_blob
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-        blob.upload_from_file = lambda *a, **k: "void"
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
+    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
         response = client.post(
             url, {"file.zip": f, "bucket_name": bucket_name}, HTTP_AUTH_TOKEN=token.key
         )
@@ -315,7 +159,7 @@ def test_upload_archive_custom_bucket_name(
     fakeuser.is_superuser = True  # NOTE!
     fakeuser.save()
 
-    with open(ZIP_FILE, "rb") as f:
+    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
         response = client.post(
             url, {"file.zip": f, "bucket_name": bucket_name}, HTTP_AUTH_TOKEN=token.key
         )
@@ -329,72 +173,49 @@ def test_upload_archive_custom_bucket_name(
 @pytest.mark.django_db
 def test_upload_archive_with_ignorable_files(
     client,
-    gcsmock,
+    botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
     settings,
 ):
     # The default upload URL setting uses Google Cloud Storage.
-    assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "gcs"
+    assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "test-s3"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    mock_bucket = gcsmock.MockBucket()
+    def mock_api_call(self, operation_name, api_params):
+        assert api_params["Bucket"] == "private"
+        if operation_name == "HeadBucket":
+            # yep, bucket exists
+            return {}
 
-    gcsmock.get_bucket = lambda name: mock_bucket
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "prefix/v0/flag/deadbeef/flag.jpeg"
+        ):
+            # wrong size for this fixture file, need to upload new
+            return {"ContentLength": 100}
 
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            # Note that this size is not the correct for that fixture file.
-            return gcsmock.mock_blob_factory(key, size=1000)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return None
-        raise Exception(key)
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        ):
+            # file doesn't exist
+            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
+            raise ClientError(parsed_response, operation_name)
 
-    mock_bucket.get_blob = mock_get_blob
+        if operation_name == "PutObject" and api_params["Key"] in (
+            "prefix/v0/flag/deadbeef/flag.jpeg",
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        ):
+            # pretend we actually uploaded it
+            return {}
 
-    blobs_created = {}
+        raise NotImplementedError((operation_name, api_params))
 
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-
-            def mock_upload_from_file(file):
-                body = file.read()
-                assert isinstance(body, bytes)
-                # If you look at the fixture 'sample.zip', which is used in
-                # these tests you'll see that the file 'xpcshell.sym' is
-                # 1156 originally. But we asser that it's now *less* because
-                # it should have been gzipped.
-                assert len(body) < 1156
-                original_content = gzip.decompress(body)
-                assert len(original_content) == 1156
-
-            blob.upload_from_file = mock_upload_from_file
-
-        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
-
-            def mock_upload_from_file(file):
-                content = file.read()
-                # based on `unzip -l tests/sample.zip` knowledge
-                assert len(content) == 69183
-
-            blob.upload_from_file = mock_upload_from_file
-
-        else:
-            raise NotImplementedError(key)
-
-        blobs_created[key] = blob
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE_WITH_IGNORABLE_FILES, "rb") as f:
+    with botomock(mock_api_call), open(ZIP_FILE_WITH_IGNORABLE_FILES, "rb") as f:
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
@@ -409,17 +230,14 @@ def test_upload_archive_with_ignorable_files(
 
 
 @pytest.mark.django_db
-def test_upload_archive_happy_path_s3(
+def test_upload_archive_happy_path(
     client,
     botomock,
     fakeuser,
     metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
-    settings,
 ):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
@@ -574,116 +392,11 @@ def test_upload_archive_happy_path_s3(
 @pytest.mark.django_db
 def test_upload_try_symbols_happy_path(
     client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
-    settings,
-):
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_try_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(bucket_name):
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            # Note that this size is not the correct for that fixture file.
-            return gcsmock.mock_blob_factory(key, size=1000)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return None
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    files_uploaded = []
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-
-        def mock_upload_from_file(file):
-            files_uploaded.append(key)
-
-        blob.upload_from_file = mock_upload_from_file
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            pass
-        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            pass
-        else:
-            raise NotImplementedError(key)
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        upload, = Upload.objects.all()
-        assert upload.user == fakeuser
-        assert upload.filename == "file.zip"
-        assert upload.completed_at
-        # Based on `ls -l tests/sample.zip` knowledge
-        assert upload.size == 70398
-        # This is predictable and shouldn't change unless the fixture
-        # file used changes.
-        assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
-        assert upload.bucket_name == "try"
-        assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == settings.UPLOAD_TRY_SYMBOLS_URL
-        assert upload.skipped_keys is None
-        assert upload.ignored_keys == ["build-symbols.txt"]
-        assert upload.try_symbols
-
-    assert "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym" in files_uploaded
-    assert "prefix/v0/flag/deadbeef/flag.jpeg" in files_uploaded
-
-    assert len(upload_mock_update_uploads_created_task.all_delay_arguments) == 1
-
-    assert FileUpload.objects.all().count() == 2
-    file_upload = FileUpload.objects.get(
-        upload=upload,
-        bucket_name="try",
-        key="prefix/v0/flag/deadbeef/flag.jpeg",
-        compressed=False,
-        update=True,
-        size=69183,  # based on `unzip -l tests/sample.zip` knowledge
-    )
-    assert file_upload.completed_at
-
-    file_upload = FileUpload.objects.get(
-        upload=upload,
-        bucket_name="try",
-        key="prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
-        compressed=True,
-        update=False,
-        # Based on `unzip -l tests/sample.zip` knowledge, but note that
-        # it's been compressed.
-        size__lt=1156,
-        completed_at__isnull=False,
-    )
-
-
-@pytest.mark.django_db
-def test_upload_try_symbols_happy_path_s3(
-    client,
     botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
-    settings,
 ):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-    settings.UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
-
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_try_symbols")
     token.permissions.add(permission)
@@ -795,12 +508,10 @@ def test_upload_try_symbols_happy_path_s3(
 @pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_skipped(
     client,
-    gcsmock,
+    botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
-    settings,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -808,31 +519,37 @@ def test_upload_archive_one_uploaded_one_skipped(
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    mock_bucket = gcsmock.MockBucket()
+    def mock_api_call(self, operation_name, api_params):
+        # This comes for the setting UPLOAD_DEFAULT_URL specifically
+        # for tests.
+        assert api_params["Bucket"] == "private"
 
-    gcsmock.get_bucket = lambda name: mock_bucket
+        if operation_name == "HeadBucket":
+            # yep, bucket exists
+            return {}
 
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            # based on `unzip -l tests/sample.zip` knowledge
-            return gcsmock.mock_blob_factory(key, size=69183)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return None
-        raise Exception(key)
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "prefix/v0/flag/deadbeef/flag.jpeg"
+        ):
+            # file exists with same size
+            return {"ContentLength": 69183}
 
-    mock_bucket.get_blob = mock_get_blob
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        ):
+            # Not found at all
+            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
+            raise ClientError(parsed_response, operation_name)
 
-    blobs_created = {}
+        if operation_name == "PutObject" and api_params["Key"] == (
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        ):
+            # Successfully uploaded
+            return {}
 
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
+        raise NotImplementedError((operation_name, api_params))
 
-        blobs_created[key] = blob
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
+    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
@@ -846,7 +563,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         assert upload.size == 70398
         assert upload.bucket_name == "private"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == settings.UPLOAD_DEFAULT_URL
+        assert upload.bucket_endpoint_url == "https://s3.example.com"
         assert upload.skipped_keys == ["prefix/v0/flag/deadbeef/flag.jpeg"]
         assert upload.ignored_keys == ["build-symbols.txt"]
 
@@ -864,45 +581,7 @@ def test_upload_archive_one_uploaded_one_skipped(
     )
 
 
-def test_key_existing_caching(gcsmock, metricsmock):
-
-    sizes_returned = []
-    lookups = []
-
-    def mock_get_blob(key):
-        lookups.append(key)
-
-        if key == "filename":
-            size = 1234
-            if sizes_returned:
-                size = 6789
-            sizes_returned.append(size)
-            return gcsmock.MockBlob(key, size=size, metadata={})
-
-        raise NotImplementedError
-
-    storage_bucket = gcsmock.MockBucket(gcsmock)
-    storage_bucket.get_blob = mock_get_blob
-
-    size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size == 1234
-    assert metadata == {}
-    assert len(lookups) == 1
-
-    size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size == 1234
-    assert metadata == {}
-    assert len(lookups) == 1
-
-    key_existing.invalidate(storage_bucket, "mybucket", "filename")
-    size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size == 6789
-    assert metadata == {}
-    assert len(lookups) == 2
-
-
-def test_key_existing_caching_s3(botomock, metricsmock, settings):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
+def test_key_existing_caching(botomock):
 
     user = FakeUser("peterbe@example.com")
     bucket_info = get_bucket_info(user)
@@ -942,40 +621,7 @@ def test_key_existing_caching_s3(botomock, metricsmock, settings):
         assert len(lookups) == 2
 
 
-def test_key_existing_size_caching_not_found(gcsmock, metricsmock):
-
-    lookups = []
-
-    def mock_get_blob(key):
-        lookups.append(key)
-
-        if key == "filename":
-            return None
-
-        raise NotImplementedError
-
-    storage_bucket = gcsmock.MockBucket(gcsmock)
-    storage_bucket.get_blob = mock_get_blob
-
-    size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size == 0
-    assert metadata is None
-    assert len(lookups) == 1
-
-    size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size == 0
-    assert metadata is None
-    assert len(lookups) == 1
-
-    key_existing.invalidate(storage_bucket, "mybucket", "filename")
-    size, metadata = key_existing(storage_bucket, "mybucket", "filename")
-    assert size == 0
-    assert metadata is None
-    assert len(lookups) == 2
-
-
-def test_key_existing_size_caching_not_found_s3(botomock, metricsmock, settings):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
+def test_key_existing_size_caching_not_found(botomock):
 
     user = FakeUser("peterbe@example.com")
     bucket_info = get_bucket_info(user)
@@ -1013,105 +659,11 @@ def test_key_existing_size_caching_not_found_s3(botomock, metricsmock, settings)
 @pytest.mark.django_db
 def test_upload_archive_key_lookup_cached(
     client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
-):
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    lookups = []
-
-    metadata_cache = {}
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(bucket_name):
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            return gcsmock.mock_blob_factory(key, size=69183)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            # Saying the size is 100 will cause the code to think the
-            # symbol file *is different* so it'll proceed to upload it.
-            size = 100
-            if lookups:
-                # If this is the second time, return the right size.
-                size = 501
-            lookups.append(size)
-            blob = gcsmock.mock_blob_factory(key, size=size)
-            if metadata_cache.get(key):
-                blob.metadata = metadata_cache[key]
-            return blob
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-
-        def mock_upload_from_file(file):
-            pass
-
-        blob.upload_from_file = mock_upload_from_file
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            pass
-        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            pass
-        else:
-            raise NotImplementedError(key)
-
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 1
-        assert FileUpload.objects.all().count() == 1
-
-    # Upload the same file again. This time some of the S3 HeadObject
-    # operations should benefit from a cache.
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 2
-        assert FileUpload.objects.all().count() == 1
-        assert len(lookups) == 2
-
-    # Upload the same file again. This time some of the S3 HeadObject
-    # operations should benefit from a cache.
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 3
-        assert FileUpload.objects.all().count() == 1
-        # This time it doesn't need to look up the size a third time
-        assert len(lookups) == 2
-
-
-@pytest.mark.django_db
-def test_upload_archive_key_lookup_cached_s3(
-    client,
     botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
-    settings,
 ):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -1191,102 +743,13 @@ def test_upload_archive_key_lookup_cached_s3(
 @pytest.mark.django_db
 def test_upload_archive_key_lookup_cached_without_metadata(
     client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
-):
-    """Same as test_upload_archive_key_lookup_cached() but without
-    any metadata."""
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    lookups = []
-
-    metadata_cache = {}
-
-    mock_bucket = gcsmock.MockBucket()
-
-    gcsmock.get_bucket = lambda name: mock_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            # based on `unzip -l tests/sample.zip` knowledge
-            return gcsmock.mock_blob_factory(key, size=69183)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            # Saying the size is 100 will cause the code to think the
-            # symbol file *is different* so it'll proceed to upload it.
-            size = 100
-            if lookups:
-                # If this is the second time, return the right size.
-                size = 501
-            lookups.append(size)
-            blob = gcsmock.mock_blob_factory(key, size=size)
-            if metadata_cache.get(key):
-                blob.metadata = metadata_cache[key]
-            return blob
-
-        raise Exception(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    blobs_created = {}
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-
-        blobs_created[key] = blob
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 1
-        assert FileUpload.objects.all().count() == 1
-
-    # Upload the same file again. This time some of the S3 HeadObject
-    # operations should benefit from a cache.
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 2
-        assert FileUpload.objects.all().count() == 1
-        assert len(lookups) == 2
-
-    # Upload the same file again. This time some of the S3 HeadObject
-    # operations should benefit from a cache.
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 3
-        assert FileUpload.objects.all().count() == 1
-        # This time it doesn't need to look up the size a third time
-        assert len(lookups) == 2
-
-
-@pytest.mark.django_db
-def test_upload_archive_key_lookup_cached_without_metadata_s3(
-    client,
     botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
-    settings,
 ):
     """Same as test_upload_archive_key_lookup_cached() but without
     any metadata."""
-
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -1365,96 +828,11 @@ def test_upload_archive_key_lookup_cached_without_metadata_s3(
 @pytest.mark.django_db
 def test_upload_archive_key_lookup_cached_by_different_hashes(
     client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
-):
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(bucket_name):
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            return gcsmock.mock_blob_factory(key, size=69183)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            size = 501  # Right!
-            blob = gcsmock.mock_blob_factory(key, size=size)
-            blob.metadata = {
-                "original_size": 1156,  # Right!
-                "original_md5_hash": "differentthistime",  # Different!
-            }
-            return blob
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    blobs_created = {}
-    files_uploaded = []
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-
-            def mock_upload_from_file(file):
-                files_uploaded.append(key)
-
-            blob.upload_from_file = mock_upload_from_file
-        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
-
-            def mock_upload_from_file(file):
-                raise AssertionError("Shouldn't be uploading a file")
-
-            blob.upload_from_file = mock_upload_from_file
-        else:
-            raise NotImplementedError(key)
-
-        blobs_created[key] = blob
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        assert Upload.objects.all().count() == 1
-        # This is the important test. The size on S3 (after gzip) matches
-        # this new incoming file. Also, the original file size also matches.
-        # However, the S3 stored Metadata.original_md5_hash is different so
-        # that it uploads the file.
-        assert FileUpload.objects.all().count() == 1
-        file_upload, = FileUpload.objects.all()
-        assert file_upload.update
-
-        blob_created, = blobs_created.values()
-        assert blob_created.metadata["original_size"] == str(1156)
-        assert blob_created.metadata["original_md5_hash"] != "differentthistime"
-
-    assert files_uploaded == ["prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"]
-
-
-@pytest.mark.django_db
-def test_upload_archive_key_lookup_cached_by_different_hashes_s3(
-    client,
     botomock,
     fakeuser,
-    metricsmock,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
-    settings,
 ):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -1516,70 +894,8 @@ def test_upload_archive_key_lookup_cached_by_different_hashes_s3(
 
 @pytest.mark.django_db
 def test_upload_archive_one_uploaded_one_errored(
-    client, gcsmock, fakeuser, metricsmock, upload_mock_invalidate_symbolicate_cache
+    client, botomock, fakeuser, upload_mock_invalidate_symbolicate_cache
 ):
-    class AnyUnrecognizedError(Exception):
-        """Doesn't matter much what the exception is. What matters is that
-        it happens during a boto call."""
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            return gcsmock.mock_blob_factory(key, size=69183)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return None
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    def mocked_create_blob(key):
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            blob = gcsmock.MockBlob(key)
-
-            def mock_upload_from_file(file):
-                raise AnyUnrecognizedError("bla!")
-
-            blob.upload_from_file = mock_upload_from_file
-            return blob
-
-        else:
-            raise NotImplementedError(key)
-
-    mock_bucket.blob = mocked_create_blob
-
-    gcsmock.get_bucket = lambda name: mock_bucket
-
-    with open(ZIP_FILE, "rb") as f:
-        with pytest.raises(AnyUnrecognizedError):
-            client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-
-        upload, = Upload.objects.all()
-        assert upload.user == fakeuser
-        assert not upload.completed_at
-
-    assert FileUpload.objects.all().count() == 1
-    assert FileUpload.objects.get(
-        upload=upload, key="prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
-    )
-
-
-@pytest.mark.django_db
-def test_upload_archive_one_uploaded_one_errored_s3(
-    client,
-    botomock,
-    fakeuser,
-    metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    settings,
-):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-
     class AnyUnrecognizedError(Exception):
         """Doesn't matter much what the exception is. What matters is that
         it happens during a boto call."""
@@ -1633,94 +949,8 @@ def test_upload_archive_one_uploaded_one_errored_s3(
 @pytest.mark.django_db
 def test_upload_archive_with_cache_invalidation(
     client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    settings,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
-):
-
-    settings.SYMBOL_URLS = ["https://storage.googleapis.example.com/mybucket"]
-    settings.UPLOAD_DEFAULT_URL = "https://storage.googleapis.example.com/mybucket"
-    downloader = SymbolDownloader(settings.SYMBOL_URLS)
-    utils.downloader = downloader
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    # A mutable we use to help us distinguish between calls in the mock
-    lookups = []
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_bucket(bucket_name):
-        return mock_bucket
-
-    gcsmock.get_bucket = mock_get_bucket
-
-    def mock_get_blob(key):
-        if key == "v0/flag/deadbeef/flag.jpeg":
-            # Note that this size is not the correct for that fixture file.
-            return gcsmock.mock_blob_factory(key, size=1000)
-        if key == "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            # Saying the size is 100 will cause the code to think the
-            # symbol file *is different* so it'll proceed to upload it.
-            if lookups:
-                # If this is the second time, return the right size.
-                blob = gcsmock.mock_blob_factory(key, size=100)
-            else:
-                blob = None
-            lookups.append(blob)
-            return blob
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    def mocked_create_blob(key):
-        blob = gcsmock.MockBlob(key)
-
-        def mock_upload_from_file(file):
-            pass
-
-        blob.upload_from_file = mock_upload_from_file
-        if key == "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            pass
-        elif key == "v0/flag/deadbeef/flag.jpeg":
-            pass
-        else:
-            raise NotImplementedError(key)
-
-        return blob
-
-    mock_bucket.blob = mocked_create_blob
-
-    with open(ZIP_FILE, "rb") as f:
-
-        assert not downloader.has_symbol(
-            "xpcshell.dbg", "A7D6F1BB18CD4CB48", "xpcshell.sym"
-        )
-
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        # Second time.
-        assert downloader.has_symbol(
-            "xpcshell.dbg", "A7D6F1BB18CD4CB48", "xpcshell.sym"
-        )
-
-        # This is just basically to make sense of all the crazy mocking.
-        assert len(lookups) == 3
-
-
-@pytest.mark.django_db
-def test_upload_archive_with_cache_invalidation_s3(
-    client,
     botomock,
     fakeuser,
-    metricsmock,
     settings,
     upload_mock_invalidate_symbolicate_cache,
     upload_mock_update_uploads_created_task,
@@ -1806,72 +1036,8 @@ def test_upload_archive_with_cache_invalidation_s3(
 
 @pytest.mark.django_db
 def test_upload_archive_both_skipped(
-    client,
-    gcsmock,
-    fakeuser,
-    metricsmock,
-    upload_mock_update_uploads_created_task,
-    settings,
+    client, botomock, fakeuser, upload_mock_update_uploads_created_task
 ):
-
-    token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    mock_bucket = gcsmock.MockBucket()
-
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            return gcsmock.mock_blob_factory(key, size=69183)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return gcsmock.mock_blob_factory(key, size=501)
-        raise NotImplementedError(key)
-
-    mock_bucket.get_blob = mock_get_blob
-
-    def mocked_create_blob(key):
-        raise AssertionError("Not expected to be used.")
-
-    mock_bucket.blob = mocked_create_blob
-
-    gcsmock.get_bucket = lambda name: mock_bucket
-
-    with open(ZIP_FILE, "rb") as f:
-        response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
-        assert response.status_code == 201
-
-        upload, = Upload.objects.all()
-        assert upload.user == fakeuser
-        assert upload.filename == "file.zip"
-        assert upload.completed_at
-        # based on `ls -l tests/sample.zip` knowledge
-        assert upload.size == 70398
-        assert upload.bucket_name == "private"
-        assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == settings.UPLOAD_DEFAULT_URL
-        # Order isn't predictable so compare using sets.
-        assert set(upload.skipped_keys) == set(
-            [
-                "prefix/v0/flag/deadbeef/flag.jpeg",
-                "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
-            ]
-        )
-        assert upload.ignored_keys == ["build-symbols.txt"]
-
-    assert not FileUpload.objects.all().exists()
-
-
-@pytest.mark.django_db
-def test_upload_archive_both_skipped_s3(
-    client,
-    botomock,
-    fakeuser,
-    metricsmock,
-    upload_mock_update_uploads_created_task,
-    settings,
-):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
 
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")
@@ -1926,9 +1092,8 @@ def test_upload_archive_both_skipped_s3(
 @pytest.mark.django_db
 def test_upload_archive_by_url(
     client,
-    gcsmock,
+    botomock,
     fakeuser,
-    metricsmock,
     settings,
     requestsmock,
     upload_mock_invalidate_symbolicate_cache,
@@ -1957,31 +1122,35 @@ def test_upload_archive_by_url(
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    mock_bucket = gcsmock.MockBucket()
+    def mock_api_call(self, operation_name, api_params):
+        assert api_params["Bucket"] == "private"
 
-    def mock_get_blob(key):
-        if key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            # Note that this size is not the correct for that fixture file.
-            return gcsmock.mock_blob_factory(key, size=1000)
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return None
-        raise NotImplementedError(key)
+        if operation_name == "HeadBucket":
+            # yep, bucket exists
+            return {}
 
-    mock_bucket.get_blob = mock_get_blob
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "prefix/v0/flag/deadbeef/flag.jpeg"
+        ):
+            # file exists but wrong size, needs upload
+            return {"ContentLength": 1000}
 
-    def mocked_create_blob(key):
-        if key == "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
-            return gcsmock.MockBlob(key)
-        elif key == "prefix/v0/flag/deadbeef/flag.jpeg":
-            return gcsmock.MockBlob(key)
-        else:
-            raise NotImplementedError(key)
+        if operation_name == "HeadObject" and api_params["Key"] == (
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        ):
+            # Not found at all
+            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
+            raise ClientError(parsed_response, operation_name)
 
-    mock_bucket.blob = mocked_create_blob
+        if operation_name == "PutObject" and api_params["Key"] in (
+            "prefix/v0/flag/deadbeef/flag.jpeg",
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        ):
+            return {}
 
-    gcsmock.get_bucket = lambda name: mock_bucket
+        raise NotImplementedError((operation_name, api_params))
 
-    with open(ZIP_FILE, "rb") as f:
+    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
         response = client.post(
             url,
             data={"url": "http://example.com/symbols.zip"},
@@ -2148,7 +1317,7 @@ def test_upload_client_bad_request(fakeuser, client, settings):
 
 
 @pytest.mark.django_db
-def test_upload_duplicate_files_in_zip_different_name(fakeuser, client, settings):
+def test_upload_duplicate_files_in_zip_different_name(fakeuser, client):
     url = reverse("upload:upload_archive")
     token = Token.objects.create(user=fakeuser)
     permission, = Permission.objects.filter(codename="upload_symbols")

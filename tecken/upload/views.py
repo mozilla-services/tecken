@@ -293,27 +293,22 @@ def upload_archive(request, upload_dir):
     if not bucket_info.exists():
         raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
 
-    # Setup the backend-specific clients (S3 or GCS) for upload_file_upload
+    # Create the client for upload_file_upload
     # TODO(jwhitlock): implement backend details in StorageBucket API
     client = bucket_info.get_storage_client(
         read_timeout=settings.S3_PUT_READ_TIMEOUT,
         connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
     )
-    if bucket_info.is_google_cloud_storage:
-        bucket = client.get_bucket(bucket_info.name)
-        lookup_client = None
-    else:
-        bucket = None
-        # Use a different client for doing the lookups.
-        # That's because we don't want the size lookup to severly accumulate
-        # in the case of there being some unpredictable slowness.
-        # When that happens the lookup is quickly cancelled and it assumes
-        # the file does not exist.
-        # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
-        lookup_client = bucket_info.get_storage_client(
-            read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
-            connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
-        )
+    # Use a different client for doing the lookups.
+    # That's because we don't want the size lookup to severly accumulate
+    # in the case of there being some unpredictable slowness.
+    # When that happens the lookup is quickly cancelled and it assumes
+    # the file does not exist.
+    # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
+    lookup_client = bucket_info.get_storage_client(
+        read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
+        connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
+    )
 
     # Every key has a prefix. If the StorageBucket instance has it's own prefix
     # prefix that first :)
@@ -375,12 +370,12 @@ def upload_archive(request, upload_dir):
             future_to_key[
                 executor.submit(
                     upload_file_upload,
-                    bucket or client,
+                    client,
                     bucket_info.name,
                     key_name,
                     member.path,
                     upload=upload_obj,
-                    client_lookup=bucket or lookup_client,
+                    client_lookup=lookup_client,
                 )
             ] = key_name
         # Now lets wait for them all to finish and we'll see which ones

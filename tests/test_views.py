@@ -158,21 +158,7 @@ def test_auth_debug(client):
 
 
 @pytest.mark.django_db
-def test_heartbeat_no_warnings(client, gcsmock, settings):
-    gcsmock.get_bucket = lambda name: gcsmock.MockBucket()
-
-    response = client.get("/__heartbeat__")
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
-
-
-@pytest.mark.django_db
-def test_heartbeat_no_warnings_s3(client, botomock, settings):
-    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
-    settings.UPLOAD_URL_EXCEPTIONS = {
-        "*@peterbe.com": "https://s3.example.com/peterbe-com"
-    }
-
+def test_heartbeat_no_warnings(client, botomock):
     def mock_api_call(self, operation_name, api_params):
         assert operation_name == "HeadBucket"
         return {}

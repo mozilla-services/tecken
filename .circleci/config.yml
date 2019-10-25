@@ -29,7 +29,6 @@ jobs:
           command: |
             docker info
             cp .env-dist .env
-            touch google_service_account.json
             # build tecken containers
             make build
 

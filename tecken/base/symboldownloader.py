@@ -11,7 +11,6 @@ import logging
 import requests
 import markus
 from botocore.exceptions import ClientError
-from google.cloud.storage.client import Bucket as google_Bucket
 from cache_memoize import cache_memoize
 
 from django.conf import settings
@@ -89,13 +88,7 @@ def exists_in_source(source, key):
     The reason for returning False, when it's not there in the remote storage,
     is because if you use `None` it can't be cached since the memoizer function
     considers `None` as a "cache failure" and not a real value."""
-    if isinstance(source, google_Bucket):
-        blob = source.get_blob(key)
-        if blob:
-            return blob.public_url
-        return False
-    else:
-        response = source.client.list_objects_v2(Bucket=source.name, Prefix=key)
+    response = source.client.list_objects_v2(Bucket=source.name, Prefix=key)
     for obj in response.get("Contents", []):
         if obj["Key"] == key:
             # It exists!
@@ -200,15 +193,9 @@ class SymbolDownloader:
                 # exists_in_source(source, key)
                 # But that function is wrapped and now has an extra
                 # function to "undoing" it.
-                if source.is_google_cloud_storage:
-                    bucket = source.get_or_load_bucket()
-                    exists_in_source.invalidate(
-                        bucket, self._make_key(prefix, symbol, debugid, filename)
-                    )
-                else:
-                    exists_in_source.invalidate(
-                        source, self._make_key(prefix, symbol, debugid, filename)
-                    )
+                exists_in_source.invalidate(
+                    source, self._make_key(prefix, symbol, debugid, filename)
+                )
             else:
                 file_url = "{}/{}".format(
                     source.base_url, self._make_key(prefix, symbol, debugid, filename)
@@ -240,28 +227,15 @@ class SymbolDownloader:
             assert prefix
 
             if source.private:
-                # If it's a private bucket we use boto3 or google cloud storage.
+                # If it's a private bucket we use boto3
                 key = self._make_key(prefix, symbol, debugid, filename)
                 logger.debug(f"Looking for symbol file {key!r} in bucket {source.name}")
 
-                if source.is_google_cloud_storage:
-                    bucket = source.get_or_load_bucket()
-                    url = exists_in_source(bucket, key, _refresh=refresh_cache)
-                    if not url:
-                        continue
-                    return {"url": url}
+                if not exists_in_source(source, key, _refresh=refresh_cache):
+                    continue
 
-                else:
-                    if not exists_in_source(source, key, _refresh=refresh_cache):
-                        continue
-
-                    # It exists if we're still here.
-                    return {"bucket_name": source.name, "key": key, "source": source}
-
-            elif source.is_google_cloud_storage:
-                raise NotImplementedError(
-                    "Currently don't support regular HTTP download from GCS."
-                )
+                # It exists if we're still here.
+                return {"bucket_name": source.name, "key": key, "source": source}
 
             else:
                 # We'll put together the URL manually
@@ -279,7 +253,7 @@ class SymbolDownloader:
             assert prefix
 
             if source.private:
-                # If it's a private bucket we use boto3 or google cloud storage.
+                # If it's a private bucket we use boto3
 
                 key = "{}/{}/{}/{}".format(
                     prefix,
@@ -292,68 +266,44 @@ class SymbolDownloader:
                 )
                 logger.debug(f"Looking for symbol file {key!r} in bucket {source.name}")
 
-                if source.is_google_cloud_storage:
-                    bucket = source.get_or_load_bucket()
-                    with metrics.timer("symboldownloader_get_blob"):
-                        blob = bucket.get_blob(key)
-                    if blob is None:
-                        continue
-
+                try:
+                    with metrics.timer("symboldownloader_get_object"):
+                        response = source.client.get_object(Bucket=source.name, Key=key)
+                    stream = response["Body"]
+                    # But if the content encoding is gzip we have
+                    # re-wrap the stream.
+                    if response.get("ContentEncoding") == "gzip":
+                        with metrics.timer("symboldownloader_get_object_read"):
+                            body = response["Body"].read()
+                        metrics.incr(
+                            "symboldownloader_download_bytes",
+                            len(body),
+                            tags=["encoding:gzip"],
+                        )
+                        bytestream = BytesIO(body)
+                        stream = GzipFile(None, "rb", fileobj=bytestream)
                     yield (source.name, key)
-                    bytestream = BytesIO()
-                    blob.download_to_file(bytestream)
-                    bytestream.seek(0)
-                    whole = bytestream.read().decode("utf-8")
-                    for line in whole.splitlines():
-                        if line:
-                            yield line
-                    return
-                else:
                     try:
-                        with metrics.timer("symboldownloader_get_object"):
-                            response = source.client.get_object(
-                                Bucket=source.name, Key=key
+                        for line in iter_lines(stream):
+                            yield line.decode("utf-8")
+                        return
+                    except OSError as exception:
+                        if "Not a gzipped file" in str(exception):
+                            logger.warning(
+                                "OSError ({!r}) when downloading {}/{}"
+                                "".format(str(exception), source.name, key)
                             )
-                        stream = response["Body"]
-                        # But if the content encoding is gzip we have
-                        # re-wrap the stream.
-                        if response.get("ContentEncoding") == "gzip":
-                            with metrics.timer("symboldownloader_get_object_read"):
-                                body = response["Body"].read()
-                            metrics.incr(
-                                "symboldownloader_download_bytes",
-                                len(body),
-                                tags=["encoding:gzip"],
-                            )
-                            bytestream = BytesIO(body)
-                            stream = GzipFile(None, "rb", fileobj=bytestream)
-                        yield (source.name, key)
-                        try:
-                            for line in iter_lines(stream):
-                                yield line.decode("utf-8")
-                            return
-                        except OSError as exception:
-                            if "Not a gzipped file" in str(exception):
-                                logger.warning(
-                                    "OSError ({!r}) when downloading {}/{}"
-                                    "".format(str(exception), source.name, key)
-                                )
-                                continue
-                            # Who knows what other OSErrors might happen when
-                            # it's not a problem of being a gzip content?!
-                            raise  # pragma: no cover
-
-                    except ClientError as exception:
-                        if exception.response["Error"]["Code"] == "NoSuchKey":
-                            # basically, a convuluted way of saying 404
                             continue
-                        # Any other errors we're not yet aware of, proceeed
-                        raise
+                        # Who knows what other OSErrors might happen when
+                        # it's not a problem of being a gzip content?!
+                        raise  # pragma: no cover
 
-            elif source.is_google_cloud_storage:
-                raise NotImplementedError(
-                    "Currently don't support regular HTTP download from GCS."
-                )
+                except ClientError as exception:
+                    if exception.response["Error"]["Code"] == "NoSuchKey":
+                        # basically, a convuluted way of saying 404
+                        continue
+                    # Any other errors we're not yet aware of, proceeed
+                    raise
 
             else:
                 # If it's not a private bucket, we can use requests
