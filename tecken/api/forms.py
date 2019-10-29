@@ -116,7 +116,7 @@ class BaseFilteringForm(forms.Form):
         operators = re.compile("<=|>=|<|>|=")
         for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(block):
-                operator, = operators.findall(block)
+                (operator,) = operators.findall(block)
             else:
                 operator = "="
             rest = operators.sub("", block).strip()
@@ -180,12 +180,12 @@ class CleanSizeMixin:
         }
         for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(block):
-                operator, = operators.findall(block)
+                (operator,) = operators.findall(block)
             else:
                 operator = "="
             rest = operators.sub("", block)
             if multipliers.findall(rest):
-                multiplier, = multipliers.findall(rest)
+                (multiplier,) = multipliers.findall(rest)
             else:
                 multiplier = "b"
             rest = multipliers.sub("", rest)
@@ -242,7 +242,7 @@ class UploadsCreatedForm(BaseFilteringForm, CleanSizeMixin):
         operators = re.compile("<=|>=|<|>|=")
         for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(block):
-                operator, = operators.findall(block)
+                (operator,) = operators.findall(block)
             else:
                 operator = "="
             rest = operators.sub("", block)
@@ -315,7 +315,7 @@ class DownloadsMissingForm(BaseFilteringForm):
         counts = []
         for block in [x.strip() for x in values.split(",") if x.strip()]:
             if operators.findall(values):
-                operator, = operators.findall(block)
+                (operator,) = operators.findall(block)
             else:
                 operator = "="
             rest = operators.sub("", block)
