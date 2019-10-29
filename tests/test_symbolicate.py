@@ -774,7 +774,7 @@ def test_symbolicate_v4_json_lru_causing_mischief(
 
     # Pretend the LRU evicted the 'xul.pdb/...' hashmap.
     store = caches["store"]
-    hashmap_key, = [
+    (hashmap_key,) = [
         key
         for key in store.iter_keys("*")
         if not key.endswith(":keys") and "xul.pdb" in key
@@ -1040,7 +1040,7 @@ def test_symbolicate_v5_json_one_symbol_not_found(
             },
         )
     result = response.json()
-    result1, = result["results"]
+    (result1,) = result["results"]
     assert result1["found_modules"] == {
         "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
         "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": False,
@@ -1086,7 +1086,7 @@ def test_symbolicate_v5_json_one_symbol_never_looked_up(
             },
         )
     result = response.json()
-    result1, = result["results"]
+    (result1,) = result["results"]
     assert result1["found_modules"] == {
         "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2": True,
         "wntdll.pdb/D74F79EB1F8D4A45ABCD2F476CCABACC2": None,
@@ -1418,9 +1418,9 @@ def test_change_symbols_urls_invalidates_cache(
         }
         response = json_poster(url, job, debug=True)
         result = response.json()
-        result1, = result["results"]
-        stack1, = result1["stacks"]
-        frame1, = stack1
+        (result1,) = result["results"]
+        (stack1,) = result1["stacks"]
+        (frame1,) = stack1
         assert frame1["function"] == "XREMain::XRE_mainRun()"
         assert result1["debug"]["downloads"]["count"] == 1
 
@@ -1435,9 +1435,9 @@ def test_change_symbols_urls_invalidates_cache(
         ]
         response = json_poster(url, job, debug=True)
         result = response.json()
-        result1, = result["results"]
-        stack1, = result1["stacks"]
-        frame1, = stack1
+        (result1,) = result["results"]
+        (stack1,) = result1["stacks"]
+        (frame1,) = stack1
         assert frame1["function"] == "XREMAIN::XRE_MAINRUN()"
         assert result1["debug"]["downloads"]["count"] == 1
 

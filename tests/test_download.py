@@ -557,7 +557,7 @@ def test_get_microsoft_symbol_client(client, botomock, settings):
             assert response.status_code == 404
             assert response.content == b"Symbol Not Found Yet"
             assert task_arguments
-            task_argument, = task_arguments
+            (task_argument,) = task_arguments
             assert task_argument[0] == "foo.pdb"
             assert task_argument[1] == "44E4EC8C2F41492B9369D6B9A059577C2"
 
@@ -646,7 +646,7 @@ def test_download_microsoft_symbol_task_happy_path(botomock, metricsmock, reques
     assert files_uploaded == ["v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"]
 
     # The ultimate test is that it should have created a file_upload
-    file_upload, = FileUpload.objects.all()
+    (file_upload,) = FileUpload.objects.all()
     assert file_upload.size == 729
     assert file_upload.bucket_name == "private"
     assert file_upload.key == "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
@@ -657,7 +657,7 @@ def test_download_microsoft_symbol_task_happy_path(botomock, metricsmock, reques
     assert file_upload.microsoft_download
 
     # It should also have created a MicrosoftDownload record.
-    download_obj, = MicrosoftDownload.objects.all()
+    (download_obj,) = MicrosoftDownload.objects.all()
     assert download_obj.completed_at
     assert download_obj.skipped is False
     assert download_obj.error is None
@@ -704,7 +704,7 @@ def test_download_microsoft_symbol_task_skipped(botomock, metricsmock, requestsm
     with botomock(mock_api_call):
         download_microsoft_symbol(symbol, debugid)
 
-    download_obj, = MicrosoftDownload.objects.all()
+    (download_obj,) = MicrosoftDownload.objects.all()
     assert not download_obj.error
     assert download_obj.skipped
     assert download_obj.completed_at
@@ -753,7 +753,7 @@ def test_download_microsoft_symbol_task_wrong_file_header(botomock, requestsmock
         download_microsoft_symbol(symbol, debugid)
     assert not FileUpload.objects.all().exists()
 
-    download_obj, = MicrosoftDownload.objects.all()
+    (download_obj,) = MicrosoftDownload.objects.all()
     assert "did not start with 'MSCF'" in download_obj.error
 
 
@@ -774,7 +774,7 @@ def test_download_microsoft_symbol_task_cabextract_failing(botomock, requestsmoc
         download_microsoft_symbol(symbol, debugid)
     assert not FileUpload.objects.all().exists()
 
-    download_obj, = MicrosoftDownload.objects.all()
+    (download_obj,) = MicrosoftDownload.objects.all()
     assert "cabextract failed" in download_obj.error
 
 
@@ -802,7 +802,7 @@ def test_download_microsoft_symbol_task_dump_syms_failing(
     with pytest.raises(DumpSymsError), botomock(mock_api_call):
         download_microsoft_symbol(symbol, debugid)
 
-    download_obj, = MicrosoftDownload.objects.all()
+    (download_obj,) = MicrosoftDownload.objects.all()
     assert "dump_syms extraction failed" in download_obj.error
     assert "Something horrible happened" in download_obj.error
 

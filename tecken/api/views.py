@@ -1158,7 +1158,7 @@ def current_versions(request):
     with connection.cursor() as cursor:
         cursor.execute("select version()")
         row = cursor.fetchone()
-        value, = row
+        (value,) = row
         context["versions"].append(
             {
                 "key": "PostgreSQL",

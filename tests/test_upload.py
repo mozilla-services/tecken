@@ -146,7 +146,7 @@ def test_upload_archive_custom_bucket_name(
     fakeuser.is_superuser = False  # NOTE!
     fakeuser.save()
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -165,7 +165,7 @@ def test_upload_archive_custom_bucket_name(
         )
         assert response.status_code == 201
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.user == fakeuser
         assert upload.bucket_name == bucket_name
 
@@ -183,7 +183,7 @@ def test_upload_archive_with_ignorable_files(
     assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "test-s3"
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -219,7 +219,7 @@ def test_upload_archive_with_ignorable_files(
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert sorted(upload.ignored_keys) == [
             "build-symbols.txt",
             "flag/.DS_Store",
@@ -239,7 +239,7 @@ def test_upload_archive_happy_path(
     upload_mock_update_uploads_created_task,
 ):
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -304,7 +304,7 @@ def test_upload_archive_happy_path(
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.user == fakeuser
         assert upload.filename == "file.zip"
         assert upload.completed_at
@@ -379,9 +379,9 @@ def test_upload_archive_happy_path(
     # The upload should have triggered a call to
     # tecken.symbolicate.tasks.invalidate_symbolicate_cache
     # one time for these uploaded files
-    call_args, = invalidate_symbolicate_cache_args
+    (call_args,) = invalidate_symbolicate_cache_args
     # And the first (and only argument) should be a list of tuples
-    first_arg, = call_args
+    (first_arg,) = call_args
     # Use `sorted()` because the order is unpredictable.
     assert sorted(first_arg) == [
         ("flag", "deadbeef"),
@@ -398,7 +398,7 @@ def test_upload_try_symbols_happy_path(
     upload_mock_update_uploads_created_task,
 ):
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_try_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_try_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -463,7 +463,7 @@ def test_upload_try_symbols_happy_path(
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.user == fakeuser
         assert upload.filename == "file.zip"
         assert upload.completed_at
@@ -515,7 +515,7 @@ def test_upload_archive_one_uploaded_one_skipped(
 ):
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -553,7 +553,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.user == fakeuser
         # assert upload.inbox_key is None
         # assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
@@ -666,7 +666,7 @@ def test_upload_archive_key_lookup_cached(
 ):
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -752,7 +752,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
     any metadata."""
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -835,7 +835,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
 ):
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -884,10 +884,10 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
         # However, the S3 stored Metadata.original_md5_hash is different so
         # that it uploads the file.
         assert FileUpload.objects.all().count() == 1
-        file_upload, = FileUpload.objects.all()
+        (file_upload,) = FileUpload.objects.all()
         assert file_upload.update
 
-        put_metadata, = put_metadatas
+        (put_metadata,) = put_metadatas
         assert put_metadata["original_size"] == str(1156)
         assert put_metadata["original_md5_hash"] != "notrightatall"
 
@@ -901,7 +901,7 @@ def test_upload_archive_one_uploaded_one_errored(
         it happens during a boto call."""
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -936,7 +936,7 @@ def test_upload_archive_one_uploaded_one_errored(
         with pytest.raises(AnyUnrecognizedError):
             client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.user == fakeuser
         assert not upload.completed_at
 
@@ -961,7 +961,7 @@ def test_upload_archive_with_cache_invalidation(
     utils.downloader = downloader
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -1040,7 +1040,7 @@ def test_upload_archive_both_skipped(
 ):
 
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -1068,7 +1068,7 @@ def test_upload_archive_both_skipped(
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.user == fakeuser
         assert upload.filename == "file.zip"
         assert upload.completed_at
@@ -1118,7 +1118,7 @@ def test_upload_archive_by_url(
         "download.example.com",
     ]
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -1195,7 +1195,7 @@ def test_upload_archive_by_url(
             "https://download.example.com/symbols.zip"
         ]
 
-        upload, = Upload.objects.all()
+        (upload,) = Upload.objects.all()
         assert upload.download_url
         assert upload.redirect_urls
         assert upload.user == fakeuser
@@ -1214,7 +1214,7 @@ def test_upload_archive_by_url_remote_error(client, fakeuser, settings, requests
 
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ["whitelisted.example.com"]
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
     response = client.post(
@@ -1249,7 +1249,7 @@ def test_upload_client_bad_request(fakeuser, client, settings):
     assert response.json()["error"] == "Forbidden"
 
     # so let's fix that
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
 
     response = client.post(url, HTTP_AUTH_TOKEN=token.key)
@@ -1320,7 +1320,7 @@ def test_upload_client_bad_request(fakeuser, client, settings):
 def test_upload_duplicate_files_in_zip_different_name(fakeuser, client):
     url = reverse("upload:upload_archive")
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
 
     # Upload a file whose members have some repeated name AND different size
@@ -1340,7 +1340,7 @@ def test_upload_client_unrecognized_bucket(fakeuser, client):
     """The upload view raises an error if you try to upload into a bucket
     that doesn't exist."""
     token = Token.objects.create(user=fakeuser)
-    permission, = Permission.objects.filter(codename="upload_symbols")
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
@@ -1448,7 +1448,7 @@ def test_get_possible_bucket_urls(settings):
     }
     user = FakeUser("Peterbe@example.com")
     urls = get_possible_bucket_urls(user)
-    (url, private_or_public), = urls
+    ((url, private_or_public),) = urls
     assert private_or_public == "private"
     assert url == "https://s3.amazonaws.com/differenting"
 
@@ -1554,7 +1554,7 @@ def test_UploadByDownloadForm_connectionerrors(requestsmock, settings):
     )
     form = UploadByDownloadForm({"url": "https://whitelisted.example.com/404.zip"})
     assert not form.is_valid()
-    validation_errors, = form.errors.as_data().values()
+    (validation_errors,) = form.errors.as_data().values()
     assert validation_errors[0].message == (
         "https://whitelisted.example.com/404.zip can't be found (404)"
     )
@@ -1589,7 +1589,7 @@ def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):
 
     form = UploadByDownloadForm({"url": "https://whitelisted.example.com/symbols.zip"})
     assert not form.is_valid()
-    validation_errors, = form.errors.as_data().values()
+    (validation_errors,) = form.errors.as_data().values()
     assert "Too many redirects" in validation_errors[0].message
 
 

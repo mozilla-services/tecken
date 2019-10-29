@@ -91,7 +91,7 @@ def test_tokens(client):
     assert response.status_code == 200
     data = response.json()
 
-    dt, = data["tokens"]
+    (dt,) = data["tokens"]
     assert dt["id"] == token.id
     assert dt["key"] == token.key
     assert dt["notes"] == token.notes
@@ -304,7 +304,7 @@ def test_users(client):
 
     response = client.get(url)
     assert response.status_code == 200
-    found_user, = response.json()["users"]
+    (found_user,) = response.json()["users"]
     assert found_user["email"] == user.email
 
     group = Group.objects.get(name="Uploaders")
@@ -313,10 +313,10 @@ def test_users(client):
     Token.objects.create(user=user)
     response = client.get(url)
     assert response.status_code == 200
-    found_user, = response.json()["users"]
+    (found_user,) = response.json()["users"]
     assert found_user["no_tokens"] == 1
     assert found_user["no_uploads"] == 1
-    group, = found_user["groups"]
+    (group,) = found_user["groups"]
     assert group["name"] == "Uploaders"
     user_permissions_names = [x["name"] for x in found_user["permissions"]]
     assert "Upload Symbols Files" in user_permissions_names
@@ -346,7 +346,7 @@ def test_users_permissions(client):
     url = reverse("api:users")
     response = client.get(url)
     assert response.status_code == 200
-    user_record, = [x for x in response.json()["users"] if x["id"] == user.id]
+    (user_record,) = [x for x in response.json()["users"] if x["id"] == user.id]
     user_permissions_names = [x["name"] for x in user_record["permissions"]]
     assert "Manage Your API Tokens" in user_permissions_names
     assert "View All Symbols Uploads" in user_permissions_names
@@ -896,7 +896,7 @@ def test_upload(client):
     assert result["upload"]["id"] == upload.id
     assert result["upload"]["user"]["email"] == upload.user.email
     assert result["upload"]["related"] == []
-    first_file_upload, = result["upload"]["file_uploads"]
+    (first_file_upload,) = result["upload"]["file_uploads"]
     assert first_file_upload["size"] == 1234
 
 
