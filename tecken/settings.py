@@ -559,7 +559,13 @@ class Base(Core):
     # When you "upload by download", the URL's domain needs to be in this
     # whitelist. This is to double-check that we don't allow downloads from
     # domains we don't fully trust.
-    ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue(["queue.taskcluster.net"])
+    ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue(
+        [
+            "queue.taskcluster.net",
+            "firefox-ci-tc.services.mozilla.com",
+            "stage.taskcluster.nonprod.cloudops.mozgcp.net",
+        ]
+    )
 
     # A list of file extensions that if a file is NOT one of these extensions
     # we can immediately return 404 and not bother to process for anything
