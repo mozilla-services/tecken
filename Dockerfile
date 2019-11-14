@@ -54,7 +54,9 @@ COPY requirements.txt /tmp/
 COPY requirements-constraints.txt /tmp/
 # Switch to /tmp to install dependencies outside home dir
 WORKDIR /tmp
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -U 'pip>=10' && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip check --disable-pip-version-check
 
 COPY . /app
 
