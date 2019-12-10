@@ -11,7 +11,7 @@
     "mobx-react": "6.1.4",
     "raven-js": "3.27.2",
     "react": "16.11.0",
-    "react-copy-to-clipboard": "5.0.1",
+    "react-copy-to-clipboard": "5.0.2",
     "react-dom": "16.11.0",
     "react-fontawesome": "1.6.1",
     "react-router-dom": "5.1.2"
