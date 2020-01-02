@@ -1,4 +1,4 @@
--c requirements-constraints.txt
+-c constraints.txt
 
 Django==2.2.9 \
     --hash=sha256:662a1ff78792e3fd77f16f71b1f31149489434de4b62a74895bd5d6534e635a5 \

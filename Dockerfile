@@ -50,12 +50,11 @@ RUN apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Python dependencies
-COPY requirements.txt /tmp/
-COPY requirements-constraints.txt /tmp/
+COPY ./requirements /tmp/requirements
 # Switch to /tmp to install dependencies outside home dir
 WORKDIR /tmp
 RUN pip install -U 'pip>=10' && \
-    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r requirements/default.txt && \
     pip check --disable-pip-version-check
 
 COPY . /app
