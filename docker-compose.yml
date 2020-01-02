@@ -17,7 +17,7 @@ services:
   base:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: docker/Dockerfile
       args:
         - FRONTEND_SENTRY_PUBLIC_DSN
         - CI
