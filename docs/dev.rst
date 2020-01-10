@@ -131,7 +131,7 @@ minimum needed. First start a shell and install the Python requirements:
 .. code-block:: shell
 
    $ make test
-   > pip install -r docs-requirements.txt
+   > pip install -r requirements/docs.txt
 
 Now, you can run the command manually with just...:
 
