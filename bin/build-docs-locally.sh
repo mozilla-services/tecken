@@ -6,7 +6,7 @@
 
 python3 -m venv ./docsvenv
 source docsvenv/bin/activate
-pip install -r docs-requirements.txt
+pip install -r requirements/docs.txt
 cd docs
 source ../docsvenv/bin/activate
 make html

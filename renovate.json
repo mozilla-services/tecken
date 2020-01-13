@@ -6,9 +6,5 @@
       "enabled": false
     }
   },
-  "dockerfile": {
-    "pinDigests": true,
-    "ignorePaths": ["docker/images/redis/"]
-  },
   "rebaseStalePrs": true
 }

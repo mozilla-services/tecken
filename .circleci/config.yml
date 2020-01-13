@@ -62,7 +62,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "docs-requirements.txt" }}
+          key: deps1-{{ .Branch }}-{{ checksum "requirements/docs.txt" }}
       - run:
           name: Create virtualenv
           command: |
@@ -70,9 +70,9 @@ jobs:
             echo "source ~/venv/bin/activate" >> $BASH_ENV
       - run:
           name: Install requirements
-          command: pip install -r docs-requirements.txt
+          command: pip install -r requirements/docs.txt
       - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "docs-requirements.txt" }}
+          key: deps1-{{ .Branch }}-{{ checksum "requirements/docs.txt" }}
           paths:
             - "~/venv"
       - run:
