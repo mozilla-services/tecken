@@ -1,4 +1,4 @@
-FROM node:10.18.0-slim@sha256:7da09bec069149d866c112c6dffe6b5ef51e1bcc45afb88650e47055fef53c3f as frontend
+FROM node:13.6.0-slim@sha256:0378f33f91081de9890d5e7052c3d96657aa4e1bf04051e61d8d4c629fd562ec as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
@@ -15,7 +15,7 @@ RUN bin/build_frontend.sh
 
 # NOTE(willkg): stick with stretch because it has gcc-6 which we need
 # to build dump_syms.
-FROM python:3.7.6-slim-stretch@sha256:8e9602a414be1aa0bc1df1d6227021a8cc33ac2b6f8d02112dca24b4400d0d24
+FROM python:3.7.6-slim-stretch@sha256:687c74e7fa67c4fdbfe520a2be1b12455703c9a04ee11d1a7b827e9f26081b4f
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
