@@ -14,7 +14,7 @@ set -eo pipefail
 : "${GUNICORN_TIMEOUT:=300}"
 
 usage() {
-  echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|blackfix|lintcheck|superuser"
+  echo "usage: ./bin/run.sh web|web-dev|worker|test|bash|lint|lintfix|superuser"
   exit 1
 }
 
@@ -57,12 +57,12 @@ case $1 in
     # the docker container.
     exec celery -A tecken.celery:app worker -l info --purge
     ;;
-  blackfix)
+  lintfix)
     # This exclude is ugly because it's not additive
     # See https://github.com/ambv/black/issues/65
     black tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
     ;;
-  lintcheck)
+  lint)
     flake8 tecken tests
     black --diff --check tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
     ;;

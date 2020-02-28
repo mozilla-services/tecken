@@ -43,13 +43,13 @@ services:
       service: base
     volumes:
       - $PWD:/app
-    command: lintcheck
+    command: lint
 
   # Same as linting but without volume mounts for CI.
   linting-ci:
     extends:
       service: base
-    command: lintcheck
+    command: lint
 
   # Container specifically for running tests.
   test:
