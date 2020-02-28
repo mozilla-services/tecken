@@ -21,11 +21,12 @@ default:
 	@echo "  shell            Opens a Bash shell"
 	@echo "  currentshell     Opens a Bash shell into existing running 'web' container"
 	@echo "  test             Runs the Python test suite"
+	@echo "  testshell        Runs a shell in the test environment"
 	@echo "  gunicorn         Runs the whole stack using gunicorn on http://localhost:8000/"
 	@echo "  django-shell     Django integrative shell"
 	@echo "  psql             Open the psql cli"
-	@echo "  lintcheck        Check that the code is well formatted"
-	@echo "  lintfix          Fix all the possible linting errors"
+	@echo "  lint             Lint code"
+	@echo "  lintfix          Reformat code"
 	@echo "  build-frontend   Builds the frontend static files\n"
 
 # Dev configuration steps
@@ -75,6 +76,7 @@ redis-store-cli: .env .docker-build
 
 .PHONY: psql
 psql: .env .docker-build
+	@echo "Password is 'postgres'."
 	docker-compose run db psql -h db -U postgres
 
 .PHONY: stop
@@ -84,6 +86,10 @@ stop: .env
 .PHONY: test
 test: .env .docker-build
 	@bin/test.sh
+
+.PHONY: testshell
+testshell: .env .docker-build
+	@bin/test.sh --shell
 
 .PHONY: run
 run: .env .docker-build
@@ -105,12 +111,12 @@ docs:
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
 
-.PHONY: lintcheck
-lintcheck: .env .docker-build
-	docker-compose run linting lintcheck
+.PHONY: link
+lint: .env .docker-build
+	docker-compose run linting lint
 	docker-compose run frontend lint
 
 .PHONY: lintfix
 lintfix: .env .docker-build
-	docker-compose run linting blackfix
+	docker-compose run linting lintfix
 	docker-compose run frontend lintfix
