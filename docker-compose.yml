@@ -117,6 +117,11 @@ services:
   # https://hub.docker.com/_/postgres/
   db:
     image: postgres:9.6
+    environment:
+      # Create the superuser account
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=tecken
 
   # https://hub.docker.com/_/redis
   redis-store:

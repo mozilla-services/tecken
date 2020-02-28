@@ -76,6 +76,7 @@ redis-store-cli: .env .docker-build
 
 .PHONY: psql
 psql: .env .docker-build
+	@echo "Password is 'postgres'."
 	docker-compose run db psql -h db -U postgres
 
 .PHONY: stop
