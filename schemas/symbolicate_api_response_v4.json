@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://symbols.mozilla.org/schemas/symbolicate_api_response_v4.json",
+  "description": "Symbolicate API v4 response definition.",
+  "type": "object",
+
+  "definitions": {
+    "job": {
+      "description": "A job has an array of frames.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+
+  "properties": {
+    "symbolicatedStacks": {
+      "description": "This returns an array of jobs, but it always holds just one job.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {"$ref": "#/definitions/job"}
+    },
+    "knownModules": {
+      "type": "array",
+      "items": {
+        "type": ["boolean", "null"]
+      }
+    }
+  },
+  "required": [
+    "symbolicatedStacks",
+    "knownModules"
+  ]
+}

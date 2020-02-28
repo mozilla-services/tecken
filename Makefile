@@ -111,7 +111,7 @@ docs:
 build-frontend:
 	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
 
-.PHONY: link
+.PHONY: lint
 lint: .env .docker-build
 	docker-compose run linting lint
 	docker-compose run frontend lint
