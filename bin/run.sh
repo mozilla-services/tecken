@@ -70,27 +70,14 @@ case $1 in
     exec python manage.py superuser "${@:2}"
     ;;
   test)
-    # python manage.py collectstatic --noinput
-    coverage erase
-    coverage run -m py.test "${@:2}"
-    coverage report -m
-    # FIXME(willkg): this doesn't work with fs permissions on Linux
-    # if [[ -z ${CI+check} ]]; then  # when doing local `make test`
-    #   # generate code coverage to disk
-    #   coverage html --skip-covered
-    # fi
-
-    # FIXME(peterbe) The team is small and codecov's report inside
-    # pull requests (as comments) is more noise than help.
-    # Also, code coverage is mostly useful when contributors help and
-    # add more code without adding tests to cover.
-    # if [[ ! -z ${CI+check} ]]; then
-    #   # submit coverage
-    #   coverage xml
-    #   env
-    #   bash <(curl -s https://codecov.io/bash) -s /tmp
-    # fi
-
+    if [ "$2" = "--shell" ]; then
+      bash
+    else
+      # python manage.py collectstatic --noinput
+      coverage erase
+      coverage run -m pytest "${@:2}"
+      coverage report -m
+    fi
     ;;
   bash)
     # The likelyhood of needing pytest-watch when in shell is

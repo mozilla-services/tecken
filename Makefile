@@ -21,6 +21,7 @@ default:
 	@echo "  shell            Opens a Bash shell"
 	@echo "  currentshell     Opens a Bash shell into existing running 'web' container"
 	@echo "  test             Runs the Python test suite"
+	@echo "  testshell        Runs a shell in the test environment"
 	@echo "  gunicorn         Runs the whole stack using gunicorn on http://localhost:8000/"
 	@echo "  django-shell     Django integrative shell"
 	@echo "  psql             Open the psql cli"
@@ -84,6 +85,10 @@ stop: .env
 .PHONY: test
 test: .env .docker-build
 	@bin/test.sh
+
+.PHONY: testshell
+testshell: .env .docker-build
+	@bin/test.sh --shell
 
 .PHONY: run
 run: .env .docker-build

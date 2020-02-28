@@ -168,18 +168,17 @@ To run the tests, run this:
 
 Tests go in ``tests/``. Data required by tests goes in ``tests/data/``.
 
-If you need to run specific tests or pass in different arguments, you can run
-bash in the base container and then run ``py.test`` with whatever args you
-want. For example:
+If you need to run specific tests or pass in different arguments, you can use
+the testshell:
 
 .. code-block:: shell
 
-   $ make shell
-   > py.test
+   $ make testshell
+   > pytest
 
    <pytest output>
 
-   > py.test tests/test_symbolicate.py
+   > pytest tests/test_symbolicate.py
 
 
 We're using py.test_ for a test harness and test discovery.
