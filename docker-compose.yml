@@ -1,17 +1,6 @@
 version: '2'
 
 services:
-  db:
-    image: postgres:9.6
-  redis-store:
-    build: ./docker/images/redis
-  redis-cache:
-    image: redis:3.2
-
-  # ------------------------------------------------------------------
-  # After this point is dev-related services.
-  # ------------------------------------------------------------------
-
   # Base container is used for development tasks like tests, linting, coverage
   # and building docs.
   base:
@@ -94,16 +83,6 @@ services:
       - redis-cache
     command: web
 
-  statsd:
-    # https://hub.docker.com/r/hopsoft/graphite-statsd/
-    image: hopsoft/graphite-statsd:latest
-    ports:
-      - "8080:80"
-      - "2003-2004:2003-2004"
-      - "2023-2024:2023-2024"
-      - "8125:8125/udp"
-      - "8126:8126"
-
   worker:
     extends:
       service: base
@@ -135,6 +114,18 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
 
+  # https://hub.docker.com/_/postgres/
+  db:
+    image: postgres:9.6
+
+  # https://hub.docker.com/_/redis
+  redis-store:
+    build: ./docker/images/redis
+
+  redis-cache:
+    image: redis:3.2
+
+  # https://hub.docker.com/r/minio/minio
   minio:
     image: minio/minio:latest
     environment:
@@ -146,10 +137,20 @@ services:
       - $PWD/miniodata:/export
     command: server /export
 
-  # OpenID Connect provider
+  # https://hub.docker.com/r/mozilla/oidc-testprovider
   oidcprovider:
     build:
       context: docker/images/oidcprovider
     image: local/tecken_oidcprovider
     ports:
       - "8081:8080"
+
+  # https://hub.docker.com/r/hopsoft/graphite-statsd/
+  statsd:
+    image: hopsoft/graphite-statsd:latest
+    ports:
+      - "8080:80"
+      - "2003-2004:2003-2004"
+      - "2023-2024:2023-2024"
+      - "8125:8125/udp"
+      - "8126:8126"
