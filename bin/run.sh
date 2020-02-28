@@ -80,11 +80,6 @@ case $1 in
     fi
     ;;
   bash)
-    # The likelyhood of needing pytest-watch when in shell is
-    # big enough that it's worth always installing it before going
-    # into the shell. This is up for debate as time and main developers
-    # make.
-    echo "For high-speed test development, run: pip install pytest-watch"
     exec "$@"
     ;;
   *)
