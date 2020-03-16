@@ -21,6 +21,7 @@
     "react-scripts": "3.3.1"
   },
   "resolutions": {
+    "acorn": ">=7.1.1",
     "braces": ">=3.0.2",
     "eslint-utils": ">=1.4.1",
     "handlebars": ">=4.3.0",
@@ -28,6 +29,7 @@
     "lodash": ">=4.7.13",
     "lodash.template": ">=4.5.0",
     "merge": ">=1.2.1",
+    "minimist": ">=1.2.2",
     "mixin-deep": ">=2.0.1",
     "set-value": ">=3.0.1"
   },
