@@ -1,8 +1,8 @@
 -c constraints.txt
 
-Django==2.2.10 \
-    --hash=sha256:1226168be1b1c7efd0e66ee79b0e0b58b2caa7ed87717909cd8a57bb13a7079a \
-    --hash=sha256:9a4635813e2d498a3c01b10c701fe4a515d76dd290aaa792ccb65ca4ccb6b038
+Django==2.2.12 \
+    --hash=sha256:6ecd229e1815d4fc5240fc98f1cca78c41e7a8cd3e3f2eefadc4735031077916 \
+    --hash=sha256:69897097095f336d5aeef45b4103dceae51c00afa6d3ae198a2a18e519791b7a
 dj-database-url==0.5.0 \
     --hash=sha256:851785365761ebe4994a921b433062309eb882fedd318e1b0fcecc607ed02da9 \
     --hash=sha256:4aeaeb1f573c74835b0686a2b46b85990571159ffc21aa57ecd4d1e1cb334163
