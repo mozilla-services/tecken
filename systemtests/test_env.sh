@@ -56,6 +56,13 @@ do
     python ./bin/symbolicate.py --verify --api-url="${HOST}symbolicate/v5" --api-version=5 "${FN}"
 done
 
+echo ""
+
+# Test downloading symbols files
+echo ">>> DOWNLOAD TEST"
+python ./bin/download_sym_files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
+echo ""
+
 # FIXME: finish this off
 exit 1;
 
@@ -64,17 +71,11 @@ exit 1;
 # mkdir upload-zips
 # python bin/make-symbol-zip.py --save-dir upload-zips
 echo ">>> UPLOAD TEST"
-python systemtests/bin/upload-symbol-zips.py --timeout=600 ${HOST}
+python ./bin/upload-symbol-zips.py --timeout=600 ${HOST}
 echo ""
 
 # Test upload by download url
 echo ">>> UPLOAD BY DOWNLOAD TEST"
 URL=$(python bin/list-firefox-symbols-zips.py --url-only --number=1)
-python systemtests/bin/upload-symbol-zips.py --timeout=600 --download-url=${URL} --max-size=1500mb ${HOST}
+python ./bin/upload-symbol-zips.py --timeout=600 --download-url=${URL} --max-size=1500mb ${HOST}
 echo ""
-
-# Test downloading
-echo ">>> DOWNLOAD TEST"
-python systemtests/bin/download.py --max-requests=50 ${HOST} downloading/symbol-queries-groups.csv
-echo ""
-

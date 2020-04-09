@@ -1,0 +1,24 @@
+# File built: 2020-04-08
+#
+# symfile, expected status code
+@ECHO NOTE: None of these should take over 1000ms to download.
+@ECHO
+@ECHO NOTE: If you get wrong results, you might have to update this file because
+@ECHO files have expired from the bucket.
+
+# I went through Uploads and picked out files--nothing fancy. These will expire
+# at some point, then we should find some new ones.
+cryptsp.pdb/410A559EA9162634084E228ADDEE69A91/cryptsp.sym,200
+WscApi.pdb/642D7E7B0EC2B644044AFE359A224A951/WscApi.sym,200
+winmm.pdb/57F62E3550D24319AB28BC49BBB4F2691/winmm.sym,200
+libfake.dylib/6AA8DF50D16136F59BC3E461C0A5DF0F0/libfake.dylib.sym,200
+libmozglue.dylib/11FB836EE6723C07BFF775900077457B0/libmozglue.dylib.sym,200
+
+# These were from tecken-loadtests and have expired so they're 404.
+libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym,404
+libvlc.dll/3BDB3BCF29000/libvlc.dl_,404
+
+# These are in the private bucket, so they're 403. However, since we're not
+# using a token, they show up as 404.
+libc.so/8B654FF16EA5103DF06284EDA4EE8C730/libc.so.sym,404
+libsqlite.so/2D932347B05044E333C97A1915A08ADA0/libsqlite.so.sym,404
