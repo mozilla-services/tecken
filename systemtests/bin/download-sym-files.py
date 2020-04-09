@@ -6,7 +6,7 @@
 
 # Download symbols files.
 #
-# Usage: ./bin/download.py CSVFILE
+# Usage: ./bin/download-sym-files.py CSVFILE
 
 from urllib.parse import urljoin
 
@@ -30,7 +30,7 @@ METRICS = markus.get_metrics()
 @click.command()
 @click.option(
     "--base-url",
-    default="https://symbols.mozilla.org/v1/",
+    default="https://symbols.mozilla.org/",
     help="Base url to use for downloading sym files.",
 )
 @click.argument(
