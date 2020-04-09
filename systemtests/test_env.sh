@@ -51,16 +51,16 @@ echo ">>> SYMBOLICATION TEST"
 for FN in ./data/stacks/*.json
 do
     # Verify v4 api
-    python ./bin/symbolicate.py --verify --api-url="${HOST}symbolicate/v4" --api-version=4 "${FN}"
+    python ./bin/symbolicate.py verify --api-url="${HOST}symbolicate/v4" --api-version=4 "${FN}"
     # Verify v5 api
-    python ./bin/symbolicate.py --verify --api-url="${HOST}symbolicate/v5" --api-version=5 "${FN}"
+    python ./bin/symbolicate.py verify --api-url="${HOST}symbolicate/v5" --api-version=5 "${FN}"
 done
 
 echo ""
 
 # Test downloading symbols files
 echo ">>> DOWNLOAD TEST"
-python ./bin/download_sym_files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
+python ./bin/download-sym-files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
 echo ""
 
 # FIXME: finish this off
