@@ -60,11 +60,11 @@ case $1 in
   lintfix)
     # This exclude is ugly because it's not additive
     # See https://github.com/ambv/black/issues/65
-    black tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
+    black tecken tests systemtests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
     ;;
   lint)
     flake8 tecken tests
-    black --diff --check tecken tests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
+    black --diff --check tecken tests systemtests --exclude '/(\.git|\.hg|\.mypy_cache|\.tox|\.venv|_build|buck-out|build|dist|migrations)/'
     ;;
   superuser)
     exec python manage.py superuser "${@:2}"
