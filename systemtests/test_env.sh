@@ -13,6 +13,12 @@ set -e
 # 1. run "make shell" to get a shell in the container
 # 2. then do "cd systemtests"
 # 3. run "./test_env.sh [ENV]"
+#
+# To set auth tokens, add these to your .env file:
+#
+# * LOCAL_AUTH_TOKEN
+# * STAGE_AUTH_TOKEN
+# * PROD_AUTH_TOKEN
 
 USAGE="Usage: test_env.sh [local|stage|prod]"
 
@@ -45,6 +51,18 @@ esac
 
 echo "HOST: ${HOST}"
 echo ""
+
+# Test uploading
+if [ "${DESTRUCTIVE_TESTS}" == "1" ]; then
+    for FN in ./data/symbols/*.zip
+    do
+        python ./bin/upload-symbols.py --auth-token="${AUTH_TOKEN}" --base-url="${HOST}" "${FN}"
+    done
+else
+    echo "Skipping destructive tests ..."
+fi
+
+exit 1;
 
 # Test symbolication API
 echo ">>> SYMBOLICATION TEST"

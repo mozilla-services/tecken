@@ -19,7 +19,7 @@ import requests
 class StdoutMetrics(BackendBase):
     def emit(self, record):
         click.echo(
-            "Elapsed time: %s %s %s" % (record.stat_type, record.key, record.value,)
+            "Elapsed time: %s %s %s" % (record.stat_type, record.key, record.value)
         )
 
 
@@ -31,7 +31,7 @@ METRICS = markus.get_metrics()
 @click.option(
     "--base-url",
     default="https://symbols.mozilla.org/",
-    help="Base url to use for downloading sym files.",
+    help="Base url to use for downloading SYM files.",
 )
 @click.argument(
     "csv_file", nargs=1, type=click.Path(),
