@@ -38,9 +38,7 @@ METRICS = markus.get_metrics()
     help="Base url to use for uploading SYM files.",
 )
 @click.option(
-    "--auth-token",
-    required=True,
-    help="Auth token for uploading SYM files.",
+    "--auth-token", required=True, help="Auth token for uploading SYM files.",
 )
 @click.argument("symbolsfile")
 @click.pass_context
@@ -67,8 +65,8 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile):
         click.echo(
             click.style(
                 "Uploading %s to %s (%s/%s) ..."
-                % (symbolsfile, url, i+1, MAX_ATTEMPTS),
-                fg="yellow"
+                % (symbolsfile, url, i + 1, MAX_ATTEMPTS),
+                fg="yellow",
             )
         )
         try:
@@ -83,8 +81,7 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile):
                 if resp.status_code != 201:
                     click.echo(
                         click.style(
-                            "Error: %s %s" % (resp.status_code, resp.content),
-                            fg="red"
+                            "Error: %s %s" % (resp.status_code, resp.content), fg="red"
                         )
                     )
                 else:

@@ -12,6 +12,18 @@ Contents of this directory::
 
 
 
+Setting up tests
+================
+
+Set up the tests this way::
+
+    $ make shell
+    root@e62fb7ae586f:/app# cd systemtests
+    root@e62fb7ae586f:/app/systemtests# ./setup_tests.sh
+
+That creates files in directories under ``data/``.
+
+
 Running tests
 =============
 
@@ -34,8 +46,7 @@ To run against prod, do::
 
 .. Note::
 
-   When running against prod, the systemtests will not run destructive tests.
-   Yay!
+   When running against prod, the systemtests will SKIP destructive tests.
 
 
 Rules of systemtest

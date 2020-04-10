@@ -132,12 +132,12 @@ def make_stacks_save(ctx, outputdir, crashids):
 
         print("%s..." % crashid)
         crash_report = fetch_crash_report(crashid)
-        stack = build_stack(crash_report)
-        if not stack["stacks"][0]:
+        data = build_stack(crash_report)
+        if not data or not data["stacks"][0]:
             print("Nothing to save.")
             continue
         with open(os.path.join(outputdir, "%s.json" % crashid), "w") as fp:
-            json.dump(stack, fp, indent=2)
+            json.dump(data, fp, indent=2)
 
     print("Done!")
 
