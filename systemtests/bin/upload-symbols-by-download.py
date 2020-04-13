@@ -6,9 +6,8 @@
 
 # Upload symbols to Tecken using the upload API.
 
-# Usage: ./bin/upload-symbols.py FILE
+# Usage: ./bin/upload-symbols-by-download.py
 
-import os
 from urllib.parse import urljoin
 
 import click
@@ -20,8 +19,10 @@ import requests
 # Maximum number of retry attempts
 MAX_ATTEMPTS = 5
 
-# Number of seconds to wait for a response from server
-CONNECTION_TIMEOUT = 60
+# Number of seconds to wait for a response from server; this is 3 minutes
+# because the server has to do all the work and requests needs to wait for that
+# to happen
+CONNECTION_TIMEOUT = 180
 
 
 class StdoutMetrics(BackendBase):
@@ -44,44 +45,30 @@ METRICS = markus.get_metrics()
 @click.option(
     "--auth-token", required=True, help="Auth token for uploading SYM files.",
 )
-@click.argument("symbolsfile")
+@click.argument("url")
 @click.pass_context
-def upload_symbols(ctx, base_url, auth_token, symbolsfile):
-    """Upload SYM file to a host."""
-
-    if not os.path.exists(symbolsfile):
-        raise click.BadParameter(
-            "Symbols file does not exist.",
-            ctx=ctx,
-            param="symbolsfile",
-            param_hint="symbolsfile",
-        )
+def upload_symbols_by_download(ctx, base_url, auth_token, url):
+    """Upload SYM file to a host using a download url."""
 
     api_url = urljoin(base_url, "/upload/")
-    basename = os.path.basename(symbolsfile)
 
-    # This is an upload and it's success is partially dependent on the
-    # connection's upload bandwidth. Because it's run in a local dev
-    # environment, it's entirely possible uploading will fail periodically.
-    # Given that, we wrap uploading in a retry loop.
+    # It's possible this can fail, so we put it in a retry loop.
     success = False
     for i in range(MAX_ATTEMPTS):
         click.echo(
             click.style(
-                "Uploading %s to %s (%s/%s) ..."
-                % (symbolsfile, api_url, i + 1, MAX_ATTEMPTS),
+                "Uploading %s to %s (%s/%s) ..." % (url, api_url, i + 1, MAX_ATTEMPTS),
                 fg="yellow",
             )
         )
         try:
             with METRICS.timer("upload_time"):
-                with open(symbolsfile, "rb") as fp:
-                    resp = requests.post(
-                        api_url,
-                        files={basename: fp},
-                        headers={"auth-token": auth_token},
-                        timeout=CONNECTION_TIMEOUT,
-                    )
+                resp = requests.post(
+                    api_url,
+                    data={"url": url},
+                    headers={"auth-token": auth_token},
+                    timeout=CONNECTION_TIMEOUT,
+                )
                 if resp.status_code != 201:
                     click.echo(
                         click.style(
@@ -100,4 +87,4 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile):
 
 
 if __name__ == "__main__":
-    upload_symbols()
+    upload_symbols_by_download()
