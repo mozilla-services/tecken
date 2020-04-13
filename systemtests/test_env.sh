@@ -13,6 +13,12 @@ set -e
 # 1. run "make shell" to get a shell in the container
 # 2. then do "cd systemtests"
 # 3. run "./test_env.sh [ENV]"
+#
+# To set auth tokens, add these to your .env file:
+#
+# * LOCAL_AUTH_TOKEN
+# * STAGE_AUTH_TOKEN
+# * PROD_AUTH_TOKEN
 
 USAGE="Usage: test_env.sh [local|stage|prod]"
 
@@ -46,8 +52,25 @@ esac
 echo "HOST: ${HOST}"
 echo ""
 
-# Test symbolication API
-echo ">>> SYMBOLICATION TEST"
+# DESTRUCTIVE TESTS
+if [ "${DESTRUCTIVE_TESTS}" == "1" ]; then
+    echo ">>> UPLOAD TEST (DESTRUCTIVE)"
+    for FN in ./data/zip-files/*.zip
+    do
+        python ./bin/upload-symbols.py --auth-token="${AUTH_TOKEN}" --base-url="${HOST}" "${FN}"
+    done
+    echo ""
+
+    echo ">>> UPLOAD BY DOWNLOAD TEST (DESTRUCTIVE)"
+    URL=$(python bin/list-firefox-symbols-zips.py --number=1 --max-size=1000000000)
+    python ./bin/upload-symbols-by-download.py --base-url="${HOST}" --auth-token="${AUTH_TOKEN}" "${URL}"
+    echo ""
+else
+    echo ">>> SKIPPING DESTRUCTIVE TESTS"
+    echo ""
+fi
+
+echo ">>> SYMBOLICATION V4 and V5 TEST"
 for FN in ./data/stacks/*.json
 do
     # Verify v4 api
@@ -58,24 +81,6 @@ done
 
 echo ""
 
-# Test downloading symbols files
 echo ">>> DOWNLOAD TEST"
 python ./bin/download-sym-files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
-echo ""
-
-# FIXME: finish this off
-exit 1;
-
-# Test uploading -- requires AUTH_TOKEN in environment
-# FIXME: if upload-zips doesn't exist, create it here
-# mkdir upload-zips
-# python bin/make-symbol-zip.py --save-dir upload-zips
-echo ">>> UPLOAD TEST"
-python ./bin/upload-symbol-zips.py --timeout=600 ${HOST}
-echo ""
-
-# Test upload by download url
-echo ">>> UPLOAD BY DOWNLOAD TEST"
-URL=$(python bin/list-firefox-symbols-zips.py --url-only --number=1)
-python ./bin/upload-symbol-zips.py --timeout=600 --download-url=${URL} --max-size=1500mb ${HOST}
 echo ""

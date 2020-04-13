@@ -29,3 +29,7 @@ miniodata/
 .pytest_cache/
 .cache/
 docsvenv
+
+# Ephemeral systemtest data
+systemtests/data/zip-files/
+systemtests/data/stacks/

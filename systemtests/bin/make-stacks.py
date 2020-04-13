@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 # Fetches processed crash data for given crash ids and generates
 # stacks for use with the Symbolication API. This has two modes:
 #
@@ -132,12 +136,12 @@ def make_stacks_save(ctx, outputdir, crashids):
 
         print("%s..." % crashid)
         crash_report = fetch_crash_report(crashid)
-        stack = build_stack(crash_report)
-        if not stack["stacks"][0]:
+        data = build_stack(crash_report)
+        if not data or not data["stacks"][0]:
             print("Nothing to save.")
             continue
         with open(os.path.join(outputdir, "%s.json" % crashid), "w") as fp:
-            json.dump(stack, fp, indent=2)
+            json.dump(data, fp, indent=2)
 
     print("Done!")
 
