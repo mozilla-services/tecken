@@ -54,24 +54,23 @@ echo ""
 
 # DESTRUCTIVE TESTS
 if [ "${DESTRUCTIVE_TESTS}" == "1" ]; then
-    # Test upload
+    echo ">>> UPLOAD TEST (DESTRUCTIVE)"
     for FN in ./data/zip-files/*.zip
     do
         python ./bin/upload-symbols.py --auth-token="${AUTH_TOKEN}" --base-url="${HOST}" "${FN}"
     done
     echo ""
 
-    # Test upload by download url
-    echo ">>> UPLOAD BY DOWNLOAD TEST"
+    echo ">>> UPLOAD BY DOWNLOAD TEST (DESTRUCTIVE)"
     URL=$(python bin/list-firefox-symbols-zips.py --number=1 --max-size=1000000000)
     python ./bin/upload-symbols-by-download.py --base-url="${HOST}" --auth-token="${AUTH_TOKEN}" "${URL}"
     echo ""
 else
-    echo "Skipping destructive tests ..."
+    echo ">>> SKIPPING DESTRUCTIVE TESTS"
+    echo ""
 fi
 
-# Test symbolication API
-echo ">>> SYMBOLICATION TEST"
+echo ">>> SYMBOLICATION V4 and V5 TEST"
 for FN in ./data/stacks/*.json
 do
     # Verify v4 api
@@ -82,7 +81,6 @@ done
 
 echo ""
 
-# Test downloading symbols files
 echo ">>> DOWNLOAD TEST"
 python ./bin/download-sym-files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
 echo ""
