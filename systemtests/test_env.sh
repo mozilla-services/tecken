@@ -30,7 +30,7 @@ fi
 case $1 in
     "local")
         export DESTRUCTIVE_TESTS=1
-        HOST=http://localhost:8000/
+        HOST=http://web:8000/
         export AUTH_TOKEN="${LOCAL_AUTH_TOKEN}"
         ;;
     "stage")
