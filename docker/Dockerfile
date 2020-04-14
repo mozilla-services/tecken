@@ -15,7 +15,7 @@ RUN bin/build_frontend.sh
 
 # NOTE(willkg): stick with stretch because it has gcc-6 which we need
 # to build dump_syms.
-FROM python:3.7.6-slim-stretch@sha256:3245d09657482f4b7612d97b7c4a7bde277ee522ac8184ec99175347ba4c01fc
+FROM python:3.7.6-slim-stretch@sha256:e3f7c9a4cce291f4fb32ab80886c440836aa1209e10017efd6ab6cc5d4cd0c07
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
