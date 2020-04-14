@@ -4,7 +4,7 @@
   "private": false,
   "license": "MPL-2.0",
   "dependencies": {
-    "bulma": "0.8.0",
+    "bulma": "0.8.2",
     "date-fns": "2.9.0",
     "font-awesome": "4.7.0",
     "mobx": "5.15.4",
