@@ -467,9 +467,7 @@ class Stats extends React.PureComponent {
 
   async componentDidMount() {
     // Note! This endpoint requires that the user is logged in.
-    const response = await Fetch("/api/stats/symbolication", {
-      credentials: "same-origin",
-    });
+    const response = await Fetch("/api/stats/symbolication");
     this.setState({ loading: false });
     if (response.ok) {
       if (store.fetchError) {

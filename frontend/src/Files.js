@@ -64,7 +64,7 @@ class Files extends React.PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    Fetch(url, { credentials: "same-origin" }).then((r) => {
+    Fetch(url).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }

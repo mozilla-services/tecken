@@ -26,33 +26,28 @@ export default class User extends PureComponent {
 
   _fetchUser = (id) => {
     this.setState({ loading: true });
-    Fetch(`/api/_users/user/${id}`, { credentials: "same-origin" }).then(
-      (r) => {
-        if (r.status === 403 && !store.currentUser) {
-          store.setRedirectTo(
-            "/",
-            "You have to be signed in to edit this user"
-          );
-          return;
-        }
-        this.setState({ loading: false });
-        if (r.status === 200) {
-          if (store.fetchError) {
-            store.fetchError = null;
-          }
-          return r.json().then((response) => {
-            this.csrfToken = response.csrf_token;
-            this.setState({
-              user: response.user,
-              groups: response.groups,
-              loading: false,
-            });
-          });
-        } else {
-          store.fetchError = r;
-        }
+    Fetch(`/api/_users/user/${id}`).then((r) => {
+      if (r.status === 403 && !store.currentUser) {
+        store.setRedirectTo("/", "You have to be signed in to edit this user");
+        return;
       }
-    );
+      this.setState({ loading: false });
+      if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null;
+        }
+        return r.json().then((response) => {
+          this.csrfToken = response.csrf_token;
+          this.setState({
+            user: response.user,
+            groups: response.groups,
+            loading: false,
+          });
+        });
+      } else {
+        store.fetchError = r;
+      }
+    });
   };
 
   goBack = () => {
@@ -114,7 +109,6 @@ class EditUserForm extends PureComponent {
     return fetch(`/api/_users/user/${this.props.user.id}`, {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
       headers: new Headers({
         "X-CSRFToken": this.props.csrfToken,
       }),

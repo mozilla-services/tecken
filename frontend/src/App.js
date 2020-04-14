@@ -52,7 +52,7 @@ const App = observer(
     }
 
     _fetchAuth = () => {
-      Fetch("/api/_auth/", { credentials: "same-origin" }).then((r) => {
+      Fetch("/api/_auth/").then((r) => {
         if (r.status === 200) {
           if (store.fetchError) {
             store.fetchError = null;
@@ -102,7 +102,6 @@ const App = observer(
       url = url.replace("http://web:8000/", "http://localhost:3000/");
       Fetch(url, {
         method: "POST",
-        credentials: "same-origin",
         redirect: "manual",
       }).then((r) => {
         sessionStorage.removeItem("signedin");

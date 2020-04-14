@@ -59,9 +59,7 @@ export default class Upload extends React.PureComponent {
   };
 
   _fetchUpload = (id) => {
-    return Fetch(`/api/uploads/upload/${id}`, {
-      credentials: "same-origin",
-    }).then((r) => {
+    return Fetch(`/api/uploads/upload/${id}`).then((r) => {
       if (this.dismounted) {
         return;
       }

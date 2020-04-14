@@ -25,9 +25,7 @@ export default class UploadNow extends PureComponent {
   }
 
   fetchPossibleUploadUrls = () => {
-    Fetch("/api/uploads/_possible_upload_urls/", {
-      credentials: "same-origin",
-    }).then((r) => {
+    Fetch("/api/uploads/_possible_upload_urls/").then((r) => {
       if (store.fetchError) {
         store.fetchError = null;
       }
@@ -167,7 +165,6 @@ class UploadForm extends PureComponent {
     return fetch("/upload/", {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
     }).then((r) => {
       if (store.fetchError) {
         store.fetchError = null;
@@ -329,7 +326,6 @@ class UploadByDownloadForm extends UploadForm {
     return fetch("/upload/", {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
     }).then((r) => {
       this.setState({ loading: false });
       if (store.fetchError) {

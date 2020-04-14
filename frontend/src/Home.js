@@ -100,7 +100,7 @@ class SignedInTiles extends React.PureComponent {
 
   _fetchStats = () => {
     this.setState({ loading: true });
-    Fetch("/api/stats/", { credentials: "same-origin" }).then((r) => {
+    Fetch("/api/stats/").then((r) => {
       this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
@@ -119,30 +119,28 @@ class SignedInTiles extends React.PureComponent {
 
   _fetchCurrentSettings = () => {
     this.setState({ loadingSettings: true });
-    return Fetch("/api/_settings/", { credentials: "same-origin" }).then(
-      (r) => {
-        this.setState({ loadingSettings: false });
-        if (r.status === 200) {
-          if (store.fetchError) {
-            store.fetchError = null;
-          }
-          return r.json().then((response) => {
-            this.setState({
-              settings: response.settings,
-            });
-          });
-        } else {
-          store.fetchError = r;
-          // Always return a promise
-          return Promise.resolve();
+    return Fetch("/api/_settings/").then((r) => {
+      this.setState({ loadingSettings: false });
+      if (r.status === 200) {
+        if (store.fetchError) {
+          store.fetchError = null;
         }
+        return r.json().then((response) => {
+          this.setState({
+            settings: response.settings,
+          });
+        });
+      } else {
+        store.fetchError = r;
+        // Always return a promise
+        return Promise.resolve();
       }
-    );
+    });
   };
 
   _fetchVersions = () => {
     this.setState({ loadingVersions: true });
-    Fetch("/api/_versions/", { credentials: "same-origin" }).then((r) => {
+    Fetch("/api/_versions/").then((r) => {
       this.setState({ loadingVersions: false });
       if (r.status === 200) {
         if (store.fetchError) {
