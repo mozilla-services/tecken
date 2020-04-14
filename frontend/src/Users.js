@@ -13,7 +13,7 @@ class Users extends PureComponent {
       loading: true,
       users: null,
       displayUsers: null,
-      showInactiveUsers: false
+      showInactiveUsers: false,
     };
   }
   componentWillMount() {
@@ -27,7 +27,7 @@ class Users extends PureComponent {
 
   _fetchUsers = () => {
     this.setState({ loading: true });
-    Fetch("/api/_users/", { credentials: "same-origin" }).then(r => {
+    Fetch("/api/_users/", { credentials: "same-origin" }).then((r) => {
       this.setState({ loading: false });
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
@@ -40,13 +40,13 @@ class Users extends PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
             users: response.users,
             displayUsers: this.state.showInactiveUsers
               ? response.users
               : this._filterInActiveUsers(response.users),
-            loading: false
+            loading: false,
           });
         });
       } else {
@@ -55,8 +55,8 @@ class Users extends PureComponent {
     });
   };
 
-  _filterInActiveUsers = users => {
-    return users.filter(user => {
+  _filterInActiveUsers = (users) => {
+    return users.filter((user) => {
       if (!user.is_active) {
         return false;
       }
@@ -79,13 +79,13 @@ class Users extends PureComponent {
             change={() => {
               this.setState(
                 {
-                  showInactiveUsers: !this.state.showInactiveUsers
+                  showInactiveUsers: !this.state.showInactiveUsers,
                 },
                 () => {
                   this.setState({
                     displayUsers: this.state.showInactiveUsers
                       ? this.state.users
-                      : this._filterInActiveUsers(this.state.users)
+                      : this._filterInActiveUsers(this.state.users),
                   });
                 }
               );
@@ -122,8 +122,8 @@ class ShowActiveUsersToggle extends React.PureComponent {
 class DisplayUsers extends PureComponent {
   state = {
     filter: {
-      q: ""
-    }
+      q: "",
+    },
   };
 
   onEdit = (event, id) => {
@@ -131,12 +131,12 @@ class DisplayUsers extends PureComponent {
     this.props.editUser(id);
   };
 
-  _resetFilter = event => {
+  _resetFilter = (event) => {
     event.preventDefault();
     this.setState({
       filter: {
-        q: ""
-      }
+        q: "",
+      },
     });
   };
 
@@ -168,7 +168,9 @@ class DisplayUsers extends PureComponent {
                 type="search"
                 className="input"
                 value={this.state.filter.q}
-                onChange={e => this.setState({ filter: { q: e.target.value } })}
+                onChange={(e) =>
+                  this.setState({ filter: { q: e.target.value } })
+                }
                 placeholder="Filter by email"
               />
             </th>
@@ -189,7 +191,7 @@ class DisplayUsers extends PureComponent {
           </tr>
         </tfoot>
         <tbody>
-          {users.map(user => {
+          {users.map((user) => {
             // Yeah, it's a unscalable hack to filter in render().
             // It's also not scalable to load ALL users into memory with AJAX.
             // There's not even pagination.
@@ -225,7 +227,7 @@ class DisplayUsers extends PureComponent {
                   {user.is_superuser ? (
                     <span className="tag is-warning">Superuser</span>
                   ) : (
-                    user.permissions.map(p => (
+                    user.permissions.map((p) => (
                       <code key={p.id} style={{ display: "block" }}>
                         {p.name}
                       </code>

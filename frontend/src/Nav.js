@@ -10,11 +10,11 @@ const Nav = observer(
       super(props);
 
       this.state = {
-        menuToggled: true
+        menuToggled: true,
       };
     }
 
-    toggleMenu = event => {
+    toggleMenu = (event) => {
       event.preventDefault();
       this.setState({ menuToggled: !this.state.menuToggled });
     };

@@ -38,7 +38,7 @@ default:
 
 .PHONY: build
 build: .env
-	docker-compose build base
+	docker-compose build base frontend linting
 	touch .docker-build
 
 .PHONY: clean

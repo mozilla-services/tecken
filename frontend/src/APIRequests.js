@@ -6,12 +6,12 @@ import store from "./Store";
 
 const DisplayAPIRequests = observer(
   class DisplayAPIRequests extends React.Component {
-    reset = event => {
+    reset = (event) => {
       store.apiRequests = [];
       window.sessionStorage.setItem("hide-api-requests", true);
     };
 
-    displayUrl = url => {
+    displayUrl = (url) => {
       if (url.charAt(0) === "/") {
         // make local URLs absolute
         url = `${document.location.protocol}//${document.location.host}${url}`;

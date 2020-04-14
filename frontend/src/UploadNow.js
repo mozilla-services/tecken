@@ -11,7 +11,7 @@ export default class UploadNow extends PureComponent {
     this.pageTitle = "Symbol Upload Now";
     this.state = {
       loading: false,
-      possibleUploadUrls: []
+      possibleUploadUrls: [],
       // upload: null
     };
   }
@@ -26,8 +26,8 @@ export default class UploadNow extends PureComponent {
 
   fetchPossibleUploadUrls = () => {
     Fetch("/api/uploads/_possible_upload_urls/", {
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       if (store.fetchError) {
         store.fetchError = null;
       }
@@ -35,9 +35,9 @@ export default class UploadNow extends PureComponent {
       if (r.ok) {
         this.setState({
           validationError: null,
-          warning: null
+          warning: null,
         });
-        r.json().then(data => {
+        r.json().then((data) => {
           this.setState({ possibleUploadUrls: data.urls });
         });
       } else {
@@ -146,10 +146,10 @@ class UploadForm extends PureComponent {
       loading: false,
       fileInfo: null,
       warning: null,
-      validationError: null
+      validationError: null,
     };
   }
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     if (!this.filesInput.files.length) {
       return;
@@ -167,8 +167,8 @@ class UploadForm extends PureComponent {
     return fetch("/upload/", {
       method: "POST",
       body: formData,
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       if (store.fetchError) {
         store.fetchError = null;
       }
@@ -176,20 +176,20 @@ class UploadForm extends PureComponent {
       if (r.status === 201) {
         this.setState({
           validationError: null,
-          warning: null
+          warning: null,
         });
-        r.json().then(data => {
+        r.json().then((data) => {
           const upload = data.upload;
           store.setRedirectTo(`/uploads/upload/${upload.id}`, {
             message: "Symbols uploaded.",
-            success: true
+            success: true,
           });
         });
       } else if (r.status === 400) {
-        r.json().then(data => {
+        r.json().then((data) => {
           this.setState({
             validationError: data.error,
-            warning: null
+            warning: null,
           });
         });
       } else {
@@ -198,11 +198,11 @@ class UploadForm extends PureComponent {
     });
   };
 
-  onFileInputChange = event => {
+  onFileInputChange = (event) => {
     const file = this.filesInput.files[0];
     if (!/\.(zip|tar|tag\.gz)$/i.test(file.name)) {
       this.setState({
-        warning: "Make sure the file is a zip, tar.gz or tar file."
+        warning: "Make sure the file is a zip, tar.gz or tar file.",
       });
     } else if (this.state.warning) {
       this.setState({ warning: null });
@@ -211,8 +211,8 @@ class UploadForm extends PureComponent {
       fileInfo: {
         name: file.name,
         size: file.size,
-        type: file.type
-      }
+        type: file.type,
+      },
     });
   };
 
@@ -232,7 +232,7 @@ class UploadForm extends PureComponent {
                 type="file"
                 name="archive"
                 onChange={this.onFileInputChange}
-                ref={input => {
+                ref={(input) => {
                   this.filesInput = input;
                 }}
               />
@@ -263,7 +263,7 @@ class UploadForm extends PureComponent {
         </div>
         <PossibleUploadUrlsField
           possibleUploadUrls={this.props.possibleUploadUrls}
-          preferredBucketName={input => (this.preferredBucketName = input)}
+          preferredBucketName={(input) => (this.preferredBucketName = input)}
         />
         {this.state.warning && (
           <article className="message is-warning">
@@ -308,10 +308,10 @@ class UploadByDownloadForm extends UploadForm {
   constructor(props) {
     super(props);
     this.state = {
-      url: null
+      url: null,
     };
   }
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     const url = this.refs.url.value.trim();
     if (!url) {
@@ -329,8 +329,8 @@ class UploadByDownloadForm extends UploadForm {
     return fetch("/upload/", {
       method: "POST",
       body: formData,
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       this.setState({ loading: false });
       if (store.fetchError) {
         store.fetchError = null;
@@ -338,20 +338,20 @@ class UploadByDownloadForm extends UploadForm {
       if (r.status === 201) {
         this.setState({
           validationError: null,
-          warning: null
+          warning: null,
         });
-        r.json().then(data => {
+        r.json().then((data) => {
           const upload = data.upload;
           store.setRedirectTo(`/uploads/upload/${upload.id}`, {
             message: "Symbols URL downloaded.",
-            success: true
+            success: true,
           });
         });
       } else if (r.status === 400) {
-        r.json().then(data => {
+        r.json().then((data) => {
           this.setState({
             validationError: data.error,
-            warning: null
+            warning: null,
           });
         });
       } else {
@@ -360,11 +360,11 @@ class UploadByDownloadForm extends UploadForm {
     });
   };
 
-  onFileInputChange = event => {
+  onFileInputChange = (event) => {
     const file = this.filesInput.files[0];
     if (!/\.(zip|tar|tag\.gz)$/i.test(file.name)) {
       this.setState({
-        warning: "Make sure the file is a zip, tar.gz or tar file."
+        warning: "Make sure the file is a zip, tar.gz or tar file.",
       });
     } else if (this.state.warning) {
       this.setState({ warning: null });
@@ -402,7 +402,7 @@ class UploadByDownloadForm extends UploadForm {
         </div>
         <PossibleUploadUrlsField
           possibleUploadUrls={this.props.possibleUploadUrls}
-          preferredBucketName={input => (this.preferredBucketName = input)}
+          preferredBucketName={(input) => (this.preferredBucketName = input)}
         />
         {this.state.warning && (
           <article className="message is-warning">
@@ -443,7 +443,7 @@ function PossibleUploadUrlsField({ possibleUploadUrls, preferredBucketName }) {
       <div className="control">
         <div className="select">
           <select ref={preferredBucketName}>
-            {possibleUploadUrls.map(item => {
+            {possibleUploadUrls.map((item) => {
               return (
                 <option value={item.bucket_name} key={item.url}>
                   {item.bucket_name}

@@ -12,7 +12,7 @@ import {
   formatSeconds,
   DisplayDateDifference,
   filterToQueryString,
-  parseQueryString
+  parseQueryString,
 } from "./Common";
 import Fetch from "./Fetch";
 import "./Upload.css"; // they have enough in common
@@ -30,7 +30,7 @@ class Files extends React.PureComponent {
       total: null,
       batchSize: null,
       apiUrl: null,
-      filter: {}
+      filter: {},
     };
   }
 
@@ -64,7 +64,7 @@ class Files extends React.PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    Fetch(url, { credentials: "same-origin" }).then(r => {
+    Fetch(url, { credentials: "same-origin" }).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }
@@ -80,12 +80,12 @@ class Files extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
             files: response.files,
             aggregates: response.aggregates,
             total: response.total,
-            batchSize: response.batch_size
+            batchSize: response.batch_size,
           });
         });
       } else {
@@ -94,7 +94,7 @@ class Files extends React.PureComponent {
     });
   };
 
-  filterOnAll = event => {
+  filterOnAll = (event) => {
     event.preventDefault();
     const filter = this.state.filter;
     // delete filter.user
@@ -105,7 +105,7 @@ class Files extends React.PureComponent {
     this.setState({ filter: filter }, this._fetchFiles);
   };
 
-  filterOnMicrosoftDownloads = event => {
+  filterOnMicrosoftDownloads = (event) => {
     event.preventDefault();
     const filter = this.state.filter;
     filter.download = "microsoft";
@@ -113,10 +113,10 @@ class Files extends React.PureComponent {
     this.setState({ filter: filter }, this._fetchFiles);
   };
 
-  updateFilter = newFilters => {
+  updateFilter = (newFilters) => {
     this.setState(
       {
-        filter: Object.assign({}, this.state.filter, newFilters)
+        filter: Object.assign({}, this.state.filter, newFilters),
       },
       this._fetchFiles
     );
@@ -192,7 +192,7 @@ class DisplayFiles extends React.PureComponent {
     this.refs.bucketName.value = filter.bucket_name || "";
   }
 
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     const key = this.refs.key.value.trim();
     const size = this.refs.size.value.trim();
@@ -203,11 +203,11 @@ class DisplayFiles extends React.PureComponent {
       key,
       size,
       created_at,
-      bucket_name: bucketName
+      bucket_name: bucketName,
     });
   };
 
-  resetFilter = event => {
+  resetFilter = (event) => {
     this.refs.key.value = "";
     this.refs.size.value = "";
     this.refs.bucketName.value = "";
@@ -294,7 +294,7 @@ class DisplayFiles extends React.PureComponent {
           </tfoot>
           <tbody>
             {!loading &&
-              files.map(file => (
+              files.map((file) => (
                 <tr key={file.id}>
                   <td className="file-key">
                     <Link to={`/uploads/files/file/${file.id}`}>

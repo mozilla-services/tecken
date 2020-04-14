@@ -13,7 +13,7 @@ import {
   formatFileSize,
   ShowValidationErrors,
   filterToQueryString,
-  parseQueryString
+  parseQueryString,
 } from "./Common";
 
 class DownloadsMicrosoft extends React.PureComponent {
@@ -28,7 +28,7 @@ class DownloadsMicrosoft extends React.PureComponent {
       batchSize: null,
       apiUrl: null,
       filter: {},
-      validationErrors: null
+      validationErrors: null,
     };
   }
 
@@ -62,7 +62,7 @@ class DownloadsMicrosoft extends React.PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    return Fetch(url, {}).then(r => {
+    return Fetch(url, {}).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }
@@ -71,21 +71,21 @@ class DownloadsMicrosoft extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
             downloads: response.microsoft_downloads,
             aggregates: response.aggregates,
             total: response.total,
             batchSize: response.batch_size,
-            validationErrors: null
+            validationErrors: null,
           });
         });
       } else if (r.status === 400) {
-        return r.json().then(data => {
+        return r.json().then((data) => {
           this.setState({
             loading: false,
             refreshing: false,
-            validationErrors: data.errors
+            validationErrors: data.errors,
           });
         });
       } else {
@@ -96,16 +96,16 @@ class DownloadsMicrosoft extends React.PureComponent {
     });
   };
 
-  updateFilter = newFilters => {
+  updateFilter = (newFilters) => {
     this.setState(
       {
-        filter: Object.assign({}, this.state.filter, newFilters)
+        filter: Object.assign({}, this.state.filter, newFilters),
       },
       this._fetchMissing
     );
   };
 
-  resetAndReload = event => {
+  resetAndReload = (event) => {
     event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
       this._fetchMissing();
@@ -172,7 +172,7 @@ class DisplayDownloads extends React.PureComponent {
     this._updateFilterInputs(nextProps.filter);
   }
 
-  _updateFilterInputs = filter => {
+  _updateFilterInputs = (filter) => {
     this.refs.created_at.value = filter.created_at || "";
     this.refs.symbol.value = filter.symbol || "";
     this.refs.debugid.value = filter.debugid || "";
@@ -183,7 +183,7 @@ class DisplayDownloads extends React.PureComponent {
     }
   };
 
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     const created_at = this.refs.created_at.value.trim();
     const symbol = this.refs.symbol.value.trim();
@@ -198,11 +198,11 @@ class DisplayDownloads extends React.PureComponent {
       debugid,
       filename,
       state: stateFilter,
-      error: stateError
+      error: stateError,
     });
   };
 
-  resetFilter = event => {
+  resetFilter = (event) => {
     this.refs.symbol.value = "";
     this.refs.debugid.value = "";
     this.refs.filename.value = "";
@@ -256,8 +256,8 @@ class DisplayDownloads extends React.PureComponent {
               </td>
               <td colSpan={2}>
                 <StateChoice
-                  stateRef={input => (this.stateFilter = input)}
-                  stateError={input => (this.stateError = input)}
+                  stateRef={(input) => (this.stateFilter = input)}
+                  stateError={(input) => (this.stateError = input)}
                   initialState={this.props.filter.state}
                   initialError={this.props.filter.error}
                 />
@@ -286,7 +286,7 @@ class DisplayDownloads extends React.PureComponent {
             </tr>
           </tfoot>
           <tbody>
-            {downloads.map(download => (
+            {downloads.map((download) => (
               <tr key={download.id}>
                 <td
                   className="file-key"
@@ -349,13 +349,13 @@ class StateChoice extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      showErrorInput: this.props.initialState === "specific-error"
+      showErrorInput: this.props.initialState === "specific-error",
     };
   }
 
-  onChangeSelect = event => {
+  onChangeSelect = (event) => {
     this.setState({
-      showErrorInput: event.target.value === "specific-error"
+      showErrorInput: event.target.value === "specific-error",
     });
   };
 

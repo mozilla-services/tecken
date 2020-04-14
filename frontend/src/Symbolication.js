@@ -44,10 +44,10 @@ class Form extends React.PureComponent {
     result: null,
     jobInputs: 1,
     jsonBody: null,
-    validationError: null
+    validationError: null,
   };
 
-  submit = event => {
+  submit = (event) => {
     event.preventDefault();
     if (!this.state.jobs.length) {
       alert("No jobs yet.");
@@ -57,18 +57,18 @@ class Form extends React.PureComponent {
         loading: true,
         jsonBody,
         result: null,
-        validationError: null
+        validationError: null,
       });
       return fetch("/symbolicate/v5", {
         method: "POST",
         body: jsonBody,
         headers: new Headers({
-          "Content-Type": "application/json"
-        })
-      }).then(r => {
+          "Content-Type": "application/json",
+        }),
+      }).then((r) => {
         if (r.status === 200) {
           this.setState({ loading: false, validationError: null });
-          r.json().then(response => {
+          r.json().then((response) => {
             this.setState({ result: response }, () => {
               const el = document.querySelector("div.showresult");
               if (el) {
@@ -80,7 +80,7 @@ class Form extends React.PureComponent {
             });
           });
         } else if (r.status === 400) {
-          r.json().then(data => {
+          r.json().then((data) => {
             this.setState(
               { validationError: data.error, loading: false },
               () => {
@@ -104,12 +104,12 @@ class Form extends React.PureComponent {
 
   updateJob = (index, memoryMaps, stacks) => {
     const jobs = [...this.state.jobs];
-    const maps = memoryMaps.map(mm => mm.split(/\//));
+    const maps = memoryMaps.map((mm) => mm.split(/\//));
     jobs[index] = { memoryMap: maps, stacks: [stacks] };
     this.setState({ jobs: jobs });
   };
 
-  clear = event => {
+  clear = (event) => {
     console.error("Not implemented yet");
   };
 
@@ -270,7 +270,7 @@ class JobForm extends React.PureComponent {
     stacksInputs: 1,
     invalidMemoryMaps: [],
     defaultMemoryMap: 0,
-    stacks: []
+    stacks: [],
   };
   componentDidMount() {
     if (this.refs.memoryMap.value) {
@@ -281,11 +281,11 @@ class JobForm extends React.PureComponent {
     const lines = this.refs.memoryMap.value
       .trim()
       .split(/\n/g)
-      .filter(line => line.trim())
-      .map(line => line.trim());
+      .filter((line) => line.trim())
+      .map((line) => line.trim());
     const valid = new Set();
     const invalid = new Set();
-    lines.forEach(line => {
+    lines.forEach((line) => {
       let pathname = line;
       try {
         const split = new URL(line).pathname.split(/\//g);
@@ -338,7 +338,7 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
               ref="memoryMap"
               placeholder={placeholder}
               defaultValue={defaultValue}
-              onBlur={event => {
+              onBlur={(event) => {
                 this.updateMemoryMap();
               }}
             />
@@ -346,7 +346,7 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
           {this.state.invalidMemoryMaps.length ? (
             <p className="help is-danger">
               {this.state.invalidMemoryMaps.length} invalid lines:{" "}
-              {this.state.invalidMemoryMaps.map(x => (
+              {this.state.invalidMemoryMaps.map((x) => (
                 <code key={x}>{x}</code>
               ))}
             </p>
@@ -368,7 +368,7 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
                     {
                       stacks: [...this.state.stacks, [memoryMap, address]],
                       stacksInputs: this.state.stacksInputs + 1,
-                      defaultMemoryMap: memoryMap
+                      defaultMemoryMap: memoryMap,
                     },
                     () => {
                       this.props.updateJob(
@@ -399,9 +399,9 @@ https://symbols.mozilla.org/AccessibleMarshal.pdb/3D2A1F8439554FBF8A0E0F24BEF8F0
 
 class StackForm extends React.PureComponent {
   state = {
-    invalidAddress: false
+    invalidAddress: false,
   };
-  add = event => {
+  add = (event) => {
     event.preventDefault();
     const address = parseInt(this.refs.address.value, 10);
     if (isNaN(address)) {
@@ -462,13 +462,13 @@ class StackForm extends React.PureComponent {
 class Stats extends React.PureComponent {
   state = {
     loading: true,
-    stats: null
+    stats: null,
   };
 
   async componentDidMount() {
     // Note! This endpoint requires that the user is logged in.
     const response = await Fetch("/api/stats/symbolication", {
-      credentials: "same-origin"
+      credentials: "same-origin",
     });
     this.setState({ loading: false });
     if (response.ok) {
@@ -477,7 +477,7 @@ class Stats extends React.PureComponent {
       }
       const data = await response.json();
       this.setState({
-        stats: data.symbolications
+        stats: data.symbolications,
       });
     } else {
       store.fetchError = response;

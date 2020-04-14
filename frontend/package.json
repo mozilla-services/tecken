@@ -4,7 +4,7 @@
   "private": false,
   "license": "MPL-2.0",
   "dependencies": {
-    "bulma": "0.8.0",
+    "bulma": "0.8.2",
     "date-fns": "2.9.0",
     "font-awesome": "4.7.0",
     "mobx": "5.15.4",
@@ -17,7 +17,7 @@
     "react-router-dom": "5.1.2"
   },
   "devDependencies": {
-    "prettier": "1.19.1",
+    "prettier": "2.0.4",
     "react-scripts": "3.3.1"
   },
   "resolutions": {

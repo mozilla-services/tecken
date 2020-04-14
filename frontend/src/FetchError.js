@@ -6,7 +6,7 @@ import store from "./Store";
    monkeypatch fetch(). XXX maybe we should.
 */
 class FetchError extends PureComponent {
-  resetFetchError = event => {
+  resetFetchError = (event) => {
     store.fetchError = null;
   };
   render() {

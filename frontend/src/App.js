@@ -5,7 +5,7 @@ import {
   Route,
   Redirect,
   Switch,
-  Link
+  Link,
 } from "react-router-dom";
 import { withRouter } from "react-router";
 import Raven from "raven-js";
@@ -43,7 +43,7 @@ const App = observer(
     constructor(props) {
       super(props);
       this.state = {
-        redirectTo: null
+        redirectTo: null,
       };
     }
 
@@ -52,12 +52,12 @@ const App = observer(
     }
 
     _fetchAuth = () => {
-      Fetch("/api/_auth/", { credentials: "same-origin" }).then(r => {
+      Fetch("/api/_auth/", { credentials: "same-origin" }).then((r) => {
         if (r.status === 200) {
           if (store.fetchError) {
             store.fetchError = null;
           }
-          r.json().then(response => {
+          r.json().then((response) => {
             if (response.user) {
               store.currentUser = response.user;
               store.signOutUrl = response.sign_out_url;
@@ -81,7 +81,7 @@ const App = observer(
       });
     };
 
-    signIn = event => {
+    signIn = (event) => {
       event.preventDefault();
       let url = store.signInUrl;
       /* When doing local development, the Django runserver is
@@ -95,7 +95,7 @@ const App = observer(
       document.location.href = url;
     };
 
-    signOut = event => {
+    signOut = (event) => {
       event.preventDefault();
       let url = store.signOutUrl;
       // See above explanation, in 'signIn()' about this "hack"
@@ -103,13 +103,13 @@ const App = observer(
       Fetch(url, {
         method: "POST",
         credentials: "same-origin",
-        redirect: "manual"
-      }).then(r => {
+        redirect: "manual",
+      }).then((r) => {
         sessionStorage.removeItem("signedin");
         store.currentUser = false;
         store.setRedirectTo("/", {
           message: "Signed out",
-          success: true
+          success: true,
         });
         // This'll refetch the signInUrl
         this._fetchAuth();
@@ -141,7 +141,7 @@ const App = observer(
                   <Route
                     path="/"
                     exact
-                    render={props => {
+                    render={(props) => {
                       return <Home {...props} signIn={this.signIn} />;
                     }}
                   />
@@ -236,7 +236,7 @@ class RedirectMaybe extends React.PureComponent {
 }
 
 class DisplayNotificationMessage extends React.PureComponent {
-  reset = event => {
+  reset = (event) => {
     store.notificationMessage = null;
   };
 

@@ -9,7 +9,7 @@ import {
   formatDistance,
   formatDistanceStrict,
   differenceInSeconds,
-  differenceInMilliseconds
+  differenceInMilliseconds,
 } from "date-fns";
 import parseISO from "date-fns/parseISO";
 
@@ -62,7 +62,7 @@ export const DisplayDateDifference = ({ from, to, suffix = "" }) => {
   );
 };
 
-export const thousandFormat = x => {
+export const thousandFormat = (x) => {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
 
@@ -75,7 +75,7 @@ export const formatFileSize = (bytes, decimals = 0) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
 };
 
-export const formatSeconds = seconds => {
+export const formatSeconds = (seconds) => {
   if (seconds < 1) {
     // milliseconds
     return (seconds * 1000).toFixed(0) + "ms";
@@ -89,7 +89,7 @@ export const formatSeconds = seconds => {
     return `${minutes}m${seconds}s`;
   }
 };
-export const BooleanIcon = bool => (
+export const BooleanIcon = (bool) => (
   <span className="icon" style={{ color: bool ? "green" : "red" }}>
     <i className={bool ? "fa fa-check" : "fa fa-close"} />
   </span>
@@ -100,7 +100,7 @@ export const Pagination = ({
   total,
   batchSize,
   currentPage,
-  updateFilter
+  updateFilter,
 }) => {
   if (!currentPage) {
     currentPage = 1;
@@ -108,7 +108,7 @@ export const Pagination = ({
     currentPage = parseInt(currentPage, 10);
   }
 
-  const nextPageUrl = page => {
+  const nextPageUrl = (page) => {
     const searchParams = new URLSearchParams(location.search);
     searchParams.set("page", page);
     return location.pathname + "?" + searchParams.toString();
@@ -119,7 +119,7 @@ export const Pagination = ({
     updateFilter({ page });
   };
 
-  const isOverflow = page => {
+  const isOverflow = (page) => {
     // return true if doesn't make sense to go to this page
     return page < 1 || (page - 1) * batchSize >= total;
   };
@@ -129,7 +129,7 @@ export const Pagination = ({
       <Link
         className="pagination-previous"
         to={nextPageUrl(currentPage - 1)}
-        onClick={e => goTo(e, currentPage - 1)}
+        onClick={(e) => goTo(e, currentPage - 1)}
         disabled={isOverflow(currentPage - 1)}
       >
         Previous
@@ -137,7 +137,7 @@ export const Pagination = ({
       <Link
         to={nextPageUrl(currentPage + 1)}
         className="pagination-next"
-        onClick={e => goTo(e, currentPage + 1)}
+        onClick={(e) => goTo(e, currentPage + 1)}
         disabled={isOverflow(currentPage + 1)}
       >
         Next page
@@ -187,7 +187,7 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
       <button className="delete" onClick={resetAndReload} />
       <h4>Filter validation errors</h4>
       <ul>
-        {Object.keys(errors).map(key => {
+        {Object.keys(errors).map((key) => {
           return (
             <li key={key}>
               <b>{key}</b> - <code>{errors[key]}</code>
@@ -199,7 +199,7 @@ export const ShowValidationErrors = ({ errors, resetAndReload }) => {
   );
 };
 
-export const parseQueryString = qs => {
+export const parseQueryString = (qs) => {
   const searchParams = new URLSearchParams(qs);
   const parsed = {};
   for (let [key, value] of searchParams) {
@@ -220,7 +220,7 @@ export const filterToQueryString = (filterObj, overrides) => {
   const searchParams = new URLSearchParams();
   Object.entries(copy).forEach(([key, value]) => {
     if (Array.isArray(value) && value.length) {
-      value.forEach(v => searchParams.append(key, v));
+      value.forEach((v) => searchParams.append(key, v));
     } else if (value) {
       searchParams.set(key, value);
     }
@@ -229,7 +229,7 @@ export const filterToQueryString = (filterObj, overrides) => {
   return searchParams.toString();
 };
 
-const URLTag = url => <span className="url">{url}</span>;
+const URLTag = (url) => <span className="url">{url}</span>;
 
 export const ShowUploadMetadata = ({ upload }) => {
   return (
@@ -265,7 +265,7 @@ export const ShowUploadMetadata = ({ upload }) => {
               {upload.redirect_urls.length ? (
                 <ol start="0" className="redirect-urls">
                   <li>{URLTag(upload.download_url)}</li>
-                  {upload.redirect_urls.map(url => (
+                  {upload.redirect_urls.map((url) => (
                     <li key={url}>{URLTag(url)}</li>
                   ))}
                 </ol>
@@ -331,7 +331,7 @@ export const ShowUploadMetadata = ({ upload }) => {
 const DisplayIncompleteRatio = ({ files }) => {
   // Return a string like "56 of 103 (54%)" to mean that 56 of 103 files are complete.
   const all = files.length;
-  const complete = files.filter(file => !!file.completed_at).length;
+  const complete = files.filter((file) => !!file.completed_at).length;
   const percentage = (100 * complete) / all;
   return `${complete} of ${all} (${Math.trunc(percentage)}%)`;
 };
@@ -438,12 +438,12 @@ export const ShowMicrosoftDownloadMetadata = ({ download }) => (
   </table>
 );
 
-const capitalize = s => {
+const capitalize = (s) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
 export class SortLink extends React.PureComponent {
-  change = event => {
+  change = (event) => {
     event.preventDefault();
     const { current, name } = this.props;
     let reverse = true;
@@ -452,7 +452,7 @@ export class SortLink extends React.PureComponent {
     }
     this.props.onChangeSort({
       sort: name,
-      reverse: reverse
+      reverse: reverse,
     });
   };
   render() {
