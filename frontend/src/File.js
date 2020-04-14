@@ -6,7 +6,7 @@ import {
   ShowUploadMetadata,
   ShowFileMetadata,
   ShowMicrosoftDownloadMetadata,
-  BooleanIcon
+  BooleanIcon,
 } from "./Common";
 import Fetch from "./Fetch";
 import store from "./Store";
@@ -17,7 +17,7 @@ export default class File extends React.PureComponent {
     this.pageTitle = "Symbol Upload File";
     this.state = {
       loading: false,
-      file: null
+      file: null,
     };
   }
   componentWillMount() {
@@ -42,16 +42,16 @@ export default class File extends React.PureComponent {
     }
   }
 
-  goBack = event => {
+  goBack = (event) => {
     event.preventDefault();
     this.props.history.goBack();
   };
 
-  _fetchFile = id => {
+  _fetchFile = (id) => {
     this.setState({ loading: true });
     return Fetch(`/api/uploads/files/file/${id}`, {
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       if (this.dismounted) {
         return;
       }
@@ -67,7 +67,7 @@ export default class File extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({ file: response.file });
         });
       } else {
@@ -118,12 +118,12 @@ class DisplayFile extends React.PureComponent {
     this.state = {
       loading: true,
       headLoading: true,
-      headSuccess: null
+      headSuccess: null,
     };
   }
 
-  headQuery = file => {
-    fetch(file.url, { method: "HEAD" }).then(r => {
+  headQuery = (file) => {
+    fetch(file.url, { method: "HEAD" }).then((r) => {
       this.setState({ headSuccess: r.status === 200, headLoading: false });
     });
   };

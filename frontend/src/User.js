@@ -12,7 +12,7 @@ export default class User extends PureComponent {
     this.state = {
       loading: true,
       user: null,
-      groups: null
+      groups: null,
     };
   }
   componentWillMount() {
@@ -24,30 +24,35 @@ export default class User extends PureComponent {
     this._fetchUser(this.props.match.params.id);
   }
 
-  _fetchUser = id => {
+  _fetchUser = (id) => {
     this.setState({ loading: true });
-    Fetch(`/api/_users/user/${id}`, { credentials: "same-origin" }).then(r => {
-      if (r.status === 403 && !store.currentUser) {
-        store.setRedirectTo("/", "You have to be signed in to edit this user");
-        return;
-      }
-      this.setState({ loading: false });
-      if (r.status === 200) {
-        if (store.fetchError) {
-          store.fetchError = null;
+    Fetch(`/api/_users/user/${id}`, { credentials: "same-origin" }).then(
+      (r) => {
+        if (r.status === 403 && !store.currentUser) {
+          store.setRedirectTo(
+            "/",
+            "You have to be signed in to edit this user"
+          );
+          return;
         }
-        return r.json().then(response => {
-          this.csrfToken = response.csrf_token;
-          this.setState({
-            user: response.user,
-            groups: response.groups,
-            loading: false
+        this.setState({ loading: false });
+        if (r.status === 200) {
+          if (store.fetchError) {
+            store.fetchError = null;
+          }
+          return r.json().then((response) => {
+            this.csrfToken = response.csrf_token;
+            this.setState({
+              user: response.user,
+              groups: response.groups,
+              loading: false,
+            });
           });
-        });
-      } else {
-        store.fetchError = r;
+        } else {
+          store.fetchError = r;
+        }
       }
-    });
+    );
   };
 
   goBack = () => {
@@ -57,7 +62,7 @@ export default class User extends PureComponent {
   userSaved = () => {
     store.setRedirectTo("/users", {
       message: "User changes saved.",
-      success: true
+      success: true,
     });
   };
 
@@ -85,15 +90,15 @@ export default class User extends PureComponent {
 class EditUserForm extends PureComponent {
   state = {
     loading: false,
-    validationErrors: null
+    validationErrors: null,
   };
   componentWillUnmount() {
     this.dismounted = true;
   }
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     const groups = [];
-    [...this.refs.groups.options].forEach(option => {
+    [...this.refs.groups.options].forEach((option) => {
       if (option.selected) {
         groups.push(option.value);
       }
@@ -111,9 +116,9 @@ class EditUserForm extends PureComponent {
       body: formData,
       credentials: "same-origin",
       headers: new Headers({
-        "X-CSRFToken": this.props.csrfToken
-      })
-    }).then(r => {
+        "X-CSRFToken": this.props.csrfToken,
+      }),
+    }).then((r) => {
       if (store.fetchError) {
         store.fetchError = null;
       }
@@ -122,7 +127,7 @@ class EditUserForm extends PureComponent {
         // this._resetForm()
         this.props.userSaved(this.props.user.id);
       } else if (r.status === 400) {
-        r.json().then(data => {
+        r.json().then((data) => {
           this.setState({ loading: false, validationErrors: data.errors });
         });
       } else {
@@ -143,7 +148,7 @@ class EditUserForm extends PureComponent {
     }
 
     const { user, groups } = this.props;
-    const userGroupIds = user.groups.map(group => group.id);
+    const userGroupIds = user.groups.map((group) => group.id);
 
     return (
       <form onSubmit={this.submitForm}>
@@ -157,7 +162,7 @@ class EditUserForm extends PureComponent {
               size={groups.length}
               defaultValue={userGroupIds}
             >
-              {this.props.groups.map(group => {
+              {this.props.groups.map((group) => {
                 return (
                   <option key={group.id} value={group.id}>
                     {group.name}
@@ -233,13 +238,13 @@ const ExplainGroups = ({ groups }) => {
           </tr>
         </thead>
         <tbody>
-          {groups.map(group => {
+          {groups.map((group) => {
             return (
               <tr key={group.id}>
                 <td>{group.name}</td>
                 <td>
                   <ul style={{ marginTop: 0 }}>
-                    {group.permissions.map(p => (
+                    {group.permissions.map((p) => (
                       <li key={p.id}>{p.name}</li>
                     ))}
                   </ul>

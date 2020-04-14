@@ -15,7 +15,7 @@ import {
   ShowValidationErrors,
   filterToQueryString,
   parseQueryString,
-  SortLink
+  SortLink,
 } from "./Common";
 import Fetch from "./Fetch";
 import "./Uploads.css";
@@ -37,7 +37,7 @@ class Uploads extends React.PureComponent {
       validationErrors: null,
       latestUpload: null,
       newUploadsCount: 0,
-      orderBy: null
+      orderBy: null,
     };
 
     this.newCountLoopInterval = 5 * 1000;
@@ -87,7 +87,7 @@ class Uploads extends React.PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    return Fetch(url, { credentials: "same-origin" }).then(r => {
+    return Fetch(url, { credentials: "same-origin" }).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }
@@ -104,7 +104,7 @@ class Uploads extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState(
             {
               uploads: response.uploads,
@@ -114,7 +114,7 @@ class Uploads extends React.PureComponent {
               batchSize: response.batch_size,
               orderBy: response.order_by,
               validationErrors: null,
-              latestUpload: this._getLatestUpload(response.uploads)
+              latestUpload: this._getLatestUpload(response.uploads),
             },
             () => {
               if (this.state.newUploadsCount) {
@@ -125,11 +125,11 @@ class Uploads extends React.PureComponent {
           );
         });
       } else if (r.status === 400) {
-        return r.json().then(data => {
+        return r.json().then((data) => {
           this.setState({
             loading: false,
             refreshing: false,
-            validationErrors: data.errors
+            validationErrors: data.errors,
           });
         });
       } else {
@@ -142,11 +142,11 @@ class Uploads extends React.PureComponent {
 
   _fetchAbsoluteLatestUpload = () => {
     const url = "/api/uploads/";
-    return fetch(url, { credentials: "same-origin" }).then(r => {
+    return fetch(url, { credentials: "same-origin" }).then((r) => {
       if (r.status === 200) {
-        return r.json().then(response => {
+        return r.json().then((response) => {
           return this.setState({
-            latestUpload: this._getLatestUpload(response.uploads)
+            latestUpload: this._getLatestUpload(response.uploads),
           });
         });
       }
@@ -159,11 +159,11 @@ class Uploads extends React.PureComponent {
   };
 
   // This is called every time _fetchUploads() finishes successfully.
-  _getLatestUpload = uploads => {
+  _getLatestUpload = (uploads) => {
     // Of all 'uploads', look for the one with the highest
     // created_at and if it's more than this.state.latestUpload, update.
     let latestUpload = this.state.latestUpload;
-    uploads.forEach(upload => {
+    uploads.forEach((upload) => {
       const createdAt = upload.created_at;
       if (latestUpload === null || createdAt > latestUpload) {
         latestUpload = createdAt;
@@ -176,7 +176,7 @@ class Uploads extends React.PureComponent {
     if (!this.dismounted) {
       let url = "/api/uploads/";
       const qs = filterToQueryString(this.state.filter, {
-        created_at: `>${this.state.latestUpload}`
+        created_at: `>${this.state.latestUpload}`,
       });
       url += "?" + qs;
       if (this.previousLatestUpload) {
@@ -187,9 +187,9 @@ class Uploads extends React.PureComponent {
       }
       this.previousLatestUpload = this.state.latestUpload;
       // Not going to obsess over fetch errors
-      Fetch(url, { credentials: "same-origin" }).then(r => {
+      Fetch(url, { credentials: "same-origin" }).then((r) => {
         if (r.status === 200) {
-          r.json().then(response => {
+          r.json().then((response) => {
             if (response.total) {
               document.title = `(${response.total} new) ${this.state.pageTitle}`;
               this.setState({ newUploadsCount: response.total });
@@ -205,30 +205,30 @@ class Uploads extends React.PureComponent {
     }
   };
 
-  filterOnAll = event => {
+  filterOnAll = (event) => {
     event.preventDefault();
     const filter = this.state.filter;
     delete filter.user;
     this.setState({ filter: filter }, this._fetchUploads);
   };
 
-  filterOnYours = event => {
+  filterOnYours = (event) => {
     event.preventDefault();
     const filter = this.state.filter;
     filter.user = store.currentUser.email;
     this.setState({ filter: filter }, this._fetchUploads);
   };
 
-  updateFilter = newFilters => {
+  updateFilter = (newFilters) => {
     this.setState(
       {
-        filter: Object.assign({}, this.state.filter, newFilters)
+        filter: Object.assign({}, this.state.filter, newFilters),
       },
       this._fetchUploads
     );
   };
 
-  resetAndReload = event => {
+  resetAndReload = (event) => {
     event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
       this._fetchUploads();
@@ -242,7 +242,7 @@ class Uploads extends React.PureComponent {
     return false;
   };
 
-  changeOrderBy = orderBy => {
+  changeOrderBy = (orderBy) => {
     this.setState({ orderBy: orderBy }, () => {
       this._fetchUploads();
     });
@@ -333,7 +333,7 @@ class Uploads extends React.PureComponent {
 export default Uploads;
 
 class ShowNewUploadsCount extends React.PureComponent {
-  refresh = event => {
+  refresh = (event) => {
     event.preventDefault();
     this.props.refresh();
   };
@@ -389,7 +389,7 @@ class DisplayUploads extends React.PureComponent {
     this.refs.completed_at.value = filter.completed_at || "";
   };
 
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     let user = "";
     if (this.props.canViewAll) {
@@ -403,11 +403,11 @@ class DisplayUploads extends React.PureComponent {
       user,
       size,
       created_at,
-      completed_at
+      completed_at,
     });
   };
 
-  resetFilter = event => {
+  resetFilter = (event) => {
     if (this.props.canViewAll) {
       this.refs.user.value = "";
     }
@@ -417,7 +417,7 @@ class DisplayUploads extends React.PureComponent {
     this.props.resetAndReload(event);
   };
 
-  isNew = date => {
+  isNew = (date) => {
     if (this.props.previousLatestUpload) {
       return date > this.props.previousLatestUpload;
     }
@@ -509,7 +509,7 @@ class DisplayUploads extends React.PureComponent {
           </tfoot>
           <tbody>
             {!loading &&
-              uploads.map(upload => (
+              uploads.map((upload) => (
                 <tr key={upload.id}>
                   <td>
                     <Link

@@ -16,7 +16,7 @@ class Store {
           this.notificationMessage = {
             message,
             warning,
-            success
+            success,
           };
         }
       ),
@@ -28,7 +28,7 @@ class Store {
       setRedirectTo: action((destination, message = null) => {
         if (typeof destination === "string") {
           destination = {
-            pathname: destination
+            pathname: destination,
           };
         }
         this.redirectTo = destination;
@@ -36,7 +36,7 @@ class Store {
           if (typeof message === "string") {
             this.notificationMessage = {
               message: message,
-              warning: true
+              warning: true,
             };
           } else {
             this.notificationMessage = message;
@@ -47,20 +47,20 @@ class Store {
         this.redirectTo = null;
       }),
       get hasPermission() {
-        return codename => {
+        return (codename) => {
           if (this.currentUser) {
             if (this.currentUser.is_superuser) {
               return true;
             } else {
               // need to bother looping over permissions
-              return !!this.currentUser.permissions.find(p => {
+              return !!this.currentUser.permissions.find((p) => {
                 return p.codename === codename;
               });
             }
           }
           return false;
         };
-      }
+      },
     });
   }
 }

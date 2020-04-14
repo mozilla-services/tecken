@@ -13,7 +13,7 @@ import {
   thousandFormat,
   DisplayFilesSummary,
   ShowUploadMetadata,
-  parseISODate
+  parseISODate,
 } from "./Common";
 import "./Upload.css";
 import Fetch from "./Fetch";
@@ -26,7 +26,7 @@ export default class Upload extends React.PureComponent {
     this.state = {
       loading: true,
       upload: null,
-      refreshingInterval: null
+      refreshingInterval: null,
     };
 
     this.initialRefreshingInterval = 4;
@@ -53,15 +53,15 @@ export default class Upload extends React.PureComponent {
     }
   }
 
-  goBack = event => {
+  goBack = (event) => {
     event.preventDefault();
     this.props.history.goBack();
   };
 
-  _fetchUpload = id => {
+  _fetchUpload = (id) => {
     return Fetch(`/api/uploads/upload/${id}`, {
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       if (this.dismounted) {
         return;
       }
@@ -77,11 +77,11 @@ export default class Upload extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState(
             {
               upload: response.upload,
-              loading: false
+              loading: false,
             },
             () => {
               if (this.recentAndIncompleteUpload()) {
@@ -115,16 +115,16 @@ export default class Upload extends React.PureComponent {
         }
       }, refreshingInterval * 1000);
       this.setState({
-        refreshingInterval: refreshingInterval
+        refreshingInterval: refreshingInterval,
       });
     }
   };
 
-  refreshUpload = event => {
+  refreshUpload = (event) => {
     event.preventDefault();
     this.setState({
       loading: true,
-      refreshingInterval: this.initialRefreshingInterval
+      refreshingInterval: this.initialRefreshingInterval,
     });
     this._fetchUpload(this.state.upload.id);
   };
@@ -196,7 +196,7 @@ class DisplayRefreshingInterval extends React.PureComponent {
     super(props);
     this.state = { seconds: this._roundInterval(props.interval) };
   }
-  _roundInterval = interval => Math.round(Number(interval));
+  _roundInterval = (interval) => Math.round(Number(interval));
   componentWillUnmount() {
     this.dismounted = true;
   }
@@ -208,7 +208,7 @@ class DisplayRefreshingInterval extends React.PureComponent {
       if (this.dismounted) {
         window.clearInterval(this.loop);
       } else {
-        this.setState(state => {
+        this.setState((state) => {
           return { seconds: state.seconds - 1 };
         });
       }
@@ -258,13 +258,13 @@ const DisplayUpload = ({ upload }) => {
 */
 const mergeAllKeys = (uploads, skipped, ignored) => {
   const all = [];
-  ignored.forEach(key => {
+  ignored.forEach((key) => {
     all.push({ key: key, ignored: true });
   });
-  skipped.forEach(key => {
+  skipped.forEach((key) => {
     all.push({ key: key, skipped: true });
   });
-  uploads.forEach(upload => {
+  uploads.forEach((upload) => {
     all.push(upload);
   });
   return all;
@@ -275,7 +275,7 @@ class ShowUploadFiles extends React.PureComponent {
     super(props);
     this.state = {
       sortBy: null,
-      reverse: false
+      reverse: false,
     };
   }
 
@@ -287,32 +287,32 @@ class ShowUploadFiles extends React.PureComponent {
     }
   };
 
-  sortByKey = event => {
+  sortByKey = (event) => {
     event.preventDefault();
     this._sortByKey("key");
   };
 
-  sortBySize = event => {
+  sortBySize = (event) => {
     event.preventDefault();
     this._sortByKey("size", true);
   };
 
-  sortByUpdate = event => {
+  sortByUpdate = (event) => {
     event.preventDefault();
     this._sortByKey("update");
   };
 
-  sortByCompressed = event => {
+  sortByCompressed = (event) => {
     event.preventDefault();
     this._sortByKey("compressed");
   };
 
-  sortByTime = event => {
+  sortByTime = (event) => {
     event.preventDefault();
     this._sortByKey("time", true);
   };
 
-  sortKeys = keys => {
+  sortKeys = (keys) => {
     if (!this.state.sortBy) {
       return keys;
     }
@@ -337,8 +337,8 @@ class ShowUploadFiles extends React.PureComponent {
     return keys;
   };
 
-  _addTime = files => {
-    return files.map(file => {
+  _addTime = (files) => {
+    return files.map((file) => {
       if (file.completed_at) {
         file._time = differenceInMilliseconds(
           parseISODate(file.completed_at),
@@ -390,7 +390,7 @@ class ShowUploadFiles extends React.PureComponent {
             </tr>
           </thead>
           <tbody>
-            {allKeys.map(file => {
+            {allKeys.map((file) => {
               if (file.skipped || file.ignored) {
                 return (
                   <tr key={file.key}>
@@ -441,7 +441,7 @@ class ShowUploadFiles extends React.PureComponent {
 }
 
 const ShowAggregates = ({ upload }) => {
-  const fileSizes = upload.file_uploads.map(u => u.size);
+  const fileSizes = upload.file_uploads.map((u) => u.size);
   const filesSizeSum = fileSizes.reduce((a, b) => a + b, 0);
   let filesSizeAvg = null;
   if (fileSizes.length) {
@@ -501,7 +501,7 @@ const ShowUploadTimes = ({ upload }) => {
   const uploadTime = differenceInMilliseconds(uploadEnd, uploadStart);
   const uploadTimes = [];
   let longestFileUpload = null;
-  upload.file_uploads.forEach(file => {
+  upload.file_uploads.forEach((file) => {
     if (file.completed_at) {
       const start = parseISODate(file.created_at);
       const end = parseISODate(file.completed_at);
@@ -576,7 +576,7 @@ const ShowRelatedUploads = ({ upload }) => {
           </tr>
         </thead>
         <tbody>
-          {upload.related.map(upload => (
+          {upload.related.map((upload) => (
             <ShowUploadRow key={upload.id} upload={upload} />
           ))}
         </tbody>
@@ -592,11 +592,11 @@ const ShowUploadRow = ({ upload }) => {
         <Link
           to={`/uploads/upload/${upload.id}`}
           title="Click to see detailed information about this upload"
-          onClick={event => window.scroll(0, 0)}
+          onClick={(event) => window.scroll(0, 0)}
         >
           {DisplayFilesSummary(
-            upload.file_uploads.filter(x => x.completed_at).length,
-            upload.file_uploads.filter(x => !x.completed_at).length,
+            upload.file_uploads.filter((x) => x.completed_at).length,
+            upload.file_uploads.filter((x) => !x.completed_at).length,
             upload.skipped_keys.length,
             upload.ignored_keys.length
           )}

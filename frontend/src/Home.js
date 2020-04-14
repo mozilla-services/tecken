@@ -40,12 +40,12 @@ const formatSettingValue = (value, key = null) => {
   return JSON.stringify(value);
 };
 
-const TeckenVersionFancy = versions => {
+const TeckenVersionFancy = (versions) => {
   const keys = Object.keys(versions);
   keys.sort();
   return (
     <dl>
-      {keys.map(key => {
+      {keys.map((key) => {
         let value = versions[key];
         if (key === "build" || key === "source") {
           value = (
@@ -64,7 +64,7 @@ const TeckenVersionFancy = versions => {
             <br key="break" />,
             <a key="tree" href={treeUrl}>
               tree @ {sha}
-            </a>
+            </a>,
           ];
         } else if (key === "version") {
           const releaseUrl = `https://github.com/mozilla-services/tecken/releases/tag/${value}`;
@@ -85,7 +85,7 @@ class SignedInTiles extends React.PureComponent {
       loadingVersions: false,
       stats: null,
       settings: null,
-      versions: null
+      versions: null,
     };
   }
 
@@ -100,15 +100,15 @@ class SignedInTiles extends React.PureComponent {
 
   _fetchStats = () => {
     this.setState({ loading: true });
-    Fetch("/api/stats/", { credentials: "same-origin" }).then(r => {
+    Fetch("/api/stats/", { credentials: "same-origin" }).then((r) => {
       this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
-            stats: response.stats
+            stats: response.stats,
           });
         });
       } else {
@@ -119,36 +119,38 @@ class SignedInTiles extends React.PureComponent {
 
   _fetchCurrentSettings = () => {
     this.setState({ loadingSettings: true });
-    return Fetch("/api/_settings/", { credentials: "same-origin" }).then(r => {
-      this.setState({ loadingSettings: false });
-      if (r.status === 200) {
-        if (store.fetchError) {
-          store.fetchError = null;
-        }
-        return r.json().then(response => {
-          this.setState({
-            settings: response.settings
+    return Fetch("/api/_settings/", { credentials: "same-origin" }).then(
+      (r) => {
+        this.setState({ loadingSettings: false });
+        if (r.status === 200) {
+          if (store.fetchError) {
+            store.fetchError = null;
+          }
+          return r.json().then((response) => {
+            this.setState({
+              settings: response.settings,
+            });
           });
-        });
-      } else {
-        store.fetchError = r;
-        // Always return a promise
-        return Promise.resolve();
+        } else {
+          store.fetchError = r;
+          // Always return a promise
+          return Promise.resolve();
+        }
       }
-    });
+    );
   };
 
   _fetchVersions = () => {
     this.setState({ loadingVersions: true });
-    Fetch("/api/_versions/", { credentials: "same-origin" }).then(r => {
+    Fetch("/api/_versions/", { credentials: "same-origin" }).then((r) => {
       this.setState({ loadingVersions: false });
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
-            versions: response.versions
+            versions: response.versions,
           });
         });
       } else {
@@ -218,7 +220,7 @@ const EnvironmentTile = ({
   loadingSettings,
   settings,
   loadingVersions,
-  versions
+  versions,
 }) => (
   <article className="tile is-child box">
     <h3 className="title">Current Settings</h3>
@@ -235,7 +237,7 @@ const EnvironmentTile = ({
           </tr>
         </thead>
         <tbody>
-          {settings.map(setting => {
+          {settings.map((setting) => {
             return (
               <tr key={setting.key}>
                 <th>{setting.key}</th>
@@ -279,7 +281,7 @@ const EnvironmentTile = ({
             <th>React</th>
             <td>{React.version}</td>
           </tr>
-          {versions.map(version => {
+          {versions.map((version) => {
             return (
               <tr key={version.key}>
                 <th>{version.key}</th>
@@ -374,7 +376,7 @@ const LinksTile = () => (
 
 const ListYourPermissions = ({ permissions }) => (
   <ul>
-    {permissions.map(perm => (
+    {permissions.map((perm) => (
       <li key={perm.id}>
         <b>{perm.name}</b>
       </li>

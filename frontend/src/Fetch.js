@@ -20,7 +20,7 @@ const Fetch = (...props) => {
       requiresAuth = true;
     }
   }
-  const alreadyThere = !!store.apiRequests.find(r => {
+  const alreadyThere = !!store.apiRequests.find((r) => {
     return r.url === url && r.method === method;
   });
   if (!privateEndpoint && !alreadyThere) {

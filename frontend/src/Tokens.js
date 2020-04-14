@@ -7,7 +7,7 @@ import {
   parseISODate,
   Loading,
   filterToQueryString,
-  parseQueryString
+  parseQueryString,
 } from "./Common";
 import Fetch from "./Fetch";
 import store from "./Store";
@@ -21,7 +21,7 @@ class Tokens extends PureComponent {
       tokens: null,
       totals: {},
       permissions: null,
-      filter: {}
+      filter: {},
     };
   }
 
@@ -54,7 +54,7 @@ class Tokens extends PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    Fetch(url, { credentials: "same-origin" }).then(r => {
+    Fetch(url, { credentials: "same-origin" }).then((r) => {
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
           "/",
@@ -67,11 +67,11 @@ class Tokens extends PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
             tokens: response.tokens,
             totals: response.totals,
-            permissions: response.permissions
+            permissions: response.permissions,
           });
         });
       } else {
@@ -80,20 +80,20 @@ class Tokens extends PureComponent {
     });
   };
 
-  updateFilter = newFilters => {
+  updateFilter = (newFilters) => {
     this.setState(
       {
-        filter: Object.assign({}, this.state.filter, newFilters)
+        filter: Object.assign({}, this.state.filter, newFilters),
       },
       this._fetchTokens
     );
   };
 
-  deleteToken = id => {
+  deleteToken = (id) => {
     Fetch(`/api/tokens/token/${id}`, {
       method: "DELETE",
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
@@ -114,14 +114,14 @@ class Tokens extends PureComponent {
       body: formData,
       credentials: "same-origin",
       headers: new Headers({
-        "X-CSRFToken": this.props.csrfToken
-      })
-    }).then(r => {
+        "X-CSRFToken": this.props.csrfToken,
+      }),
+    }).then((r) => {
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           store.setNotificationMessage(
             `API Token extended ${response.days} days`
           );
@@ -192,14 +192,14 @@ export default Tokens;
 class CreateTokenForm extends PureComponent {
   state = {
     loading: false,
-    validationErrors: null
+    validationErrors: null,
   };
-  submitCreate = event => {
+  submitCreate = (event) => {
     event.preventDefault();
     const expires = this.refs.expires.value;
     const notes = this.refs.notes.value;
     const permissions = [];
-    [...this.refs.permissions.options].forEach(option => {
+    [...this.refs.permissions.options].forEach((option) => {
       if (option.selected) {
         permissions.push(option.value);
       }
@@ -212,8 +212,8 @@ class CreateTokenForm extends PureComponent {
     return Fetch("/api/tokens/", {
       method: "POST",
       body: formData,
-      credentials: "same-origin"
-    }).then(r => {
+      credentials: "same-origin",
+    }).then((r) => {
       this.setState({ loading: false });
       if (store.fetchError) {
         store.fetchError = null;
@@ -229,7 +229,7 @@ class CreateTokenForm extends PureComponent {
           window.scroll(0, 0);
         });
       } else if (r.status === 400) {
-        r.json().then(data => {
+        r.json().then((data) => {
           this.setState({ validationErrors: data.errors });
         });
       } else {
@@ -249,7 +249,7 @@ class CreateTokenForm extends PureComponent {
       validationErrors = {};
     }
 
-    const permissionNames = this.props.permissions.map(p => p.name);
+    const permissionNames = this.props.permissions.map((p) => p.name);
     const hasBothUploadPermissions =
       permissionNames.includes("Upload Symbols Files") &&
       permissionNames.includes("Upload Try Symbols Files");
@@ -265,7 +265,7 @@ class CreateTokenForm extends PureComponent {
               ref="permissions"
               size={this.props.permissions.length}
             >
-              {this.props.permissions.map(permission => {
+              {this.props.permissions.map((permission) => {
                 return (
                   <option key={permission.id} value={permission.id}>
                     {permission.name}
@@ -343,7 +343,7 @@ class CreateTokenForm extends PureComponent {
 
 class DisplayTokens extends PureComponent {
   state = {
-    extend: null
+    extend: null,
   };
   onDelete = (event, id, expired) => {
     event.preventDefault();
@@ -352,21 +352,21 @@ class DisplayTokens extends PureComponent {
     }
   };
 
-  filterOnAll = event => {
+  filterOnAll = (event) => {
     event.preventDefault();
     const filter = this.props.filter;
     filter.state = "all";
     this.props.updateFilter(filter);
   };
 
-  filterOnActive = event => {
+  filterOnActive = (event) => {
     event.preventDefault();
     const filter = this.props.filter;
     delete filter.state;
     this.props.updateFilter(filter);
   };
 
-  filterOnExpired = event => {
+  filterOnExpired = (event) => {
     event.preventDefault();
     const filter = this.props.filter;
     filter.state = "expired";
@@ -407,7 +407,7 @@ class DisplayTokens extends PureComponent {
             </tr>
           </thead>
           <tbody>
-            {tokens.map(token => {
+            {tokens.map((token) => {
               return (
                 <tr key={token.id}>
                   <td>
@@ -420,7 +420,7 @@ class DisplayTokens extends PureComponent {
                     )}
                   </td>
                   <td>
-                    {token.permissions.map(p => (
+                    {token.permissions.map((p) => (
                       <code key={p.id} style={{ display: "block" }}>
                         {p.name}
                       </code>
@@ -432,7 +432,7 @@ class DisplayTokens extends PureComponent {
                       <button
                         type="button"
                         className="button is-danger is-small"
-                        onClick={event =>
+                        onClick={(event) =>
                           this.onDelete(event, token.id, token.is_expired)
                         }
                       >
@@ -441,7 +441,7 @@ class DisplayTokens extends PureComponent {
                     ) : null}{" "}
                     {this.state.extend && this.state.extend === token.id ? (
                       <ExtendForm
-                        onSubmit={days => {
+                        onSubmit={(days) => {
                           this.props.extendToken(token.id, days).then(() => {
                             this.setState({ extend: null });
                           });
@@ -473,9 +473,9 @@ class DisplayTokens extends PureComponent {
 
 class ExtendForm extends React.PureComponent {
   state = {
-    loading: false
+    loading: false,
   };
-  onSubmit = event => {
+  onSubmit = (event) => {
     event.preventDefault();
     this.setState({ loading: true }, () => {
       this.props.onSubmit(this.refs.days.value);
@@ -507,7 +507,7 @@ class ExtendForm extends React.PureComponent {
           <button
             type="button"
             className="button is-small"
-            onClick={event => {
+            onClick={(event) => {
               this.props.onCancel();
             }}
           >
@@ -521,7 +521,7 @@ class ExtendForm extends React.PureComponent {
 
 class DisplayKey extends PureComponent {
   state = { truncate: true };
-  toggle = event => {
+  toggle = (event) => {
     this.setState({ truncate: !this.state.truncate });
   };
   render() {

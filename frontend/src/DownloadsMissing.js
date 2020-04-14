@@ -12,7 +12,7 @@ import {
   ShowValidationErrors,
   filterToQueryString,
   parseQueryString,
-  SortLink
+  SortLink,
 } from "./Common";
 
 class DownloadsMissing extends React.PureComponent {
@@ -28,7 +28,7 @@ class DownloadsMissing extends React.PureComponent {
       apiUrl: null,
       filter: {},
       validationErrors: null,
-      orderBy: null
+      orderBy: null,
     };
   }
 
@@ -65,7 +65,7 @@ class DownloadsMissing extends React.PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    return Fetch(url, {}).then(r => {
+    return Fetch(url, {}).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }
@@ -74,22 +74,22 @@ class DownloadsMissing extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then(response => {
+        return r.json().then((response) => {
           this.setState({
             missing: response.missing,
             aggregates: response.aggregates,
             total: response.total,
             batchSize: response.batch_size,
             validationErrors: null,
-            orderBy: response.order_by
+            orderBy: response.order_by,
           });
         });
       } else if (r.status === 400) {
-        return r.json().then(data => {
+        return r.json().then((data) => {
           this.setState({
             loading: false,
             refreshing: false,
-            validationErrors: data.errors
+            validationErrors: data.errors,
           });
         });
       } else {
@@ -100,23 +100,23 @@ class DownloadsMissing extends React.PureComponent {
     });
   };
 
-  updateFilter = newFilters => {
+  updateFilter = (newFilters) => {
     this.setState(
       {
-        filter: Object.assign({}, this.state.filter, newFilters)
+        filter: Object.assign({}, this.state.filter, newFilters),
       },
       this._fetchMissing
     );
   };
 
-  resetAndReload = event => {
+  resetAndReload = (event) => {
     event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
       this._fetchMissing();
     });
   };
 
-  changeOrderBy = orderBy => {
+  changeOrderBy = (orderBy) => {
     this.setState({ orderBy: orderBy }, () => {
       this._fetchMissing();
     });
@@ -184,7 +184,7 @@ class DisplayMissingSymbols extends React.PureComponent {
     this._updateFilterInputs(nextProps.filter);
   }
 
-  _updateFilterInputs = filter => {
+  _updateFilterInputs = (filter) => {
     this.refs.modified_at.value = filter.modified_at || "";
     this.refs.count.value = filter.count || "";
     this.refs.symbol.value = filter.symbol || "";
@@ -192,7 +192,7 @@ class DisplayMissingSymbols extends React.PureComponent {
     this.refs.filename.value = filter.filename || "";
   };
 
-  submitForm = event => {
+  submitForm = (event) => {
     event.preventDefault();
     const modified_at = this.refs.modified_at.value.trim();
     const count = this.refs.count.value.trim();
@@ -205,11 +205,11 @@ class DisplayMissingSymbols extends React.PureComponent {
       count,
       symbol,
       debugid,
-      filename
+      filename,
     });
   };
 
-  resetFilter = event => {
+  resetFilter = (event) => {
     this.refs.symbol.value = "";
     this.refs.debugid.value = "";
     this.refs.filename.value = "";
@@ -316,7 +316,7 @@ class DisplayMissingSymbols extends React.PureComponent {
             </tr>
           </tfoot>
           <tbody>
-            {missing.map(missing => (
+            {missing.map((missing) => (
               <tr key={missing.id}>
                 <td className="file-key">
                   {missing.symbol}/{missing.debugid}/{missing.filename}

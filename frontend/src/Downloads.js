@@ -6,7 +6,7 @@ class Downloads extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      pageTitle: "Downloads"
+      pageTitle: "Downloads",
     };
   }
 
