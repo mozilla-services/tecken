@@ -53,18 +53,16 @@ def json_poster(client):
 @pytest.fixture
 def metricsmock():
     """Returns a MetricsMock context to record metrics records
+
     Usage::
+
         def test_something(metricsmock):
             # do test stuff...
 
             mm.print_records()  # debugging tests
 
-            assert mm.has_record(
-                stat='some.stat',
-                kwargs_contains={
-                    'something': 1
-                }
-            )
+            mm.assert_incr("some.stat", tags=["sometag:fred"])
+
     """
     with MetricsMock() as mm:
         yield mm
