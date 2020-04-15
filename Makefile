@@ -106,7 +106,7 @@ frontend/build/:
 
 .PHONY: build-frontend
 build-frontend:
-	docker-compose run -e CI web ./bin/build_frontend.sh
+	docker-compose run --no-deps -e CI web ./bin/build_frontend.sh
 
 .PHONY: lint
 lint: .env .docker-build
