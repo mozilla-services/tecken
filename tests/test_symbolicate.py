@@ -8,7 +8,7 @@ from io import BytesIO
 import botocore
 import requests
 import pytest
-from markus import INCR, GAUGE
+from markus import INCR
 from botocore.exceptions import ClientError
 
 from django.urls import reverse
@@ -331,42 +331,12 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
     assert response["Access-Control-Allow-Origin"] == "*"
     assert "content-type" in response["Access-Control-Allow-Headers"]
 
-    metrics_records = metricsmock.get_records()
-    metricsmock.print_records()
-    assert metrics_records[0] == (
-        INCR,
-        "tecken.symbolicate_symbolication",
-        1,
-        ["version:v5"],
+    metricsmock.assert_incr("tecken.symbolicate_symbolication", tags=["version:v5"])
+    metricsmock.assert_incr(
+        "tecken.symbolicate_symbolication_jobs", tags=["version:v5"]
     )
-    assert metrics_records[1] == (
-        INCR,
-        "tecken.symbolicate_symbolication_jobs",
-        1,
-        ["version:v5"],
-    )
-    assert metrics_records[2] == (
-        INCR,
-        "tecken.symbolicate_symbol_key",
-        1,
-        ["cache:miss"],
-    )
-    assert metrics_records[3] == (
-        INCR,
-        "tecken.symbolicate_symbol_key",
-        1,
-        ["cache:miss"],
-    )
-
-    # The reason these numbers are hardcoded is because we know
-    # predictable that the size of the pickled symbol map strings.
-    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 76)
-    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 165)
-
-    # Called the first time it had to do a symbol store
-    metricsmock.has_record(GAUGE, "tecken.store_keys", 1, None)
-    # Called twice because this test depends on downloading two symbols
-    metricsmock.has_record(GAUGE, "tecken.store_keys", 2, None)
+    metricsmock.assert_incr("tecken.symbolicate_symbol_key", tags=["cache:miss"])
+    metricsmock.assert_incr("tecken.symbolicate_symbol_key", tags=["cache:miss"])
 
     symbolication_count_after = cache.get(count_cache_key)
     assert symbolication_count_after == symbolication_count + 1
@@ -650,29 +620,14 @@ def test_client_happy_path_v4(
 
     assert response["Access-Control-Allow-Origin"] == "*"
 
-    metrics_records = metricsmock.get_records()
-    assert metrics_records[0] == (
-        INCR,
-        "tecken.symbolicate_symbol_key",
-        1,
-        ["cache:miss"],
+    assert (
+        len(
+            metricsmock.filter_records(
+                INCR, stat="tecken.symbolicate_symbol_key", value=1, tags=["cache:miss"]
+            )
+        )
+        == 2
     )
-    assert metrics_records[1] == (
-        INCR,
-        "tecken.symbolicate_symbol_key",
-        1,
-        ["cache:miss"],
-    )
-
-    # The reason these numbers are hardcoded is because we know
-    # predictable that the size of the pickled symbol map strings.
-    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 76)
-    metricsmock.has_record(GAUGE, "tecken.storing_symbol", 165)
-
-    # Called the first time it had to do a symbol store
-    metricsmock.has_record(GAUGE, "tecken.store_keys", 1, None)
-    # Called twice because this test depends on downloading two symbols
-    metricsmock.has_record(GAUGE, "tecken.store_keys", 2, None)
 
 
 def test_symbolicate_through_root_gone(json_poster):

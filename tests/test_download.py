@@ -663,18 +663,20 @@ def test_download_microsoft_symbol_task_happy_path(botomock, metricsmock, reques
     assert download_obj.error is None
 
     # Check that markus caught timings of the individual file processing
-    records = metricsmock.get_records()
+    records = [rec[1] for rec in metricsmock.get_records()]
     assert len(records) == 10
-    assert records[0][1] == "tecken.download_store_missing_symbol"
-    assert records[1][1] == "tecken.download_cabextract"
-    assert records[2][1] == "tecken.download_dump_syms"
-    assert records[3][1] == "tecken.upload_file_exists"
-    assert records[4][1] == "tecken.upload_gzip_payload"
-    assert records[5][1] == "tecken.upload_put_object"
-    assert records[6][1] == "tecken.upload_file_upload_upload"
-    assert records[7][1] == "tecken.upload_file_upload"
-    assert records[8][1] == ("tecken.download_microsoft_download_file_upload_upload")
-    assert records[9][1] == "tecken.download_upload_microsoft_symbol"
+    assert records == [
+        "tecken.download_store_missing_symbol",
+        "tecken.download_cabextract",
+        "tecken.download_dump_syms",
+        "tecken.upload_file_exists",
+        "tecken.upload_gzip_payload",
+        "tecken.upload_put_object",
+        "tecken.upload_file_upload_upload",
+        "tecken.upload_file_upload",
+        "tecken.download_microsoft_download_file_upload_upload",
+        "tecken.download_upload_microsoft_symbol",
+    ]
 
 
 @pytest.mark.django_db
