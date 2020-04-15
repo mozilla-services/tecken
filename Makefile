@@ -2,6 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+# Include my.env and export it so variables set in there are available
+# in the Makefile.
+include .env
+export
+
+# Set these in the environment to override them. This is helpful for
+# development if you have file ownership problems because the user
+# in the container doesn't match the user on your host.
+USE_UID ?= 10001
+USE_GID ?= 10001
+
 .PHONY: help
 help: default
 
@@ -19,11 +30,8 @@ default:
 	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
 	@echo "  clear-caches     Clear Redis caches"
 	@echo "  shell            Opens a Bash shell"
-	@echo "  currentshell     Opens a Bash shell into existing running 'web' container"
 	@echo "  test             Runs the Python test suite"
 	@echo "  testshell        Runs a shell in the test environment"
-	@echo "  gunicorn         Runs the whole stack using gunicorn on http://localhost:8000/"
-	@echo "  django-shell     Django integrative shell"
 	@echo "  psql             Open the psql cli"
 	@echo "  lint             Lint code"
 	@echo "  lintfix          Reformat code"
@@ -38,7 +46,7 @@ default:
 
 .PHONY: build
 build: .env
-	docker-compose build base frontend linting
+	docker-compose build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend linting
 	touch .docker-build
 
 .PHONY: clean
@@ -54,17 +62,11 @@ clear-caches:
 
 .PHONY: setup
 setup: .env
-	docker-compose run web /app/bin/setup-services.sh
+	docker-compose run --rm web /app/bin/setup-services.sh
 
 .PHONY: shell
 shell: .env .docker-build
-	# Use `-u 0` to automatically become root in the shell
-	docker-compose run --user 0 web bash
-
-.PHONY: currentshell
-currentshell: .env .docker-build
-	# Use `-u 0` to automatically become root in the shell
-	docker-compose exec --user 0 web bash
+	docker-compose run --rm web bash
 
 .PHONY: redis-cache-cli
 redis-cache-cli: .env .docker-build
@@ -84,32 +86,27 @@ stop: .env
 	docker-compose stop
 
 .PHONY: test
-test: .env .docker-build
-	@bin/test.sh
+test: .env .docker-build frontend/build/
+	bin/test.sh
 
 .PHONY: testshell
 testshell: .env .docker-build
-	@bin/test.sh --shell
+	bin/test.sh --shell
 
 .PHONY: run
 run: .env .docker-build
 	docker-compose up web worker frontend
 
-.PHONY: gunicorn
-gunicorn: .env .docker-build
-	docker-compose run --service-ports web web
-
-.PHONY: django-shell
-django-shell: .env .docker-build
-	docker-compose run web python manage.py shell
-
 .PHONY: docs
 docs:
-	@bin/build-docs-locally.sh
+	bin/build-docs-locally.sh
+
+frontend/build/:
+	make build-frontend
 
 .PHONY: build-frontend
 build-frontend:
-	docker-compose run -u 0 -e CI base ./bin/build_frontend.sh
+	docker-compose run --no-deps -e CI web ./bin/build_frontend.sh
 
 .PHONY: lint
 lint: .env .docker-build

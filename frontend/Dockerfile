@@ -17,6 +17,5 @@ ADD frontend /app
 EXPOSE 3000
 EXPOSE 35729
 
-
 ENTRYPOINT ["/bin/bash", "/app/bin/run_frontend.sh"]
 CMD ["start"]

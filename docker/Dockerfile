@@ -17,6 +17,9 @@ RUN bin/build_frontend.sh
 # to build dump_syms.
 FROM python:3.7.7-slim-stretch@sha256:4e437e97b01b4209de3e8af3d132b7198a7fd7e27cea634cf33afc0e246be7c1
 
+ARG userid=10001
+ARG groupid=10001
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/ \
     DJANGO_CONFIGURATION=Prod \
@@ -24,12 +27,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE $PORT
 
+WORKDIR /app
+
 # add a non-privileged user for installing and running the application
-# don't use --create-home option to prevent populating with skeleton files
-RUN mkdir /app && \
-    chown 10001:10001 /app && \
-    groupadd --gid 10001 app && \
-    useradd --no-create-home --uid 10001 --gid 10001 --home-dir /app app
+RUN groupadd --gid $groupid app && \
+    useradd -g app --uid $userid --shell /usr/sbin/nologin --create-home app && \
+    chown app:app /app/
 
 # install a few essentials and clean apt caches afterwards
 RUN apt-get update && \
@@ -65,9 +68,9 @@ WORKDIR /app
 # Copy static assets
 COPY --from=frontend /app/frontend/build /app/frontend/build
 
-RUN chown -R 10001:10001 /app
+RUN chown -R app:app /app
 
-USER 10001
+USER app
 
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.

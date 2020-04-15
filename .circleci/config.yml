@@ -35,7 +35,9 @@ jobs:
       - run:
           name: Run tests
           command: |
-            make test
+            # Run ./bin/test.sh so it doesn't execute make rules that don't work
+            # in CI
+            ./bin/test.sh
 
       - run:
           name: Run lint check
