@@ -87,7 +87,7 @@ class Uploads extends React.PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    return Fetch(url, { credentials: "same-origin" }).then((r) => {
+    return Fetch(url).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }
@@ -142,7 +142,7 @@ class Uploads extends React.PureComponent {
 
   _fetchAbsoluteLatestUpload = () => {
     const url = "/api/uploads/";
-    return fetch(url, { credentials: "same-origin" }).then((r) => {
+    return fetch(url).then((r) => {
       if (r.status === 200) {
         return r.json().then((response) => {
           return this.setState({
@@ -187,7 +187,7 @@ class Uploads extends React.PureComponent {
       }
       this.previousLatestUpload = this.state.latestUpload;
       // Not going to obsess over fetch errors
-      Fetch(url, { credentials: "same-origin" }).then((r) => {
+      Fetch(url).then((r) => {
         if (r.status === 200) {
           r.json().then((response) => {
             if (response.total) {

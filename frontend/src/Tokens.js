@@ -54,7 +54,7 @@ class Tokens extends PureComponent {
     }
     this.props.history.push({ search: qs });
 
-    Fetch(url, { credentials: "same-origin" }).then((r) => {
+    Fetch(url).then((r) => {
       if (r.status === 403 && !store.currentUser) {
         store.setRedirectTo(
           "/",
@@ -90,10 +90,7 @@ class Tokens extends PureComponent {
   };
 
   deleteToken = (id) => {
-    Fetch(`/api/tokens/token/${id}`, {
-      method: "DELETE",
-      credentials: "same-origin",
-    }).then((r) => {
+    Fetch(`/api/tokens/token/${id}`, { method: "DELETE" }).then((r) => {
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
@@ -112,7 +109,6 @@ class Tokens extends PureComponent {
     return Fetch(`/api/tokens/token/${id}/extend`, {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
       headers: new Headers({
         "X-CSRFToken": this.props.csrfToken,
       }),
@@ -212,7 +208,6 @@ class CreateTokenForm extends PureComponent {
     return Fetch("/api/tokens/", {
       method: "POST",
       body: formData,
-      credentials: "same-origin",
     }).then((r) => {
       this.setState({ loading: false });
       if (store.fetchError) {

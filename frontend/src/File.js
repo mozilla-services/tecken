@@ -49,9 +49,7 @@ export default class File extends React.PureComponent {
 
   _fetchFile = (id) => {
     this.setState({ loading: true });
-    return Fetch(`/api/uploads/files/file/${id}`, {
-      credentials: "same-origin",
-    }).then((r) => {
+    return Fetch(`/api/uploads/files/file/${id}`).then((r) => {
       if (this.dismounted) {
         return;
       }
