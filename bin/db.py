@@ -38,13 +38,13 @@ def create_database(ctx):
 
     parsed = urlparse(dsn)
     db_name = parsed.path[1:]
-    adjusted_dsn = dsn[:-(len(db_name) + 1)]
+    adjusted_dsn = dsn[: -(len(db_name) + 1)]
 
     conn = psycopg2.connect(adjusted_dsn)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
     try:
-        cursor.execute('CREATE DATABASE %s' % db_name)
+        cursor.execute("CREATE DATABASE %s" % db_name)
         click.echo('Created database "%s".' % db_name)
     except psycopg2.ProgrammingError:
         click.echo('Database "%s" already exists.' % db_name)
@@ -60,18 +60,18 @@ def drop_database(ctx):
 
     parsed = urlparse(dsn)
     db_name = parsed.path[1:]
-    adjusted_dsn = dsn[:-(len(db_name) + 1)]
+    adjusted_dsn = dsn[: -(len(db_name) + 1)]
 
     conn = psycopg2.connect(adjusted_dsn)
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
     try:
-        cursor.execute('DROP DATABASE %s' % db_name)
+        cursor.execute("DROP DATABASE %s" % db_name)
         click.echo('Database "%s" dropped.' % db_name)
     except psycopg2.ProgrammingError:
         click.echo('Database "%s" does not exist.' % db_name)
         ctx.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     db_group()
