@@ -63,6 +63,7 @@ class Core(AWS, Celery, S3, Configuration):
     SITE_ID = 1
 
     INSTALLED_APPS = [
+        "whitenoise.runserver_nostatic",
         # Django apps
         "django.contrib.sites",
         "django.contrib.auth",
@@ -131,6 +132,7 @@ class Core(AWS, Celery, S3, Configuration):
 
     # The default Cache-Control max-age used,
     WHITENOISE_MAX_AGE = values.IntegerValue(60 * 60)
+    WHITENOISE_ALLOW_ALL_ORIGINS = False
 
     SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
     SESSION_CACHE_ALIAS = "default"
