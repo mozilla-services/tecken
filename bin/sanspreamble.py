@@ -11,20 +11,24 @@ import sys
 
 def main():
     exceptions = (
-        '.*',
-        'docs/conf.py',
-        'tests/blockade.py',
-        'registerServiceWorker.js',
+        ".*",
+        "docs/conf.py",
+        "tests/blockade.py",
+        "registerServiceWorker.js",
     )
 
-    alreadies = subprocess.check_output([
-        'git', 'grep', '-l', 
-        'This Source Code Form is subject to the terms of the Mozilla Public'
-    ])
-    alreadies = alreadies.decode('utf-8').splitlines()
+    alreadies = subprocess.check_output(
+        [
+            "git",
+            "grep",
+            "-l",
+            "This Source Code Form is subject to the terms of the Mozilla Public",
+        ]
+    )
+    alreadies = alreadies.decode("utf-8").splitlines()
 
-    out = subprocess.check_output(['git', 'ls-files'])
-    out = out.decode('utf-8').splitlines()
+    out = subprocess.check_output(["git", "ls-files"])
+    out = out.decode("utf-8").splitlines()
 
     suspect = []
     for fp in out:
@@ -32,16 +36,16 @@ def main():
             continue
         if [x for x in exceptions if fnmatch.fnmatch(fp, x)]:
             continue
-        if fp.endswith(('.sh', '.py', '.js')):
+        if fp.endswith((".sh", ".py", ".js")):
             suspect.append(fp)
 
     for i, fp in enumerate(suspect):
         if not i:
-            print('The following appear to lack a license preamble:'.upper())
+            print("The following appear to lack a license preamble:".upper())
         print(fp)
 
     return bool(suspect)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

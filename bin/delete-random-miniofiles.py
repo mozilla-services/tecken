@@ -22,12 +22,12 @@ import boto3
 
 def fmtsize(b):
     if b > 1024 ** 2:
-        return '{:.1f}MB'.format(b / 1024 / 1024)
+        return "{:.1f}MB".format(b / 1024 / 1024)
     else:
-        return '{:.1f}KB'.format(b / 1024)
+        return "{:.1f}KB".format(b / 1024)
 
 
-def run(count, directory, bucket, endpoint_url, search=''):
+def run(count, directory, bucket, endpoint_url, search=""):
     all = []
     for root, dirs, files in os.walk(os.path.join(directory, bucket)):
         # if '.minio.sys' in root:
@@ -42,77 +42,61 @@ def run(count, directory, bucket, endpoint_url, search=''):
             else:
                 all.append(fn)
 
-    print(len(all), 'Possible files found')
+    print(len(all), "Possible files found")
     s3 = boto3.client(
-        's3',
-        aws_access_key_id='minio',
-        aws_secret_access_key='miniostorage',
+        "s3",
+        aws_access_key_id="minio",
+        aws_secret_access_key="miniostorage",
         endpoint_url=endpoint_url,
     )
     sizes = []
     for fn in random.sample(all, min(len(all), count)):
         size = os.stat(fn).st_size
-        print(
-            fmtsize(size).ljust(10),
-            fn
-        )
+        print(fmtsize(size).ljust(10), fn)
         sizes.append(size)
-        key = fn.replace(directory, '').replace(bucket, '').lstrip('/')
-        response = s3.delete_object(
-            Bucket=bucket,
-            Key=key,
-        )
-        if response['ResponseMetadata']['HTTPStatusCode'] != 204:
+        key = fn.replace(directory, "").replace(bucket, "").lstrip("/")
+        response = s3.delete_object(Bucket=bucket, Key=key,)
+        if response["ResponseMetadata"]["HTTPStatusCode"] != 204:
             raise Exception(response)
     print()
-    print('Deleted {} files (of {} possible) totalling {}'.format(
-        len(sizes),
-        len(all),
-        fmtsize(sum(sizes)),
-    ))
+    print(
+        "Deleted {} files (of {} possible) totalling {}".format(
+            len(sizes), len(all), fmtsize(sum(sizes)),
+        )
+    )
 
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'count',
-        help='The number of random files to delete',
-        type=int,
+        "count", help="The number of random files to delete", type=int,
     )
     parser.add_argument(
-        '-d',
-        '--directory',
+        "-d",
+        "--directory",
         help="Where are the files we're going to random delete from",
-        default='miniodata',
+        default="miniodata",
     )
     parser.add_argument(
-        '-b',
-        '--bucket',
-        help="S3 bucket in Minio",
-        default='testbucket',
+        "-b", "--bucket", help="S3 bucket in Minio", default="testbucket",
     )
     parser.add_argument(
-        '--endpoint_url',
+        "--endpoint_url",
         help="Endpoint URL for Minio (default http://localhost:9000)",
-        default='http://localhost:9000',
+        default="http://localhost:9000",
     )
     parser.add_argument(
-        '-s',
-        '--search',
-        help='Must match in filename',
-        default='',
+        "-s", "--search", help="Must match in filename", default="",
     )
     args = parser.parse_args()
     return run(
-        args.count,
-        args.directory,
-        args.bucket,
-        args.endpoint_url,
-        search=args.search,
+        args.count, args.directory, args.bucket, args.endpoint_url, search=args.search,
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     sys.exit(main())

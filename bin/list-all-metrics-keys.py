@@ -13,20 +13,21 @@ import time
 
 
 def run():
-    with open('all-metrics-keys.json') as f:
+    with open("all-metrics-keys.json") as f:
         all_keys = json.load(f)
     for key in sorted(all_keys):
-        if key.startswith('_documentation'):
+        if key.startswith("_documentation"):
             continue
-        age = time.time() - all_keys[key]['timestamp']
+        age = time.time() - all_keys[key]["timestamp"]
         print(
             key.ljust(55),
-            all_keys[key]['type'].ljust(10),
-            '{} times'.format(all_keys[key]['count']).ljust(10),
-            '' if age < 1000 else 'longtimeago'
+            all_keys[key]["type"].ljust(10),
+            "{} times".format(all_keys[key]["count"]).ljust(10),
+            "" if age < 1000 else "longtimeago",
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     sys.exit(run())
