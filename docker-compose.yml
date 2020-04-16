@@ -138,8 +138,9 @@ services:
       - MINIO_SECRET_KEY=miniostorage
     ports:
       - "9000:9000"
-    volumes:
-      - $PWD/miniodata:/export
+    # NOTE(willkg): uncomment these if you need to see minio data
+    # volumes:
+    #   - $PWD/miniodata:/export
     command: server /export
 
   # https://hub.docker.com/r/mozilla/oidc-testprovider
