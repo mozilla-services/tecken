@@ -10,8 +10,6 @@ from django_redis import get_redis_connection
 from django.conf import settings
 from django.apps import AppConfig
 
-from tecken.storage import StorageBucket
-
 
 logger = logging.getLogger("django")
 
@@ -31,8 +29,6 @@ class TeckenAppConfig(AppConfig):
         self._redis_store_eviction_policy()
 
         self._check_mandatory_settings()
-
-        self._check_storage_urls()
 
         self._check_upload_url_is_download_url()
 
@@ -91,30 +87,6 @@ class TeckenAppConfig(AppConfig):
                     "In AWS ElastiCache this is done by setting up "
                     "Parameter Group with maxmemory-policy=allkeys-lru"
                 )
-
-    @staticmethod
-    def _check_storage_urls():
-        """Ensure emulated storage buckets exist.
-
-        If you use minio to functionally test S3, since it's
-        ephemeral the buckets you create disappear after a restart.
-        Make sure they exist. That's what we expect to happen with the
-        real production S3 buckets.
-
-        TODO: Move to "make setup" (bug 1556775)
-        """
-        _all_possible_urls = set(
-            list(settings.SYMBOL_URLS)
-            + [settings.UPLOAD_DEFAULT_URL, settings.UPLOAD_TRY_SYMBOLS_URL]
-            + list(settings.UPLOAD_URL_EXCEPTIONS.values())
-        )
-        for url in _all_possible_urls:
-            if not url:
-                continue
-            bucket = StorageBucket(url)
-            if bucket.backend == "emulated-s3" and not bucket.exists():
-                bucket.client.create_bucket(Bucket=bucket.name)
-                logger.info(f"Created {bucket.backend} bucket {bucket.name!r}")
 
     @staticmethod
     def _check_mandatory_settings():

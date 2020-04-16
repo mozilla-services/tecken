@@ -6,7 +6,9 @@
 
 set -eo pipefail
 
-# Drops and recreates Postgres db and Elasticsearch indexes.
+# Set up S3
+python bin/s3.py delete "http://minio:9000/testbucket"
+python bin/s3.py create "http://minio:9000/testbucket"
 
 # Set up db
 python bin/db.py drop || true
