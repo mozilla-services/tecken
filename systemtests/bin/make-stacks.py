@@ -56,22 +56,30 @@ def build_stack(data):
         return {}
 
     modules = []
+    modules_list = []
     for module in json_dump.get("modules", []):
         debug_file = module.get("debug_file", "")
         debug_id = module.get("debug_id", "")
+        if not debug_file or not debug_id:
+            continue
+        # Add the module information to the map
         modules.append((debug_file, debug_id))
-
-    modules_list = [m["filename"] for m in json_dump.get("modules", [])]
+        # Keep track of which modules are at which index
+        modules_list.append(module["filename"])
 
     stack = []
     for frame in crashing_thread.get("frames", []):
-        # FIXME(willkg): Need to figure out a better way to deal with frames
-        # that are missing things we need. Skipping them isn't great.
-        if "module_offset" not in frame or "module" not in frame:
-            continue
-        offset = int(frame["module_offset"], base=16)
-        module = frame["module"]
-        stack.append((modules_list.index(module), offset))
+        if "module" in frame:
+            module_index = modules_list.index(frame["module"])
+        else:
+            # -1 indicates the module is unknown
+            module_index = -1
+        if "module_offset" in frame:
+            module_offset = int(frame["module_offset"], base=16)
+        else:
+            # -1 indicates the module_offset is unknown
+            module_offset = -1
+        stack.append((module_index, module_offset))
 
     return {
         "stacks": [stack],
