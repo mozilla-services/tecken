@@ -15,7 +15,7 @@ RUN bin/build_frontend.sh
 
 # NOTE(willkg): stick with stretch because it has gcc-6 which we need
 # to build dump_syms.
-FROM python:3.7.7-slim-stretch@sha256:4e437e97b01b4209de3e8af3d132b7198a7fd7e27cea634cf33afc0e246be7c1
+FROM python:3.7.7-slim-stretch@sha256:3b072d391496e120bd25025462489b8a437f17135dda96f765de5d0a0e159fa3
 
 ARG userid=10001
 ARG groupid=10001
