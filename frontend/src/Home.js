@@ -481,29 +481,21 @@ const DownloadsStatsTile = ({ loading, stats }) => (
             <th>
               <Link to="/downloads/missing">Recorded Missing</Link>
             </th>
-            <th>
-              <Link to="/downloads/microsoft">Microsoft Downloads</Link>
-            </th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <th>Today</th>
             <TableCountCell count={stats.downloads.missing.today.count} />
-            <TableCountCell count={stats.downloads.microsoft.today.count} />
           </tr>
           <tr>
             <th>Yesterday</th>
             <TableCountCell count={stats.downloads.missing.yesterday.count} />
-            <TableCountCell count={stats.downloads.microsoft.yesterday.count} />
           </tr>
           <tr>
             <th>Last 30 days</th>
             <TableCountCell
               count={stats.downloads.missing.last_30_days.count}
-            />
-            <TableCountCell
-              count={stats.downloads.microsoft.last_30_days.count}
             />
           </tr>
         </tbody>

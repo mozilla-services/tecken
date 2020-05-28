@@ -19,7 +19,6 @@ import Tokens from "./Tokens";
 import Uploads from "./Uploads";
 import Downloads from "./Downloads";
 import DownloadsMissing from "./DownloadsMissing";
-import DownloadsMicrosoft from "./DownloadsMicrosoft";
 import Upload from "./Upload";
 import UploadNow from "./UploadNow";
 import Files from "./Files";
@@ -150,10 +149,6 @@ const App = observer(
                   <Route
                     path="/downloads/missing"
                     component={DownloadsMissing}
-                  />
-                  <Route
-                    path="/downloads/microsoft"
-                    component={DownloadsMicrosoft}
                   />
                   <Route path="/uploads/files" exact component={Files} />
                   <Route path="/uploads/files/file/:id" component={File} />

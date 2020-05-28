@@ -3,13 +3,10 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import pickle
-import pytest
-from botocore.exceptions import EndpointConnectionError
 
 from tecken.boto_extra import (
     OwnEndpointConnectionError,
     OwnClientError,
-    reraise_endpointconnectionerrors,
 )
 
 
@@ -34,12 +31,3 @@ def test_pickle_OwnClientError():
     # They can't be compared, but...
     assert exception.response == exception.response
     assert exception.operation_name == exception.operation_name
-
-
-def test_reraise_endpointconnectionerrors_decorator():
-    @reraise_endpointconnectionerrors
-    def foo(name, age=100):
-        raise EndpointConnectionError(endpoint_url="http://example.com")
-
-    with pytest.raises(OwnEndpointConnectionError):
-        foo("peter")

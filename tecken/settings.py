@@ -185,10 +185,6 @@ class Core(AWS, Celery, S3, Configuration):
 
     TOKENS_DEFAULT_EXPIRATION_DAYS = values.IntegerValue(365)  # 1 year
 
-    # Feature flag for enabling or disabling the possible downloading
-    # of missing symbols from Microsoft.
-    ENABLE_DOWNLOAD_FROM_MICROSOFT = values.BooleanValue(False)
-
     # When a symbol is tried to be downloaded, and it turns out the symbol
     # does *not* exist in S3, we write this down so all missing symbols
     # can be post-processed after.
@@ -520,32 +516,12 @@ class Base(Core):
     # that we end up uploading to S3 we also cache invalidate.
     SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = values.IntegerValue(60 * 60 * 6)
 
-    # Whether to start a background task to search for symbols
-    # on Microsoft's server is protected by an in-memory cache.
-    # This is quite important. Don't make it too long or else clients
-    # won't be able retry to see if a Microsoft symbol has been successfully
-    # downloaded by the background job.
-    # We can tweak this when we later learn more about the amount
-    # attempted symbol downloads for .pdb files we get that 404.
-    MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS = values.IntegerValue(60)
-
-    # cabextract is installed by Docker and used to unpack .pd_ files to .pdb
-    # It's assumed to be installed on $PATH.
-    CABEXTRACT_PATH = values.Value("cabextract")
-
-    # dump_syms is downloaded and installed by docker/build_dump_syms.sh
-    # and by default gets to put this specific location.
-    # If you change this, please make sure it works with
-    # how docker/build_dump_syms.sh works.
-    DUMP_SYMS_PATH = values.Value("/dump_syms/dump_syms")
-
     # How many uploads to display per page when paginating through
     # past uploads.
     API_UPLOADS_BATCH_SIZE = 20
     API_UPLOADS_CREATED_BATCH_SIZE = 20
     API_FILES_BATCH_SIZE = 40
     API_DOWNLOADS_MISSING_BATCH_SIZE = 20
-    API_DOWNLOADS_MICROSOFT_BATCH_SIZE = 20
 
     # Every time we do a symbol upload, we also take a look to see if there
     # are incomplete uploads that could have failed due to some unlucky
@@ -692,10 +668,6 @@ class Test(Localdev):
     # We might not enable it in certain environments but we definitely
     # want to test the code we have.
     ENABLE_TOKENS_AUTHENTICATION = True
-
-    # This feature flag is always off when testing except the tests
-    # that enable it on and deliberately test Microsoft download.
-    ENABLE_DOWNLOAD_FROM_MICROSOFT = False
 
     # This feature flag is always off when testing except the tests
     # that enable it deliberately.

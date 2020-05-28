@@ -4,7 +4,6 @@
 
 import csv
 import datetime
-import hashlib
 import logging
 
 import markus
@@ -13,8 +12,6 @@ from cache_memoize import cache_memoize
 from django import http
 from django.conf import settings
 from django.utils import timezone
-from django.core.cache import cache
-from django.utils.encoding import force_bytes
 from django.db import OperationalError
 
 from tecken.base.utils import invalid_key_name_characters
@@ -26,7 +23,7 @@ from tecken.base.decorators import (
 )
 from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
-from tecken.download.tasks import download_microsoft_symbol, store_missing_symbol_task
+from tecken.download.tasks import store_missing_symbol_task
 from tecken.download.forms import DownloadForm
 from tecken.storage import StorageBucket
 
@@ -60,30 +57,6 @@ def _ignore_symbol(symbol, debugid, filename):
 
     # The default is to NOT ignore it
     return False
-
-
-# Note! The reason this can't use the cache_memoize decorator
-# is because we need tight control of what the cache key becomes. That
-# way we can cache invalidate it later.
-def download_from_microsoft(
-    symbol, debugid, code_file=None, code_id=None, missing_symbol_hash=None
-):
-    """Only kick off the 'download_microsoft_symbol' background task
-    if we haven't already done so recently."""
-
-    cache_key = hashlib.md5(
-        force_bytes(f"microsoft-download:{symbol}:{debugid}")
-    ).hexdigest()
-    if not cache.get(cache_key):
-        # Commence the background task to try to download from Microsoft
-        download_microsoft_symbol.delay(
-            symbol,
-            debugid,
-            code_file=code_file,
-            code_id=code_id,
-            missing_symbol_hash=missing_symbol_hash or None,
-        )
-        cache.set(cache_key, True, settings.MICROSOFT_DOWNLOAD_CACHE_TTL_SECONDS)
 
 
 def download_symbol_legacy(request, legacyproduct, symbol, debugid, filename):
@@ -179,49 +152,11 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             code_file = form.cleaned_data["code_file"]
             code_id = form.cleaned_data["code_id"]
 
-        # Only bother logging it if the client used GET.
-        # Otherwise it won't be possible to pick up the extra
-        # query string parameters.
-        missing_symbol_hash = log_symbol_get_404(
+        # Only bother logging it if the client used GET.  Otherwise it won't be
+        # possible to pick up the extra query string parameters.
+        log_symbol_get_404(
             symbol, debugid, filename, code_file=code_file, code_id=code_id
         )
-
-        if (
-            settings.ENABLE_DOWNLOAD_FROM_MICROSOFT
-            and symbol.lower().endswith(".pdb")
-            and filename.lower().endswith(".sym")
-        ):
-            # The log_symbol_get_404() function is protected by a cache
-            # that "guards" it with a memoize decorator. That memoize
-            # decorator makes sure the same arguments aren't allowed
-            # in more than once (per time interval the memoize cache
-            # is configured to).
-            # However, if it did run (and wasn't memoize blocked), it
-            # yields a hash to "describe" the missing symbol. That's
-            # useful to have when downloading from Microsoft.
-            # The function 'download_from_microsoft()' is will
-            # get or create one of those hashes no matter what. Here
-            # we're just doing a little optimization by passing that
-            # along to download_from_microsoft() to save it some effort.
-            if missing_symbol_hash and isinstance(missing_symbol_hash, bool):
-                missing_symbol_hash = None
-
-            # If we haven't already sent it to the 'download_microsoft_symbol'
-            # background task, do so.
-            download_from_microsoft(
-                symbol,
-                debugid,
-                code_file=code_file,
-                code_id=code_id,
-                missing_symbol_hash=missing_symbol_hash,
-            )
-
-            # The querying of Microsoft's server is potentially slow.
-            # That's why this call is down in a celery task.
-            # But there is hope! And the client ought to be informed
-            # that if they just try again in a couple of seconds/minutes
-            # it might just be there.
-            delayed_lookup = True
 
     response = http.HttpResponseNotFound(
         "Symbol Not Found Yet" if delayed_lookup else "Symbol Not Found"
@@ -265,23 +200,6 @@ def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
                 symbol, debugid, filename, code_file=code_file, code_id=code_id
             )
         except OperationalError:
-            # Note that this doesn't return. The reason is because it's
-            # a background job. We can only fire-and-forget sending it.
-            # That's why we only do this in the unusual case of an
-            # operational error.
-            # By sending it to a background task, it gets to try storing
-            # it again. The reasons that's more like to work is because...
-            #
-            #   A) There's a natural delay until it tries the DB
-            #      write. Perhaps that little delay is all we need to try
-            #      again and be lucky.
-            #   B) The celery tasks have built-in support for retrying.
-            #      So if it fails the first time (which is already unlikely)
-            #      you get a second chance after some deliberate sleep.
-            #
-            # The return value is only rarely useful. It's used to indicate
-            # that it *just* now got written down. And that's useful to know
-            # when we attempt to automatically download it from Microsoft.
             store_missing_symbol_task.delay(
                 symbol, debugid, filename, code_file=code_file, code_id=code_id
             )
@@ -325,11 +243,7 @@ def missing_symbols_csv(request):
 
     # By default, only do those updated in the last 24h
     qs = MissingSymbol.objects.filter(
-        modified_at__gte=date,
-        # This is a trick to immediately limit the symbols that could
-        # be gotten from a Microsoft download.
-        symbol__iendswith=".pdb",
-        filename__iendswith=".sym",
+        modified_at__gte=date, filename__iendswith=".sym",
     )
 
     only = ("symbol", "debugid", "code_file", "code_id")

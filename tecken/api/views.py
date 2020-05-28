@@ -28,7 +28,7 @@ from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload.views import get_possible_bucket_urls
 from tecken.storage import StorageBucket
-from tecken.download.models import MissingSymbol, MicrosoftDownload
+from tecken.download.models import MissingSymbol
 from tecken.symbolicate.views import get_symbolication_count_key
 from tecken.base.decorators import (
     api_login_required,
@@ -547,7 +547,6 @@ def upload(request, id):
                     "update": file_upload.update,
                     "compressed": file_upload.compressed,
                     "size": file_upload.size,
-                    "microsoft_download": file_upload.microsoft_download,
                     "completed_at": file_upload.completed_at,
                     "created_at": file_upload.created_at,
                 }
@@ -726,9 +725,6 @@ def upload_files(request):
         for other in form.cleaned_data["key"][1:]:
             key_q &= Q(key__icontains=other)
         qs = qs.filter(key_q)
-    if form.cleaned_data["download"]:
-        if form.cleaned_data["download"] == "microsoft":
-            qs = qs.filter(microsoft_download=True)
     include_bucket_names = []
     for operator, bucket_name in form.cleaned_data["bucket_name"]:
         if operator == "!":
@@ -771,7 +767,6 @@ def upload_files(request):
                 "key": file_upload.key,
                 "update": file_upload.update,
                 "compressed": file_upload.compressed,
-                "microsoft_download": file_upload.microsoft_download,
                 "size": file_upload.size,
                 "bucket_name": file_upload.bucket_name,
                 "completed_at": file_upload.completed_at,
@@ -843,7 +838,6 @@ def upload_file(request, id):
         "completed_at": file_upload.completed_at,
         "created_at": file_upload.created_at,
         "upload": None,
-        "microsoft_download": None,
     }
 
     if file_upload.upload:
@@ -863,20 +857,6 @@ def upload_file(request, id):
             "created_at": upload_obj.created_at,
             "completed_at": upload_obj.completed_at,
         }
-
-    if file_upload.microsoft_download:  # a bool
-        try:
-            microsoft_download = MicrosoftDownload.objects.get(file_upload=file_upload)
-            file_dict["microsoft_download"] = {
-                "id": microsoft_download.id,
-                "url": microsoft_download.url,
-                "error": microsoft_download.error,
-                "skipped": microsoft_download.skipped,
-                "created_at": microsoft_download.created_at,
-                "completed_at": microsoft_download.completed_at,
-            }
-        except MicrosoftDownload.DoesNotExist:
-            pass
 
     context = {"file": file_dict}
     return http.JsonResponse(context)
@@ -968,7 +948,6 @@ def stats(request):
         nones_to_zero(numbers)
 
         missing_qs = MissingSymbol.objects.all()
-        microsoft_qs = MicrosoftDownload.objects.all()
 
         def count_missing(start, end, use_cache=True):
             count = None
@@ -983,20 +962,11 @@ def stats(request):
                     cache.set(cache_key, count, 60 * 60 * 24)
             return {"count": count}
 
-        def count_microsoft(start, end):
-            qs = microsoft_qs.filter(created_at__gte=start, created_at__lt=end)
-            return {"count": qs.count()}
-
         numbers["downloads"] = {
             "missing": {
                 "today": count_missing(start_today, today, use_cache=False),
                 "yesterday": count_missing(start_yesterday, start_today),
                 "last_30_days": count_missing(last_30_days, start_today),
-            },
-            "microsoft": {
-                "today": count_microsoft(start_today, today),
-                "yesterday": count_microsoft(start_yesterday, start_today),
-                "last_30_days": count_microsoft(last_30_days, today),
             },
         }
         # A clever trick! Instead of counting the last_30_days to include now,
@@ -1111,7 +1081,6 @@ def current_settings(request):
     keys = (
         "ENABLE_AUTH0_BLOCKED_CHECK",
         "ENABLE_TOKENS_AUTHENTICATION",
-        "ENABLE_DOWNLOAD_FROM_MICROSOFT",
         "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
         "DOWNLOAD_FILE_EXTENSIONS_WHITELIST",
         "BENCHMARKING_ENABLED",
@@ -1264,109 +1233,4 @@ def filter_missing_symbols(qs, form):
     for key in ("symbol", "debugid", "filename"):
         if form.cleaned_data[key]:
             qs = qs.filter(**{f"{key}__contains": form.cleaned_data[key]})
-    return qs
-
-
-@metrics.timer_decorator("api", tags=["endpoint:downloads_microsoft"])
-def downloads_microsoft(request):
-    context = {}
-    form = forms.DownloadsMicrosoftForm(request.GET)
-    if not form.is_valid():
-        return http.JsonResponse({"errors": form.errors}, status=400)
-
-    pagination_form = forms.PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-
-    qs = MicrosoftDownload.objects.all()
-    qs = filter_microsoft_downloads(qs, form)
-
-    batch_size = settings.API_DOWNLOADS_MICROSOFT_BATCH_SIZE
-    context["batch_size"] = batch_size
-
-    page = pagination_form.cleaned_data["page"]
-    start = (page - 1) * batch_size
-    end = start + batch_size
-
-    file_uploads_aggregates = qs.filter(file_upload__isnull=False).aggregate(
-        count=Count("file_upload_id"),
-        size_sum=Sum("file_upload__size"),
-        size_avg=Avg("file_upload__size"),
-    )
-    context["aggregates"] = {
-        "microsoft_downloads": {
-            "total": qs.count(),
-            "file_uploads": {
-                "count": file_uploads_aggregates["count"],
-                "size": {
-                    "sum": file_uploads_aggregates["size_sum"],
-                    "average": file_uploads_aggregates["size_avg"],
-                },
-            },
-            "errors": qs.filter(error__isnull=False).count(),
-            "skipped": qs.filter(skipped=True).count(),
-        }
-    }
-
-    context["total"] = context["aggregates"]["microsoft_downloads"]["total"]
-
-    rows = []
-    qs = qs.select_related("missing_symbol", "file_upload")
-    for download in qs.order_by("-created_at")[start:end]:
-        missing = download.missing_symbol
-        file_upload = download.file_upload
-        if file_upload is not None:
-            # Then it's an instance of FileUpload. Turn that into a dict.
-            file_upload = {
-                "id": file_upload.id,
-                "bucket_name": file_upload.bucket_name,
-                "key": file_upload.key,
-                "update": file_upload.update,
-                "compressed": file_upload.compressed,
-                "size": file_upload.size,
-                "created_at": file_upload.created_at,
-                "completed_at": file_upload.completed_at,
-            }
-        rows.append(
-            {
-                "id": download.id,
-                "missing_symbol": {
-                    "symbol": missing.symbol,
-                    "debugid": missing.debugid,
-                    "filename": missing.filename,
-                    "code_file": missing.code_file,
-                    "code_id": missing.code_id,
-                    "count": missing.count,
-                },
-                "file_upload": file_upload,
-                "created_at": download.created_at,
-                "completed_at": download.completed_at,
-                "error": download.error,
-            }
-        )
-
-    context["microsoft_downloads"] = rows
-
-    return http.JsonResponse(context)
-
-
-def filter_microsoft_downloads(qs, form):
-    qs = _filter_form_dates(qs, form, ("created_at", "modified_at"))
-    for key in ("symbol", "debugid", "filename"):
-        if form.cleaned_data[key]:
-            qs = qs.filter(
-                **{f"missing_symbol__{key}__contains": form.cleaned_data[key]}
-            )
-    if form.cleaned_data["state"] == "specific-error":
-        specific_error = form.cleaned_data["error"]
-        qs = qs.filter(error__icontains=specific_error)
-    elif form.cleaned_data["state"] == "errored":
-        qs = qs.filter(error__isnull=False)
-    elif form.cleaned_data["state"] == "file-upload":
-        qs = qs.filter(file_upload__isnull=False)
-    elif form.cleaned_data["state"] == "no-file-upload":
-        qs = qs.filter(file_upload__isnull=True)
-    elif form.cleaned_data["state"]:  # pragma: no cover
-        raise NotImplementedError(form.cleaned_data["state"])
-
     return qs

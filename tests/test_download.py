@@ -4,15 +4,12 @@
 
 import csv
 import datetime
-import gzip
 import os
 from urllib.parse import urlparse
 from io import StringIO
 
 import pytest
 import mock
-from botocore.exceptions import ClientError
-from markus import INCR
 
 from django.utils import timezone
 from django.urls import reverse
@@ -21,22 +18,12 @@ from django.core.cache import caches
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
-from tecken.download.models import MissingSymbol, MicrosoftDownload
-from tecken.download.tasks import (
-    download_microsoft_symbol,
-    store_missing_symbol_task,
-    DumpSymsError,
-)
+from tecken.download.models import MissingSymbol
+from tecken.download.tasks import store_missing_symbol_task
 from tecken.download.utils import store_missing_symbol
-from tecken.upload.models import FileUpload
 
 
 _here = os.path.dirname(__file__)
-# Remember, when you cabextract this file it will always create
-# a file called 'ksproxy.pdb'. Even if you rename 'ksproxy.pd_' to
-# something else.
-PD__FILE = os.path.join(_here, "ksproxy.pd_")
-FAKE_BROKEN_DUMP_SYMS = os.path.join(_here, "broken_dump_syms.sh")
 
 
 def reload_downloaders(urls, try_downloader=None):
@@ -529,53 +516,6 @@ def test_missing_symbols_csv(client, settings):
     assert line[3] == "deadbeef"
 
 
-def test_get_microsoft_symbol_client(client, botomock, settings):
-    settings.ENABLE_DOWNLOAD_FROM_MICROSOFT = True
-    reload_downloaders("https://s3.example.com/private/prefix/")
-
-    mock_calls = []
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        mock_calls.append(api_params["Prefix"])
-        return {}
-
-    url = reverse(
-        "download:download_symbol",
-        args=("foo.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "foo.sym"),
-    )
-
-    task_arguments = []
-
-    def fake_task(symbol, debugid, **kwargs):
-        task_arguments.append((symbol, debugid, kwargs))
-
-    _mock_function = "tecken.download.views.download_microsoft_symbol.delay"
-    with mock.patch(_mock_function, new=fake_task):
-        with botomock(mock_api_call):
-            response = client.get(url)
-            assert response.status_code == 404
-            assert response.content == b"Symbol Not Found Yet"
-            assert task_arguments
-            (task_argument,) = task_arguments
-            assert task_argument[0] == "foo.pdb"
-            assert task_argument[1] == "44E4EC8C2F41492B9369D6B9A059577C2"
-
-            # Pretend we're excessively eager
-            response = client.get(url)
-            assert response.status_code == 404
-            assert response.content == b"Symbol Not Found Yet"
-
-            # This basically checks that the SymbolDownloader cache is
-            # not invalidated between calls.
-            assert len(mock_calls) == 1
-            # However, the act of triggering that
-            # download_microsoft_symbol.delay() call is guarded by a
-            # cache. So it shouldn't have called it more than
-            # once.
-            assert len(task_arguments) == 1
-
-
 @pytest.mark.django_db
 def test_store_missing_symbol_task_happy_path():
     store_missing_symbol_task("foo.pdb", "HEX", "foo.sym", code_file="file")
@@ -586,227 +526,6 @@ def test_store_missing_symbol_task_happy_path():
         code_file="file",
         code_id__isnull=True,
     )
-
-
-@pytest.mark.django_db
-def test_download_microsoft_symbol_task_happy_path(botomock, metricsmock, requestsmock):
-    with open(PD__FILE, "rb") as f:
-        content = f.read()
-        # just checking that the fixture file is sane
-        assert content.startswith(b"MSCF")
-        requestsmock.get(
-            "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
-            "/A7D6F1BB18CD4CB48/ksproxy.pd_",
-            content=content,
-        )
-
-    files_uploaded = []
-
-    def mock_api_call(self, operation_name, api_params):
-        # this comes from the UPLOAD_DEFAULT_URL in settings.Test
-        assert api_params["Bucket"] == "private"
-
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
-        ):
-            # Pretend we've never heard of this
-            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
-            raise ClientError(parsed_response, operation_name)
-
-        if operation_name == "PutObject" and api_params["Key"] == (
-            "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
-        ):
-
-            # Because .sym is in settings.COMPRESS_EXTENSIONS
-            assert api_params["ContentEncoding"] == "gzip"
-            # Because .sym is in settings.MIME_OVERRIDES
-            assert api_params["ContentType"] == "text/plain"
-            content = api_params["Body"].read()
-            assert isinstance(content, bytes)
-            # We know what the expected size is based on having run:
-            #   $ cabextract ksproxy.pd_
-            #   $ dump_syms ksproxy.pdb > ksproxy.sym
-            #   $ ls -l ksproxy.sym
-            #   1721
-            assert len(content) == 729
-            original_content = gzip.decompress(content)
-            assert len(original_content) == 1721
-
-            # ...pretend to actually upload it.
-            files_uploaded.append(api_params["Key"])
-            return {}
-
-        raise NotImplementedError((operation_name, api_params))
-
-    symbol = "ksproxy.pdb"
-    debugid = "A7D6F1BB18CD4CB48"
-    with botomock(mock_api_call):
-        download_microsoft_symbol(symbol, debugid)
-
-    assert files_uploaded == ["v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"]
-
-    # The ultimate test is that it should have created a file_upload
-    (file_upload,) = FileUpload.objects.all()
-    assert file_upload.size == 729
-    assert file_upload.bucket_name == "private"
-    assert file_upload.key == "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
-    assert not file_upload.update
-    assert not file_upload.upload
-    assert file_upload.compressed
-    assert file_upload.completed_at
-    assert file_upload.microsoft_download
-
-    # It should also have created a MicrosoftDownload record.
-    (download_obj,) = MicrosoftDownload.objects.all()
-    assert download_obj.completed_at
-    assert download_obj.skipped is False
-    assert download_obj.error is None
-
-    # Check that markus caught timings of the individual file processing
-    records = [rec[1] for rec in metricsmock.get_records()]
-    assert len(records) == 10
-    assert records == [
-        "tecken.download_store_missing_symbol",
-        "tecken.download_cabextract",
-        "tecken.download_dump_syms",
-        "tecken.upload_file_exists",
-        "tecken.upload_gzip_payload",
-        "tecken.upload_put_object",
-        "tecken.upload_file_upload_upload",
-        "tecken.upload_file_upload",
-        "tecken.download_microsoft_download_file_upload_upload",
-        "tecken.download_upload_microsoft_symbol",
-    ]
-
-
-@pytest.mark.django_db
-def test_download_microsoft_symbol_task_skipped(botomock, metricsmock, requestsmock):
-    with open(PD__FILE, "rb") as f:
-        content = f.read()
-        # just checking that the fixture file is sane
-        assert content.startswith(b"MSCF")
-        requestsmock.get(
-            "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
-            "/A7D6F1BB18CD4CB48/ksproxy.pd_",
-            content=content,
-        )
-
-    def mock_api_call(self, operation_name, api_params):
-        # this comes from the UPLOAD_DEFAULT_URL in settings.Test
-        assert api_params["Bucket"] == "private"
-
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v0/ksproxy.pdb/A7D6F1BB18CD4CB48/ksproxy.sym"
-        ):
-            return {"ContentLength": 729}
-        raise NotImplementedError((operation_name, api_params))
-
-    symbol = "ksproxy.pdb"
-    debugid = "A7D6F1BB18CD4CB48"
-    with botomock(mock_api_call):
-        download_microsoft_symbol(symbol, debugid)
-
-    (download_obj,) = MicrosoftDownload.objects.all()
-    assert not download_obj.error
-    assert download_obj.skipped
-    assert download_obj.completed_at
-
-    # The ultimate test is that it should NOT have created a file upload.
-    assert not FileUpload.objects.all().exists()
-
-    # Check that markus caught timings of the individual file processing
-    metricsmock.has_record(INCR, "tecken.microsoft_download_file_upload_skip", 1, None)
-
-
-@pytest.mark.django_db
-def test_download_microsoft_symbol_task_not_found(botomock, requestsmock):
-    requestsmock.get(
-        "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
-        "/A7D6F1BB18CD4CB48/ksproxy.pd_",
-        content=b"Page Not Found",
-        status_code=404,
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        raise NotImplementedError((operation_name, api_params))
-
-    symbol = "ksproxy.pdb"
-    debugid = "A7D6F1BB18CD4CB48"
-    with botomock(mock_api_call):
-        download_microsoft_symbol(symbol, debugid)
-    assert not FileUpload.objects.all().exists()
-    assert not MicrosoftDownload.objects.all().exists()
-
-
-@pytest.mark.django_db
-def test_download_microsoft_symbol_task_wrong_file_header(botomock, requestsmock):
-    requestsmock.get(
-        "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
-        "/A7D6F1BB18CD4CB48/ksproxy.pd_",
-        content=b"some other junk",
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        raise NotImplementedError((operation_name, api_params))
-
-    symbol = "ksproxy.pdb"
-    debugid = "A7D6F1BB18CD4CB48"
-    with botomock(mock_api_call):
-        download_microsoft_symbol(symbol, debugid)
-    assert not FileUpload.objects.all().exists()
-
-    (download_obj,) = MicrosoftDownload.objects.all()
-    assert "did not start with 'MSCF'" in download_obj.error
-
-
-@pytest.mark.django_db
-def test_download_microsoft_symbol_task_cabextract_failing(botomock, requestsmock):
-    requestsmock.get(
-        "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
-        "/A7D6F1BB18CD4CB48/ksproxy.pd_",
-        content=b"MSCF but not a real binary",
-    )
-
-    def mock_api_call(self, operation_name, api_params):
-        raise NotImplementedError((operation_name, api_params))
-
-    symbol = "ksproxy.pdb"
-    debugid = "A7D6F1BB18CD4CB48"
-    with botomock(mock_api_call):
-        download_microsoft_symbol(symbol, debugid)
-    assert not FileUpload.objects.all().exists()
-
-    (download_obj,) = MicrosoftDownload.objects.all()
-    assert "cabextract failed" in download_obj.error
-
-
-@pytest.mark.django_db
-def test_download_microsoft_symbol_task_dump_syms_failing(
-    botomock, settings, requestsmock
-):
-    settings.DUMP_SYMS_PATH = FAKE_BROKEN_DUMP_SYMS
-
-    with open(PD__FILE, "rb") as f:
-        content = f.read()
-        # just checking that the fixture file is sane
-        assert content.startswith(b"MSCF")
-        requestsmock.get(
-            "https://msdl.microsoft.com/download/symbols/ksproxy.pdb"
-            "/A7D6F1BB18CD4CB48/ksproxy.pd_",
-            content=content,
-        )
-
-    def mock_api_call(self, operation_name, api_params):
-        raise NotImplementedError((operation_name, api_params))
-
-    symbol = "ksproxy.pdb"
-    debugid = "A7D6F1BB18CD4CB48"
-    with pytest.raises(DumpSymsError), botomock(mock_api_call):
-        download_microsoft_symbol(symbol, debugid)
-
-    (download_obj,) = MicrosoftDownload.objects.all()
-    assert "dump_syms extraction failed" in download_obj.error
-    assert "Something horrible happened" in download_obj.error
 
 
 @pytest.mark.django_db

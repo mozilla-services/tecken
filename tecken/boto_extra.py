@@ -2,8 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from functools import wraps
-
 from botocore.exceptions import EndpointConnectionError, ClientError
 
 
@@ -37,41 +35,3 @@ class OwnClientError(ClientError):  # XXX Replace "Own" with "Picklable" ?
 
     def __reduce__(self):
         return (self.__class__, (self.response, self.operation_name), {})
-
-
-def reraise_endpointconnectionerrors(f):
-    """Decorator whose whole job is to re-raise any EndpointConnectionError
-    exceptions raised to be OwnEndpointConnectionError because those
-    exceptions are "better". In other words, if, instead an
-    OwnEndpointConnectionError exception is raised by the task
-    celery can then pickle the error. And if it can pickle the error
-    it can apply its 'autoretry_for' magic.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except EndpointConnectionError as exception:
-            raise OwnEndpointConnectionError(**exception.kwargs)
-
-    return wrapper
-
-
-def reraise_clienterrors(f):
-    """Decorator whose whole job is to re-raise any ClientError
-    exceptions raised to be OwnClientError because those
-    exceptions are "better". In other words, if, instead an
-    OwnClientError exception is raised by the task
-    celery can then pickle the error. And if it can pickle the error
-    it can apply its 'autoretry_for' magic.
-    """
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except ClientError as exception:
-            raise OwnClientError(exception.response, exception.operation_name)
-
-    return wrapper

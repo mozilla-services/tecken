@@ -26,11 +26,6 @@ Celery is used for the following tasks:
    to make sure we only all of this only happens once per 24 per
    symbol signature.
 
-3. (NOT enabled as of Dec 2018) If a symbol is missing and its signature
-   looks like we *might* be able to download it from Microsoft, we attempt
-   to do all this work in a Celery task.
-
-
 
 Testing Celery
 ==============

@@ -87,10 +87,13 @@ class FileUpload(models.Model):
     # True if the file was gzip compressed before being uploaded
     compressed = models.BooleanField(default=False)
     size = models.PositiveIntegerField()
-    # Used when this upload belongs to a Microsoft proxy download
-    microsoft_download = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    # NOTE(willkg): This used to be used when this upload belongs to a
+    # Microsoft proxy download, but that code was removed, so now this does
+    # nothing and can be removed.
+    microsoft_download = models.BooleanField(default=False)
 
     def __repr__(self):
         return (
