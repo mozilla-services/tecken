@@ -44,5 +44,4 @@ urlpatterns = [
     path("_settings/", views.current_settings, name="current_settings"),
     path("_versions/", views.current_versions, name="current_versions"),
     path("downloads/missing/", views.downloads_missing, name="downloads_missing"),
-    path("downloads/microsoft/", views.downloads_microsoft, name="downloads_microsoft"),
 ]

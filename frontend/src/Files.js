@@ -105,14 +105,6 @@ class Files extends React.PureComponent {
     this.setState({ filter: filter }, this._fetchFiles);
   };
 
-  filterOnMicrosoftDownloads = (event) => {
-    event.preventDefault();
-    const filter = this.state.filter;
-    filter.download = "microsoft";
-    filter.page = 1;
-    this.setState({ filter: filter }, this._fetchFiles);
-  };
-
   updateFilter = (newFilters) => {
     this.setState(
       {
@@ -131,18 +123,6 @@ class Files extends React.PureComponent {
               <li className={!this.state.filter.download ? "is-active" : ""}>
                 <Link to="/uploads/files" onClick={this.filterOnAll}>
                   All Files
-                </Link>
-              </li>
-              <li
-                className={
-                  this.state.filter.download === "microsoft" ? "is-active" : ""
-                }
-              >
-                <Link
-                  to="/uploads/files?download=microsoft"
-                  onClick={this.filterOnMicrosoftDownloads}
-                >
-                  Microsoft Download Files
                 </Link>
               </li>
               <li>

@@ -63,7 +63,6 @@ class TokensForm(forms.Form):
 
 
 class UserEditForm(forms.ModelForm):
-
     groups = forms.CharField(required=False)
 
     class Meta:
@@ -96,7 +95,6 @@ class PaginationForm(forms.Form):
 
 
 class BaseFilteringForm(forms.Form):
-
     sort = forms.CharField(required=False)
     reverse = forms.CharField(required=False)
 
@@ -261,7 +259,6 @@ class FileUploadsForm(UploadsForm):
     created_at = forms.CharField(required=False)
     completed_at = forms.CharField(required=False)
     key = forms.CharField(required=False)
-    download = forms.CharField(required=False)
     update = forms.BooleanField(required=False)
     compressed = forms.BooleanField(required=False)
     bucket_name = forms.CharField(required=False)
@@ -271,13 +268,6 @@ class FileUploadsForm(UploadsForm):
         if not values:
             return []
         return [x.strip() for x in values.split(",") if x.strip()]
-
-    def clean_download(self):
-        value = self.cleaned_data["download"]
-        if value:
-            if value not in ("microsoft",):
-                raise forms.ValidationError(f"Unrecognized download value {value!r}")
-        return value
 
     def clean_bucket_name(self):
         values = self.cleaned_data["bucket_name"]
@@ -325,12 +315,3 @@ class DownloadsMissingForm(BaseFilteringForm):
                 raise forms.ValidationError(f"{rest!r} is not a number")
             counts.append((operator, rest))
         return counts
-
-
-class DownloadsMicrosoftForm(DownloadsMissingForm):
-    created_at = forms.CharField(required=False)
-    state = forms.CharField(required=False)
-    error = forms.CharField(required=False)
-
-    def clean_created_at(self):
-        return self._clean_dates(self.cleaned_data["created_at"])

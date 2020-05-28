@@ -9,8 +9,6 @@ from django.db import models
 from django.core.cache import cache
 from django.utils.encoding import force_bytes
 
-from tecken.upload.models import FileUpload
-
 
 class TotalCountMixin:
     @classmethod
@@ -66,17 +64,3 @@ class MissingSymbol(models.Model, TotalCountMixin):
         return hashlib.md5(
             force_bytes(":".join(x for x in strings if x is not None))
         ).hexdigest()
-
-
-class MicrosoftDownload(models.Model):
-    # Leverage this so we don't have to repeat the symbold, debugid, etc.
-    missing_symbol = models.ForeignKey(MissingSymbol, on_delete=models.CASCADE)
-    url = models.URLField(max_length=500)
-    error = models.TextField(null=True)
-    # Null in case it could never fully be turned into a file upload.
-    file_upload = models.ForeignKey(FileUpload, null=True, on_delete=models.SET_NULL)
-    # When created but turns out we already had it in the S3 destination.
-    # Make this Null if it was never even attempted to upload.
-    skipped = models.NullBooleanField()
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    completed_at = models.DateTimeField(null=True)

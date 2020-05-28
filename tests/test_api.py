@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
-from tecken.download.models import MissingSymbol, MicrosoftDownload
+from tecken.download.models import MissingSymbol
 from tecken.api.views import filter_uploads
 from tecken.api.forms import UploadsForm, BaseFilteringForm
 
@@ -981,14 +981,11 @@ def test_upload_files(client, settings):
         bucket_name="symbols-private",
         key="v0/bar.dll/A4FC12EFA5/foo.sym",
     )
-    # Make a FileUpload that is not associated with an upload and
-    # is a microsoft download.
     file_upload2 = FileUpload.objects.create(
         size=100,
         key="v0/foo.pdb/deadbeef/foo.sym",
         compressed=True,
         bucket_name="symbols-public",
-        microsoft_download=True,
     )
 
     response = client.get(url)
@@ -1048,15 +1045,6 @@ def test_upload_files(client, settings):
     assert response.status_code == 200
     data = response.json()
     assert [x["id"] for x in data["files"]] == [file_upload2.id]
-
-    # Search by download=microsoft
-    response = client.get(url, {"download": "microsoft"})
-    assert response.status_code == 200
-    data = response.json()
-    assert [x["id"] for x in data["files"]] == [file_upload2.id]
-    # But it's picky about that value
-    response = client.get(url, {"download": "Something else"})
-    assert response.status_code == 400
 
     # Filter by bucket_name
     response = client.get(url, {"bucket_name": file_upload1.bucket_name})
@@ -1380,104 +1368,6 @@ def test_downloads_missing(client):
 
 
 @pytest.mark.django_db
-def test_downloads_microsoft(client):
-    url = reverse("api:downloads_microsoft")
-    response = client.get(url)
-    data = response.json()
-    assert data["microsoft_downloads"] == []
-    assert data["aggregates"]["microsoft_downloads"]["total"] == 0
-    assert data["total"] == 0
-
-    MicrosoftDownload.objects.create(
-        missing_symbol=MissingSymbol.objects.create(
-            hash="x1",
-            symbol="foo.pdb",
-            debugid="ADEF12345",
-            filename="foo.sym",
-            count=1,
-        ),
-        url="https://msdn.example.com/foo.sym",
-        file_upload=FileUpload.objects.create(
-            bucket_name="mybucket",
-            key="v0/foo.pdb/ADEF12345/foo.sym",
-            update=False,
-            compressed=True,
-            size=12345,
-            microsoft_download=True,
-            completed_at=timezone.now(),
-        ),
-        skipped=False,
-        completed_at=timezone.now(),
-    )
-    MicrosoftDownload.objects.create(
-        missing_symbol=MissingSymbol.objects.create(
-            hash="x2", symbol="foo.pdb", debugid="01010101", filename="foo.ex_", count=2
-        ),
-        url="https://msdn.example.com/foo2.sym",
-        error="Something terrible!",
-        completed_at=timezone.now(),
-    )
-
-    response = client.get(url)
-    data = response.json()
-    assert data["total"] == 2
-
-    # Filter by created_at
-    response = client.get(url, {"created_at": timezone.now().isoformat()})
-    data = response.json()
-    assert data["total"] == 0
-    response = client.get(url, {"created_at": "<" + timezone.now().isoformat()})
-    data = response.json()
-    assert data["total"] == 2
-
-    # Filter by symbol
-    response = client.get(url, {"symbol": "foo.pdb"})
-    data = response.json()
-    assert data["total"] == 2
-
-    # Filter by filename
-    response = client.get(url, {"filename": "foo.sym"})
-    data = response.json()
-    assert data["total"] == 1
-    first_missing_symbol = data["microsoft_downloads"][0]
-    assert first_missing_symbol["missing_symbol"]["filename"] == "foo.sym"
-
-    # Filter by specific error
-    response = client.get(url, {"state": "specific-error", "error": "terrible"})
-    data = response.json()
-    assert data["total"] == 1
-    response = client.get(url, {"state": "specific-error", "error": "not found"})
-    data = response.json()
-    assert data["total"] == 0
-
-    # Filter by those errored
-    response = client.get(url, {"state": "errored"})
-    data = response.json()
-    assert data["total"] == 1
-    assert data["microsoft_downloads"][0]["error"] == "Something terrible!"
-
-    # Filter by those that have a file upload
-    response = client.get(url, {"state": "file-upload"})
-    data = response.json()
-    assert data["total"] == 1
-
-    # Those that don't have a file upload
-    response = client.get(url, {"state": "no-file-upload"})
-    data = response.json()
-    assert data["total"] == 1
-
-    # Form validation failure
-    response = client.get(url, {"created_at": "not a date"})
-    assert response.status_code == 400
-    assert response.json()["errors"]["created_at"]
-
-    # Bad pagination
-    response = client.get(url, {"page": "not a number"})
-    assert response.status_code == 400
-    assert response.json()["errors"]["page"]
-
-
-@pytest.mark.django_db
 def test_file_upload(client):
     url = reverse("api:upload_file", args=("9999999999",))
     response = client.get(url)
@@ -1513,7 +1403,6 @@ def test_file_upload(client):
 
     data = response.json()["file"]
     assert data["upload"]["user"]["email"] == user.email
-    assert not data["microsoft_download"]
     assert data["url"] == "/foo.pdb/deadbeaf123/foo.sym"
 
 
@@ -1534,52 +1423,6 @@ def test_file_upload_try_upload(client):
     assert response.status_code == 200
     data = response.json()["file"]
     assert data["url"] == "/foo.pdb/deadbeaf123/foo.sym?try"
-
-
-@pytest.mark.django_db
-def test_file_upload_microsoft_download(client):
-    file_upload = FileUpload.objects.create(
-        size=1234, key="foo.pdb/deadbeaf123/foo.sym", microsoft_download=True
-    )
-
-    MicrosoftDownload.objects.create(
-        missing_symbol=MissingSymbol.objects.create(
-            hash="x1",
-            symbol="foo.pdb",
-            debugid="ADEF12345",
-            filename="foo.sym",
-            count=1,
-        ),
-        url="https://msdn.example.com/foo.sym",
-        file_upload=file_upload,
-        skipped=False,
-        completed_at=timezone.now(),
-    )
-
-    url = reverse("api:upload_file", args=(file_upload.id,))
-    response = client.get(url)
-    # 403 because you're not logged in
-    assert response.status_code == 403
-
-    # Log in
-    user = User.objects.create(username="peterbe", email="peterbe@example.com")
-    user.set_password("secret")
-    user.save()
-    assert client.login(username="peterbe", password="secret")
-
-    response = client.get(url)
-    # Logging in isn't good enough. You need to have the 'view_all_uploads'
-    # permission too.
-    assert response.status_code == 403
-
-    # Get the permission to view all uploads
-    permission = Permission.objects.get(codename="view_all_uploads")
-    user.user_permissions.add(permission)
-    response = client.get(url)
-    assert response.status_code == 200
-    data = response.json()["file"]
-    assert not data["upload"]
-    assert data["microsoft_download"]["url"] == ("https://msdn.example.com/foo.sym")
 
 
 @pytest.mark.django_db

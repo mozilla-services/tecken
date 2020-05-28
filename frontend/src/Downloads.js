@@ -22,9 +22,6 @@ class Downloads extends React.PureComponent {
         <p>
           <Link to="/downloads/missing">Downloads Missing</Link>
         </p>
-        <p>
-          <Link to="/downloads/microsoft">Microsoft Downloads</Link>
-        </p>
       </div>
     );
   }

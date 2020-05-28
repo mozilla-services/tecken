@@ -5,7 +5,6 @@ import {
   Loading,
   ShowUploadMetadata,
   ShowFileMetadata,
-  ShowMicrosoftDownloadMetadata,
   BooleanIcon,
 } from "./Common";
 import Fetch from "./Fetch";
@@ -173,13 +172,6 @@ class DisplayFile extends React.PureComponent {
           <h4 className="title subtitle">Upload It Was Part Of</h4>
         )}
         {file.upload && <ShowUploadMetadata upload={file.upload} />}
-
-        {file.microsoft_download && (
-          <h4 className="title is-4">Microsoft Download</h4>
-        )}
-        {file.microsoft_download && (
-          <ShowMicrosoftDownloadMetadata download={file.microsoft_download} />
-        )}
       </div>
     );
   }

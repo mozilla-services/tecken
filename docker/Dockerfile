@@ -13,9 +13,8 @@ COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
 
-# NOTE(willkg): stick with stretch because it has gcc-6 which we need
-# to build dump_syms.
-FROM python:3.7.7-slim-stretch@sha256:3b072d391496e120bd25025462489b8a437f17135dda96f765de5d0a0e159fa3
+
+FROM python:3.7.7-slim@sha256:1d96a34649e53ee768aff6d75918aa7ebb7e0b21b55a41795a95f27bb7268026
 
 ARG userid=10001
 ARG groupid=10001
@@ -38,14 +37,7 @@ RUN groupadd --gid $groupid app && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     apt-transport-https build-essential curl git libpq-dev \
-    gettext libffi-dev jed
-
-# Install dump_syms
-RUN DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y --no-install-recommends \
-    gyp ninja-build binutils-gold gcc-6 g++-6 pkg-config cabextract
-COPY ./docker/build_dump_syms.sh /tmp
-RUN /tmp/build_dump_syms.sh
+    gettext libffi-dev
 
 # Clean up apt
 RUN apt-get autoremove -y && \

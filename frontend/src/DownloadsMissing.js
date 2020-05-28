@@ -130,9 +130,6 @@ class DownloadsMissing extends React.PureComponent {
             <li className="is-active">
               <Link to="/downloads/missing">Downloads Missing</Link>
             </li>
-            <li>
-              <Link to="/downloads/microsoft">Microsoft Downloads</Link>
-            </li>
           </ul>
         </div>
         <h1 className="title">{this.state.pageTitle}</h1>

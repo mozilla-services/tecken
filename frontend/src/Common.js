@@ -390,54 +390,6 @@ export const ShowFileMetadata = ({ file }) => (
   </table>
 );
 
-export const ShowMicrosoftDownloadMetadata = ({ download }) => (
-  <table className="table is-fullwidth">
-    <tbody>
-      <tr>
-        <th>URL</th>
-        <td>{download.url}</td>
-      </tr>
-      <tr>
-        <th>Error</th>
-        <td>
-          {download.error ? (
-            <span className="has-text-danger">{download.error}</span>
-          ) : (
-            "-"
-          )}
-        </td>
-      </tr>
-      <tr>
-        <th>Created</th>
-        <td>
-          <DisplayDate date={download.created_at} />
-        </td>
-      </tr>
-      <tr>
-        <th>Completed</th>
-        <td>
-          {download.completed_at ? (
-            <DisplayDate date={download.completed_at} />
-          ) : (
-            <i>Incomplete!</i>
-          )}
-          {download.completed_at ? (
-            <small>
-              {" "}
-              (took{" "}
-              <DisplayDateDifference
-                from={download.created_at}
-                to={download.completed_at}
-              />
-              )
-            </small>
-          ) : null}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-);
-
 const capitalize = (s) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
