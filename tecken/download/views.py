@@ -134,10 +134,6 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
                 response["Debug-Time"] = downloader.time_took
             return response
 
-    # Assume that we don't do a delayed (background task) lookup and
-    # have not done one recently either.
-    delayed_lookup = False
-
     if request.method == "GET":
         # Only bother looking at the query string if the request was GET.
         form = DownloadForm(request.GET)
@@ -158,9 +154,7 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             symbol, debugid, filename, code_file=code_file, code_id=code_id
         )
 
-    response = http.HttpResponseNotFound(
-        "Symbol Not Found Yet" if delayed_lookup else "Symbol Not Found"
-    )
+    response = http.HttpResponseNotFound("Symbol Not Found")
     if request._request_debug:
         response["Debug-Time"] = downloader.time_took
     return response
@@ -243,7 +237,11 @@ def missing_symbols_csv(request):
 
     # By default, only do those updated in the last 24h
     qs = MissingSymbol.objects.filter(
-        modified_at__gte=date, filename__iendswith=".sym",
+        modified_at__gte=date,
+        # This is a trick to immediately limit the symbols that could be gotten
+        # from a Microsoft download.
+        symbol__iendswith=".pdb",
+        filename__iendswith=".sym",
     )
 
     only = ("symbol", "debugid", "code_file", "code_id")
