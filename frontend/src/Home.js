@@ -479,7 +479,7 @@ const DownloadsStatsTile = ({ loading, stats }) => (
           <tr>
             <th />
             <th>
-              <Link to="/downloads/missing">Recorded Missing</Link>
+              <Link to="/downloads/missing/">Recorded Missing</Link>
             </th>
           </tr>
         </thead>
