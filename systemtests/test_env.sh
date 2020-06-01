@@ -84,3 +84,6 @@ echo ""
 echo ">>> DOWNLOAD TEST"
 python ./bin/download-sym-files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
 echo ""
+
+echo ">>> DOWNLOAD MISSING SYMBOLS CSV TEST"
+python ./bin/download-missing-symbols.py --base-url="${HOST}"
