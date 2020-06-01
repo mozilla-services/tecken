@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import Fetch from "./Fetch";
 import store from "./Store";
 
@@ -125,13 +124,6 @@ class DownloadsMissing extends React.PureComponent {
   render() {
     return (
       <div>
-        <div className="tabs is-centered">
-          <ul>
-            <li className="is-active">
-              <Link to="/downloads/missing">Downloads Missing</Link>
-            </li>
-          </ul>
-        </div>
         <h1 className="title">{this.state.pageTitle}</h1>
 
         {this.state.loading ? (
