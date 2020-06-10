@@ -27,7 +27,7 @@ def download_missing_symbols(ctx, base_url):
     resp = requests.get(csv_url)
     if resp.status_code != 200:
         click.echo(
-            click.style("Error: %s" % (resp.status_code, resp.content), fg="red")
+            click.style("Error: %s %s" % (resp.status_code, resp.content), fg="red")
         )
 
     else:
