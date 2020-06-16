@@ -39,10 +39,6 @@ try_downloader = SymbolDownloader(
     file_prefix=settings.SYMBOL_FILE_PREFIX,
 )
 
-# Set it "globally" here the module on import-time so we don't have to
-# repeatly get it from the settings module in runtime.
-file_extensions_whitelist = tuple(settings.DOWNLOAD_FILE_EXTENSIONS_WHITELIST)
-
 
 def _ignore_symbol(symbol, debugid, filename):
     # The MS debugger will always try to look up these files. We
@@ -52,7 +48,7 @@ def _ignore_symbol(symbol, debugid, filename):
     if debugid == "000000000000000000000000000000000":
         return True
 
-    if not filename.endswith(file_extensions_whitelist):
+    if not filename.endswith(tuple(settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED)):
         return True
 
     # The default is to NOT ignore it

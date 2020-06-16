@@ -174,7 +174,7 @@ def _ignore_member_file(filename):
     """Return true if the given filename (could be a filepath), should
     be completely ignored in the upload process.
 
-    At the moment the list is "whitelist based", meaning all files are
+    At the moment the list is "allow-list based", meaning all files are
     processed and uploaded to S3 unless it meets certain checks.
     """
     if filename.lower().endswith("-symbols.txt"):

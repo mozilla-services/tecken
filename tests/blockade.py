@@ -1,20 +1,15 @@
 """
 This blocks all HTTP requests via httplib (which includes requests).
 
-This is a fixed copy of pytest-blockage, called "blockade".
+This is an adjusted version of pytest-blockage. We're calling it blockade.
 
-https://pypi.org/project/pytest-blockage/
-
-License: https://github.com/rob-b/pytest-blockage/blob/master/LICENSE
+Original code: https://pypi.org/project/pytest-blockage/
+License: MIT https://github.com/rob-b/pytest-blockage/blob/master/LICENSE
 
 """
-import logging
-import sys
 
-if sys.version_info[0] < 3:
-    import httplib
-else:
-    import http.client as httplib
+import http.client as httplib
+import logging
 
 
 logger = logging.getLogger(__name__)
@@ -28,25 +23,25 @@ class MockSmtpCall(Exception):
     pass
 
 
-def block_http(whitelist):
-    def whitelisted(self, host, *args, **kwargs):
+def block_http(allow):
+    def allowed(self, host, *args, **kwargs):
         try:
             string_type = basestring
         except NameError:
             # python3
             string_type = str
-        if isinstance(host, string_type) and host not in whitelist:
+        if isinstance(host, string_type) and host not in allow:
             logger.warning("Denied HTTP connection to: %s" % host)
             raise MockHttpCall(host)
         logger.debug("Allowed HTTP connection to: %s" % host)
         return self.old(host, *args, **kwargs)
 
-    whitelisted.blockade = True
+    allowed.blockade = True
 
     if not getattr(httplib.HTTPConnection, "blockade", False):
         logger.debug("Monkey patching httplib")
         httplib.HTTPConnection.old = httplib.HTTPConnection.__init__
-        httplib.HTTPConnection.__init__ = whitelisted
+        httplib.HTTPConnection.__init__ = allowed
 
 
 def pytest_addoption(parser):
@@ -58,13 +53,13 @@ def pytest_addoption(parser):
     parser.addini("blockade", "Block network requests during test run", default=False)
 
     group.addoption(
-        "--blockade-http-whitelist",
+        "--blockade-http-allow",
         action="store",
         help="Do not block HTTP requests to this comma separated list of " "hostnames",
         default="",
     )
     parser.addini(
-        "blockade-http-whitelist",
+        "blockade-http-allow",
         "Do not block HTTP requests to this comma separated list of hostnames",
         default="",
     )
@@ -73,8 +68,8 @@ def pytest_addoption(parser):
 def pytest_sessionstart(session):
     config = session.config
     if config.option.blockade or config.getini("blockade"):
-        http_whitelist_str = config.option.blockade_http_whitelist or config.getini(
-            "blockade-http-whitelist"
+        http_allow_str = config.option.blockade_http_allow or config.getini(
+            "blockade-http-allow"
         )
-        http_whitelist = http_whitelist_str.split(",")
-        block_http(http_whitelist)
+        http_allow = http_allow_str.split(",")
+        block_http(http_allow)

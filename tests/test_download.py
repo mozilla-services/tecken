@@ -213,7 +213,7 @@ def test_client_with_debug(client, botomock):
         assert response.content == b""
         assert float(response["debug-time"]) > 0
 
-        # This one won't be logged because the filename is on a blacklist
+        # This one won't be logged because the filename is on a block list
         # of symbol filenames to ignore
         ignore_url = reverse(
             "download:download_symbol",
@@ -242,7 +242,7 @@ def test_client_with_ignorable_file_extensions(client, botomock):
         args=(
             "xul.pdb",
             "44E4EC8C2F41492B9369D6B9A059577C2",
-            # Note! This is NOT in the settings.DOWNLOAD_FILE_EXTENSIONS_WHITELIST
+            # Note! This is NOT in the settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED
             # list.
             "xul.xxx",
         ),
@@ -350,7 +350,7 @@ def test_client_404_logged(client, botomock, clear_redis_store, settings):
         # This one won't be logged because it's a HEAD
         assert client.head(url).status_code == 404
 
-        # This one won't be logged because the filename is on a blacklist
+        # This one won't be logged because the filename is on a block list
         # of symbol filenames to ignore
         ignore_url = reverse(
             "download:download_symbol",

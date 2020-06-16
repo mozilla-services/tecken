@@ -1062,7 +1062,7 @@ def stats_symbolication(request):
 def current_settings(request):
     """return a JSON dict of a selection of settings to describe the
     current system. These are only accessible to superusers and the settings
-    it includes is whitelisted and manually maintained here in this view.
+    it includes is allowed and manually maintained here in this view.
     """
     context = {"settings": []}
 
@@ -1082,7 +1082,7 @@ def current_settings(request):
         "ENABLE_AUTH0_BLOCKED_CHECK",
         "ENABLE_TOKENS_AUTHENTICATION",
         "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
-        "DOWNLOAD_FILE_EXTENSIONS_WHITELIST",
+        "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
         "BENCHMARKING_ENABLED",
         "ENABLE_STORE_MISSING_SYMBOLS",
     )

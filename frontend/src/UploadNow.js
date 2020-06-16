@@ -384,8 +384,8 @@ class UploadByDownloadForm extends UploadForm {
             ref="url"
           />
           <p className="help">
-            The upload by download is restricted to a whitelist of domains from
-            which you can download.
+            The upload by download is restricted to a list of allowed domains
+            from which you can download.
           </p>
         </div>
         <div className="field">

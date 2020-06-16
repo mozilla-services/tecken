@@ -78,26 +78,26 @@ We know with confidence users repeatedly query certain files that are
 never in our symbol stores. We can ignore them to suppress logging
 that they couldn't be found.
 
-Right now, this is maintained as a configurable blacklist but is hard
+Right now, this is maintained as a configurable block list but is hard
 coded inside the ``_ignore_symbol`` code in ``tecken.download.views``.
 
 This approach might change over time as we're able to confidently
 identify more and more patterns that we know we can ignore.
 
 
-File Extension Whitelist
-========================
+File Extension Allow List
+=========================
 
 When someone requests to download a symbol, as mentioned above, we have some
 ways to immediately decide that it's a 404 Symbol Not Found without even
 bothering to ask the cache or S3.
 
-As part of that, there is also a whitelist of file extensions that are the
+As part of that, there is also a list of allowed file extensions that are the
 only ones we should bother with. This list is maintained in
-``settings.DOWNLOAD_FILE_EXTENSIONS_WHITELIST`` (managed by the environment
-variable ``DJANGO_DOWNLOAD_FILE_EXTENSIONS_WHITELIST``) and this list is
-found in the source code (``settings.py``) and also visible on the home page
-if you're signed in as a superuser.
+``settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED`` (managed by the environment
+variable ``DJANGO_DOWNLOAD_FILE_EXTENSIONS_ALLOWED``) and this list is found in
+the source code (``settings.py``) and also visible on the home page if you're
+signed in as a superuser.
 
 
 Download With Debug
@@ -128,7 +128,7 @@ output it will look something like this::
 
 If that value is not present it's because Django was not even able to
 route your request to the code that talks to S3. It can also come back
-as exactly ``Debug-Time: 0.0`` which means the symbol is in a blacklist of
+as exactly ``Debug-Time: 0.0`` which means the symbol is in a block list of
 symbols that are immediately ``404 Not Found`` based on filename pattern
 matching.
 
