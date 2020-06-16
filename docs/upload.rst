@@ -145,7 +145,7 @@ ZIP file that can be extracted into at least 1 file.
 
 The next check is that it iterates over the files within and checks if any
 file contains the list of strings in ``settings.DISALLOWED_SYMBOLS_SNIPPETS``.
-This check is a blacklist check and its purpose is to assert, for example,
+This check is a block list check and its purpose is to assert, for example,
 that proprietary files are never uploaded in S3 buckets that might be exposed
 publicly.
 

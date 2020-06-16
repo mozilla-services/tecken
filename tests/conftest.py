@@ -14,8 +14,6 @@ from markus.testing import MetricsMock
 from django.core.cache import caches
 from django.contrib.auth.models import User
 
-pytest_plugins = ["blockade"]
-
 
 @pytest.fixture
 def clear_redis_store():

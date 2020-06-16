@@ -535,7 +535,7 @@ class Base(Core):
     UPLOAD_REATTEMPT_LIMIT_SECONDS = values.IntegerValue(60 * 60 * 12)
 
     # When you "upload by download", the URL's domain needs to be in this
-    # whitelist. This is to double-check that we don't allow downloads from
+    # allow list. This is to double-check that we don't allow downloads from
     # domains we don't fully trust.
     ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = values.ListValue(
         [
@@ -551,7 +551,7 @@ class Base(Core):
     # It's case sensitive and has to be lower case.
     # As a way to get marginal optimization of this, make sure '.sym' is
     # first in the list since it's the most common.
-    DOWNLOAD_FILE_EXTENSIONS_WHITELIST = values.ListValue(
+    DOWNLOAD_FILE_EXTENSIONS_ALLOWED = values.ListValue(
         [".sym", ".dl_", ".ex_", ".pd_", ".dbg.gz", ".tar.bz2"]
     )
 
