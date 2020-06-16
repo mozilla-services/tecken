@@ -13,7 +13,6 @@ def main():
     exceptions = (
         ".*",
         "docs/conf.py",
-        "tests/blockade.py",
         "registerServiceWorker.js",
     )
 
