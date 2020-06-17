@@ -3,6 +3,7 @@ Symbolication
 =============
 
 .. contents::
+   :local:
 
 
 Background
