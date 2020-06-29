@@ -52,7 +52,7 @@ jobs:
           command: |
             # set DOCKER_DEPLOY=true in Circle UI to push to Dockerhub
             DOCKER_DEPLOY="${DOCKER_DEPLOY:-false}"
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+            if [ "${CIRCLE_BRANCH}" == "main" ]; then
               bin/ci/deploy-dockerhub.sh latest
             fi
             if [ -n "${CIRCLE_TAG}" ]; then
