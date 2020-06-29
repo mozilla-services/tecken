@@ -12,15 +12,6 @@ Project details
 .. image:: https://circleci.com/gh/mozilla-services/tecken.svg?style=svg
    :alt: Circle CI status
    :target: https://circleci.com/gh/mozilla-services/tecken
-.. image:: https://pyup.io/repos/github/mozilla-services/tecken/shield.svg
-   :alt: pyup status
-   :target: https://pyup.io/repos/github/mozilla-services/tecken/
-.. image:: https://img.shields.io/badge/renovate-enabled-brightgreen.svg
-   :alt: rennovate status
-   :target: https://renovateapp.com/
-.. image:: https://img.shields.io/badge/whatsdeployed-dev,stage,prod-green.svg
-   :alt: What's Deployed
-   :target: https://whatsdeployed.io/s-5HY
 .. image:: https://readthedocs.org/projects/tecken/badge/?version=latest
    :alt: ReadTheDocs status
    :target: https://tecken.readthedocs.io/
