@@ -27,7 +27,7 @@ Project details
 
 * License: MPLv2
 * Documentation: `<https://tecken.readthedocs.io/>`_
-* Community Participation Guidelines: `<https://github.com/mozilla-services/tecken/blob/master/CODE_OF_CONDUCT.md>`_
+* Community Participation Guidelines: `<https://github.com/mozilla-services/tecken/blob/main/CODE_OF_CONDUCT.md>`_
 * Code style: `Black <https://github.com/ambv/black>`_
 
 Production server: https://symbols.mozilla.org/

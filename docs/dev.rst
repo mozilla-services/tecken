@@ -777,7 +777,7 @@ Dev
 
 Dev is at: https://symbols.dev.mozaws.net
 
-Dev deploys every time someone lands something in the master branch.
+Dev deploys every time someone lands something in the main branch.
 
 
 Stage

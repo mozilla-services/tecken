@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Antenna documentation build configuration file, created by
+# Tecken documentation build configuration file, created by
 # sphinx-quickstart on Tue May 10 18:20:27 2016.
 #
 # This file is execfile()d with the current directory set to its
@@ -136,7 +136,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
-# html_title = u'Antenna v0.1'
+# html_title = u'Tecken v0.1'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
@@ -219,7 +219,7 @@ html_sidebars = {"**": ["globaltoc.html", "relations.html", "searchbox.html"]}
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "Antennadoc"
+htmlhelp_basename = "Teckendoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -238,7 +238,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, "Antenna.tex", u"Antenna Documentation", u"Mozilla", "manual")
+    (master_doc, "Tecken.tex", u"Tecken Documentation", u"Mozilla", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -266,7 +266,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "antenna", u"Antenna Documentation", [author], 1)]
+man_pages = [(master_doc, "tecken", u"Tecken Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -280,10 +280,10 @@ man_pages = [(master_doc, "antenna", u"Antenna Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "Antenna",
-        u"Antenna Documentation",
+        "Tecken",
+        u"Tecken Documentation",
         author,
-        "Antenna",
+        "Tecken",
         "One line description of project.",
         "Miscellaneous",
     )

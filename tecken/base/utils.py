@@ -24,7 +24,7 @@ def requests_retry_session(
 
     then it will raise immediately on any connection errors.
     Retrying on connection errors guards better on unpredictable networks.
-    From http://docs.python-requests.org/en/master/api/?highlight=retries#requests.adapters.HTTPAdapter
+    From https://2.python-requests.org/en/master/api/?highlight=retries#requests.adapters.HTTPAdapter
     it says: "By default, Requests does not retry failed connections."
 
     The backoff_factor is documented here:
