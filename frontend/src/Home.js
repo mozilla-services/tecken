@@ -250,7 +250,7 @@ const EnvironmentTile = ({
       Note that these are only a handful of settings. They are the ones that are
       most likely to change from one environment to another. For other settings,{" "}
       <a
-        href="https://github.com/mozilla-services/tecken/blob/master/tecken/settings.py"
+        href="https://github.com/mozilla-services/tecken/blob/main/tecken/settings.py"
         target="_blank"
         rel="noopener noreferrer"
       >

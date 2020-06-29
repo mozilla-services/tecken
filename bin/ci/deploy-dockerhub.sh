@@ -30,7 +30,7 @@ retry 3  echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password
 
 # docker tag and push git branch to dockerhub
 if [ -n "$1" ]; then
-    [ "$1" == master ] && TAG=latest || TAG="$1"
+    [ "$1" == main ] && TAG=latest || TAG="$1"
     docker tag tecken:build "mozilla/tecken:$TAG" ||
         (echo "Couldn't tag tecken:build as mozilla/tecken:$TAG" && false)
     retry 3 docker push "mozilla/tecken:$TAG" ||
