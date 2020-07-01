@@ -73,9 +73,9 @@ mozilla-django-oidc==1.2.3 \
 urllib3==1.25.9 \
     --hash=sha256:88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115 \
     --hash=sha256:3018294ebefce6572a474f0604c2021e33b3fd8006ecd11d62107a5d2a963527
-django-cache-memoize==0.1.6 \
-    --hash=sha256:d239e8c37734b0a70b74f94fa33b180b3b0c82c3784beb21209bb4ab64a3e6fb \
-    --hash=sha256:7f271be70b11155929ee8a4a2b5f53c9fb46b9befa1b546caffa3298e6ac8f7d
+django-cache-memoize==0.1.7 \
+    --hash=sha256:bc7f53725558244af62197d0125732d7ec88ecc1281a3a2f37d77ae1a8c269d3 \
+    --hash=sha256:5e96349b0159aec1eb79257199a1902ea3ed538231ce7b4fee12e563127ca657
 encore==0.7.0 \
     --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6
 msgpack==1.0.0 \
