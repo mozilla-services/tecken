@@ -13,29 +13,19 @@ export
 USE_UID ?= 10001
 USE_GID ?= 10001
 
+.DEFAULT_GOAL := help
 .PHONY: help
-help: default
-
-.PHONY: default
-default:
-	@echo "Welcome to the tecken\n"
-	@echo "The list of commands for local development:\n"
-	@echo "  build            Builds the docker images for the docker-compose setup"
-	@echo "  setup            Initializes services"
-	@echo "  run              Runs the whole stack, served on http://localhost:8000/"
-	@echo "  stop             Stops the docker containers"
+help:
+	@echo "Usage: make RULE"
 	@echo ""
-	@echo "  clean            Stops and removes all docker containers"
-	@echo "  redis-cache-cli  Opens a Redis CLI to the cache Redis server"
-	@echo "  redis-store-cli  Opens a Redis CLI to the store Redis server"
-	@echo "  clear-caches     Clear Redis caches"
-	@echo "  shell            Opens a Bash shell"
-	@echo "  test             Runs the Python test suite"
-	@echo "  testshell        Runs a shell in the test environment"
-	@echo "  psql             Open the psql cli"
-	@echo "  lint             Lint code"
-	@echo "  lintfix          Reformat code"
-	@echo "  build-frontend   Builds the frontend static files\n"
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' Makefile \
+		| grep -v grep \
+	    | sed -n 's/^\(.*\): \(.*\)##\(.*\)/\1\3/p' \
+	    | column -t  -s '|'
+	@echo ""
+	@echo "Adjust your .env file to set configuration."
+	@echo ""
+	@echo "See https://tecken.readthedocs.io/ for more documentation."
 
 # Dev configuration steps
 .docker-build:
@@ -45,75 +35,75 @@ default:
 	./bin/cp-env-file.sh
 
 .PHONY: build
-build: .env
+build: .env  ## | Build docker images.
 	docker-compose build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend linting
 	touch .docker-build
 
+.PHONY: setup
+setup: .env  ## | Initialize services.
+	docker-compose run --rm web /app/bin/setup-services.sh
+
+.PHONY: run
+run: .env .docker-build  ## | Run the web app and services.
+	docker-compose up web worker frontend
+
+.PHONY: stop
+stop: .env  ## | Stop docker containers.
+	docker-compose stop
+
+.PHONY: shell
+shell: .env .docker-build  ## | Open a shell in web container.
+	docker-compose run --rm web bash
+
 .PHONY: clean
-clean: .env stop
+clean: .env stop  ## | Stop and remove docker containers and artifacts.
 	docker-compose rm -f
 	rm -rf coverage/ .coverage
 	rm -fr .docker-build
 
 .PHONY: clear-caches
-clear-caches:
+clear-caches:  ## | Clear Redis caches.
 	docker-compose run --rm redis-cache redis-cli -h redis-cache FLUSHDB
 	docker-compose run --rm redis-store redis-cli -h redis-store FLUSHDB
 
-.PHONY: setup
-setup: .env
-	docker-compose run --rm web /app/bin/setup-services.sh
-
-.PHONY: shell
-shell: .env .docker-build
-	docker-compose run --rm web bash
-
 .PHONY: redis-cache-cli
-redis-cache-cli: .env .docker-build
+redis-cache-cli: .env .docker-build  ## | Open Redis CLI to cache Redis server.
 	docker-compose run redis-cache redis-cli -h redis-cache
 
 .PHONY: redis-store-cli
-redis-store-cli: .env .docker-build
+redis-store-cli: .env .docker-build  ## | Open Redis CLI to store Redis server.
 	docker-compose run redis-store redis-cli -h redis-store
 
 .PHONY: psql
-psql: .env .docker-build
+psql: .env .docker-build  ## | Open psql cli.
 	@echo "Password is 'postgres'."
 	docker-compose run db psql -h db -U postgres
 
-.PHONY: stop
-stop: .env
-	docker-compose stop
-
 .PHONY: test
-test: .env .docker-build frontend/build/
+test: .env .docker-build frontend/build/  ## | Run Python unit test suite.
 	bin/test.sh
 
 .PHONY: testshell
-testshell: .env .docker-build
+testshell: .env .docker-build  ## | Open shell in test environment.
 	bin/test.sh --shell
 
-.PHONY: run
-run: .env .docker-build
-	docker-compose up web worker frontend
-
 .PHONY: docs
-docs:
+docs:  ## | Build docs.
 	bin/build-docs-locally.sh
 
 frontend/build/:
 	make build-frontend
 
 .PHONY: build-frontend
-build-frontend:
+build-frontend:  ## | Build frontend static files.
 	docker-compose run --no-deps -e CI web ./bin/build_frontend.sh
 
 .PHONY: lint
-lint: .env .docker-build
+lint: .env .docker-build  ## | Lint code.
 	docker-compose run linting lint
 	docker-compose run frontend lint
 
 .PHONY: lintfix
-lintfix: .env .docker-build
+lintfix: .env .docker-build  ## | Reformat code.
 	docker-compose run linting lintfix
 	docker-compose run frontend lintfix
