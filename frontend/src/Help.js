@@ -24,7 +24,7 @@ class Help extends PureComponent {
           superuser. <br />
           <a
             rel="noopener noreferrer"
-            href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+            href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General"
           >
             The best way to do that is to file a bug
           </a>

@@ -18,7 +18,7 @@ Uploading basics
 Uploading requires special permission. The process for requesting access to
 upload symbols is roughly the following:
 
-1. `Create a bug <https://bugzilla.mozilla.org/enter_bug.cgi?format=__standard__&product=Socorro&component=Tecken>`
+1. `Create a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General>`
    requesting access to upload symbols.
 
 2. A Tecken admin will process the request.
@@ -97,7 +97,7 @@ of this writing is set to::
     public-artifacts.taskcluster.net
 
 If you need another domain supported,
-`file a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Tecken>`_.
+`file a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General>`_.
 
 Note that Tecken will check redirects. At first a HEAD request is made with the
 URL and Tecken will check both the original URL and the redirected URL against
