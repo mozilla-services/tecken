@@ -13,9 +13,9 @@
   },
   "bugs": {
     "list":
-      "https://bugzilla.mozilla.org/buglist.cgi?resolution=---&query_format=advanced&component=Symbols&product=Socorro&list_id=14003234",
+      "https://bugzilla.mozilla.org/buglist.cgi?resolution=---&query_format=advanced&product=Tecken",
     "report":
-      "https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+      "https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General"
   },
   "urls": {
     "dev": "https://symbols.dev.mozaws.net",

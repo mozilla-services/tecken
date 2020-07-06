@@ -353,7 +353,7 @@ const LinksTile = () => (
     </p>
     <p>
       <a
-        href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+        href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General"
         className="is-size-5"
         rel="noopener noreferrer"
       >
@@ -386,7 +386,7 @@ const AboutPermissions = () => (
   <p>
     <i>None!</i>{" "}
     <a
-      href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Socorro&component=Symbols"
+      href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General"
       rel="noopener noreferrer"
     >
       File a bug to ask for permissions.
