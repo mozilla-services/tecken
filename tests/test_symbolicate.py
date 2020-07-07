@@ -230,13 +230,6 @@ def test_symbolicate_v5_json_bad_inputs(client, json_poster):
     assert response.status_code == 400
     assert response.json()["error"]
 
-    # Valid JSON but empty/missing debugID
-    response = json_poster(
-        url, {"jobs": [{"stacks": [[[0, 11_723_767]]], "memoryMap": [["xul.pdb", ""]]}]}
-    )
-    assert response.status_code == 400
-    assert response.json()["error"]
-
     # Module name contains null byte.
     response = json_poster(
         url,
@@ -301,6 +294,7 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
             ],
         }
         response = json_poster(url, {"jobs": [job]})
+
     assert response.status_code == 200
     result = response.json()
     assert len(result["results"]) == 1
@@ -340,6 +334,46 @@ def test_client_happy_path_v5(json_poster, clear_redis_store, botomock, metricsm
 
     symbolication_count_after = cache.get(count_cache_key)
     assert symbolication_count_after == symbolication_count + 1
+
+
+def test_v5_with_junk_modules(json_poster, clear_redis_store, botomock, metricsmock):
+    """Symbolication with junk module data works.
+
+    It's possible that the caller doesn't know the debug filename, debug id, or
+    both for a module. We should handle that in symbolication without throwing
+    an error. Further, if it's a module mentioned in the stack, we should
+    return appropriate response.
+
+    """
+    reload_downloader("https://s3.example.com/public/prefix/")
+    url = reverse("symbolicate:symbolicate_v5_json")
+    with botomock(default_mock_api_call):
+        job = {
+            "stacks": [[[0, 11_723_767], [1, 65802]]],
+            "memoryMap": [
+                # These are the three variations of junk module data.
+                ["", ""],
+                ["foo.pdb", ""],
+                ["", "D74F79EB1F8D4A45ABCD2F476CCABACC2"],
+            ],
+        }
+        response = json_poster(url, {"jobs": [job]})
+
+    assert response.status_code == 200
+    result = response.json()
+    assert result["results"][0] == {
+        "found_modules": {
+            "/": None,
+            "/D74F79EB1F8D4A45ABCD2F476CCABACC2": None,
+            "foo.pdb/": None,
+        },
+        "stacks": [
+            [
+                {"frame": 0, "module": "", "module_offset": "0xb2e3f7"},
+                {"frame": 1, "module": "foo.pdb", "module_offset": "0x1010a"},
+            ]
+        ],
+    }
 
 
 def test_client_preflight_v5(json_poster):

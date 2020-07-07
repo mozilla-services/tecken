@@ -60,8 +60,7 @@ def build_stack(data):
     for module in json_dump.get("modules", []):
         debug_file = module.get("debug_file", "")
         debug_id = module.get("debug_id", "")
-        if not debug_file or not debug_id:
-            continue
+
         # Add the module information to the map
         modules.append((debug_file, debug_id))
         # Keep track of which modules are at which index
