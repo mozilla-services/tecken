@@ -165,7 +165,7 @@ class SymbolicateJSON:
         needed_modules_lookups = {
             key: modules_lookups[key]
             for key in modules_lookups
-            if key not in self.all_symbol_offsets
+            if key[0] and key[1] and key not in self.all_symbol_offsets
         }
 
         if needed_modules_lookups:
@@ -826,14 +826,12 @@ def validate_memory_map(memory_map):
     if not isinstance(memory_map, list):
         raise InvalidMemoryMap("Must be a list")
 
-    for each in memory_map:
-        if not isinstance(each, list) or len(each) != 2:
+    for item in memory_map:
+        if not isinstance(item, list) or len(item) != 2:
             raise InvalidMemoryMap("Must be a list of lists of size 2")
-        module_name, debug_id = each
+        module_name, debug_id = item
         if len(module_name) > 1024:
             raise InvalidMemoryMap("module name too long")
-        if not debug_id:
-            raise InvalidMemoryMap("debugID empty or missing")
         if "\x00" in module_name:
             raise InvalidMemoryMap("module_name contains null-byte")
 
@@ -844,7 +842,6 @@ def validate_memory_map(memory_map):
 @metrics.timer_decorator("symbolicate_json", tags=["version:v4"])
 @json_post
 def symbolicate_v4_json(request, json_body):
-
     try:
         stacks = json_body["stacks"]
         try:
