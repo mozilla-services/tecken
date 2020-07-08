@@ -14,7 +14,6 @@ import mock
 from django.utils import timezone
 from django.urls import reverse
 from django.db import OperationalError
-from django.core.cache import caches
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
@@ -758,40 +757,3 @@ def test_client_with_bad_filenames(client, botomock):
         )
         response = client.get(url)
         assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_missingsymbol_model_counts():
-    # The .total_count won't change just because you manually
-    # create, edit, or delete MissingSymbol instances. The increments are
-    # done explicitly in the code where upserts are made.
-    assert MissingSymbol.total_count() == 0
-    MissingSymbol.objects.create(
-        hash="anything",
-        symbol="xul.pdb",
-        debugid="44E4EC8C2F41492B9369D6B9A059577C2",
-        filename="xul.sym",
-    )
-    assert MissingSymbol.total_count() == 0
-
-    # If you clear the cache, it will recalculate.
-    caches["default"].clear()
-    assert MissingSymbol.total_count() == 1
-
-    MissingSymbol.incr_total_count()
-    assert MissingSymbol.total_count() == 2
-
-
-@pytest.mark.django_db
-def test_missingsymbol_counts_by_upsert():
-    # First, prime the cache
-    assert MissingSymbol.total_count() == 0
-
-    store_missing_symbol_task("foo.pdb", "HEX", "foo.sym", code_file="file")
-    assert MissingSymbol.total_count() == 1
-
-    store_missing_symbol_task("foo.pdb", "HEX", "foo.sym", code_file="file")
-    assert MissingSymbol.total_count() == 1
-
-    store_missing_symbol_task("foo.pdb", "HEX2", "foo.sym", code_file="file")
-    assert MissingSymbol.total_count() == 2

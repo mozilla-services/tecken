@@ -1177,15 +1177,7 @@ def downloads_missing(request):
     start = (page - 1) * batch_size
     end = start + batch_size
 
-    # The MissingSymbol class has a classmethod called `total_count`
-    # which returns basically the same as `MissingSymbol.objects.count()`
-    # but it comes from a counter in the cache instead.
-    if any(v for v in form.cleaned_data.values()):
-        # Use the queryset
-        total_count = qs.count()
-    else:
-        # No specific filtering was done, we can use the increment counter.
-        total_count = MissingSymbol.total_count()
+    total_count = qs.count()
 
     context["aggregates"] = {"missing": {"total": total_count}}
 

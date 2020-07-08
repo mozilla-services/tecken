@@ -3,36 +3,12 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import hashlib
-import random
 
 from django.db import models
-from django.core.cache import cache
 from django.utils.encoding import force_bytes
 
 
-class TotalCountMixin:
-    @classmethod
-    def total_count(cls, refresh=False):
-        cache_key = f"total_count:{cls.__name__}"
-        value = cache.get(cache_key)
-        if refresh or value is None:
-            value = cls.objects.all().count()
-            # The slight-random on the expiry time is to avoid a stampeding
-            # herd if they all expire at the same time.
-            expires = int(60 * 60 * 24 * 31 + 10000 * random.random())
-            cache.set(cache_key, value, expires)
-        return value
-
-    @classmethod
-    def incr_total_count(cls, amount=1):
-        cache_key = f"total_count:{cls.__name__}"
-        try:
-            cache.incr(cache_key, amount)
-        except ValueError:
-            cls.total_count()
-
-
-class MissingSymbol(models.Model, TotalCountMixin):
+class MissingSymbol(models.Model):
     # Use this to quickly identify symbols when you need to look them up
     hash = models.CharField(max_length=32, unique=True)
     # Looking through 70,000 old symbol uploads, the longest
