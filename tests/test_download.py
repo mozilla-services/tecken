@@ -11,9 +11,10 @@ from io import StringIO
 import pytest
 import mock
 
-from django.utils import timezone
-from django.urls import reverse
+from django.core.management import call_command
 from django.db import OperationalError
+from django.urls import reverse
+from django.utils import timezone
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
@@ -757,3 +758,41 @@ def test_client_with_bad_filenames(client, botomock):
         )
         response = client.get(url)
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+def test_cleanse_missingsymbol_delete_records():
+    """cleanse_missingsymbol deletes appropriate records"""
+    today = timezone.now()
+    cutoff = today - datetime.timedelta(days=30)
+
+    # Create a record for today
+    MissingSymbol.objects.create(
+        hash="1", symbol="xul.so", debugid="1", filename="xul.so",
+    )
+
+    # Create a record before the cutoff--since modified_at is an "auto_now"
+    # field, we need to mock time
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = cutoff + datetime.timedelta(days=1)
+        MissingSymbol.objects.create(
+            hash="2", symbol="xul.so", debugid="2", filename="xul.so",
+        )
+
+    # Create a record after the cutoff
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = cutoff - datetime.timedelta(days=1)
+        MissingSymbol.objects.create(
+            hash="3", symbol="xul.so", debugid="3", filename="xul.so",
+        )
+
+    for sym in MissingSymbol.objects.all():
+        print("1", sym, sym.hash, sym.modified_at)
+
+    stdout = StringIO()
+    call_command("cleanse_missingsymbol", stdout=stdout)
+    output = stdout.getvalue()
+    assert output.startswith("cleanse_missingsymbol: Deleted 1 records")
+
+    # Verify that the record that was deleted was the old one
+    assert sorted(MissingSymbol.objects.values_list("hash", flat=True)) == ["1", "2"]
