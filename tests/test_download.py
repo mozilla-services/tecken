@@ -11,10 +11,10 @@ from io import StringIO
 import pytest
 import mock
 
-from django.utils import timezone
-from django.urls import reverse
+from django.core.management import call_command
 from django.db import OperationalError
-from django.core.cache import caches
+from django.urls import reverse
+from django.utils import timezone
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
@@ -761,37 +761,38 @@ def test_client_with_bad_filenames(client, botomock):
 
 
 @pytest.mark.django_db
-def test_missingsymbol_model_counts():
-    # The .total_count won't change just because you manually
-    # create, edit, or delete MissingSymbol instances. The increments are
-    # done explicitly in the code where upserts are made.
-    assert MissingSymbol.total_count() == 0
+def test_cleanse_missingsymbol_delete_records():
+    """cleanse_missingsymbol deletes appropriate records"""
+    today = timezone.now()
+    cutoff = today - datetime.timedelta(days=30)
+
+    # Create a record for today
     MissingSymbol.objects.create(
-        hash="anything",
-        symbol="xul.pdb",
-        debugid="44E4EC8C2F41492B9369D6B9A059577C2",
-        filename="xul.sym",
+        hash="1", symbol="xul.so", debugid="1", filename="xul.so",
     )
-    assert MissingSymbol.total_count() == 0
 
-    # If you clear the cache, it will recalculate.
-    caches["default"].clear()
-    assert MissingSymbol.total_count() == 1
+    # Create a record before the cutoff--since modified_at is an "auto_now"
+    # field, we need to mock time
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = cutoff + datetime.timedelta(days=1)
+        MissingSymbol.objects.create(
+            hash="2", symbol="xul.so", debugid="2", filename="xul.so",
+        )
 
-    MissingSymbol.incr_total_count()
-    assert MissingSymbol.total_count() == 2
+    # Create a record after the cutoff
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = cutoff - datetime.timedelta(days=1)
+        MissingSymbol.objects.create(
+            hash="3", symbol="xul.so", debugid="3", filename="xul.so",
+        )
 
+    for sym in MissingSymbol.objects.all():
+        print("1", sym, sym.hash, sym.modified_at)
 
-@pytest.mark.django_db
-def test_missingsymbol_counts_by_upsert():
-    # First, prime the cache
-    assert MissingSymbol.total_count() == 0
+    stdout = StringIO()
+    call_command("cleanse_missingsymbol", stdout=stdout)
+    output = stdout.getvalue()
+    assert output.startswith("cleanse_missingsymbol: Deleted 1 records")
 
-    store_missing_symbol_task("foo.pdb", "HEX", "foo.sym", code_file="file")
-    assert MissingSymbol.total_count() == 1
-
-    store_missing_symbol_task("foo.pdb", "HEX", "foo.sym", code_file="file")
-    assert MissingSymbol.total_count() == 1
-
-    store_missing_symbol_task("foo.pdb", "HEX2", "foo.sym", code_file="file")
-    assert MissingSymbol.total_count() == 2
+    # Verify that the record that was deleted was the old one
+    assert sorted(MissingSymbol.objects.values_list("hash", flat=True)) == ["1", "2"]

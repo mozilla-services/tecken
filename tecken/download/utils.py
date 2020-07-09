@@ -50,16 +50,6 @@ def store_missing_symbol(symbol, debugid, filename, code_file=None, code_id=None
             """,
         (hash_, symbol, debugid, filename, code_file or None, code_id or None, hash_),
     ):
-        # You can now use the created_at and modified_at to see if it caused an
-        # update or a creation.
-        # Because there is a miniscule delay, in PostgreSQL, between calling
-        # CLOCK_TIMESTAMP() one time and CLOCK_TIMESTAMP() immediately after,
-        # we can't compare the dates after the upsert.
-        equal = (
-            missing_symbol.modified_at - missing_symbol.created_at
-        ).total_seconds() < 0.0001
-        if equal:
-            # it was an insert!
-            MissingSymbol.incr_total_count()
+        pass
 
     return hash_
