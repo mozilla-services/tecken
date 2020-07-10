@@ -2,25 +2,27 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import datetime
 import gzip
 import os
-from io import BytesIO
+from io import BytesIO, StringIO
 from unittest import mock
 
 import pytest
 from botocore.exceptions import ClientError
 from requests.exceptions import ConnectionError, RetryError
 
-from django.urls import reverse
 from django.contrib.auth.models import Permission, User
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management import call_command
+from django.urls import reverse
 from django.utils import timezone
 
+from tecken.base.symboldownloader import SymbolDownloader
 from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload import utils
-from tecken.base.symboldownloader import SymbolDownloader
 from tecken.upload.views import (
     NoPossibleBucketName,
     get_bucket_info,
@@ -1631,3 +1633,54 @@ def test_uploads_created_update():
     assert instance.date == today
     assert instance.count == 10
     assert instance.size == 2_500_000_000
+
+
+@pytest.mark.django_db
+def test_cleanse_upload_records():
+    """cleanse_upload deletes appropriate records"""
+    today = timezone.now()
+    try_cutoff = today - datetime.timedelta(days=30)
+    reg_cutoff = today - datetime.timedelta(days=365 * 2)
+
+    user = User.objects.create(email="peterbe@example.com")
+
+    # Create a few uploads
+    upload = Upload.objects.create(
+        user=user, filename="reg-1.zip", size=100, try_symbols=False
+    )
+    FileUpload.objects.create(upload=upload, key="reg-1-1.sym", size=100)
+    FileUpload.objects.create(upload=upload, key="reg-1-2.sym", size=100)
+
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = reg_cutoff - datetime.timedelta(days=1)
+        upload = Upload.objects.create(
+            user=user, filename="reg-2.zip", size=100, try_symbols=False
+        )
+        FileUpload.objects.create(upload=upload, key="reg-2-1.sym", size=100)
+        FileUpload.objects.create(upload=upload, key="reg-2-2.sym", size=100)
+
+    # Create a few try uploads
+    upload = Upload.objects.create(
+        user=user, filename="try-1.zip", size=100, try_symbols=True
+    )
+    FileUpload.objects.create(upload=upload, key="try-1-1.sym", size=100)
+    FileUpload.objects.create(upload=upload, key="try-1-2.sym", size=100)
+
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = try_cutoff - datetime.timedelta(days=1)
+        upload = Upload.objects.create(
+            user=user, filename="try-2.zip", size=100, try_symbols=True
+        )
+        FileUpload.objects.create(upload=upload, key="try-2-1.sym", size=100)
+        FileUpload.objects.create(upload=upload, key="try-2-2.sym", size=100)
+
+    stdout = StringIO()
+    call_command("cleanse_upload", stdout=stdout)
+
+    upload_filenames = list(
+        Upload.objects.order_by("filename").values_list("filename", flat=True)
+    )
+    assert upload_filenames == ["reg-1.zip", "try-1.zip"]
+
+    file_keys = list(FileUpload.objects.order_by("key").values_list("key", flat=True))
+    assert file_keys == ["reg-1-1.sym", "reg-1-2.sym", "try-1-1.sym", "try-1-2.sym"]
