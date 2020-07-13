@@ -27,24 +27,49 @@ class Command(BaseCommand):
 
     help = "Cleanse the upload_upload and upload_fileupload table of impurities."
 
-    def delete_records(self, is_try, cutoff):
-        uploads = Upload.objects.filter(try_symbols=is_try, created_at__lte=cutoff)
-        ret = FileUpload.objects.filter(upload__in=uploads).delete()
-        self.stdout.write(
-            f"cleanse_upload: fileupload try={is_try}: Deleted {ret[0]} records older than {cutoff}"
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--dry-run", action="store_true", help="Whether or not to do a dry run."
         )
-        ret = uploads.delete()
+
+    def delete_records(self, is_dry_run, is_try, cutoff):
+        uploads = Upload.objects.filter(try_symbols=is_try, created_at__lte=cutoff)
+        file_uploads = FileUpload.objects.filter(upload__in=uploads)
+
+        if is_dry_run:
+            upload_count = file_uploads.count()
+        else:
+            upload_count = file_uploads.delete()[0]
+
+        if is_dry_run:
+            fileupload_count = uploads.count()
+        else:
+            fileupload_count = uploads.delete()[0]
+
         self.stdout.write(
-            f"cleanse_upload: upload try={is_try}: Deleted {ret[0]} records older than {cutoff}"
+            f"cleanse_upload: try={is_try}, cutoff={cutoff.date()}: "
+            f"upload: {upload_count}, fileupload: {fileupload_count}"
         )
 
     def handle(self, *args, **options):
+        is_dry_run = options["dry_run"]
         today = timezone.now()
+        today.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        if is_dry_run:
+            self.stdout.write("cleanse_upload: THIS IS A DRY RUN.")
+
+        upload_count = Upload.objects.all().count()
+        fileupload_count = FileUpload.objects.all().count()
+        self.stdout.write(
+            f"cleanse_upload: count before cleansing: "
+            f"upload: {upload_count}, fileupload: {fileupload_count}"
+        )
 
         # First cleanse try records
         try_cutoff = today - datetime.timedelta(days=TRY_RECORD_AGE_CUTOFF)
-        self.delete_records(is_try=True, cutoff=try_cutoff)
+        self.delete_records(is_dry_run=is_dry_run, is_try=True, cutoff=try_cutoff)
 
         # Now cleanse regular records
         cutoff = today - datetime.timedelta(days=REGULAR_RECORD_AGE_CUTOFF)
-        self.delete_records(is_try=False, cutoff=cutoff)
+        self.delete_records(is_dry_run=is_dry_run, is_try=False, cutoff=cutoff)

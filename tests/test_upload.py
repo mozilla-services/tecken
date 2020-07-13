@@ -1675,7 +1675,9 @@ def test_cleanse_upload_records():
         FileUpload.objects.create(upload=upload, key="try-2-2.sym", size=100)
 
     stdout = StringIO()
-    call_command("cleanse_upload", stdout=stdout)
+    call_command("cleanse_upload", dry_run=False, stdout=stdout)
+
+    assert "DRY RUN" not in stdout.getvalue()
 
     upload_filenames = list(
         Upload.objects.order_by("filename").values_list("filename", flat=True)
@@ -1684,3 +1686,65 @@ def test_cleanse_upload_records():
 
     file_keys = list(FileUpload.objects.order_by("key").values_list("key", flat=True))
     assert file_keys == ["reg-1-1.sym", "reg-1-2.sym", "try-1-1.sym", "try-1-2.sym"]
+
+
+@pytest.mark.django_db
+def test_cleanse_upload_records_dry_run():
+    """cleanse_upload dry_run doesn't delete records"""
+    today = timezone.now()
+    try_cutoff = today - datetime.timedelta(days=30)
+    reg_cutoff = today - datetime.timedelta(days=365 * 2)
+
+    user = User.objects.create(email="peterbe@example.com")
+
+    # Create a few uploads
+    upload = Upload.objects.create(
+        user=user, filename="reg-1.zip", size=100, try_symbols=False
+    )
+    FileUpload.objects.create(upload=upload, key="reg-1-1.sym", size=100)
+    FileUpload.objects.create(upload=upload, key="reg-1-2.sym", size=100)
+
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = reg_cutoff - datetime.timedelta(days=1)
+        upload = Upload.objects.create(
+            user=user, filename="reg-2.zip", size=100, try_symbols=False
+        )
+        FileUpload.objects.create(upload=upload, key="reg-2-1.sym", size=100)
+        FileUpload.objects.create(upload=upload, key="reg-2-2.sym", size=100)
+
+    # Create a few try uploads
+    upload = Upload.objects.create(
+        user=user, filename="try-1.zip", size=100, try_symbols=True
+    )
+    FileUpload.objects.create(upload=upload, key="try-1-1.sym", size=100)
+    FileUpload.objects.create(upload=upload, key="try-1-2.sym", size=100)
+
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = try_cutoff - datetime.timedelta(days=1)
+        upload = Upload.objects.create(
+            user=user, filename="try-2.zip", size=100, try_symbols=True
+        )
+        FileUpload.objects.create(upload=upload, key="try-2-1.sym", size=100)
+        FileUpload.objects.create(upload=upload, key="try-2-2.sym", size=100)
+
+    stdout = StringIO()
+    call_command("cleanse_upload", dry_run=True, stdout=stdout)
+
+    assert "DRY RUN" in stdout.getvalue()
+
+    upload_filenames = list(
+        Upload.objects.order_by("filename").values_list("filename", flat=True)
+    )
+    assert upload_filenames == ["reg-1.zip", "reg-2.zip", "try-1.zip", "try-2.zip"]
+
+    file_keys = list(FileUpload.objects.order_by("key").values_list("key", flat=True))
+    assert file_keys == [
+        "reg-1-1.sym",
+        "reg-1-2.sym",
+        "reg-2-1.sym",
+        "reg-2-2.sym",
+        "try-1-1.sym",
+        "try-1-2.sym",
+        "try-2-1.sym",
+        "try-2-2.sym",
+    ]
