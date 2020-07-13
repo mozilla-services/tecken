@@ -833,7 +833,7 @@ def test_cleanse_missingsymbol_delete_records_dry_run():
     assert "DRY RUN" in output
     assert "deleted missingsymbol=1" in output
 
-    # Verify that the record that was deleted was the old one
+    # Verify no records were deleted
     assert sorted(MissingSymbol.objects.values_list("hash", flat=True)) == [
         "1",
         "2",
