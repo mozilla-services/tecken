@@ -27,11 +27,28 @@ class Command(BaseCommand):
 
     help = "Cleanse the downloads_missingsymbol table of impurities."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--dry-run", action="store_true", help="Whether or not to do a dry run."
+        )
+
     def handle(self, *args, **options):
+        is_dry_run = options["dry_run"]
         today = timezone.now()
+        today.replace(hour=0, minute=0, second=0, microsecond=0)
         cutoff = today - datetime.timedelta(days=RECORD_AGE_CUTOFF)
 
-        ret = MissingSymbol.objects.filter(modified_at__lte=cutoff).delete()
+        total_count = MissingSymbol.objects.all().count()
+        syms = MissingSymbol.objects.filter(modified_at__lte=cutoff)
+        if is_dry_run:
+            self.stdout.write("cleanse_missingsymbol: THIS IS A DRY RUN.")
+            count = syms.count()
+        else:
+            count = syms.delete()[0]
+
         self.stdout.write(
-            f"cleanse_missingsymbol: Deleted {ret[0]} records older than {cutoff}."
+            f"cleanse_missingsymbol: count before cleansing: missingsymbol={total_count}"
+        )
+        self.stdout.write(
+            f"cleanse_missingsymbol: cutoff={cutoff.date()}: deleted missingsymbol={count}"
         )

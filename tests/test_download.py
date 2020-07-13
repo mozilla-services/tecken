@@ -790,9 +790,52 @@ def test_cleanse_missingsymbol_delete_records():
         print("1", sym, sym.hash, sym.modified_at)
 
     stdout = StringIO()
-    call_command("cleanse_missingsymbol", stdout=stdout)
+    call_command("cleanse_missingsymbol", dry_run=False, stdout=stdout)
     output = stdout.getvalue()
-    assert output.startswith("cleanse_missingsymbol: Deleted 1 records")
+    assert "deleted missingsymbol=1" in output
 
     # Verify that the record that was deleted was the old one
     assert sorted(MissingSymbol.objects.values_list("hash", flat=True)) == ["1", "2"]
+
+
+@pytest.mark.django_db
+def test_cleanse_missingsymbol_delete_records_dry_run():
+    """cleanse_missingsymbol dry-run doesn't delete records"""
+    today = timezone.now()
+    cutoff = today - datetime.timedelta(days=30)
+
+    # Create a record for today
+    MissingSymbol.objects.create(
+        hash="1", symbol="xul.so", debugid="1", filename="xul.so",
+    )
+
+    # Create a record before the cutoff--since modified_at is an "auto_now"
+    # field, we need to mock time
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = cutoff + datetime.timedelta(days=1)
+        MissingSymbol.objects.create(
+            hash="2", symbol="xul.so", debugid="2", filename="xul.so",
+        )
+
+    # Create a record after the cutoff
+    with mock.patch("django.utils.timezone.now") as mock_now:
+        mock_now.return_value = cutoff - datetime.timedelta(days=1)
+        MissingSymbol.objects.create(
+            hash="3", symbol="xul.so", debugid="3", filename="xul.so",
+        )
+
+    for sym in MissingSymbol.objects.all():
+        print("1", sym, sym.hash, sym.modified_at)
+
+    stdout = StringIO()
+    call_command("cleanse_missingsymbol", dry_run=True, stdout=stdout)
+    output = stdout.getvalue()
+    assert "DRY RUN" in output
+    assert "deleted missingsymbol=1" in output
+
+    # Verify that the record that was deleted was the old one
+    assert sorted(MissingSymbol.objects.values_list("hash", flat=True)) == [
+        "1",
+        "2",
+        "3",
+    ]

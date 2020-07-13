@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             f"cleanse_upload: try={is_try}, cutoff={cutoff.date()}: "
-            f"upload: {upload_count}, fileupload: {fileupload_count}"
+            f"deleted upload={upload_count}, fileupload={fileupload_count}"
         )
 
     def handle(self, *args, **options):
@@ -64,7 +64,7 @@ class Command(BaseCommand):
         fileupload_count = FileUpload.objects.all().count()
         self.stdout.write(
             f"cleanse_upload: count before cleansing: "
-            f"upload: {upload_count}, fileupload: {fileupload_count}"
+            f"upload={upload_count}, fileupload={fileupload_count}"
         )
 
         # First cleanse try records
