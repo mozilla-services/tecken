@@ -36,15 +36,16 @@ class Command(BaseCommand):
         uploads = Upload.objects.filter(try_symbols=is_try, created_at__lte=cutoff)
         file_uploads = FileUpload.objects.filter(upload__in=uploads)
 
+        # Delete fileupload first because it's got a foreignkey to upload
         if is_dry_run:
-            upload_count = file_uploads.count()
+            fileupload_count = file_uploads.count()
         else:
-            upload_count = file_uploads.delete()[0]
+            fileupload_count = file_uploads.delete()[0]
 
         if is_dry_run:
-            fileupload_count = uploads.count()
+            upload_count = uploads.count()
         else:
-            fileupload_count = uploads.delete()[0]
+            upload_count = uploads.delete()[0]
 
         self.stdout.write(
             f"cleanse_upload: try={is_try}, cutoff={cutoff.date()}: "
