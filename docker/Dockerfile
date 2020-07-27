@@ -14,7 +14,7 @@ WORKDIR /app
 RUN bin/build_frontend.sh
 
 
-FROM python:3.8.3-slim@sha256:13af390c7ababf48b675e151c354de224f2ae6ec17ee08fe04ad3df8d0736501
+FROM python:3.8.5-slim@sha256:a3ddbd9dcadbf9173bf9466c527aef36c01515dad4e3da5147940268232bd420
 
 ARG userid=10001
 ARG groupid=10001
