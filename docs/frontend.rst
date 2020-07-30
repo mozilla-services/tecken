@@ -37,33 +37,6 @@ figures out which component to render and display based on the path
 .. _`create-react-app`: https://github.com/facebookincubator/create-react-app
 
 
-Upgrading/Adding Dependencies
-=============================
-
-A "primitive" way of changing dependencies is to edit the list
-of dependencies in ``frontend/package.json`` and running
-``docker-compose build frontend``. **This is not recommended**.
-
-A much better way to change dependencies is to use ``yarn``. Use
-the ``yarn`` installed in the Docker frontend container. For example:
-
-.. code-block:: shell
-
-    $ docker-compose run frontend bash
-    > yarn outdated                   # will display which packages can be upgraded today
-    > yarn upgrade date-fns --latest  # example of upgrading an existing package
-    > yarn add new-hotness            # adds a new package
-
-When you're done, you have to rebuild the frontend Docker container:
-
-.. code-block:: shell
-
-    $ docker-compose build frontend
-
-Your change should result in changes to ``frontend/package.json`` *and*
-``frontend/yarn.lock`` which needs to both be checked in and committed.
-
-
 Production Build
 ================
 
