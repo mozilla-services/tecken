@@ -32,6 +32,7 @@ Project docs:
 
 .. toctree::
 
+   contributing
    dev
    frontend
    redis
