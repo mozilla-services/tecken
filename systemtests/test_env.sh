@@ -80,8 +80,6 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${HOST}" "${FN}"
 fi
 
-exit;  # FIXME
-
 echo ">>> SYMBOLICATION V4 and V5 TEST"
 for FN in ./data/stacks/*.json
 do
