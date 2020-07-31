@@ -8,6 +8,7 @@
 
 # Usage: ./bin/upload-symbols-by-download.py
 
+import time
 from urllib.parse import urljoin
 
 import click
@@ -69,7 +70,10 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url):
                     headers={"auth-token": auth_token},
                     timeout=CONNECTION_TIMEOUT,
                 )
-                if resp.status_code != 201:
+                if resp.status_code == 429:
+                    click.echo(click.style("429--sleeping for 5", fg="yellow"))
+                    time.sleep(5)
+                elif resp.status_code != 201:
                     click.echo(
                         click.style(
                             "Error: %s %s" % (resp.status_code, resp.content), fg="red"
