@@ -33,6 +33,31 @@ class APITokenAuthenticationMiddleware:
             response = self.get_response(request)
         return response
 
+    def force_full_request_body_read(self, request):
+        """Force the read for the entire request body
+
+        The client may be using chunked encoding transfer. This forces Tecken
+        to read the entire request body before sending a response. Otherwise
+        nginx will close the connection and the client won't get the response.
+
+        See bug 1655944.
+
+        """
+        content_length = request.META.get("content-length", 0)
+        if content_length == 0:
+            return
+
+        total_size = 0
+        try:
+            while total_size < content_length:
+                size = len(request.read())
+                total_size += size
+            logging.debug(
+                "draining request body because of token problem; %d", total_size
+            )
+        except Exception as exc:
+            logging.info("exception thrown when draining request body: %r", exc)
+
     def process_request(self, request):
         key = request.META.get("HTTP_AUTH_TOKEN")
         if not key:
@@ -41,12 +66,15 @@ class APITokenAuthenticationMiddleware:
         try:
             token = Token.objects.select_related("user").get(key=key)
             if token.is_expired:
+                self.force_full_request_body_read(request)
                 raise PermissionDenied("API Token found but expired")
         except Token.DoesNotExist:
+            self.force_full_request_body_read(request)
             raise PermissionDenied("API Token not matched")
 
         user = token.user
         if not user.is_active:
+            self.force_full_request_body_read(request)
             raise PermissionDenied("API Token matched but user not active")
 
         # Overwrite the has_perm method so that it's restricted to only

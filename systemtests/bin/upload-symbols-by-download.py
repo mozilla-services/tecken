@@ -8,6 +8,7 @@
 
 # Usage: ./bin/upload-symbols-by-download.py
 
+import time
 from urllib.parse import urljoin
 
 import click
@@ -23,6 +24,9 @@ MAX_ATTEMPTS = 5
 # because the server has to do all the work and requests needs to wait for that
 # to happen
 CONNECTION_TIMEOUT = 180
+
+# Number of seconds to sleep between tries to account for rate limiting
+SLEEP_TIMEOUT = 10
 
 
 class StdoutMetrics(BackendBase):
@@ -45,15 +49,21 @@ METRICS = markus.get_metrics()
 @click.option(
     "--auth-token", required=True, help="Auth token for uploading SYM files.",
 )
+@click.option(
+    "--expect-code",
+    required=False,
+    default=201,
+    type=int,
+    help="The expected response status code.",
+)
 @click.argument("url")
 @click.pass_context
-def upload_symbols_by_download(ctx, base_url, auth_token, url):
+def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
     """Upload SYM file to a host using a download url."""
 
     api_url = urljoin(base_url, "/upload/")
 
     # It's possible this can fail, so we put it in a retry loop.
-    success = False
     for i in range(MAX_ATTEMPTS):
         click.echo(
             click.style(
@@ -69,21 +79,46 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url):
                     headers={"auth-token": auth_token},
                     timeout=CONNECTION_TIMEOUT,
                 )
-                if resp.status_code != 201:
+
+                click.echo(
+                    click.style(
+                        "Response: %s %r" % (resp.status_code, resp.content),
+                        fg="yellow",
+                    )
+                )
+
+                if resp.status_code == 403:
+                    # 403 means the auth token is bad which is not a retryable error
+                    if resp.status_code == expect_code:
+                        click.echo(click.style("Success! %r" % resp.json(), fg="green"))
+                        return
+                    else:
+                        ctx.exit(1)
+                elif resp.status_code == 429:
+                    # 429 means we've been rate-limited, so wait and retry
+                    click.echo(
+                        click.style("429--sleeping for %s" % SLEEP_TIMEOUT, fg="yellow")
+                    )
+                    time.sleep(SLEEP_TIMEOUT)
+                else:
+                    if resp.status_code == expect_code:
+                        # This is the expected status code, so this is a success
+                        click.echo(click.style("Success!", fg="green"))
+                        return
+
                     click.echo(
                         click.style(
                             "Error: %s %s" % (resp.status_code, resp.content), fg="red"
                         )
                     )
-                else:
-                    success = True
-                    click.echo(click.style("Success! %r" % resp.json(), fg="green"))
-                    break
+                    continue
         except Exception as exc:
-            click.echo(click.style("Error: %s" % exc, fg="red"))
+            click.echo(click.style("Unexpected error: %s" % exc, fg="red"))
 
-    if not success:
-        click.echo(click.style("Error: Max retry attempts reached.", fg="red"))
+    # We've retried multiple times and never hit the expected status code, so
+    # this is a fail
+    click.echo(click.style("Error: Max retry attempts reached.", fg="red"))
+    ctx.exit(1)
 
 
 if __name__ == "__main__":

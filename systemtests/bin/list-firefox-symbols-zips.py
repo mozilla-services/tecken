@@ -15,13 +15,14 @@ import requests
 
 SYMBOLS_ZIP_SUFFIX = ".crashreporter-symbols.zip"
 SYMBOLS_FULL_ZIP_SUFFIX = ".crashreporter-symbols-full.zip"
-INDEX = "https://index.taskcluster.net/v1/"
-QUEUE = "https://queue.taskcluster.net/v1/"
+INDEX = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/"
+QUEUE = "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/"
 NAMESPACE = "gecko.v2.mozilla-central.revision.REV.firefox"
 
 
 def index_namespaces(namespace, limit=1000):
-    resp = requests.post(INDEX + "namespaces/" + namespace, json={"limit": limit})
+    url = INDEX + "namespaces/" + namespace
+    resp = requests.post(url, json={"limit": limit})
     for namespace in resp.json()["namespaces"]:
         yield namespace["namespace"]
 
