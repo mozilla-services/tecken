@@ -59,7 +59,7 @@ if [ "${DESTRUCTIVE_TESTS}" == "1" ]; then
     echo ">>> UPLOAD TEST (DESTRUCTIVE)"
     for FN in ./data/zip-files/*.zip
     do
-        python ./bin/upload-symbols.py --auth-token="${AUTH_TOKEN}" --base-url="${HOST}" "${FN}"
+        python ./bin/upload-symbols.py --expect-code=201 --auth-token="${AUTH_TOKEN}" --base-url="${HOST}" "${FN}"
     done
     echo ""
 
@@ -77,8 +77,10 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     # tecken and doesn't work in the local dev environment. bug 1655944
     echo ">>> UPLOAD WITH BAD TOKEN TEST--this should return a 403 and error and not a RemoteDisconnected"
     FN=$(ls -S ./data/zip-files/*.zip | head -n 1)
-    python ./bin/upload-symbols.py --auth-token="badtoken" --base-url="${HOST}" "${FN}"
+    python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${HOST}" "${FN}"
 fi
+
+exit;  # FIXME
 
 echo ">>> SYMBOLICATION V4 and V5 TEST"
 for FN in ./data/stacks/*.json
