@@ -30,11 +30,13 @@ fi
 case $1 in
     "local")
         export DESTRUCTIVE_TESTS=1
+        export BAD_TOKEN_TEST=1
         HOST=http://web:8000/
         export AUTH_TOKEN="${LOCAL_AUTH_TOKEN}"
         ;;
     "stage")
         export DESTRUCTIVE_TESTS=1
+        export BAD_TOKEN_TEST=1
         HOST=https://symbols.stage.mozaws.net/
         export AUTH_TOKEN="${STAGE_AUTH_TOKEN}"
         ;;
@@ -68,6 +70,14 @@ if [ "${DESTRUCTIVE_TESTS}" == "1" ]; then
 else
     echo ">>> SKIPPING DESTRUCTIVE TESTS"
     echo ""
+fi
+
+if [ "${BAD_TOKEN_TEST}" == "1" ]; then
+    # This tests a situation that occurs when nginx is a reverse-proxy to
+    # tecken and doesn't work in the local dev environment. bug 1655944
+    echo ">>> UPLOAD WITH BAD TOKEN TEST--this should return a 403 and error and not a RemoteDisconnected"
+    FN=$(ls -S ./data/zip-files/*.zip | head -n 1)
+    python ./bin/upload-symbols.py --auth-token="badtoken" --base-url="${HOST}" "${FN}"
 fi
 
 echo ">>> SYMBOLICATION V4 and V5 TEST"
