@@ -43,20 +43,18 @@ class APITokenAuthenticationMiddleware:
         See bug 1655944.
 
         """
-        content_length = request.META.get("content-length", 0)
-        if content_length == 0:
-            return
-
         total_size = 0
         try:
-            while total_size < content_length:
+            size = len(request.read())
+            total_size += size
+            while size > 0:
                 size = len(request.read())
                 total_size += size
-            logging.debug(
-                "draining request body because of token problem; %d", total_size
+            logging.info(
+                "force_full_request_body_read: drained request body: %d", total_size
             )
         except Exception as exc:
-            logging.info("exception thrown when draining request body: %r", exc)
+            logging.info("force_full_request_body_read: exception thrown: %r", exc)
 
     def process_request(self, request):
         key = request.META.get("HTTP_AUTH_TOKEN")
