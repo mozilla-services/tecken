@@ -77,6 +77,7 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     # tecken and doesn't work in the local dev environment. bug 1655944
     echo ">>> UPLOAD WITH BAD TOKEN TEST--this should return a 403 and error and not a RemoteDisconnected"
     FN=$(ls -S ./data/zip-files/*.zip | head -n 1)
+    ls -l ${FN}
     python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${HOST}" "${FN}"
 fi
 
