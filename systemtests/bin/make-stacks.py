@@ -34,7 +34,10 @@ def fetch_crash_report(crashid):
     :returns: processed crash as a dict
 
     """
-    resp = requests.get(PROCESSED_CRASH_API, params={"crash_id": crashid})
+    headers = {"User-Agent": "tecken-systemtests"}
+    resp = requests.get(
+        PROCESSED_CRASH_API, params={"crash_id": crashid}, headers=headers
+    )
     resp.raise_for_status()
     return resp.json()
 

@@ -35,13 +35,14 @@ def is_meh(signature):
 
 
 def fetch_supersearch(url, params):
+    headers = {"User-Agent": "tecken-systemtests"}
     # Set up first page
     params["_results_offset"] = 0
     params["_results_number"] = MAX_PAGE
 
     crashids_count = 0
     while True:
-        resp = requests.get(url=url, params=params)
+        resp = requests.get(url=url, params=params, headers=headers)
         hits = resp.json()["hits"]
 
         for hit in hits:

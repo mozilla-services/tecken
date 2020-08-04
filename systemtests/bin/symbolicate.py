@@ -30,6 +30,8 @@ class RequestError(Exception):
 
 
 def request_stack(url, payload, api_version, is_debug):
+    headers = {"User-Agent": "teckent-systemtests"}
+
     if api_version == 4:
         # We have to add the version to the payload, so parse it, add it, and then
         # unparse it.
@@ -37,9 +39,9 @@ def request_stack(url, payload, api_version, is_debug):
 
     options = {}
     if is_debug:
-        options["headers"] = {"Debug": "true"}
+        headers["Debug"] = "true"
 
-    resp = requests.post(url, json=payload, **options)
+    resp = requests.post(url, headers=headers, json=payload, **options)
     if resp.status_code != 200:
         # The server returned something "bad", so print out the things that
         # would be helpful in debugging the issue.

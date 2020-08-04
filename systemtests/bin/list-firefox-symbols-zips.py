@@ -19,17 +19,19 @@ INDEX = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/"
 QUEUE = "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/"
 NAMESPACE = "gecko.v2.mozilla-central.revision.REV.firefox"
 
+HTTP_HEADERS = {"User-Agent": "tecken-systemtests"}
+
 
 def index_namespaces(namespace, limit=1000):
     url = INDEX + "namespaces/" + namespace
-    resp = requests.post(url, json={"limit": limit})
+    resp = requests.post(url, headers=HTTP_HEADERS, json={"limit": limit})
     for namespace in resp.json()["namespaces"]:
         yield namespace["namespace"]
 
 
 def index_tasks(namespace, limit=1000):
     url = INDEX + "tasks/" + namespace
-    r = requests.post(url, json={"limit": limit})
+    r = requests.post(url, headers=HTTP_HEADERS, json={"limit": limit})
     for t in r.json()["tasks"]:
         yield t["taskId"]
 
@@ -44,7 +46,7 @@ def tasks_by_changeset(revisions_limit):
 
 def list_artifacts(taskid):
     url = QUEUE + "task/%s/artifacts" % taskid
-    resp = requests.get(url)
+    resp = requests.get(url, headers=HTTP_HEADERS)
     if resp.status_code != 200:
         return []
     data = resp.json()
@@ -71,7 +73,7 @@ def get_content_length(url):
     :returns: content length as an int
 
     """
-    response = requests.head(url)
+    response = requests.head(url, headers=HTTP_HEADERS)
     if response.status_code > 300 and response.status_code < 400:
         return get_content_length(response.headers["location"])
     return int(response.headers["content-length"])

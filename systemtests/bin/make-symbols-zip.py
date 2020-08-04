@@ -38,6 +38,7 @@ def get_sym_files(auth_token, url, start_page):
     sym_files = []
     page = start_page
     params = {"page": start_page}
+    headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
 
     while True:
         if sym_files:
@@ -45,10 +46,7 @@ def get_sym_files(auth_token, url, start_page):
         else:
             params["page"] = page
             resp = requests.get(
-                url,
-                params=params,
-                headers={"auth-token": auth_token},
-                timeout=CONNECTION_TIMEOUT,
+                url, params=params, headers=headers, timeout=CONNECTION_TIMEOUT,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -82,7 +80,8 @@ def build_zip_file(zip_filename, sym_dir):
 
 def download_sym_file(url, sym_file):
     """Download SYM file into sym_dir."""
-    resp = requests.get(url, timeout=CONNECTION_TIMEOUT)
+    headers = {"User-Agent": "tecken-systemtests"}
+    resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
     if resp.status_code != 200:
         return
 

@@ -62,6 +62,7 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
     """Upload SYM file to a host using a download url."""
 
     api_url = urljoin(base_url, "/upload/")
+    headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
 
     # It's possible this can fail, so we put it in a retry loop.
     for i in range(MAX_ATTEMPTS):
@@ -76,7 +77,7 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
                 resp = requests.post(
                     api_url,
                     data={"url": url},
-                    headers={"auth-token": auth_token},
+                    headers=headers,
                     timeout=CONNECTION_TIMEOUT,
                 )
 

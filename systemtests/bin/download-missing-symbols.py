@@ -24,7 +24,8 @@ import requests
 def download_missing_symbols(ctx, base_url):
     csv_url = urljoin(base_url, "/missingsymbols.csv")
     click.echo("Using: %s" % csv_url)
-    resp = requests.get(csv_url)
+    headers = {"User-Agent": "tecken-systemtests"}
+    resp = requests.get(csv_url, headers=headers)
     if resp.status_code != 200:
         click.echo(
             click.style("Error: %s %s" % (resp.status_code, resp.content), fg="red")

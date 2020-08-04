@@ -70,7 +70,8 @@ def download_sym_files(base_url, csv_file):
             click.echo(click.style("Working on %s ..." % url, fg="yellow"))
 
             # Download the file
-            resp = requests.get(url)
+            headers = {"User-Agent": "tecken-systemtests"}
+            resp = requests.get(url, headers=headers)
 
             # Compare status code with expected status code
             if resp.status_code != int(parts[1]):
