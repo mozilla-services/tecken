@@ -69,6 +69,7 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile, expect_code):
         )
 
     api_url = urljoin(base_url, "/upload/")
+    headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
     basename = os.path.basename(symbolsfile)
 
     # This is an upload and it's success is partially dependent on the
@@ -89,7 +90,7 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile, expect_code):
                     resp = requests.post(
                         api_url,
                         files={basename: fp},
-                        headers={"auth-token": auth_token},
+                        headers=headers,
                         timeout=CONNECTION_TIMEOUT,
                     )
 
