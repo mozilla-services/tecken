@@ -187,6 +187,9 @@ Symbolication: /symbolicate/v5
                didn't need to look up symbols because it's not referenced in the stacks
 
 
+   :reqheader User-Agent: please provide a unique user agent to make it easier for us
+       to help you debug problems
+
    :reqheader Debug: if you add ``Debug: true`` to the headers, then symbolication
        will also return debug information about cache lookups, how many downloads,
        timings, and some other things
