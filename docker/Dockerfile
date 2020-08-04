@@ -1,4 +1,4 @@
-FROM node:14.5.0-slim@sha256:cc5cfa1be89eff339b31a4b771eadcae4b8980e7625242eae90fff40dd256108 as frontend
+FROM node:14.7.0-slim@sha256:859c51a8718b6ef7781f62e9d2ffb78b9f7445329957f737f003a35841ddbf7c as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
@@ -14,7 +14,7 @@ WORKDIR /app
 RUN bin/build_frontend.sh
 
 
-FROM python:3.8.5-slim@sha256:a3ddbd9dcadbf9173bf9466c527aef36c01515dad4e3da5147940268232bd420
+FROM python:3.8.5-slim@sha256:9c84459051ee7e9d386b24ee5468352d52b6789a5d4a8cf6a649a8a1c6ad5636
 
 ARG userid=10001
 ARG groupid=10001
