@@ -1083,7 +1083,6 @@ def current_settings(request):
         "ENABLE_TOKENS_AUTHENTICATION",
         "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
         "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
-        "BENCHMARKING_ENABLED",
         "ENABLE_STORE_MISSING_SYMBOLS",
     )
     for key in keys:

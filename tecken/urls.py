@@ -35,10 +35,6 @@ urlpatterns = [
     path("oidc/", include("mozilla_django_oidc.urls")),
     path("upload/", include("tecken.upload.urls", namespace="upload")),
     path("api/", include("tecken.api.urls", namespace="api")),
-    path(
-        "__benchmarking__/",
-        include("tecken.benchmarking.urls", namespace="benchmarking"),
-    ),
     path("", include("tecken.download.urls", namespace="download")),
     path("contribute.json", views.contribute_json, name="contribute_json"),
     path(

@@ -37,7 +37,6 @@ Project docs:
    frontend
    redis
    docker
-   benchmarking
    endtoendtesting
 
 Indices and tables
