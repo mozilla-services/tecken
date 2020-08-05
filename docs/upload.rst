@@ -188,12 +188,20 @@ Upload: /upload/
    :reqheader User-Agent: please provide a unique user agent to make it easier for us
        to help you debug problems
 
-   :form <FILENAME>: the name of the file and contents of the file for
-       Upload by HTTP POST; for example ``symbols.zip=<BINARY>``
+   :form <FILENAME>: the key is the name of the file and the value is the
+       contents of the file; for example ``symbols.zip=<BINARY>``
 
-   :form url: the url for the symbols file for Upload by Download URL
+       Use this for HTTP POST.
 
-   :param try: use ``try=1`` if this is an upload of try symbols
+       Set this **or** ``url``--don't set both.
+
+   :form url: the url for the symbols file
+
+       Use this for Upload by Download URL
+
+       Set this **or** ``<FILENAME>``--don't set both.
+
+   :form try: use ``try=1`` if this is an upload of try symbols
 
    :statuscode 201: successful upload of symbols
    :statuscode 403: your auth token is invalid and you need to get a new one
