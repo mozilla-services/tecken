@@ -723,6 +723,7 @@ class Test(Localdev):
 
 class Stage(Base):
     """Configuration to be used in stage environment"""
+
     LOGGING_USE_JSON = True
 
     ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
