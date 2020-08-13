@@ -179,6 +179,31 @@ through the site:
 15. click on "Sign out"
 
 
+Accounts and first superuser
+============================
+
+Users need to create their own API tokens but before they can do that they
+need to be promoted to have that permission at all. The only person/people
+who can give other users permissions is the superuser. To bootstrap
+the user administration you need to create at least one superuser.
+That superuser can promote other users to superusers too.
+
+This action does NOT require that the user signs in at least once. If the
+user does not exist, it gets created.
+
+The easiest way to create your first superuser is to use ``docker-compose``:
+
+.. code-block:: shell
+
+    docker-compose run --rm web superuser yourname@example.com
+
+Additionally, in a local development environment, you can create a
+corresponding user in the oidcprovider service like this:
+
+.. code-block:: shell
+
+   docker-compose exec oidcprovider /code/manage.py createuser yourname yourpassword yourname@example.com
+
 Running ``gunicorn`` locally
 ============================
 

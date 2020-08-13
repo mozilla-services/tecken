@@ -721,9 +721,8 @@ class Test(Localdev):
     ]
 
 
-class Dev(Base):
-    """Configuration to be used in dev server environment"""
-
+class Stage(Base):
+    """Configuration to be used in stage environment"""
     LOGGING_USE_JSON = True
 
     ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
@@ -781,10 +780,6 @@ class Dev(Base):
                 },
             }
         ]
-
-
-class Stage(Dev):
-    """Configuration to be used in stage environment"""
 
 
 class Prod(Stage):
