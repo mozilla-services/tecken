@@ -86,7 +86,7 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
     if invalid_key_name_characters(symbol + filename):
         logger.debug(f"Invalid character {symbol!r}/{debugid}/{filename!r}")
         response = http.HttpResponseBadRequest(
-            "Symbol name lookup contains invalid characters and will never " "be found."
+            "Symbol name lookup contains invalid characters and will never be found."
         )
         if request._request_debug:
             response["Debug-Time"] = 0

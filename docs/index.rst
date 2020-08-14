@@ -37,8 +37,6 @@ Project docs:
    frontend
    redis
    docker
-   authentication
-   benchmarking
    endtoendtesting
 
 Indices and tables

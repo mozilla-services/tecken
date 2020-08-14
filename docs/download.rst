@@ -4,12 +4,16 @@
 Download
 ========
 
-Downloading basics
-==================
+.. contents::
+   :local:
 
-Tecken download's redirects incoming requests for symbols to their final
-location. This allows Tecken to manage multiple S3 buckets without requiring
-anyone to maintain lists of locations.
+Basics
+======
+
+Tecken handles requests for symbols files. Tecken takes the request, finds the
+correct S3 bucket, and returns a redirect to that bucket. This allows us to use
+multiple buckets for symbols without requiring everyone to maintain lists of
+buckets.
 
 For example, with a ``GET``, requesting
 :base_url:`/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym` will
@@ -18,9 +22,10 @@ return a ``302 Found`` redirect to (at the time of writing)
 
 
 Missing symbols are logged
-==========================
+--------------------------
 
-Tecken logs all ``GET`` requests for symbols files that don't exist.
+Tecken logs all requests for symbols files that don't exist in any of the
+buckets.
 
 You can access a CSV report at :base_url:`/missingsymbols.csv` of this data.
 
@@ -38,40 +43,18 @@ Tecken only yields missing symbols whose symbol ended with ``.pdb`` and filename
 ended with ``.sym`` (case insensitively).
 
 
-Ignore Patterns
-===============
-
-We know with confidence users repeatedly query certain files that are never in
-our symbol stores. We can ignore them to suppress logging that they couldn't be
-found.
-
-Right now, this is maintained as a configurable block list but is hard coded
-inside the ``_ignore_symbol`` code in ``tecken.download.views``.
-
-This approach might change over time as we're able to confidently identify more
-and more patterns that we know we can ignore.
-
-
 File Extension Allow List
-=========================
+-------------------------
 
-When someone requests to download a symbol, as mentioned above, we have some
-ways to immediately decide that it's a 404 Symbol Not Found without even
-bothering to ask the cache or S3.
-
-As part of that, there is also a list of allowed file extensions that are the
-only ones we should bother with. This list is maintained in
-``settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED`` (managed by the environment
-variable ``DJANGO_DOWNLOAD_FILE_EXTENSIONS_ALLOWED``) and this list is found in
-the source code (``settings.py``) and also visible on the home page if you're
-signed in as a superuser.
+Tecken returns an HTTP 404 for symbols files requests where the extension
+is not in the ``settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED`` list.
 
 
-Download With Debug
-===================
+Debug Mode
+==========
 
 To know how long it took to make a "download", you can simply measure the time
-it takes to send the request to Tecken for a specific symbol.  For example:
+it takes to send the request to Tecken for a specific symbol. For example:
 
 .. code-block:: shell
 
@@ -99,20 +82,13 @@ your request to the code that talks to S3. It can also come back as exactly
 are immediately ``404 Not Found`` based on filename pattern matching.
 
 
-Download Without Caching
-========================
+Refreshing the cache
+====================
 
-Generally we can cache our work around S3 downloads quite aggressively since we
-tightly control the (only) input. Whenever a symbol archive file is uploaded,
-for every file within that we upload to S3 we also invalidate it from our
-cache. That means we can cache information about whether certain symbols exist
-in S3 or not quite long.
+Tecken caches symbol file names and their final location aggressively. If you
+need to bust the cache, you can append ``?_refresh`` to the url.
 
-However, if you are debugging something or if you manually remove a symbol from
-S3 that control is "lost". But there is a way to force the cache to be ignored.
-However, it only ignores looking in the cache. It will always update the cache.
-
-To do this append ``?_refresh`` to the URL. For example:
+For example:
 
 .. code-block:: shell
 
@@ -143,13 +119,10 @@ By default, when you request to download a symbol, Tecken will iterate through
 a list of available S3 configurations.
 
 To download symbols that might be part of a Try build you have to pass an
-optional query string key: ``try``. Or you can prefix the URL with ``/try``.
+optional query string key ``try`` or you can prefix the URL with ``/try``.
 For example:
 
 .. code-block:: shell
-
-    $ curl https://symbols.mozilla.org/tried.pdb/HEX/tried.sym
-    ...404 Symbol Not Found...
 
     $ curl https://symbols.mozilla.org/tried.pdb/HEX/tried.sym?try
     ...302 Found...
@@ -157,12 +130,50 @@ For example:
     $ curl https://symbols.mozilla.org/try/tried.pdb/HEX/tried.sym
     ...302 Found...
 
-What Tecken does is, if you pass ``?try`` to the URL or use the ``/try``
-prefix, it takes the existing list of S3 configurations and *appends* the S3
-configuration for Try builds.
+If you specify that you're requesting a try build, Tecken will look at
+all the S3 bucket locations as well as all the try locations in those
+S3 buckets.
 
-Note: symbols from Try builds is always tried last! So if there's a known
-symbol called ``foo.pdb/HEX/foo.sym`` and someone triggers a Try build (which
-uploads its symbols) with the exact same name (and build ID) and even if you
-use ``https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?try`` the existing
-(non-Try build) symbol will be matched first.
+Symbols from Try builds is always tried last! So if there's a known symbol
+called ``foo.pdb/HEX/foo.sym`` and someone triggers a Try build (which uploads
+its symbols) with the exact same name (and build ID) and even if you use
+``https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?try`` the existing (non-Try
+build) symbol will be matched first.
+
+
+Downloading
+===========
+
+.. http:head:: /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+
+   Determine whether the symbol file exists or not.
+
+   :reqheader Debug: if ``true``, includes debug output in the response
+
+   :query try: use ``try=1`` to download Try symbols
+
+   :query _refresh: use ``_refresh=1`` to force the cache to refresh
+
+   :statuscode 200: symbol file exists
+   :statuscode 404: symbol file does not exist
+   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
+       file a bug report
+   :statuscode 503: sleep for a bit and retry
+
+.. http:get:: /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+
+   Download a symbol file.
+
+   :reqheader Debug: if ``true``, includes debug output in the response
+
+   :query try: use ``try=1`` to download Try symbols
+
+   :query _refresh: use ``_refresh=1`` to force the cache to refresh
+
+   :statuscode 302: symbol file was found and the final url was returned as a redirect
+   :statuscode 400: requested symbol file has bad characters
+   :statuscode 404: symbol file was not found
+   :statuscode 429: sleep for a bit and retry
+   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
+       file a bug report
+   :statuscode 503: sleep for a bit and retry

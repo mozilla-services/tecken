@@ -77,7 +77,6 @@ class Core(AWS, Celery, S3, Configuration):
         "tecken.tokens",
         "tecken.api",
         "tecken.useradmin",
-        "tecken.benchmarking",
         # Third party apps
         "dockerflow.django",
         # Third party apps, that need to be listed last
@@ -191,10 +190,6 @@ class Core(AWS, Celery, S3, Configuration):
     # But we only need to write it down once per symbol. There's a memoizing
     # guard and this defines how long it should cache that it memoized.
     MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS = values.IntegerValue(60 * 60 * 24)
-
-    # Whether or not benchmarking is enabled. It's only useful to have this
-    # enabled in environments dedicated for testing and load testing.
-    BENCHMARKING_ENABLED = values.BooleanValue(False)
 
     # When we ask S3 for the size (if it exists) of a symbol already in S3
     # this can be cached. This value determines how long we do that caching.
@@ -726,8 +721,8 @@ class Test(Localdev):
     ]
 
 
-class Dev(Base):
-    """Configuration to be used in dev server environment"""
+class Stage(Base):
+    """Configuration to be used in stage environment"""
 
     LOGGING_USE_JSON = True
 
@@ -786,10 +781,6 @@ class Dev(Base):
                 },
             }
         ]
-
-
-class Stage(Dev):
-    """Configuration to be used in stage environment"""
 
 
 class Prod(Stage):

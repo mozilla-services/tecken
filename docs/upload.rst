@@ -8,8 +8,8 @@ Uploading symbols
 
 .. _upload-basics:
 
-Uploading basics
-================
+Basics
+======
 
 Tecken lets you upload symbols. It stores these symbols files in an AWS S3
 bucket allowing others to download them and symbolicate stacks against them.
