@@ -3,40 +3,32 @@ Mozilla Symbol Server
 =====================
 
 
-Mozilla Symbol Server, codename "tecken", is a web service for handling
-all things symbols for Mozilla platform. In particular three major features:
+Mozilla Symbol Server, codename "tecken", is a web service for handling all
+things symbols for Mozilla platform. In particular three major features:
 
 1. Symbolication
-
 2. Symbol Download
-
 3. Symbol Upload
 
 
-Contents
-========
-
-User docs:
-
 .. toctree::
-   :maxdepth: 2
+   :caption: Users
+   :maxdepth: 1
 
-   symbolication
-   download
    upload
-   configuration
-   celery
-
-
-Project docs:
+   download
+   symbolication
 
 .. toctree::
+   :caption: Developers/Admin
+   :maxdepth: 1
 
    contributing
    dev
+   configuration
+   celery
    frontend
    redis
-   docker
    endtoendtesting
 
 Indices and tables
