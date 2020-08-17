@@ -3,6 +3,7 @@ Celery
 ======
 
 .. contents::
+   :local:
 
 Primary Use Case
 ================
@@ -32,6 +33,7 @@ Testing Celery
 
 For more information about how to end-to-end test the Celery tasks see the
 :ref:`End-to-end testing Celery <endtoendtesting-celery>` section.
+
 
 Unit Testing with Celery
 ========================

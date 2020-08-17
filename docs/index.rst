@@ -29,7 +29,6 @@ things symbols for Mozilla platform. In particular three major features:
    celery
    frontend
    redis
-   docker
    endtoendtesting
 
 Indices and tables
