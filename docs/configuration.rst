@@ -64,19 +64,19 @@ You can set two environment variables:
 
 .. envvar:: GUNICORN_TIMEOUT
 
-    To specify the timeout value.
+   To specify the timeout value.
 
-    https://docs.gunicorn.org/en/stable/settings.html#timeout
+   https://docs.gunicorn.org/en/stable/settings.html#timeout
 
 .. envvar:: GUNICORN_WORKERS
 
-    To specify the number of gunicorn workers. The default is 4.
+   To specify the number of gunicorn workers. The default is 4.
 
-    You should set it to ``(2 x $num_cores) + 1``.
+   You should set it to ``(2 x $num_cores) + 1``.
 
-    https://docs.gunicorn.org/en/stable/settings.html#workers
+   https://docs.gunicorn.org/en/stable/settings.html#workers
 
-    http://docs.gunicorn.org/en/stable/design.html#how-many-workers
+   http://docs.gunicorn.org/en/stable/design.html#how-many-workers
 
 
 AWS
