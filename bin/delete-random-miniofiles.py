@@ -55,13 +55,18 @@ def run(count, directory, bucket, endpoint_url, search=""):
         print(fmtsize(size).ljust(10), fn)
         sizes.append(size)
         key = fn.replace(directory, "").replace(bucket, "").lstrip("/")
-        response = s3.delete_object(Bucket=bucket, Key=key,)
+        response = s3.delete_object(
+            Bucket=bucket,
+            Key=key,
+        )
         if response["ResponseMetadata"]["HTTPStatusCode"] != 204:
             raise Exception(response)
     print()
     print(
         "Deleted {} files (of {} possible) totalling {}".format(
-            len(sizes), len(all), fmtsize(sum(sizes)),
+            len(sizes),
+            len(all),
+            fmtsize(sum(sizes)),
         )
     )
 
@@ -71,7 +76,9 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "count", help="The number of random files to delete", type=int,
+        "count",
+        help="The number of random files to delete",
+        type=int,
     )
     parser.add_argument(
         "-d",
@@ -80,7 +87,10 @@ def main():
         default="miniodata",
     )
     parser.add_argument(
-        "-b", "--bucket", help="S3 bucket in Minio", default="testbucket",
+        "-b",
+        "--bucket",
+        help="S3 bucket in Minio",
+        default="testbucket",
     )
     parser.add_argument(
         "--endpoint_url",
@@ -88,11 +98,18 @@ def main():
         default="http://localhost:9000",
     )
     parser.add_argument(
-        "-s", "--search", help="Must match in filename", default="",
+        "-s",
+        "--search",
+        help="Must match in filename",
+        default="",
     )
     args = parser.parse_args()
     return run(
-        args.count, args.directory, args.bucket, args.endpoint_url, search=args.search,
+        args.count,
+        args.directory,
+        args.bucket,
+        args.endpoint_url,
+        search=args.search,
     )
 
 

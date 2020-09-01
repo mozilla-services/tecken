@@ -66,10 +66,15 @@ def fetch_supersearch(url, params):
 
 @click.command()
 @click.option(
-    "--debug/--no-debug", default=False, help="Show debug output.",
+    "--debug/--no-debug",
+    default=False,
+    help="Show debug output.",
 )
 @click.option(
-    "--num-results", default=10, type=int, help="Number of crash ids to return.",
+    "--num-results",
+    default=10,
+    type=int,
+    help="Number of crash ids to return.",
 )
 @click.pass_context
 def fetch_crashids(ctx, debug, num_results):

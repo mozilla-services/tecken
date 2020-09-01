@@ -768,7 +768,10 @@ def test_cleanse_missingsymbol_delete_records():
 
     # Create a record for today
     MissingSymbol.objects.create(
-        hash="1", symbol="xul.so", debugid="1", filename="xul.so",
+        hash="1",
+        symbol="xul.so",
+        debugid="1",
+        filename="xul.so",
     )
 
     # Create a record before the cutoff--since modified_at is an "auto_now"
@@ -776,14 +779,20 @@ def test_cleanse_missingsymbol_delete_records():
     with mock.patch("django.utils.timezone.now") as mock_now:
         mock_now.return_value = cutoff + datetime.timedelta(days=1)
         MissingSymbol.objects.create(
-            hash="2", symbol="xul.so", debugid="2", filename="xul.so",
+            hash="2",
+            symbol="xul.so",
+            debugid="2",
+            filename="xul.so",
         )
 
     # Create a record after the cutoff
     with mock.patch("django.utils.timezone.now") as mock_now:
         mock_now.return_value = cutoff - datetime.timedelta(days=1)
         MissingSymbol.objects.create(
-            hash="3", symbol="xul.so", debugid="3", filename="xul.so",
+            hash="3",
+            symbol="xul.so",
+            debugid="3",
+            filename="xul.so",
         )
 
     for sym in MissingSymbol.objects.all():
@@ -806,7 +815,10 @@ def test_cleanse_missingsymbol_delete_records_dry_run():
 
     # Create a record for today
     MissingSymbol.objects.create(
-        hash="1", symbol="xul.so", debugid="1", filename="xul.so",
+        hash="1",
+        symbol="xul.so",
+        debugid="1",
+        filename="xul.so",
     )
 
     # Create a record before the cutoff--since modified_at is an "auto_now"
@@ -814,14 +826,20 @@ def test_cleanse_missingsymbol_delete_records_dry_run():
     with mock.patch("django.utils.timezone.now") as mock_now:
         mock_now.return_value = cutoff + datetime.timedelta(days=1)
         MissingSymbol.objects.create(
-            hash="2", symbol="xul.so", debugid="2", filename="xul.so",
+            hash="2",
+            symbol="xul.so",
+            debugid="2",
+            filename="xul.so",
         )
 
     # Create a record after the cutoff
     with mock.patch("django.utils.timezone.now") as mock_now:
         mock_now.return_value = cutoff - datetime.timedelta(days=1)
         MissingSymbol.objects.create(
-            hash="3", symbol="xul.so", debugid="3", filename="xul.so",
+            hash="3",
+            symbol="xul.so",
+            debugid="3",
+            filename="xul.so",
         )
 
     for sym in MissingSymbol.objects.all():

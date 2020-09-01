@@ -355,8 +355,7 @@ def test_public_default_file_prefix(requestsmock, settings):
 
 
 def test_private_default_file_prefix(botomock, settings):
-    """See doc string in test_public_default_file_prefix
-    """
+    """See doc string in test_public_default_file_prefix"""
     all_mock_calls = []
 
     def mock_api_call(self, operation_name, api_params):

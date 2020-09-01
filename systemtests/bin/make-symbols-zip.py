@@ -46,7 +46,10 @@ def get_sym_files(auth_token, url, start_page):
         else:
             params["page"] = page
             resp = requests.get(
-                url, params=params, headers=headers, timeout=CONNECTION_TIMEOUT,
+                url,
+                params=params,
+                headers=headers,
+                timeout=CONNECTION_TIMEOUT,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -74,7 +77,9 @@ def build_zip_file(zip_filename, sym_dir):
                 arcname = full_path[len(sym_dir) + 1 :]
 
                 fp.write(
-                    full_path, arcname=arcname, compress_type=zipfile.ZIP_DEFLATED,
+                    full_path,
+                    arcname=arcname,
+                    compress_type=zipfile.ZIP_DEFLATED,
                 )
 
 
@@ -109,10 +114,15 @@ def get_size(filename):
 
 @click.command()
 @click.option(
-    "--auth-token", required=True, help="Auth token for symbols.mozilla.org.",
+    "--auth-token",
+    required=True,
+    help="Auth token for symbols.mozilla.org.",
 )
 @click.option(
-    "--start-page", default=1, type=int, help="Page of SYM files to start with.",
+    "--start-page",
+    default=1,
+    type=int,
+    help="Page of SYM files to start with.",
 )
 @click.option(
     "--max-size",
