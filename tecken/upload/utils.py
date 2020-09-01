@@ -150,7 +150,12 @@ def get_key_content_type(key_name):
 
 @metrics.timer_decorator("upload_file_upload")
 def upload_file_upload(
-    client, bucket_name, key_name, file_path, upload=None, client_lookup=None,
+    client,
+    bucket_name,
+    key_name,
+    file_path,
+    upload=None,
+    client_lookup=None,
 ):
     # The reason you might want to pass a different client for
     # looking up existing sizes is because you perhaps want to use

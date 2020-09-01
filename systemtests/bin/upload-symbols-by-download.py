@@ -47,7 +47,9 @@ METRICS = markus.get_metrics()
     help="Base url to use for uploading SYM files.",
 )
 @click.option(
-    "--auth-token", required=True, help="Auth token for uploading SYM files.",
+    "--auth-token",
+    required=True,
+    help="Auth token for uploading SYM files.",
 )
 @click.option(
     "--expect-code",

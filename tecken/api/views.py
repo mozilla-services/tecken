@@ -1120,8 +1120,7 @@ def current_settings(request):
 @api_login_required
 @api_superuser_required
 def current_versions(request):
-    """return a JSON dict of a selection of keys and their versions
-    """
+    """return a JSON dict of a selection of keys and their versions"""
     context = {"versions": []}
     with connection.cursor() as cursor:
         cursor.execute("select version()")

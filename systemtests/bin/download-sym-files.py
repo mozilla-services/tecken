@@ -34,7 +34,9 @@ METRICS = markus.get_metrics()
     help="Base url to use for downloading SYM files.",
 )
 @click.argument(
-    "csv_file", nargs=1, type=click.Path(),
+    "csv_file",
+    nargs=1,
+    type=click.Path(),
 )
 def download_sym_files(base_url, csv_file):
     """Tests downloading SYM files.
