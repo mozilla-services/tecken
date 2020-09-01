@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "prettier": "2.1.1",
-    "react-scripts": "3.4.0"
+    "react-scripts": "3.4.3"
   },
   "resolutions": {
     "acorn": ">=7.1.1",
