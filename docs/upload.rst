@@ -52,7 +52,7 @@ Example with ``curl``:
 
 .. code-block:: shell
 
-    $ curl -X POST -H 'auth-token: xxx' \
+    $ curl --user-agent "example/1.0" -X POST -H 'auth-token: xxx' \
         --form try=1 \
         --form myfile.zip=@myfile.zip \
         https://symbols.mozilla.org/upload/
@@ -83,7 +83,7 @@ Here's a ``curl`` example:
 
 .. code-block:: shell
 
-    $ curl -X POST -H 'auth-token: xxx' \
+    $ curl --user-agent "example/1.0" -X POST -H 'auth-token: xxx' \
         --form myfile.zip=@myfile.zip \
         https://symbols.mozilla.org/upload/
 
@@ -94,7 +94,8 @@ Here's a Python example using the ``requests`` library:
     >>> import requests
     >>> files = {"myfile.zip": open("path/to/myfile.zip", "rb")}
     >>> url = "https://symbols.mozilla.org/upload/"
-    >>> response = requests.post(url, files=files, headers={"Auth-token": "xxx"})
+    >>> headers = {"User-Agent": "example/1.0", "Auth-token": "xxx"}
+    >>> response = requests.post(url, files=files, headers=headers)
     >>> response.status_code
     201
 
@@ -128,7 +129,7 @@ An example with ``curl``:
 
 .. code-block:: shell
 
-    $ curl -X POST -H 'auth-token: xxx' \
+    $ curl --user-agent "example/1.0" -X POST -H 'auth-token: xxx' \
        -d url="https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip" \
        https://symbols.mozilla.org/upload/
 
@@ -137,9 +138,10 @@ An example with ``Python`` and the ``requests`` library:
 .. code-block:: python
 
     >>> import requests
-    >>> url = 'https://symbols.mozilla.org/upload/'
-    >>> data = {'url': 'https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip'}
-    >>> response = requests.post(url, data=data, headers={'Auth-token': 'xxx'})
+    >>> url = "https://symbols.mozilla.org/upload/"
+    >>> headers = {"User-Agent": "example/1.0", "Auth-token": "xxx"}
+    >>> data = {"url": "https://queue.taskcluster.net/YC0FgOlE/artifacts/symbols.zip"}
+    >>> response = requests.post(url, data=data, headers=headers)
     >>> response.status_code
     201
 

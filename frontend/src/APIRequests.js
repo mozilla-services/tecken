@@ -54,13 +54,14 @@ const DisplayAPIRequests = observer(
                 <p key={i}>
                   {request.requiresAuth ? (
                     <code>
-                      curl -X {request.method} -H 'Auth-Token:{" "}
-                      <Link to="/tokens">YOURTOKENHERE</Link>'{" "}
+                      curl --user-agent "example/1.0" -X {request.method} -H
+                      'Auth-Token: <Link to="/tokens">YOURTOKENHERE</Link>'{" "}
                       <a href={fullUrl}>{fullUrl}</a>
                     </code>
                   ) : (
                     <code>
-                      curl -X {request.method} <a href={fullUrl}>{fullUrl}</a>
+                      curl --user-agent "example/1.0" -X {request.method}{" "}
+                      <a href={fullUrl}>{fullUrl}</a>
                     </code>
                   )}
                 </p>

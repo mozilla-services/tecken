@@ -251,7 +251,7 @@ class ShowCurl extends CopyToClipboardPureComponent {
       "localhost:8000"
     );
     const absoluteUrl = `${protocol}//${hostname}/symbolicate/v5`;
-    const command = `curl -XPOST -d '${json}' ${absoluteUrl}`;
+    const command = `curl --user-agent "example/1.0" -XPOST -d '${json}' ${absoluteUrl}`;
     return (
       <div className="box">
         <h3>

@@ -60,7 +60,7 @@ To run the test, first HTTP POST as per this example...:
 
 .. code-block:: shell
 
-    ▶ curl -v -XPOST localhost:8000/__task_tester__
+    ▶ curl --user-agent "e2etesting/1.0" -v -XPOST localhost:8000/__task_tester__
     > POST /__task_tester__ HTTP/1.1
     >
     < HTTP/1.1 201 Created
@@ -71,7 +71,7 @@ Then, the HTTP GET:
 
 .. code-block:: shell
 
-    ▶ curl -v localhost:8000/__task_tester__
+    ▶ curl --user-agent "e2etesting/1.0" -v localhost:8000/__task_tester__
     > GET /__task_tester__ HTTP/1.1
     >
     < HTTP/1.1 200 OK
