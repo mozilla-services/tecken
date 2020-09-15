@@ -58,7 +58,8 @@ it takes to send the request to Tecken for a specific symbol. For example:
 
 .. code-block:: shell
 
-    $ time curl https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
+    $ time curl --user-agent "example/1.0" \
+        https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
 
 Note, that will tell you the total time it took your computer to make the
 request to Tecken **plus** Tecken's time to talk to S3.
@@ -68,7 +69,7 @@ add a header to your outgoing request. For example:
 
 .. code-block:: shell
 
-    $ curl -v -H 'Debug: true' \
+    $ curl --user-agent "example/1.0" -v -H 'Debug: true' \
         https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
 
 Then you'll get a response header called ``Debug-Time``. In the ``curl`` output
@@ -92,21 +93,21 @@ For example:
 
 .. code-block:: shell
 
-    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
+    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
     ...302 Found...
 
     # Now suppose you delete the file manually from S3 in the AWS Console.
     # And without any delay do the curl again:
-    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
+    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
     ...302 Found...
     # Same old "broken", which is wrong.
 
     # Avoid it by adding ?_refresh
-    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?_refresh
+    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?_refresh
     ...404 Symbol Not Found...
 
     # Now our cache will be updated.
-    $ curl https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
+    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
     ...404 Symbol Not Found...
 
 
@@ -124,10 +125,10 @@ For example:
 
 .. code-block:: shell
 
-    $ curl https://symbols.mozilla.org/tried.pdb/HEX/tried.sym?try
+    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/tried.pdb/HEX/tried.sym?try
     ...302 Found...
 
-    $ curl https://symbols.mozilla.org/try/tried.pdb/HEX/tried.sym
+    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/try/tried.pdb/HEX/tried.sym
     ...302 Found...
 
 If you specify that you're requesting a try build, Tecken will look at
