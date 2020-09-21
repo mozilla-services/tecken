@@ -15,13 +15,13 @@ from tecken.base.decorators import (
     api_require_http_methods,
     set_cors_headers,
 )
-from tecken.base.form_utils import filter_form_dates
+from tecken.base.form_utils import filter_form_dates, PaginationForm
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.utils import invalid_key_name_characters
 from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
 from tecken.download.tasks import store_missing_symbol_task
-from tecken.download.forms import DownloadForm, DownloadsMissingForm, PaginationForm
+from tecken.download.forms import DownloadForm, DownloadsMissingForm
 from tecken.storage import StorageBucket
 
 logger = logging.getLogger("tecken")

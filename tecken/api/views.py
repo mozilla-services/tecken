@@ -31,7 +31,7 @@ from tecken.base.decorators import (
     api_require_http_methods,
     api_superuser_required,
 )
-from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS
+from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
 from tecken.base.utils import filesizeformat
 from tecken.download.models import MissingSymbol
 from tecken.storage import StorageBucket
@@ -349,7 +349,7 @@ def uploads(request):
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
 
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
 
@@ -563,7 +563,7 @@ def uploads_created(request):
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
 
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
 
@@ -673,7 +673,7 @@ def uploads_created_backfilled(request):
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
     page = pagination_form.cleaned_data["page"]
@@ -1128,7 +1128,7 @@ def downloads_missing(request):
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
 
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
 

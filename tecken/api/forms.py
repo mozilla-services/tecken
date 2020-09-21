@@ -80,20 +80,6 @@ class UserEditForm(forms.ModelForm):
         return groups
 
 
-class PaginationForm(forms.Form):
-    page = forms.CharField(required=False)
-
-    def clean_page(self):
-        value = self.cleaned_data["page"]
-        try:
-            value = int(value or 1)
-        except ValueError:
-            raise forms.ValidationError(f"Not a number {value!r}")
-        if value < 1:
-            value = 1
-        return value
-
-
 class BaseFilteringForm(forms.Form):
     sort = forms.CharField(required=False)
     reverse = forms.CharField(required=False)

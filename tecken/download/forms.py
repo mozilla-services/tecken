@@ -11,20 +11,6 @@ from django import forms
 from django.utils import timezone
 
 
-class PaginationForm(forms.Form):
-    page = forms.CharField(required=False)
-
-    def clean_page(self):
-        value = self.cleaned_data["page"]
-        try:
-            value = int(value or 1)
-        except ValueError:
-            raise forms.ValidationError(f"Not a number {value!r}")
-        if value < 1:
-            value = 1
-        return value
-
-
 class DownloadForm(forms.Form):
     code_file = forms.CharField(required=False)
     code_id = forms.CharField(required=False)

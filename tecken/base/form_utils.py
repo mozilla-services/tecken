@@ -6,6 +6,8 @@
 
 import datetime
 
+from django import forms
+
 
 ORM_OPERATORS = {"<=": "lte", ">=": "gte", "=": "exact", "<": "lt", ">": "gt"}
 
@@ -38,3 +40,17 @@ def filter_form_dates(qs, form, keys):
                 orm_operator = "{}__{}".format(key, ORM_OPERATORS[operator])
                 qs = qs.filter(**{orm_operator: value})
     return qs
+
+
+class PaginationForm(forms.Form):
+    page = forms.CharField(required=False)
+
+    def clean_page(self):
+        value = self.cleaned_data["page"]
+        try:
+            value = int(value or 1)
+        except ValueError:
+            raise forms.ValidationError(f"Not a number {value!r}")
+        if value < 1:
+            value = 1
+        return value
