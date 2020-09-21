@@ -543,9 +543,10 @@ class Base(Core):
     # A list of file extensions that if a file is NOT one of these extensions
     # we can immediately return 404 and not bother to process for anything
     # else.
-    # It's case sensitive and has to be lower case.
-    # As a way to get marginal optimization of this, make sure '.sym' is
-    # first in the list since it's the most common.
+    #
+    # It's case sensitive and has to be lower case.  As a way to get marginal
+    # optimization of this, make sure '.sym' is first in the list since it's
+    # the most common.
     DOWNLOAD_FILE_EXTENSIONS_ALLOWED = values.ListValue(
         [".sym", ".dl_", ".ex_", ".pd_", ".dbg.gz", ".tar.bz2"]
     )

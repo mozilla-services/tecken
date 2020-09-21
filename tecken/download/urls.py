@@ -36,7 +36,8 @@ register_converter(LegacyProductPrefixesConverter, "legacyproduct")
 app_name = "download"
 
 urlpatterns = [
-    path("missingsymbols.csv", views.missing_symbols_csv, name="missing_symbols_csv"),
+    path("missingsymbols.csv", views.missingsymbols_csv, name="missingsymbols_csv"),
+    path("missingsymbols/", views.missingsymbols, name="missingsymbols"),
     path(
         "try/<str:symbol>/<hex:debugid>/<str:filename>",
         views.download_symbol_try,

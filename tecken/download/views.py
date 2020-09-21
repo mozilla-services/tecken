@@ -1,7 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, you can obtain one at http://mozilla.org/MPL/2.0/.
-
 import csv
 import datetime
 import logging
@@ -14,17 +10,18 @@ from django.conf import settings
 from django.utils import timezone
 from django.db import OperationalError
 
-from tecken.base.utils import invalid_key_name_characters
-from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.decorators import (
     set_request_debug,
     api_require_http_methods,
     set_cors_headers,
 )
+from tecken.base.form_utils import filter_form_dates, PaginationForm
+from tecken.base.symboldownloader import SymbolDownloader
+from tecken.base.utils import invalid_key_name_characters
 from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
 from tecken.download.tasks import store_missing_symbol_task
-from tecken.download.forms import DownloadForm
+from tecken.download.forms import DownloadForm, DownloadsMissingForm
 from tecken.storage import StorageBucket
 
 logger = logging.getLogger("tecken")
@@ -183,6 +180,7 @@ def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
     stackwalker is actually aware of other parameters that are
     relevant only to this URL. Hence 'code_file' and 'code_id' which
     are both optional.
+
     """
     if settings.ENABLE_STORE_MISSING_SYMBOLS:
         try:
@@ -195,26 +193,18 @@ def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
             )
 
 
-def missing_symbols_csv(request):
-    """return a CSV payload that has yesterdays missing symbols.
+@metrics.timer("missingsymbols_csv")
+def missingsymbols_csv(request):
+    """Return a CSV payload that has yesterdays missing symbols
 
-    We have a record of every 'symbol', 'debugid', 'filename', 'code_file'
-    and 'code_id'. In the CSV export we only want 'symbol', 'debugid',
-    'code_file' and 'code_id'.
+    We have a record of every 'symbol', 'debugid', 'filename', 'code_file' and
+    'code_id'. In the CSV export we only want 'symbol', 'debugid', 'code_file'
+    and 'code_id'.
 
-    There's an opportunity of optimization here.
-    This payload is pretty large and requires a lot of memory to generate
-    and respond. We could instead use an S3 bucket to store this and
-    let S3 handle the download repeatedly.
+    FIXME(willkg): This doesn't change day-to-day (unless you specify today, so
+    maybe we should generate this and save/cache it?
 
-    Note that this view is expected to be quite resource intensive.
-    In Socorro we used to upload a .csv file to S3 on a daily basis.
-    This file is what's downloaded and parsed to figure what needs to be
-    improved in the symbol store ultimately. We could do some serious
-    caching of this view by letting it generate *to* S3 if it hasn't
-    already been generated and uploaded to S3.
     """
-
     date = timezone.now()
     if not request.GET.get("today"):
         # By default we want to look at keys inserted yesterday, but
@@ -240,10 +230,66 @@ def missing_symbols_csv(request):
         filename__iendswith=".sym",
     )
 
-    only = ("symbol", "debugid", "code_file", "code_id")
-    for missing in qs.only(*only):
-        writer.writerow(
-            [missing.symbol, missing.debugid, missing.code_file, missing.code_id]
-        )
+    fields = ("symbol", "debugid", "code_file", "code_id")
+    for missing in qs.values_list(*fields):
+        writer.writerow(missing)
 
     return response
+
+
+@metrics.timer("missingsymbols")
+def missingsymbols(request):
+    context = {}
+    form = DownloadsMissingForm(request.GET)
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+
+    qs = MissingSymbol.objects.all()
+    # Apply date filters
+    qs = filter_form_dates(qs, form, ("created_at", "modified_at"))
+
+    # Apply symbol, debugid, filename filters
+    for key in ("symbol", "debugid", "filename"):
+        if form.cleaned_data[key]:
+            qs = qs.filter(**{f"{key}__contains": form.cleaned_data[key]})
+
+    # Apply order_by
+    if form.cleaned_data.get("order_by"):
+        order_by = form.cleaned_data["order_by"]
+    else:
+        order_by = {"sort": "modified_at", "reverse": True}
+    order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
+    qs = qs.order_by(order_by_string)
+    context["order_by"] = order_by
+
+    # Figure out page
+    pagination_form = PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
+
+    page = pagination_form.cleaned_data["page"]
+
+    batch_size = 100
+    context["batch_size"] = batch_size
+    context["page"] = page
+
+    start = (page - 1) * batch_size
+    end = start + batch_size
+
+    context["total_count"] = qs.count()
+
+    qs = qs.values(
+        "id",
+        "symbol",
+        "debugid",
+        "filename",
+        "code_file",
+        "code_id",
+        "count",
+        "modified_at",
+        "created_at",
+    )
+
+    context["records"] = list(qs[start:end])
+
+    return http.JsonResponse(context)

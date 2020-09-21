@@ -24,20 +24,21 @@ from django.db import connection
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 
-from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload, UploadsCreated
-from tecken.upload.views import get_possible_bucket_urls
-from tecken.storage import StorageBucket
-from tecken.download.models import MissingSymbol
-from tecken.symbolicate.views import get_symbolication_count_key
+from tecken.api import forms
 from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
     api_require_http_methods,
     api_superuser_required,
 )
+from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
 from tecken.base.utils import filesizeformat
-from . import forms
+from tecken.download.models import MissingSymbol
+from tecken.storage import StorageBucket
+from tecken.symbolicate.views import get_symbolication_count_key
+from tecken.tokens.models import Token
+from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.views import get_possible_bucket_urls
 
 logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
@@ -45,40 +46,6 @@ metrics = markus.get_metrics("tecken")
 
 class SumCardinality(Aggregate):
     template = "SUM(CARDINALITY(%(expressions)s))"
-
-
-ORM_OPERATORS = {"<=": "lte", ">=": "gte", "=": "exact", "<": "lt", ">": "gt"}
-
-
-def _filter_form_dates(qs, form, keys):
-    for key in keys:
-        for operator, value in form.cleaned_data.get(key, []):
-            if value is None:
-                orm_operator = f"{key}__isnull"
-                qs = qs.filter(**{orm_operator: True})
-            elif operator == "=" and (
-                not isinstance(value, datetime.datetime)
-                or value.hour == 0
-                and value.minute == 0
-            ):
-                # When querying on a specific day, make it a little easier
-                qs = qs.filter(
-                    **{
-                        f"{key}__gte": value,
-                        f"{key}__lt": value + datetime.timedelta(days=1),
-                    }
-                )
-            else:
-                if operator == ">":
-                    # Because we use microseconds in the ORM, but when
-                    # datetimes are passed back end forth in XHR, the
-                    # datetimes are converted with isoformat() which
-                    # drops microseconds. Therefore add 1 second to
-                    # avoid matching the latest date.
-                    value += datetime.timedelta(seconds=1)
-                orm_operator = "{}__{}".format(key, ORM_OPERATORS[operator])
-                qs = qs.filter(**{orm_operator: value})
-    return qs
 
 
 @metrics.timer_decorator("api", tags=["endpoint:auth"])
@@ -382,7 +349,7 @@ def uploads(request):
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
 
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
 
@@ -520,7 +487,7 @@ def filter_uploads(qs, can_view_all, user, form):
     for operator, value in form.cleaned_data["size"]:
         orm_operator = "size__{}".format(ORM_OPERATORS[operator])
         qs = qs.filter(**{orm_operator: value})
-    qs = _filter_form_dates(qs, form, ("created_at", "completed_at"))
+    qs = filter_form_dates(qs, form, ("created_at", "completed_at"))
     return qs
 
 
@@ -596,7 +563,7 @@ def uploads_created(request):
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
 
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
 
@@ -665,7 +632,7 @@ def filter_uploads_created(qs, form):
         for operator, value in form.cleaned_data[key]:
             orm_operator = "{}__{}".format(key, ORM_OPERATORS[operator])
             qs = qs.filter(**{orm_operator: value})
-    qs = _filter_form_dates(qs, form, ("date",))
+    qs = filter_form_dates(qs, form, ("date",))
     return qs
 
 
@@ -706,7 +673,7 @@ def uploads_created_backfilled(request):
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
     page = pagination_form.cleaned_data["page"]
@@ -719,7 +686,7 @@ def upload_files(request):
     for operator, value in form.cleaned_data["size"]:
         orm_operator = "size__{}".format(ORM_OPERATORS[operator])
         qs = qs.filter(**{orm_operator: value})
-    qs = _filter_form_dates(qs, form, ("created_at", "completed_at"))
+    qs = filter_form_dates(qs, form, ("created_at", "completed_at"))
     if form.cleaned_data.get("key"):
         key_q = Q(key__icontains=form.cleaned_data["key"][0])
         for other in form.cleaned_data["key"][1:]:
@@ -1161,7 +1128,7 @@ def downloads_missing(request):
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
 
-    pagination_form = forms.PaginationForm(request.GET)
+    pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
         return http.JsonResponse({"errors": pagination_form.errors}, status=400)
 
@@ -1216,7 +1183,7 @@ def downloads_missing(request):
 
 
 def filter_missing_symbols(qs, form):
-    qs = _filter_form_dates(qs, form, ("created_at", "modified_at"))
+    qs = filter_form_dates(qs, form, ("created_at", "modified_at"))
     for operator, value in form.cleaned_data["count"]:
         orm_operator = "count__{}".format(ORM_OPERATORS[operator])
         qs = qs.filter(**{orm_operator: value})
