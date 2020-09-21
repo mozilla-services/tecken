@@ -10,105 +10,19 @@ Download
 Basics
 ======
 
-Tecken handles requests for symbols files. Tecken takes the request, finds the
-correct S3 bucket, and returns a redirect to that bucket. This allows us to use
-multiple buckets for symbols without requiring everyone to maintain lists of
-buckets.
+Tecken handles requests for symbols files. Tecken takes the request, figures
+out which bucket the file is in, and returns a redirect to that bucket. This
+allows us to use multiple buckets for symbols without requiring everyone to
+maintain lists of buckets.
 
-For example, with a ``GET``, requesting
+For example, at the time of this writing doing a ``GET`` for
 :base_url:`/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym` will
-return a ``302 Found`` redirect to (at the time of writing)
+return a ``302 Found`` redirect to
 ``https://s3-us-west-2.amazonaws.com/org.mozilla.crash-stats.symbols-public/v1/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym``.
 
-
-Missing symbols are logged
---------------------------
-
-Tecken logs all requests for symbols files that don't exist in any of the
-buckets.
-
-You can access a CSV report at :base_url:`/missingsymbols.csv` of this data.
-
-For example, if a ``GET`` is for
-:base_url:`/foo.pdb/448794C699914DB8A8F9B9F88B98D7412/foo.sym?code_file=FOO.dll&code_id=BAR`
-then the CSV will include something like this::
-
-    debug_file,debug_id,code_file,code_id
-    foo.pdb,448794C699914DB8A8F9B9F88B98D7412,FOO.dll,BAR
-
-This CSV report is used to find missing symbols and upload them to Tecken.
-This improves crash report processing in Socorro.
-
-Tecken only yields missing symbols whose symbol ended with ``.pdb`` and filename
-ended with ``.sym`` (case insensitively).
-
-
-File Extension Allow List
--------------------------
-
-Tecken returns an HTTP 404 for symbols files requests where the extension
-is not in the ``settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED`` list.
-
-
-Debug Mode
-==========
-
-To know how long it took to make a "download", you can simply measure the time
-it takes to send the request to Tecken for a specific symbol. For example:
-
-.. code-block:: shell
-
-    $ time curl --user-agent "example/1.0" \
-        https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
-
-Note, that will tell you the total time it took your computer to make the
-request to Tecken **plus** Tecken's time to talk to S3.
-
-If you want to know how long it took Tecken *internally* to talk to S3, you can
-add a header to your outgoing request. For example:
-
-.. code-block:: shell
-
-    $ curl --user-agent "example/1.0" -v -H 'Debug: true' \
-        https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
-
-Then you'll get a response header called ``Debug-Time``. In the ``curl`` output
-it will look something like this::
-
-    < Debug-Time: 0.627500057220459
-
-If that value is not present it's because Django was not even able to route
-your request to the code that talks to S3. It can also come back as exactly
-``Debug-Time: 0.0`` which means the symbol is in a block list of symbols that
-are immediately ``404 Not Found`` based on filename pattern matching.
-
-
-Refreshing the cache
-====================
-
-Tecken caches symbol file names and their final location aggressively. If you
-need to bust the cache, you can append ``?_refresh`` to the url.
-
-For example:
-
-.. code-block:: shell
-
-    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
-    ...302 Found...
-
-    # Now suppose you delete the file manually from S3 in the AWS Console.
-    # And without any delay do the curl again:
-    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
-    ...302 Found...
-    # Same old "broken", which is wrong.
-
-    # Avoid it by adding ?_refresh
-    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?_refresh
-    ...404 Symbol Not Found...
-
-    # Now our cache will be updated.
-    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/foo.pdb/HEX/foo.sym
-    ...404 Symbol Not Found...
+In addition to finding symbols files and returning redirects, Tecken keeps
+track of which files ending with ``.pdb`` and ``.sym`` that it couldn't find.
+These are known as "missing symbols".
 
 
 .. _download-try-builds:
@@ -142,18 +56,24 @@ its symbols) with the exact same name (and build ID) and even if you use
 build) symbol will be matched first.
 
 
-Downloading
-===========
+Downloading API
+===============
 
 .. http:head:: /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
 
    Determine whether the symbol file exists or not.
 
-   :reqheader Debug: if ``true``, includes debug output in the response
+   :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
+
+      If ``Debug-Time`` is `0.0``: symbol file ends in an unsupported extension
+
+   :reqheader User-Agent: please provide a unique user agent to make it easier for us
+       to help you debug problems
 
    :query try: use ``try=1`` to download Try symbols
 
-   :query _refresh: use ``_refresh=1`` to force the cache to refresh
+   :query _refresh: use ``_refresh=1`` to force Tecken to look for the symbol file
+       in the AWS S3 buckets and update the cache
 
    :statuscode 200: symbol file exists
    :statuscode 404: symbol file does not exist
@@ -165,11 +85,17 @@ Downloading
 
    Download a symbol file.
 
-   :reqheader Debug: if ``true``, includes debug output in the response
+   :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
+
+      If ``Debug-Time`` is `0.0``: symbol file ends in an unsupported extension
+
+   :reqheader User-Agent: please provide a unique user agent to make it easier for us
+       to help you debug problems
 
    :query try: use ``try=1`` to download Try symbols
 
-   :query _refresh: use ``_refresh=1`` to force the cache to refresh
+   :query _refresh: use ``_refresh=1`` to force Tecken to look for the symbol file
+       in the AWS S3 buckets and update the cache
 
    :statuscode 302: symbol file was found and the final url was returned as a redirect
    :statuscode 400: requested symbol file has bad characters
@@ -178,3 +104,34 @@ Downloading
    :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
        file a bug report
    :statuscode 503: sleep for a bit and retry
+
+.. http:head:: /try/<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+
+   Same as ``HEAD /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but for try symbols.
+
+.. http:get:: /try/<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+
+   Same as ``GET /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but for try symbols.
+
+
+Missing symbols APIs
+====================
+
+.. http:get:: /missingsymbols.csv
+
+   Download missing symbols list as a CSV.
+
+   Format::
+
+      debug_file,debug_id,code_file,code_id
+
+   :reqheader User-Agent: please provide a unique user agent to make it easier for us
+       to help you debug problems
+
+   :statuscode 429: sleep for a bit and retry
+   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
+       file a bug report
+   :statuscode 503: sleep for a bit and retry
+
+
+.. http:get:: /api/download/missing/

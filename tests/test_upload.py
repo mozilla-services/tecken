@@ -8,8 +8,8 @@ import os
 from io import BytesIO, StringIO
 from unittest import mock
 
-import pytest
 from botocore.exceptions import ClientError
+import pytest
 from requests.exceptions import ConnectionError, RetryError
 
 from django.contrib.auth.models import Permission, User
@@ -21,21 +21,21 @@ from django.utils import timezone
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload import utils
-from tecken.upload.views import (
-    NoPossibleBucketName,
-    get_bucket_info,
-    get_possible_bucket_urls,
-)
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
+from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.tasks import update_uploads_created_task
 from tecken.upload.utils import (
     dump_and_extract,
     key_existing,
     should_compressed_key,
     get_key_content_type,
 )
-from tecken.upload.tasks import update_uploads_created_task
+from tecken.upload.views import (
+    NoPossibleBucketName,
+    get_bucket_info,
+    get_possible_bucket_urls,
+)
 
 
 def _join(x):

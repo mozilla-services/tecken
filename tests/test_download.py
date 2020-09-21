@@ -4,12 +4,13 @@
 
 import csv
 import datetime
-import os
-from urllib.parse import urlparse
 from io import StringIO
+import json
+import os
+from unittest import mock
+from urllib.parse import urlparse
 
 import pytest
-import mock
 
 from django.core.management import call_command
 from django.db import OperationalError
@@ -470,10 +471,10 @@ def test_log_symbol_get_404_metrics(metricsmock):
 
 
 @pytest.mark.django_db
-def test_missing_symbols_csv(client, settings):
+def test_missingsymbols_csv(client, settings):
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
 
-    url = reverse("download:missing_symbols_csv")
+    url = reverse("download:missingsymbols_csv")
     response = client.get(url)
     assert response.status_code == 200
     assert response["Content-type"] == "text/csv"
@@ -514,6 +515,88 @@ def test_missing_symbols_csv(client, settings):
     assert line[1] == "44E4EC8C2F41492B9369D6B9A059577C2"
     assert line[2] == "xul.dll"
     assert line[3] == "deadbeef"
+
+
+@pytest.mark.django_db
+def test_missingsymbols(client, settings):
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+
+    # Empty db works fine
+    url = reverse("download:missingsymbols")
+    response = client.get(url)
+    assert response.status_code == 200
+    expected = {
+        "batch_size": 100,
+        "records": [],
+        "order_by": {"reverse": True, "sort": "modified_at"},
+        "page": 1,
+        "total_count": 0,
+    }
+    assert json.loads(response.content.decode("utf-8")) == expected
+
+    today = timezone.now()
+    yesterday = today - datetime.timedelta(days=1)
+
+    # Add a couple of missing symbols and set modified_at and created_at
+    # correctly
+    views.log_symbol_get_404(
+        "xul.pdb",
+        "44E4EC8C2F41492B9369D6B9A059577C2",
+        "xul.sym",
+        code_file="xul.dll",
+        code_id="deadbeef",
+    )
+    yesterday = yesterday.replace(hour=1, minute=1, second=1, microsecond=1)
+    MissingSymbol.objects.filter(symbol="xul.pdb").update(
+        modified_at=yesterday, created_at=yesterday
+    )
+
+    views.log_symbol_get_404(
+        "rooksdol_x64.dll",
+        "58B6E33D262000",
+        "rooksdol_x64.dl_",
+        code_file="",
+        code_id="",
+    )
+    yesterday = yesterday.replace(hour=2)
+    MissingSymbol.objects.filter(symbol="rooksdol_x64.dll").update(
+        modified_at=yesterday, created_at=yesterday
+    )
+
+    response = client.get(url)
+    assert response.status_code == 200
+    data = json.loads(response.content.decode("utf-8"))
+    expected = {
+        "batch_size": 100,
+        "order_by": {"reverse": True, "sort": "modified_at"},
+        "page": 1,
+        "records": [
+            {
+                "id": mock.ANY,
+                "code_file": None,
+                "code_id": None,
+                "count": 1,
+                "created_at": "2020-09-20T02:01:01.000Z",
+                "debugid": "58B6E33D262000",
+                "filename": "rooksdol_x64.dl_",
+                "modified_at": "2020-09-20T02:01:01.000Z",
+                "symbol": "rooksdol_x64.dll",
+            },
+            {
+                "id": mock.ANY,
+                "code_file": "xul.dll",
+                "code_id": "deadbeef",
+                "count": 1,
+                "created_at": "2020-09-20T01:01:01.000Z",
+                "debugid": "44E4EC8C2F41492B9369D6B9A059577C2",
+                "filename": "xul.sym",
+                "modified_at": "2020-09-20T01:01:01.000Z",
+                "symbol": "xul.pdb",
+            },
+        ],
+        "total_count": 2,
+    }
+    assert data == expected
 
 
 @pytest.mark.django_db
@@ -629,18 +712,19 @@ def test_store_missing_symbol_client(client, botomock, settings):
 
 @pytest.mark.django_db
 def test_store_missing_symbol_client_operationalerror(client, botomock, settings):
-    """If the *storing* of a missing symbols causes an OperationalError,
-    the main client that requests should still be a 404.
-    On the inside, what we do is catch the operational error, and
-    instead call out to a celery job that does it instead.
+    """If the *storing* of a missing symbols causes an OperationalError, the
+    main client that requests should still be a 404.  On the inside, what we do
+    is catch the operational error, and instead call out to a celery job that
+    does it instead.
 
     This test is a bit cryptic. The S3 call is mocked. The calling of the
-    'store_missing_symbol()' function (that is in 'downloads/views.py')
-    is mocked. Lastly, the wrapped task function 'store_missing_symbol_task()'
-    is also mocked (so we don't actually call out to Redis).
-    Inside the mocked call to the celery task, we actually call the
-    original 'tecken.download.utils.store_missing_symbol' function just to
-    make sure the MissingSymbol record gets created.
+    'store_missing_symbol()' function (that is in 'downloads/views.py') is
+    mocked. Lastly, the wrapped task function 'store_missing_symbol_task()' is
+    also mocked (so we don't actually call out to Redis).  Inside the mocked
+    call to the celery task, we actually call the original
+    'tecken.download.utils.store_missing_symbol' function just to make sure the
+    MissingSymbol record gets created.
+
     """
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
     reload_downloaders("https://s3.example.com/private/prefix/")

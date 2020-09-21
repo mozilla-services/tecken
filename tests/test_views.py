@@ -4,13 +4,13 @@
 
 import json
 import os
+from unittest import mock
 
 import pytest
-import mock
 
-from django.urls import reverse
-from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
+from django.urls import reverse
 
 from tecken.tasks import sample_task
 from tecken.views import handler500, handler400, handler403

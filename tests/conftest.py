@@ -4,15 +4,15 @@
 
 import json
 import tempfile
+from unittest import mock
 
-import pytest
-import mock
-import requests_mock
 import botocore
 from markus.testing import MetricsMock
+import pytest
+import requests_mock
 
-from django.core.cache import caches
 from django.contrib.auth.models import User
+from django.core.cache import caches
 
 
 @pytest.fixture
