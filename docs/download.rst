@@ -119,7 +119,7 @@ Missing symbols APIs
 
 .. http:get:: /missingsymbols.csv
 
-   Download missing symbols list as a CSV.
+   Download missing symbol information as a CSV.
 
    Format::
 
@@ -128,10 +128,78 @@ Missing symbols APIs
    :reqheader User-Agent: please provide a unique user agent to make it easier for us
        to help you debug problems
 
+   :statuscode 200: ok
    :statuscode 429: sleep for a bit and retry
    :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
        file a bug report
    :statuscode 503: sleep for a bit and retry
 
 
-.. http:get:: /api/download/missing/
+.. http:get:: /missingsymbols/
+
+   Download missing symbol information.
+
+   For example:
+
+   .. code-block:: shell
+
+      curl --user-agent "example/1.0" \
+         'https://symbols.mozilla.org/missingsymbols/?filename=libxul'
+
+   :reqheader User-Agent: please provide a unique user agent to make it easier for us
+       to help you debug problems
+
+   :query symbol: (optional) the symbol to filter on by substring match
+   :query debugid: (optional) the debugid to filter on by substring match
+   :query filename: (optional) the filename to filter on by substring match
+   :query code_file: (optional) the code_file to filter on by substring match
+   :query code_id: (optional) the code_id to filter on by substring match
+   :query modified_at: (optional) comma-separated date filters for modified_at timestamp
+
+       Valid comparisons: ``<=``, ``>=``, ``=``, ``<``, ``>``
+
+       Example: ``modified_at=>=2020-09-01,<2020-09-02``
+       (url-encoded ``modified_at=%3E%3D=2020-09-01%2C%3C2020-09-02``)
+
+   :query created_at: (optional) comma-separated date filters for created_at timestamp
+
+       Valid comparisons: ``<=``, ``>=``, ``=``, ``<``, ``>``
+
+       Example: ``created_at=>=2020-09-01,<2020-09-02``
+       (url-encoded ``created_at=%3E%3D=2020-09-01%2C%3C2020-09-02``)
+
+   :query sort: (optional) the field to sort by; defaults to ``modified_at``
+   :query reverse: (optional) if you want the sort reversed; defaults to
+       ``false``
+
+   :resheader Content-Type: application/json
+
+   :>json obj order_by: sort specification
+
+       :sort (str): the sort field
+       :reverse (bool): whether or not it's reversed
+
+   :>json int batch_size: the number of records in a page
+   :>json int page: the page being returned
+   :>json int total_count: the total number of records in the query
+
+   :>json array records: the list of records where each record consists of
+
+       :id (int): the record id
+       :symbol (str): the debug symbol
+       :debugid (str): the debug id
+       :filename (str): the filename
+       :code_file (str): the code_file or null
+       :code_id (str): the code_id or null
+       :count (int): how many times this symbol file was requested
+       :modified_at (timestamp): the last time this symbol file was requested;
+           iso8601 in UTC; YYYY-MM-DDThh:mm:ss.sssZ
+       :created_at (timestamp): the first time this symbol file was requested;
+           iso8601 in UTC; YYYY-MM-DDThh:mm:ss.sssZ
+
+   :statuscode 200: ok
+   :statuscode 400: request was invalid; fix and retry
+   :statuscode 429: sleep for a bit and retry
+   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
+       file a bug report
+   :statuscode 503: sleep for a bit and retry
