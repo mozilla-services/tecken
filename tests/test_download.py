@@ -546,10 +546,11 @@ def test_missingsymbols(client, settings):
         code_file="xul.dll",
         code_id="deadbeef",
     )
-    yesterday = yesterday.replace(hour=1, minute=1, second=1, microsecond=1)
+    date_1 = yesterday.replace(hour=1, minute=1, second=1, microsecond=0)
     MissingSymbol.objects.filter(symbol="xul.pdb").update(
-        modified_at=yesterday, created_at=yesterday
+        modified_at=date_1, created_at=date_1
     )
+    date_1_str = date_1.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     views.log_symbol_get_404(
         "rooksdol_x64.dll",
@@ -558,10 +559,11 @@ def test_missingsymbols(client, settings):
         code_file="",
         code_id="",
     )
-    yesterday = yesterday.replace(hour=2)
+    date_2 = yesterday.replace(hour=2, minute=1, second=1, microsecond=0)
     MissingSymbol.objects.filter(symbol="rooksdol_x64.dll").update(
-        modified_at=yesterday, created_at=yesterday
+        modified_at=date_2, created_at=date_2
     )
+    date_2_str = date_2.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     response = client.get(url)
     assert response.status_code == 200
@@ -576,10 +578,10 @@ def test_missingsymbols(client, settings):
                 "code_file": None,
                 "code_id": None,
                 "count": 1,
-                "created_at": "2020-09-20T02:01:01.000Z",
+                "created_at": date_2_str,
                 "debugid": "58B6E33D262000",
                 "filename": "rooksdol_x64.dl_",
-                "modified_at": "2020-09-20T02:01:01.000Z",
+                "modified_at": date_2_str,
                 "symbol": "rooksdol_x64.dll",
             },
             {
@@ -587,10 +589,10 @@ def test_missingsymbols(client, settings):
                 "code_file": "xul.dll",
                 "code_id": "deadbeef",
                 "count": 1,
-                "created_at": "2020-09-20T01:01:01.000Z",
+                "created_at": date_1_str,
                 "debugid": "44E4EC8C2F41492B9369D6B9A059577C2",
                 "filename": "xul.sym",
-                "modified_at": "2020-09-20T01:01:01.000Z",
+                "modified_at": date_1_str,
                 "symbol": "xul.pdb",
             },
         ],
