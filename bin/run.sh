@@ -79,6 +79,9 @@ case $1 in
       coverage report -m
     fi
     ;;
+  docs)
+    make -C docs/ html
+    ;;
   bash)
     exec "$@"
     ;;

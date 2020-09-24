@@ -47,6 +47,11 @@ jobs:
             docker-compose run frontend-ci lint
 
       - run:
+          name: Build docs
+          command: |
+            docker-compose run linting-ci docs
+
+      - run:
           name: Push to Dockerhub
           working_directory: ~/tecken
           command: |
@@ -59,32 +64,6 @@ jobs:
               bin/ci/deploy-dockerhub.sh "$CIRCLE_TAG"
             fi
 
-  docs:
-    docker:
-      - image: circleci/python:3.7
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements/docs.txt" }}
-      - run:
-          name: Create virtualenv
-          command: |
-            python3 -m venv ~/venv
-            echo "source ~/venv/bin/activate" >> $BASH_ENV
-      - run:
-          name: Install requirements
-          command: pip install -r requirements/docs.txt
-      - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements/docs.txt" }}
-          paths:
-            - "~/venv"
-      - run:
-          name: Build docs
-          command: |
-            cd docs
-            make html
-
 workflows:
   version: 2
   main:
@@ -93,4 +72,3 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - docs
