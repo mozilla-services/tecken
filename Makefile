@@ -88,8 +88,8 @@ testshell: .env .docker-build  ## | Open shell in test environment.
 	bin/test.sh --shell
 
 .PHONY: docs
-docs:  ## | Build docs.
-	bin/build-docs-locally.sh
+docs: .env .docker-build  ## | Build docs.
+	docker-compose run --rm --user ${USE_UID} linting ./bin/build-docs.sh
 
 frontend/build/:
 	make build-frontend
