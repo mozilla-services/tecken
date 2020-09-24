@@ -45,7 +45,7 @@ setup: .env  ## | Initialize services.
 
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
-	docker-compose up web worker frontend
+	docker-compose up web eliot worker frontend
 
 .PHONY: stop
 stop: .env  ## | Stop docker containers.

@@ -16,6 +16,13 @@ export DJANGO_CONFIGURATION=Test
 if [ "$1" = "--shell" ]; then
     bash
 else
-    # python manage.py collectstatic --noinput
+    # Run tecken tests
+    pushd tecken
     pytest
+    popd
+
+    # Run eliot-service tests
+    pushd eliot-service
+    pytest
+    popd
 fi

@@ -38,6 +38,20 @@ services:
       - $PWD:/app
     command: ["web", "--dev"]
 
+  # Symbolicator service
+  eliot:
+    extends:
+      service: base
+    ports:
+      - "8050:8000"
+    depends_on:
+      - statsd
+    links:
+      - statsd
+    volumes:
+      - $PWD:/app
+    command: ["eliot"]
+
   # Container specifically for running tests.
   test:
     extends:
