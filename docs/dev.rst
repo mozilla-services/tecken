@@ -204,132 +204,30 @@ corresponding user in the oidcprovider service like this:
 
    docker-compose exec oidcprovider /code/manage.py createuser yourname yourpassword yourname@example.com
 
-Running ``gunicorn`` locally
-============================
 
-To run ``gunicorn`` locally, which has concurrency, run:
+Giving users permission to upload
+=================================
 
-.. code-block:: shell
+The user should write up a bug. See :ref:`upload-basics`.
 
-   $ make gunicorn
+If the user is a Mozilla employee, needinfo the user's manager and verify the
+user needs upload permission.
 
-You might want to temporarily edit ``.env`` and set ``DJANGO_DEBUG=False``
-to run it in a more production realistic way.
+If the user is not a Mozilla employee, find someone to vouch for the user.
 
+Once vouched:
 
-Prod-like running locally
-=========================
-
-First you need to start Tecken with a set of configurations that
-mimics what's required in prod, except we're doing this in docker.
-
-To do that, you need to set ``DJANGO_CONFIGURATION=Prodlike`` and
-run the gunicorn workers:
-
-.. code-block:: shell
-
-    $ docker-compose run --service-ports --user 0  web bash
-
-This will start 4 ``gunicorn`` workers exposed on ``0.0.0.0:8000`` and
-exposed outside of docker onto your host.
-
-.. note::
-
-   If this fails to start, some exceptions might be hidden. If so, do::
-
-      $ make shell
-      app@xxx:/app$ export DJANGO_UPLOAD_DEFAULT_URL=http://minio:9000/testbucket
-      app@xxx:/app$ export DJANGO_SYMBOL_URLS=http://minio:9000/testbucket
-      app@xxx:/app$ export DJANGO_CONFIGURATION=Prodlike
-      app@xxx:/app$ gunicorn tecken.wsgi:application -b 0.0.0.0:8000 --workers 4 --access-logfile -
-
-That configuration **forces** you to run with ``DEBUG=False`` independent
-of what value you have set in ``.env`` for ``DEBUG``. Thus making it easy
-to switch from regular debug-mode development to prod-like serving.
-
-The second step for this to be testable is to reach the server with ``HTTPS``
-or else the app will forcibly redirect you to the ``https://`` equivalent of
-whatever URL you attempt to use (e.g. ``http://localhost:8000/`` redirects
-to ``https://localhost:8000/``)
-
-To test this, run a local Nginx server. But first, create a suitable
-hostname. For example, ``prod.tecken.dev``. Edit ``/etc/hosts`` and enter
-a line like this::
-
-    127.0.0.1       prod.tecken.dev
-
-To generate an nginx config file, run ``./test-with-nginx/generate.py``.
-That will be print out a Nginx configuration file you can put where
-you normally put Nginx configuration files. For example:
-
-.. code-block:: shell
-
-    $ ./test-with-nginx/generate.py --help
-    $ ./test-with-nginx/generate.py > /etc/nginx/sites-enabled/tecken.conf
-    $ # however you reload nginx
+1. Log in to `<https://symbols.mozilla.org/users>`_
+2. Use the search filter at the bottom of the page to find the user
+3. Click to edit and make give them the "Uploaders" group (only).
+4. Respond and say that they now have permission and should be able to either
+   upload via the web or create an API Token with the "Upload Symbol Files"
+   permission.
+5. Resolve the bug.
 
 
-Frontend and prod-like running locally
-======================================
-
-When Tecken is deployed with continuous integration, it builds the static
-assets files for production use. These files are served by Django using
-Whitenoise. Basically, anything that isn't a matched Django URL-to-view
-gets served as a static file, if matched.
-
-Suppose you want to run the prod-like frontend locally. For example, you
-might be hunting a frontend bug that only happens when the assets are
-minified and compiled. To do that you have to manually build the static assets:
-
-.. code-block:: shell
-
-    $ cd frontend
-    $ yarn
-    $ yarn run build
-
-This should create ``frontend/build/*`` files. For example
-``static/js/main.6d3b4de8.js``. This should now be available *thru* Django
-at ``http://localhost:8000/static/js.main.6d3b4de8.js``.
-
-When you're done you can delete ``frontend/build`` and
-``frontend/node_modules``.
-
-
-Running things in background vs foreground
-==========================================
-
-By default ``make run`` is wired to start three things in the foreground:
-
-* Django (aka. ``web``)
-
-* Celery (aka. ``worker``)
-
-* React dev server (aka. ``frontend``)
-
-This is done by running ``docker-compose up web worker frontend``. These
-services' output is streamed together to stdout in the foreground that
-this ``docker-compose up ...`` runs.
-
-All other things that these depend on are run in the background. Meaning
-you don't see, for example, what the ``minio`` service does. It knows to
-*start* because in ``docker-compose.yml`` ``web`` is **linked** to
-``minio``.
-
-If you instead want to run, for example, ``minio`` in the foreground here's
-how:
-
-1. Comment out ``minio`` from the ``links`` part of ``web`` in ``docker-compose.yml``
-
-2. In a terminal run ``docker-compose up minio``.
-
-3. In another terminal run ``make run``
-
-Alternatively, just do step 1, from the list above, and then run:
-``docker-compose up minio web worker frontend``.
-
-
-All metrics keys
-================
+Viewing all metrics keys
+========================
 
 To get insight into all metrics keys that are used, a special Markus backend
 is enabled called ``tecken.markus_extra.LogAllMetricsKeys``. It's enabled
@@ -348,30 +246,6 @@ it from the code.
 
 The file ``all-metrics-keys.json`` can be deleted any time and it will be
 recreated again.
-
-
-Celery in local development mode
-================================
-
-When you do something like ``make run`` it starts Django, the frontend
-and the Celery worker. But it's important to note that it starts Celery
-with ``--purge``. That means that every time you start up the worker,
-all jobs that have been previously added to the Celery query are purged.
-
-This is to prevent foot-shooting. Perhaps a rogue unit test that didn't mock
-the broker and accidentally added hundreds of jobs that all fail.
-Or perhaps you're working on a git branch that changes how the worker job
-works and as you're jumping between git branches you start and stop the worker
-so that the wrong jobs are sent using the wrong branch.
-
-Another real thing that can happen is that when you're doing loadtesting of
-the web app, and only run that in docker, but since the web app writes to
-the same Redis (the broker) thousands of jobs might be written that never
-get a chance to be consumed by the worker.
-
-This is why ``docker-compose`` starts ``worker-purge`` instead of ``worker``
-which is the same thing except it's started with ``--purge`` and this should
-only ever be done on local docker development.
 
 
 Minio (S3 mock server)
@@ -426,20 +300,6 @@ This way you'll have 3 terminals. 2 bash terminals inside the container
 and one outside in the ``tecke-loadtests`` directory on your host.
 
 
-Debugging auth
-==============
-
-There are many reasons for why authentication might not work. Most of the
-pit falls lies with the the configuration and credentials around OpenID
-Connect. I.e. Auth0 in our current case.
-
-Another important thing is that on the Django side, caching and cookies work.
-
-If you have trouble authenticating you can start the server and go to:
-``http://localhost:8000/__auth_debug__``.  It will check that the cache
-can work between requests and that session cookies can be set and read.
-
-
 Debugging a "broken" Redis
 ==========================
 
@@ -468,29 +328,19 @@ should continue to work because we use the ``cached_db`` backend in
 verify the session cookie value on each and every request.
 
 
-Giving users permission to upload
-=================================
+Auth debugging
+==============
 
-The user should write up a bug. See :ref:`upload-basics`.
+Cache/cookeis issues
+--------------------
 
-If the user is a Mozilla employee, needinfo the user's manager and verify the
-user needs upload permission.
-
-If the user is not a Mozilla employee, find someone to vouch for the user.
-
-Once vouched:
-
-1. Log in to `<https://symbols.mozilla.org/users>`_
-2. Use the search filter at the bottom of the page to find the user
-3. Click to edit and make give them the "Uploaders" group (only).
-4. Respond and say that they now have permission and should be able to either
-   upload via the web or create an API Token with the "Upload Symbol Files"
-   permission.
-5. Resolve the bug.
+Anyone can test caching and cookies by going to
+`<https://symbols.mozilla.org/__auth_debug__>`_.  That's a good first debugging
+step for helping users figure out auth problems.
 
 
-Auth0 debugging
-===============
+Auth0 issues
+------------
 
 Tecken uses Mozilla SSO. Anyone can log in, but by default accounts don't have
 special permissions to anything.
@@ -519,8 +369,9 @@ cookie/API token till your user account is checked again in Auth0. To
 override this interval change the environment variable
 ``DJANGO_NOT_BLOCKED_IN_AUTH0_INTERVAL_SECONDS``.
 
-Testing Blocked
-===============
+
+Testing if a user is blocked
+----------------------------
 
 To check if a user is blocked, use the ``is-blocked-in-auth0`` which is
 development tool shortcut for what the middleware does:

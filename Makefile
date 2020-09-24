@@ -68,16 +68,16 @@ clear-caches:  ## | Clear Redis caches.
 
 .PHONY: redis-cache-cli
 redis-cache-cli: .env .docker-build  ## | Open Redis CLI to cache Redis server.
-	docker-compose run redis-cache redis-cli -h redis-cache
+	docker-compose run --rm redis-cache redis-cli -h redis-cache
 
 .PHONY: redis-store-cli
 redis-store-cli: .env .docker-build  ## | Open Redis CLI to store Redis server.
-	docker-compose run redis-store redis-cli -h redis-store
+	docker-compose run --rm redis-store redis-cli -h redis-store
 
 .PHONY: psql
 psql: .env .docker-build  ## | Open psql cli.
 	@echo "Password is 'postgres'."
-	docker-compose run db psql -h db -U postgres
+	docker-compose run --rm db psql -h db -U postgres
 
 .PHONY: test
 test: .env .docker-build frontend/build/  ## | Run Python unit test suite.
@@ -88,22 +88,22 @@ testshell: .env .docker-build  ## | Open shell in test environment.
 	bin/test.sh --shell
 
 .PHONY: docs
-docs:  ## | Build docs.
-	bin/build-docs-locally.sh
+docs: .env .docker-build  ## | Build docs.
+	docker-compose run --rm --user ${USE_UID} linting docs
 
 frontend/build/:
 	make build-frontend
 
 .PHONY: build-frontend
 build-frontend:  ## | Build frontend static files.
-	docker-compose run --no-deps -e CI web ./bin/build_frontend.sh
+	docker-compose run --rm --no-deps -e CI web ./bin/build_frontend.sh
 
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.
-	docker-compose run linting lint
-	docker-compose run frontend lint
+	docker-compose run --rm linting lint
+	docker-compose run --rm frontend lint
 
 .PHONY: lintfix
 lintfix: .env .docker-build  ## | Reformat code.
-	docker-compose run linting lintfix
-	docker-compose run frontend lintfix
+	docker-compose run --rm linting lintfix
+	docker-compose run --rm frontend lintfix
