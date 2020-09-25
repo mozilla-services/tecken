@@ -58,8 +58,8 @@ shell: .env .docker-build  ## | Open a shell in web container.
 .PHONY: clean
 clean: .env stop  ## | Stop and remove docker containers and artifacts.
 	docker-compose rm -f
-	rm -rf coverage/ .coverage
 	rm -fr .docker-build
+	rm -rf frontend/build/
 
 .PHONY: clear-caches
 clear-caches:  ## | Clear Redis caches.
@@ -80,7 +80,7 @@ psql: .env .docker-build  ## | Open psql cli.
 	docker-compose run --rm db psql -h db -U postgres
 
 .PHONY: test
-test: .env .docker-build frontend/build/  ## | Run Python unit test suite.
+test: .env .docker-build  ## | Run Python unit test suite.
 	bin/test.sh
 
 .PHONY: testshell
@@ -90,13 +90,6 @@ testshell: .env .docker-build  ## | Open shell in test environment.
 .PHONY: docs
 docs: .env .docker-build  ## | Build docs.
 	docker-compose run --rm --user ${USE_UID} linting docs
-
-frontend/build/:
-	make build-frontend
-
-.PHONY: build-frontend
-build-frontend:  ## | Build frontend static files.
-	docker-compose run --rm --no-deps -e CI web ./bin/build_frontend.sh
 
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.

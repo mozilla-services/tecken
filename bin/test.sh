@@ -9,18 +9,16 @@ set -eo pipefail
 # copy the .env template to .env if not there already
 [ ! -f .env ] && cp .env-dist .env
 
+# create a frontend/build/ directory if it doesn't exist
+[ ! -d frontend/build/ ] && mkdir -p frontend/build/
+
 # default variables
 export DEVELOPMENT=1
 export DJANGO_CONFIGURATION=Test
 
-# run docker compose with the given environment variables
-
+# run docker compose with the correct given environment variables
 if [[ -n "${CI}" ]]; then
-    # pass CI env vars into docker containers for codecov submission
-    echo "Getting Codecov environment variables"
-    export CI_ENV=`bash <(curl -s https://codecov.io/env)`
-
-    docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION $CI_ENV test-ci test $@
+    docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION test-ci test $@
 else
     docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION test test $@
 fi

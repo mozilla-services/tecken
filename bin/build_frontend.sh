@@ -5,29 +5,18 @@ set -eo pipefail
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Builds the React frontend, *only* if we are in CI.
+# Builds the React frontend.
 
-# True if the environment variable 'CI' is NOT empty.
-# In CircleCI, this variable is "true" and in local dev, it's "".
-if [[ ! -z "${CI}" ]]; then
-    # Because this is what create-react-app needs as a prefix
-    export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
+# NOTE(willkg): Since this is in the image at /app/frontend/build, it gets
+# stomped on when you mount your repo directory as /app.
 
-    # We prefer to not leave any JavaScript as inline no matter how small.
-    export INLINE_RUNTIME_CHUNK=false
+# Because this is what create-react-app needs as a prefix
+export REACT_APP_SENTRY_PUBLIC_DSN=$FRONTEND_SENTRY_PUBLIC_DSN
 
-    pushd frontend
-    yarn --no-progress
-    yarn run --no-progress build
-    popd
-else
-    # If you're NOT in CI, you're most likely in a local development mode.  You
-    # need the Dockerfile to build as normal but you don't want to build the
-    # production grade static assets necessarily (it's slow and for local
-    # development you have the 'frontend' container in docker-compose.yml).
-    #
-    # This just makes sure there exists a directory called 'frontend/build'.
-    # If it's empty, that's OK. It it already existed, it won't be affected.
-    echo "Creating frontend/build/ ..."
-    mkdir -p frontend/build
-fi
+# We prefer to not leave any JavaScript as inline no matter how small.
+export INLINE_RUNTIME_CHUNK=false
+
+pushd frontend
+yarn --no-progress
+yarn run --no-progress build
+popd

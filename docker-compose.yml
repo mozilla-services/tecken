@@ -1,7 +1,7 @@
 version: '2'
 
 services:
-  # Base container is used for development tasks like tests, linting, coverage
+  # Base container is used for development tasks like tests, linting,
   # and building docs.
   base:
     build:

@@ -4,10 +4,6 @@ FROM node:14.7.0-slim@sha256:684feb573d3e0433f05e2ca9d71c46997f6f9a9610ccb46705a
 # and used in bin/build_frontend.sh
 ARG FRONTEND_SENTRY_PUBLIC_DSN=UNSET_DSN
 ENV FRONTEND_SENTRY_PUBLIC_DSN=${FRONTEND_SENTRY_PUBLIC_DSN}
-ARG CI=false
-ENV CI=${CI}
-
-RUN echo "Running in CI: ${CI}"
 
 COPY . /app
 WORKDIR /app
@@ -59,6 +55,7 @@ WORKDIR /app
 
 # Copy static assets
 COPY --from=frontend /app/frontend/build /app/frontend/build
+RUN /app/bin/run_collectstatic.sh
 
 RUN chown -R app:app /app
 

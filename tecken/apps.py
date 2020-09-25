@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
+import os
 
 import markus
 from django_redis import get_redis_connection
@@ -18,6 +19,9 @@ class TeckenAppConfig(AppConfig):
     name = "tecken"
 
     def ready(self):
+        if os.environ.get("DJANGO_CONFIGURATION") == "Tools":
+            return
+
         # The app is now ready.
 
         self._fix_settings_conn_max_age()
