@@ -84,6 +84,17 @@ const App = observer(
       });
     };
 
+    adminLink = () => {
+      // Need to figure out the right url that works in the local dev environment
+      // which does this proxy thing
+      let here = window.location;
+      let url =
+        here.protocol + "//" + here.hostname + ":" + here.port + "/admin";
+      // Replace proxy webpack host with django host in local dev environment
+      url = url.replace("http://localhost:3000/", "http://localhost:8000/");
+      return url;
+    };
+
     signIn = (event) => {
       event.preventDefault();
       let url = store.signInUrl;
@@ -132,7 +143,11 @@ const App = observer(
       return (
         <Router>
           <React.Fragment>
-            <NavWithRouter signIn={this.signIn} signOut={this.signOut} />
+            <NavWithRouter
+              signIn={this.signIn}
+              signOut={this.signOut}
+              adminLink={this.adminLink}
+            />
             <section className="section">
               <div className="container">
                 <DisplayNotificationMessage

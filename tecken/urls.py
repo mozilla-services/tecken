@@ -2,9 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from django.contrib import admin
 from django.urls import register_converter, path, include
 
-from . import views
+from tecken import views
 
 # These handlers are for dealing with exceptions raised from within
 # Django. Most other 4xx errors happen explicitly in the view functions.
@@ -31,6 +32,7 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("__auth_debug__", views.auth_debug, name="auth_debug"),
     path("__task_tester__", views.task_tester, name="task_tester"),
+    path("admin/", admin.site.urls),
     path("symbolicate/", include("tecken.symbolicate.urls", namespace="symbolicate")),
     path("oidc/", include("mozilla_django_oidc.urls")),
     path("upload/", include("tecken.upload.urls", namespace="upload")),

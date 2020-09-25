@@ -69,6 +69,8 @@ class Core(AWS, Celery, S3, Configuration):
         "django.contrib.auth",
         "django.contrib.contenttypes",
         "django.contrib.sessions",
+        "django.contrib.messages",
+        "django.contrib.admin",
         # Project specific apps
         "tecken.apps.TeckenAppConfig",
         "tecken.symbolicate",
@@ -104,6 +106,7 @@ class Core(AWS, Celery, S3, Configuration):
         # Important that this comes after APITokenAuthenticationMiddleware
         "tecken.useradmin.middleware.NotBlockedInAuth0Middleware",
         "whitenoise.middleware.WhiteNoiseMiddleware",
+        "django.contrib.messages.middleware.MessageMiddleware",
     )
 
     ROOT_URLCONF = "tecken.urls"
@@ -124,6 +127,21 @@ class Core(AWS, Celery, S3, Configuration):
     USE_L10N = False
     USE_TZ = True
     DATETIME_FORMAT = "Y-m-d H:i"  # simplified ISO format since we assume UTC
+
+    TEMPLATES = [
+        # Needed for Django admin
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "APP_DIRS": True,
+            "OPTIONS": {
+                "context_processors": [
+                    "django.contrib.auth.context_processors.auth",
+                    "django.contrib.messages.context_processors.messages",
+                    "django.template.context_processors.request",
+                ],
+            },
+        },
+    ]
 
     STATIC_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build"))
 
