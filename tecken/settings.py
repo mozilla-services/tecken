@@ -73,6 +73,7 @@ class Core(AWS, Celery, S3, Configuration):
         "django.contrib.admin",
         # Project specific apps
         "tecken.apps.TeckenAppConfig",
+        "tecken.base",
         "tecken.symbolicate",
         "tecken.download",
         "tecken.upload",

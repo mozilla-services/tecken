@@ -102,15 +102,6 @@ const Nav = observer(
                   Admin
                 </a>
               ) : null}
-              {store.currentUser && store.currentUser.is_superuser ? (
-                <NavLink
-                  to="/users"
-                  className="navbar-item"
-                  activeClassName="is-active"
-                >
-                  User Management
-                </NavLink>
-              ) : null}
               <NavLink
                 to="/help"
                 className="navbar-item"

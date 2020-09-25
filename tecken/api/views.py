@@ -15,11 +15,10 @@ from django import http
 from django import get_version
 from django.conf import settings
 from django.urls import reverse
-from django.contrib.auth.models import Permission, User, Group
+from django.contrib.auth.models import Permission, User
 from django.db.models import Aggregate, Count, Q, Sum, Avg, F, Min
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_protect
 from django.db import connection
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
@@ -235,106 +234,6 @@ def extend_token(request, id):
     token.save()
 
     return http.JsonResponse({"ok": True, "days": days})
-
-
-def _serialize_permission(p):
-    return {"id": p.id, "name": p.name}
-
-
-def _serialize_group(group):
-    return {
-        "id": group.id,
-        "name": group.name,
-        "permissions": [_serialize_permission(x) for x in group.permissions.all()],
-    }
-
-
-@api_login_required
-@api_permission_required("users.change_user")
-def users(request):
-    context = {"users": []}
-
-    # A cache. If two users belong to the same group, we don't want to
-    # have to figure out that group's permissions more than once.
-    all_group_permissions = {}
-
-    def groups_to_permissions(groups):
-        all_permissions = []
-        permission_ids = set()
-        for group in groups:
-            if group.id not in all_group_permissions:
-                # populate the cache for this group
-                all_group_permissions[group.id] = []
-                for perm in group.permissions.all():
-                    all_group_permissions[group.id].append(_serialize_permission(perm))
-            for permission in all_group_permissions[group.id]:
-                if permission["id"] in permission_ids:
-                    continue
-                permission_ids.add(permission["id"])
-                all_permissions.append(permission)
-        return sorted(all_permissions, key=lambda x: x["name"])
-
-    # Make a map of user_id to count of Token objects
-    tokens_count = {}
-    for rec in Token.objects.values("user").annotate(count=Count("user")):
-        tokens_count[rec["user"]] = rec["count"]
-    uploads_count = {}
-    for rec in Upload.objects.values("user").annotate(count=Count("user")):
-        uploads_count[rec["user"]] = rec["count"]
-
-    qs = User.objects.all()
-    for user in qs.order_by("-last_login"):
-        context["users"].append(
-            {
-                "id": user.id,
-                "email": user.email,
-                "last_login": user.last_login,
-                "date_joined": user.date_joined,
-                "is_superuser": user.is_superuser,
-                "is_active": user.is_active,
-                "no_uploads": uploads_count.get(user.id, 0),
-                "no_tokens": tokens_count.get(user.id, 0),
-                "groups": [_serialize_group(x) for x in user.groups.all()],
-                "permissions": groups_to_permissions(user.groups.all()),
-            }
-        )
-
-    return http.JsonResponse(context)
-
-
-@csrf_protect
-@api_login_required
-@api_permission_required("users.change_user")
-def edit_user(request, id):
-    user = get_object_or_404(User, id=id)
-
-    if request.method == "POST":
-        form = forms.UserEditForm(request.POST, instance=user)
-        if form.is_valid():
-            form.save()
-            # Remove all the groups that user might have been in before
-            groups = form.cleaned_data["groups"]
-            for group in set(user.groups.all()) - set(groups):
-                user.groups.remove(group)
-            for group in set(groups) - set(user.groups.all()):
-                user.groups.add(group)
-            return http.JsonResponse({"ok": True}, status=200)
-        else:
-            return http.JsonResponse({"errors": form.errors}, status=400)
-
-    context = {}
-    context["user"] = {
-        "id": user.id,
-        "is_active": user.is_active,
-        "is_superuser": user.is_superuser,
-        "email": user.email,
-        "groups": [_serialize_group(x) for x in user.groups.all()],
-    }
-    context["groups"] = [_serialize_group(x) for x in Group.objects.all()]
-    from django.middleware.csrf import get_token
-
-    context["csrf_token"] = get_token(request)
-    return http.JsonResponse(context)
 
 
 @metrics.timer_decorator("api", tags=["endpoint:uploads"])
