@@ -19,6 +19,9 @@ class TeckenAppConfig(AppConfig):
     name = "tecken"
 
     def ready(self):
+        # Import our admin site code so it creates the admin site.
+        from tecken.base import admin_site  # noqa
+
         if os.environ.get("DJANGO_CONFIGURATION") == "Tools":
             return
 

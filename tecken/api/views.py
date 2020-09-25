@@ -3,23 +3,17 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import datetime
-import json
 import logging
-from urllib.parse import urlparse, urlunparse
 
 import markus
-from dockerflow.version import get_version as dockerflow_get_version
-from django_redis import get_redis_connection
 
 from django import http
-from django import get_version
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
 from django.db.models import Aggregate, Count, Q, Sum, Avg, F, Min
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from django.db import connection
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 
@@ -920,101 +914,6 @@ def stats_symbolication(request):
             "yesterday": count_symbolications("v5", start_yesterday),
         },
     }
-    return http.JsonResponse(context)
-
-
-@api_login_required
-@api_superuser_required
-def current_settings(request):
-    """return a JSON dict of a selection of settings to describe the
-    current system. These are only accessible to superusers and the settings
-    it includes is allowed and manually maintained here in this view.
-    """
-    context = {"settings": []}
-
-    def clean_url(value):
-        parsed = urlparse(value)
-        if "@" in parsed.netloc:
-            # There might be a password in the netloc part.
-            # It's extremely unlikely but just in case we ever forget
-            # make sure it's never "exposed".
-            parts = list(parsed)
-            parts[1] = "user:xxxxxx@" + parts[1].split("@", 1)[1]
-            return urlunparse(parts)
-        return value
-
-    # Only include keys that can never be useful in security context.
-    keys = (
-        "ENABLE_AUTH0_BLOCKED_CHECK",
-        "ENABLE_TOKENS_AUTHENTICATION",
-        "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
-        "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
-        "ENABLE_STORE_MISSING_SYMBOLS",
-    )
-    for key in keys:
-        value = getattr(settings, key)
-        context["settings"].append({"key": key, "value": value})
-
-    # Now for some oddballs
-    context["settings"].append(
-        {"key": "UPLOAD_DEFAULT_URL", "value": clean_url(settings.UPLOAD_DEFAULT_URL)}
-    )
-    context["settings"].append(
-        {
-            "key": "UPLOAD_TRY_SYMBOLS_URL",
-            "value": clean_url(settings.UPLOAD_TRY_SYMBOLS_URL),
-        }
-    )
-    context["settings"].append(
-        {
-            "key": "SYMBOL_URLS",
-            "value": json.dumps([clean_url(x) for x in settings.SYMBOL_URLS]),
-        }
-    )
-    context["settings"].append(
-        {
-            "key": "UPLOAD_URL_EXCEPTIONS",
-            "value": json.dumps(
-                {k: clean_url(v) for k, v in settings.UPLOAD_URL_EXCEPTIONS.items()}
-            ),
-        }
-    )
-    context["settings"].sort(key=lambda x: x["key"])
-    return http.JsonResponse(context)
-
-
-@api_login_required
-@api_superuser_required
-def current_versions(request):
-    """return a JSON dict of a selection of keys and their versions"""
-    context = {"versions": []}
-    with connection.cursor() as cursor:
-        cursor.execute("select version()")
-        row = cursor.fetchone()
-        (value,) = row
-        context["versions"].append(
-            {
-                "key": "PostgreSQL",
-                "value": value.split(" on ")[0].replace("PostgreSQL", "").strip(),
-            }
-        )
-    context["versions"].append(
-        {"key": "Tecken", "value": dockerflow_get_version(settings.BASE_DIR)}
-    )
-    context["versions"].append({"key": "Django", "value": get_version()})
-    redis_store_info = get_redis_connection("store").info()
-    context["versions"].append(
-        {"key": "Redis Store", "value": redis_store_info["redis_version"]}
-    )
-    try:
-        redis_cache_info = get_redis_connection("default").info()
-    except NotImplementedError:
-        redis_cache_info = {"redis_version": "fakeredis"}
-    context["versions"].append(
-        {"key": "Redis Cache", "value": redis_cache_info["redis_version"]}
-    )
-
-    context["versions"].sort(key=lambda x: x["key"])
     return http.JsonResponse(context)
 
 

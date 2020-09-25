@@ -67,7 +67,7 @@ class Core(AWS, Celery, S3, Configuration):
         "django.contrib.sessions",
         "django.contrib.staticfiles",
         "django.contrib.messages",
-        "django.contrib.admin",
+        "django.contrib.admin.apps.SimpleAdminConfig",
         # Project specific apps
         "tecken.apps.TeckenAppConfig",
         "tecken.base",

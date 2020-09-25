@@ -1,0 +1,51 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n admin_urls static admin_list %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <div class="breadcrumbs">
+      <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+      &rsaquo; Management pages
+      &rsaquo; Site Status
+    </div>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div id="content-main">
+    <h2>Settings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in settings %}
+          <tr>
+            <td>{{ item.key }}</td>
+            <td>{{ item.value }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <h2>Versions</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>key</th>
+          <th>value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in versions %}
+          <tr>
+            <td>{{ item.key }}</td>
+            <td>{{ item.value }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

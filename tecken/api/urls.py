@@ -39,7 +39,5 @@ urlpatterns = [
     path("uploads/files/", views.upload_files, name="upload_files"),
     path("uploads/files/file/<int:id>", views.upload_file, name="upload_file"),
     path("uploads/upload/<int:id>", views.upload, name="upload"),
-    path("_settings/", views.current_settings, name="current_settings"),
-    path("_versions/", views.current_versions, name="current_versions"),
     path("downloads/missing/", views.downloads_missing, name="downloads_missing"),
 ]
