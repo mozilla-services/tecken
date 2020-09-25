@@ -70,15 +70,6 @@ const Nav = observer(
               >
                 Downloads Missing
               </NavLink>
-              {store.currentUser && store.currentUser.is_superuser ? (
-                <NavLink
-                  to="/users"
-                  className="navbar-item"
-                  activeClassName="is-active"
-                >
-                  User Management
-                </NavLink>
-              ) : null}
               {store.currentUser &&
                 store.hasPermission("tokens.manage_tokens") && (
                   <NavLink
@@ -106,6 +97,11 @@ const Nav = observer(
               >
                 Symbolication
               </NavLink>
+              {store.currentUser && store.currentUser.is_superuser ? (
+                <a className="navbar-item" href={this.props.adminLink()}>
+                  Admin
+                </a>
+              ) : null}
               <NavLink
                 to="/help"
                 className="navbar-item"

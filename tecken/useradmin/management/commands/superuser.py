@@ -31,12 +31,16 @@ class Command(BaseCommand):
                 username = default_username_algo(email)
             user = User.objects.create(username=username, email=email)
             user.set_unusable_password()
-            self.stdout.write(self.style.WARNING("User created"))
+            self.stdout.write(self.style.WARNING("New user created"))
 
-        user.is_superuser = not user.is_superuser
-        user.is_active = True  # just to be sure
-        user.save()
-        if user.is_superuser:
-            self.stdout.write(self.style.SUCCESS(f"{email} PROMOTED to superuser"))
+        if user.is_superuser and user.is_staff:
+            self.stdout.write(self.style.WARNING(f"{email} already a superuser/staff"))
         else:
-            self.stdout.write(self.style.WARNING(f"{email} DEMOTED to superuser"))
+            user.is_superuser = True
+            user.is_staff = True
+            user.is_active = True
+            user.save()
+            if user.is_superuser:
+                self.stdout.write(
+                    self.style.SUCCESS(f"{email} PROMOTED to superuser/staff")
+                )

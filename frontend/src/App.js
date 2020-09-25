@@ -27,8 +27,6 @@ import Upload from "./Upload";
 import UploadNow from "./UploadNow";
 import Files from "./Files";
 import File from "./File";
-import Users from "./Users";
-import User from "./User";
 import Symbolication from "./Symbolication";
 import FetchError from "./FetchError";
 import Fetch from "./Fetch";
@@ -84,6 +82,17 @@ const App = observer(
       });
     };
 
+    adminLink = () => {
+      // Need to figure out the right url that works in the local dev environment
+      // which does this proxy thing
+      let here = window.location;
+      let url =
+        here.protocol + "//" + here.hostname + ":" + here.port + "/admin";
+      // Replace proxy webpack host with django host in local dev environment
+      url = url.replace("http://localhost:3000/", "http://localhost:8000/");
+      return url;
+    };
+
     signIn = (event) => {
       event.preventDefault();
       let url = store.signInUrl;
@@ -132,7 +141,11 @@ const App = observer(
       return (
         <Router>
           <React.Fragment>
-            <NavWithRouter signIn={this.signIn} signOut={this.signOut} />
+            <NavWithRouter
+              signIn={this.signIn}
+              signOut={this.signOut}
+              adminLink={this.adminLink}
+            />
             <section className="section">
               <div className="container">
                 <DisplayNotificationMessage
@@ -158,8 +171,6 @@ const App = observer(
                   <Route path="/uploads/upload" exact component={UploadNow} />
                   <Route path="/uploads/upload/:id" component={Upload} />
                   <Route path="/uploads" exact component={Uploads} />
-                  <Route path="/users/:id" component={User} />
-                  <Route path="/users" exact component={Users} />
                   <Route path="/symbolication" component={Symbolication} />
                   <Route component={NoMatch} />
                 </Switch>

@@ -17,17 +17,9 @@ def test_superuser_command():
     stdout = StringIO()
     call_command("superuser", "foo@example.com", stdout=stdout)
     output = stdout.getvalue()
-    assert "User created" in output
-    assert "PROMOTED to superuser" in output
-    assert User.objects.get(email="foo@example.com", is_superuser=True)
-
-    # all it a second time
-    stdout = StringIO()
-    call_command("superuser", "foo@example.com", stdout=stdout)
-    output = stdout.getvalue()
-    assert "User created" not in output
-    assert "DEMOTED to superuser" in output
-    assert User.objects.get(email="foo@example.com", is_superuser=False)
+    assert "New user created" in output
+    assert "PROMOTED to superuser/staff" in output
+    assert User.objects.get(email="foo@example.com", is_superuser=True, is_staff=True)
 
     with pytest.raises(CommandError):
         stdout = StringIO()
