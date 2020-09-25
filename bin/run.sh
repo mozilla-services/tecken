@@ -74,9 +74,7 @@ case $1 in
       bash
     else
       # python manage.py collectstatic --noinput
-      coverage erase
-      coverage run -m pytest "${@:2}"
-      coverage report -m
+      pytest "${@:2}"
     fi
     ;;
   docs)

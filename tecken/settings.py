@@ -69,6 +69,7 @@ class Core(AWS, Celery, S3, Configuration):
         "django.contrib.auth",
         "django.contrib.contenttypes",
         "django.contrib.sessions",
+        "django.contrib.staticfiles",
         "django.contrib.messages",
         "django.contrib.admin",
         # Project specific apps
@@ -145,7 +146,6 @@ class Core(AWS, Celery, S3, Configuration):
     ]
 
     STATIC_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build"))
-
     STATIC_URL = "/"
 
     # The default Cache-Control max-age used,
@@ -807,42 +807,45 @@ class Prod(Stage):
     """Configuration to be used in prod environment"""
 
 
-class Prodlike(Prod):
-    """Configuration when you want to run, as if it's in production, but
-    in docker."""
+class Tools(Localdev):
+    """Configuration for tools that need to run with no configuration."""
 
-    DEBUG = False
+    SECRET_KEY = "junk"
+    ENABLE_TOKENS_AUTHENTICATION = False
+    SYMBOL_URLS = []
+    UPLOAD_DEFAULT_URL = ""
+    UPLOAD_REATTEMPT_LIMIT_SECONDS = 60
 
-    SYMBOL_URLS = Localdev.SYMBOL_URLS
-    UPLOAD_DEFAULT_URL = Localdev.UPLOAD_DEFAULT_URL
+    REDIS_URL = ""
+    REDIS_STORE_URL = ""
 
-    # Make it possible to disable this in local prod-like environments
-    # but still make it True by default
-    LOGGING_USE_JSON = values.BooleanValue(True)
+    DATABASES = {}
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        },
+        "store": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        },
+    }
 
-    @property
-    def DATABASES(self):
-        "Don't require encrypted connections to Postgres"
-        DATABASES = super().DATABASES.copy()
-        DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "disable"
-        return DATABASES
+    VERSION = {}
 
-    MARKUS_BACKENDS = []
+    MARKUS_BACKENDS = [
+        {
+            "class": "markus.backends.logging.LoggingMetrics",
+        },
+    ]
 
-    # If you try to run with prod like settings locally, you most likely
-    # have to use a self-signed SSL cert.
-    SECURE_HSTS_SECONDS = 60
+    API_UPLOADS_BATCH_SIZE = 10
+    API_FILES_BATCH_SIZE = 20
 
-    if os.environ.get("DJANGO_RUN_INSECURELY", False):  # hackish, but works
-        # When running with DJANGO_CONFIGURATION=Prodlike, if you don't want
-        # to have to use HTTPS, uncomment these lines:
-        ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
-        SECURE_SSL_REDIRECT = False
-        SECURE_HSTS_SECONDS = 0
-        SECURE_HSTS_PRELOAD = False
-
-
-class Build(Prod):
-    """Configuration to be used in build (!) environment"""
-
-    SECRET_KEY = values.Value("not-so-secret-after-all")
+    OIDC_RP_CLIENT_ID = 1
+    OIDC_RP_CLIENT_SECRET = "junk"
+    OIDC_OP_AUTHORIZATION_ENDPOINT = "junk"
+    OIDC_OP_TOKEN_ENDPOINT = "junk"
+    OIDC_OP_USER_ENDPOINT = "junk"
+    OIDC_VERIFY_SSL = False
+    ENABLE_AUTH0_BLOCKED_CHECK = False
