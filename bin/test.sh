@@ -16,5 +16,9 @@ set -eo pipefail
 export DEVELOPMENT=1
 export DJANGO_CONFIGURATION=Test
 
-# run docker compose with the given environment variables
-docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION test test $@
+# run docker compose with the correct given environment variables
+if [[ -n "${CI}" ]]; then
+    docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION test-ci test $@
+else
+    docker-compose run -e DEVELOPMENT -e DJANGO_CONFIGURATION test test $@
+fi
