@@ -12,6 +12,10 @@ set -eo pipefail
 # create a frontend/build/ directory if it doesn't exist
 [ ! -d frontend/build/ ] && mkdir -p frontend/build/
 
+# start services--this gives them a little time to start up before we
+# start the test container
+docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+
 # default variables
 export DEVELOPMENT=1
 export DJANGO_CONFIGURATION=Test
