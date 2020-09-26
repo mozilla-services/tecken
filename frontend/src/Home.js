@@ -34,73 +34,16 @@ const Home = observer(
 
 export default Home;
 
-const formatSettingValue = (value, key = null) => {
-  if (typeof value === "string") {
-    return value;
-  }
-  // exceptions for fancyness
-  if (key === "Tecken" && value) {
-    return TeckenVersionFancy(value);
-  }
-  return JSON.stringify(value);
-};
-
-const TeckenVersionFancy = (versions) => {
-  const keys = Object.keys(versions);
-  keys.sort();
-  return (
-    <dl>
-      {keys.map((key) => {
-        let value = versions[key];
-        if (key === "build" || key === "source") {
-          value = (
-            <a href={value} target="_blank" rel="noopener noreferrer">
-              {value}
-            </a>
-          );
-        } else if (key === "commit") {
-          const commitUrl = `https://github.com/mozilla-services/tecken/commit/${value}`;
-          const treeUrl = `https://github.com/mozilla-services/tecken/tree/${value}`;
-          const sha = value.substring(0, 7);
-          value = [
-            <a key="commit" href={commitUrl}>
-              commit @ {sha}
-            </a>,
-            <br key="break" />,
-            <a key="tree" href={treeUrl}>
-              tree @ {sha}
-            </a>,
-          ];
-        } else if (key === "version") {
-          const releaseUrl = `https://github.com/mozilla-services/tecken/releases/tag/${value}`;
-          value = <a href={releaseUrl}>{value}</a>;
-        }
-        return [<dt key="key">{key}</dt>, <dd key="value">{value}</dd>];
-      })}
-    </dl>
-  );
-};
-
 class SignedInTiles extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
-      loading: true,
-      loadingSettings: false,
-      loadingVersions: false,
       stats: null,
-      settings: null,
-      versions: null,
     };
   }
 
   componentDidMount() {
     this._fetchStats();
-    if (store.currentUser.is_superuser) {
-      this._fetchCurrentSettings().then(() => {
-        this._fetchVersions();
-      });
-    }
   }
 
   _fetchStats = () => {
@@ -114,46 +57,6 @@ class SignedInTiles extends React.PureComponent {
         return r.json().then((response) => {
           this.setState({
             stats: response.stats,
-          });
-        });
-      } else {
-        store.fetchError = r;
-      }
-    });
-  };
-
-  _fetchCurrentSettings = () => {
-    this.setState({ loadingSettings: true });
-    return Fetch("/api/_settings/").then((r) => {
-      this.setState({ loadingSettings: false });
-      if (r.status === 200) {
-        if (store.fetchError) {
-          store.fetchError = null;
-        }
-        return r.json().then((response) => {
-          this.setState({
-            settings: response.settings,
-          });
-        });
-      } else {
-        store.fetchError = r;
-        // Always return a promise
-        return Promise.resolve();
-      }
-    });
-  };
-
-  _fetchVersions = () => {
-    this.setState({ loadingVersions: true });
-    Fetch("/api/_versions/").then((r) => {
-      this.setState({ loadingVersions: false });
-      if (r.status === 200) {
-        if (store.fetchError) {
-          store.fetchError = null;
-        }
-        return r.json().then((response) => {
-          this.setState({
-            versions: response.versions,
           });
         });
       } else {
@@ -201,102 +104,10 @@ class SignedInTiles extends React.PureComponent {
             <LinksTile />
           </div>
         </div>
-
-        {(this.state.loadingSettings || this.state.settings) && (
-          <div className="tile is-ancestor">
-            <div className="tile is-parent">
-              <EnvironmentTile
-                loadingSettings={this.state.loadingSettings}
-                settings={this.state.settings}
-                loadingVersions={this.state.loadingVersions}
-                versions={this.state.versions}
-              />
-            </div>
-          </div>
-        )}
       </div>
     );
   }
 }
-
-const EnvironmentTile = ({
-  loadingSettings,
-  settings,
-  loadingVersions,
-  versions,
-}) => (
-  <article className="tile is-child box">
-    <h3 className="title">Current Settings</h3>
-    <p>
-      Insight into the environment <b>only for superusers</b>.
-    </p>
-    {loadingSettings && <Loading />}
-    {settings && (
-      <table className="table is-fullwidth">
-        <thead>
-          <tr>
-            <th>Setting</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {settings.map((setting) => {
-            return (
-              <tr key={setting.key}>
-                <th>{setting.key}</th>
-                <td>{formatSettingValue(setting.value)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    )}
-    <p className="help">
-      Note that these are only a handful of settings. They are the ones that are
-      most likely to change from one environment to another. For other settings,{" "}
-      <a
-        href="https://github.com/mozilla-services/tecken/blob/main/tecken/settings.py"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        see the source code
-      </a>
-      .
-    </p>
-
-    {loadingVersions ? (
-      <Loading />
-    ) : (
-      <h3 className="title" style={{ marginTop: 30 }}>
-        Current Versions
-      </h3>
-    )}
-    {versions && (
-      <table className="table is-fullwidth">
-        <thead>
-          <tr>
-            <th>Key</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th>React</th>
-            <td>{React.version}</td>
-          </tr>
-          {versions.map((version) => {
-            return (
-              <tr key={version.key}>
-                <th>{version.key}</th>
-                <td>{formatSettingValue(version.value, version.key)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    )}
-  </article>
-);
 
 const YouTile = ({ user }) => (
   <article className="tile is-child box">

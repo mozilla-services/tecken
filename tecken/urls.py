@@ -2,9 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from django.contrib import admin
 from django.urls import register_converter, path, include
 
+from tecken.base import admin_site
 from tecken import views
 
 # These handlers are for dealing with exceptions raised from within
@@ -32,13 +32,16 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("__auth_debug__", views.auth_debug, name="auth_debug"),
     path("__task_tester__", views.task_tester, name="task_tester"),
-    path("admin/", admin.site.urls),
     path("symbolicate/", include("tecken.symbolicate.urls", namespace="symbolicate")),
     path("oidc/", include("mozilla_django_oidc.urls")),
     path("upload/", include("tecken.upload.urls", namespace="upload")),
     path("api/", include("tecken.api.urls", namespace="api")),
     path("", include("tecken.download.urls", namespace="download")),
     path("contribute.json", views.contribute_json, name="contribute_json"),
+    # Static pages in admin
+    path("admin/", include("tecken.base.admin_urls", namespace="siteadmin")),
+    # Django-model backed pages in admin
+    path("admin/", admin_site.site.urls),
     path(
         "<frontendroutes:path>", views.frontend_index_html, name="frontend_index_html"
     ),

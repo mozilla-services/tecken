@@ -59,19 +59,15 @@ class Core(AWS, Celery, S3, Configuration):
 
     VERSION = get_version(BASE_DIR)
 
-    # Using the default first site found by django.contrib.sites
-    SITE_ID = 1
-
     INSTALLED_APPS = [
         "whitenoise.runserver_nostatic",
         # Django apps
-        "django.contrib.sites",
         "django.contrib.auth",
         "django.contrib.contenttypes",
         "django.contrib.sessions",
         "django.contrib.staticfiles",
         "django.contrib.messages",
-        "django.contrib.admin",
+        "django.contrib.admin.apps.SimpleAdminConfig",
         # Project specific apps
         "tecken.apps.TeckenAppConfig",
         "tecken.base",
