@@ -34,4 +34,4 @@ comes from `P.J. Onori <http://www.somerandomdude.com/>`_ and is
 licensed under `Attribution-Non-Commercial 3.0
 Netherlands <http://creativecommons.org/licenses/by-nc/3.0/nl/deed.en_GB>`_.
 
-.. |logo| image:: logo.png
+.. |logo| image:: docs/logo.png
