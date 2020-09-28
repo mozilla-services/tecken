@@ -195,7 +195,7 @@ The easiest way to create your first superuser is to use ``docker-compose``:
 
 .. code-block:: shell
 
-    docker-compose run --rm web superuser yourname@example.com
+    docker-compose run --rm web bash python manage.py superuser yourname@example.com
 
 Additionally, in a local development environment, you can create a
 corresponding user in the oidcprovider service like this:
