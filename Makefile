@@ -96,7 +96,11 @@ testshell: .env .docker-build  ## | Open shell in test environment.
 
 .PHONY: docs
 docs: .env .docker-build  ## | Build docs.
-	docker-compose run --rm --user ${USE_UID} base bash make -C docs/ html
+	docker-compose run --rm --user ${USE_UID} --no-deps test bash make -C docs/ html
+
+.PHONY: docs
+docsci: .env .docker-build  ## | Build docs in test-ci container
+	docker-compose run --rm --user ${USE_UID} --no-deps test-ci bash make -C docs/ html
 
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.
@@ -104,7 +108,7 @@ lint: .env .docker-build  ## | Lint code.
 	docker-compose run --rm frontend lint
 
 .PHONY: lintci
-lintci: .env .docker-build  ## | Lint code in testci container.
+lintci: .env .docker-build  ## | Lint code in test-ci container.
 	docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
 	docker-compose run --rm frontend-ci lint
 

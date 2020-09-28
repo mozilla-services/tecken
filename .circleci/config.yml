@@ -45,7 +45,7 @@ jobs:
       - run:
           name: Build docs
           command: |
-            make docs
+            make docsci
 
       - run:
           name: Push to Dockerhub
