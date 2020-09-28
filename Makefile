@@ -52,8 +52,8 @@ stop: .env  ## | Stop docker containers.
 	docker-compose stop
 
 .PHONY: shell
-shell: .env .docker-build  ## | Open a shell in base container.
-	docker-compose run --rm base bash
+shell: .env .docker-build  ## | Open a shell in web container.
+	docker-compose run --rm web bash
 
 .PHONY: clean
 clean: .env stop  ## | Stop and remove docker containers and artifacts.
