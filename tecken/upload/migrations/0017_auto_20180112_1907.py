@@ -11,18 +11,22 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0016_upload_try_symbols'),
+        ("upload", "0016_upload_try_symbols"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='fileupload',
-            name='created_at',
+            model_name="fileupload",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
         migrations.AlterField(
-            model_name='fileupload',
-            name='upload',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='upload.Upload'),
+            model_name="fileupload",
+            name="upload",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="upload.Upload",
+            ),
         ),
     ]

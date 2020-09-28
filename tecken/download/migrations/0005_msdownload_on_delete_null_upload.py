@@ -7,13 +7,17 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('download', '0004_auto_20171206_2027'),
+        ("download", "0004_auto_20171206_2027"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='microsoftdownload',
-            name='file_upload',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='upload.FileUpload'),
+            model_name="microsoftdownload",
+            name="file_upload",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="upload.FileUpload",
+            ),
         ),
     ]

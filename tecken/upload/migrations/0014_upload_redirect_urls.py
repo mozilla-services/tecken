@@ -14,13 +14,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0013_upload_content_hash'),
+        ("upload", "0013_upload_content_hash"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='redirect_urls',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.URLField(max_length=500), null=True, size=None),
+            model_name="upload",
+            name="redirect_urls",
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.URLField(max_length=500), null=True, size=None
+            ),
         ),
     ]

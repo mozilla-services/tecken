@@ -36,12 +36,12 @@ help:
 
 .PHONY: build
 build: .env  ## | Build docker images.
-	docker-compose build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend linting
+	docker-compose build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend
 	touch .docker-build
 
 .PHONY: setup
 setup: .env  ## | Initialize services.
-	docker-compose run --rm web /app/bin/setup-services.sh
+	docker-compose run --rm web bash /app/bin/setup-services.sh
 
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
@@ -81,22 +81,38 @@ psql: .env .docker-build  ## | Open psql cli.
 
 .PHONY: test
 test: .env .docker-build  ## | Run Python unit test suite.
-	bin/test.sh
+	docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+	docker-compose run --rm test bash ./bin/run_test.sh
+
+.PHONY: testci
+testci: .env .docker-build  ## | Run Python unit test suite in test-ci container.
+	docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+	docker-compose run --rm test-ci bash ./bin/run_test.sh
 
 .PHONY: testshell
 testshell: .env .docker-build  ## | Open shell in test environment.
-	bin/test.sh --shell
+	docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+	docker-compose run --rm test bash ./bin/run_test.sh --shell
 
 .PHONY: docs
 docs: .env .docker-build  ## | Build docs.
-	docker-compose run --rm --user ${USE_UID} linting docs
+	docker-compose run --rm --user ${USE_UID} --no-deps test bash make -C docs/ html
+
+.PHONY: docs
+docsci: .env .docker-build  ## | Build docs in test-ci container
+	docker-compose run --rm --user ${USE_UID} --no-deps test-ci bash make -C docs/ html
 
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.
-	docker-compose run --rm linting lint
+	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh
 	docker-compose run --rm frontend lint
+
+.PHONY: lintci
+lintci: .env .docker-build  ## | Lint code in test-ci container.
+	docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
+	docker-compose run --rm frontend-ci lint
 
 .PHONY: lintfix
 lintfix: .env .docker-build  ## | Reformat code.
-	docker-compose run --rm linting lintfix
+	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh --fix
 	docker-compose run --rm frontend lintfix

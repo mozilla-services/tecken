@@ -25,20 +25,21 @@ known and will be listed here but in an obfuscated form.
 # token keys and their email addresses. Let's only fix exactly these.
 AFFECTED_TOKENS = (
     # FIRST KEY CHAR, LAST KEY CHAR, FIRST EMAIL CHAR, LAST EMAIL CHAR
-    ('9',             '7',           'c',              'm'),
-    ('8',             'e',           'c',              'm'),
-    ('1',             '1',           'e',              'g'),
-    ('5',             'b',           'g',              'm'),
-    ('c',             '5',           'j',              'm'),
-    ('a',             '1',           's',              'g'),
-    ('3',             'f',           'w',              'm'),
+    ("9", "7", "c", "m"),
+    ("8", "e", "c", "m"),
+    ("1", "1", "e", "g"),
+    ("5", "b", "g", "m"),
+    ("c", "5", "j", "m"),
+    ("a", "1", "s", "g"),
+    ("3", "f", "w", "m"),
 )
 
+
 def correct_migrated_tokens_permissions(apps, schema_editor):
-    Token = apps.get_model('tokens', 'Token')
-    Permission = apps.get_model('auth', 'Permission')
+    Token = apps.get_model("tokens", "Token")
+    Permission = apps.get_model("auth", "Permission")
     try:
-        permission = Permission.objects.get(codename='upload_symbols')
+        permission = Permission.objects.get(codename="upload_symbols")
     except Permission.DoesNotExist:
         # If the permission doesn't exist, it's because you're starting
         # the system for the very first time ever.
@@ -63,7 +64,7 @@ def correct_migrated_tokens_permissions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tokens', '0002_auto_20170727_1411'),
+        ("tokens", "0002_auto_20170727_1411"),
     ]
 
     operations = [

@@ -14,23 +14,30 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='MissingSymbol',
+            name="MissingSymbol",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('hash', models.CharField(max_length=32, unique=True)),
-                ('symbol', models.CharField(max_length=150)),
-                ('debugid', models.CharField(max_length=150)),
-                ('filename', models.CharField(max_length=150)),
-                ('code_file', models.CharField(max_length=50, null=True)),
-                ('code_id', models.CharField(max_length=50, null=True)),
-                ('count', models.PositiveIntegerField(default=1)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('modified_at', models.DateTimeField(auto_now=True, db_index=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("hash", models.CharField(max_length=32, unique=True)),
+                ("symbol", models.CharField(max_length=150)),
+                ("debugid", models.CharField(max_length=150)),
+                ("filename", models.CharField(max_length=150)),
+                ("code_file", models.CharField(max_length=50, null=True)),
+                ("code_id", models.CharField(max_length=50, null=True)),
+                ("count", models.PositiveIntegerField(default=1)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("modified_at", models.DateTimeField(auto_now=True, db_index=True)),
             ],
         ),
     ]

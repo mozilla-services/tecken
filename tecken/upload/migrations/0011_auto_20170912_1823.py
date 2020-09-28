@@ -13,18 +13,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0010_auto_20170831_1523'),
+        ("upload", "0010_auto_20170831_1523"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='inbox_filepath',
+            model_name="upload",
+            name="inbox_filepath",
             field=models.FilePathField(max_length=300, null=True),
         ),
         migrations.AlterField(
-            model_name='upload',
-            name='inbox_key',
+            model_name="upload",
+            name="inbox_key",
             field=models.CharField(max_length=300, null=True),
         ),
     ]

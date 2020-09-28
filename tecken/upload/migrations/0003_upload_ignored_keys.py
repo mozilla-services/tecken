@@ -14,13 +14,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0002_upload_skipped_keys'),
+        ("upload", "0002_upload_skipped_keys"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='ignored_keys',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=300), null=True, size=None),
+            model_name="upload",
+            name="ignored_keys",
+            field=django.contrib.postgres.fields.ArrayField(
+                base_field=models.CharField(max_length=300), null=True, size=None
+            ),
         ),
     ]

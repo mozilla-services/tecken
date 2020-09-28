@@ -13,18 +13,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('download', '0003_auto_20171016_1950'),
+        ("download", "0003_auto_20171016_1950"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='missingsymbol',
-            name='code_file',
+            model_name="missingsymbol",
+            name="code_file",
             field=models.CharField(max_length=150, null=True),
         ),
         migrations.AlterField(
-            model_name='missingsymbol',
-            name='code_id',
+            model_name="missingsymbol",
+            name="code_id",
             field=models.CharField(max_length=150, null=True),
         ),
     ]

@@ -36,20 +36,7 @@ services:
       - statsd
     volumes:
       - $PWD:/app
-    command: web-dev
-
-  linting:
-    extends:
-      service: base
-    volumes:
-      - $PWD:/app
-    command: lint
-
-  # Same as linting but without volume mounts for CI.
-  linting-ci:
-    extends:
-      service: base
-    command: lint
+    command: ["web", "--dev"]
 
   # Container specifically for running tests.
   test:
@@ -61,7 +48,6 @@ services:
       - redis-cache
     volumes:
       - $PWD:/app
-    command: test
 
   test-ci:
     extends:

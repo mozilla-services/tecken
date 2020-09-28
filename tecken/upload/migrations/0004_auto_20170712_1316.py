@@ -14,18 +14,22 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0003_upload_ignored_keys'),
+        ("upload", "0003_upload_ignored_keys"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='fileupload',
-            name='microsoft_download',
+            model_name="fileupload",
+            name="microsoft_download",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='fileupload',
-            name='upload',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='upload.Upload'),
+            model_name="fileupload",
+            name="upload",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="upload.Upload",
+            ),
         ),
     ]

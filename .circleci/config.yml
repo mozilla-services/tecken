@@ -35,21 +35,17 @@ jobs:
       - run:
           name: Run tests
           command: |
-            # Run ./bin/test.sh so it doesn't execute make rules that don't work
-            # in CI
-            ./bin/test.sh
+            make testci
 
       - run:
           name: Run lint check
           command: |
-            # NOTE(willkg): Use -ci services since they doesn't mount . as a volume
-            docker-compose run linting-ci lint
-            docker-compose run frontend-ci lint
+            make lintci
 
       - run:
           name: Build docs
           command: |
-            docker-compose run linting-ci docs
+            make docsci
 
       - run:
           name: Push to Dockerhub

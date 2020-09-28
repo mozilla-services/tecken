@@ -11,14 +11,14 @@ from django.db import migrations
 
 
 def correct_uploaders_group(apps, schema_editor):
-    Group = apps.get_model('auth', 'Group')
-    Permission = apps.get_model('auth', 'Permission')
-    for group in Group.objects.filter(name='Uploaders'):
-        right_permission = Permission.objects.get(codename='upload_symbols')
-        wrong_permission = Permission.objects.get(codename='add_upload')
+    Group = apps.get_model("auth", "Group")
+    Permission = apps.get_model("auth", "Permission")
+    for group in Group.objects.filter(name="Uploaders"):
+        right_permission = Permission.objects.get(codename="upload_symbols")
+        wrong_permission = Permission.objects.get(codename="add_upload")
         if (
-            right_permission not in group.permissions.all() and
-            wrong_permission in group.permissions.all()
+            right_permission not in group.permissions.all()
+            and wrong_permission in group.permissions.all()
         ):
             group.permissions.add(right_permission)
             group.permissions.remove(wrong_permission)
@@ -27,7 +27,7 @@ def correct_uploaders_group(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0009_upload_cancelled_at'),
+        ("upload", "0009_upload_cancelled_at"),
     ]
 
     operations = [

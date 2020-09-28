@@ -10,13 +10,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0018_uploadscreated'),
+        ("upload", "0018_uploadscreated"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='uploadscreated',
-            name='size',
+            model_name="uploadscreated",
+            name="size",
             field=models.BigIntegerField(),
         ),
     ]

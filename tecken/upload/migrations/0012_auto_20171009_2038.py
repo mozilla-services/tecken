@@ -13,24 +13,24 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0011_auto_20170912_1823'),
+        ("upload", "0011_auto_20170912_1823"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='upload',
-            name='attempts',
+            model_name="upload",
+            name="attempts",
         ),
         migrations.RemoveField(
-            model_name='upload',
-            name='cancelled_at',
+            model_name="upload",
+            name="cancelled_at",
         ),
         migrations.RemoveField(
-            model_name='upload',
-            name='inbox_filepath',
+            model_name="upload",
+            name="inbox_filepath",
         ),
         migrations.RemoveField(
-            model_name='upload',
-            name='inbox_key',
+            model_name="upload",
+            name="inbox_key",
         ),
     ]

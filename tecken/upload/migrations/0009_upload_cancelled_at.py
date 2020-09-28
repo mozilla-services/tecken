@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0008_upload_download_url'),
+        ("upload", "0008_upload_download_url"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='cancelled_at',
+            model_name="upload",
+            name="cancelled_at",
             field=models.DateTimeField(null=True),
         ),
     ]
