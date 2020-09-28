@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('download', '0002_microsoftdownload'),
+        ("download", "0002_microsoftdownload"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='microsoftdownload',
-            name='created_at',
+            model_name="microsoftdownload",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
     ]

@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0012_auto_20171009_2038'),
+        ("upload", "0012_auto_20171009_2038"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='content_hash',
+            model_name="upload",
+            name="content_hash",
             field=models.CharField(max_length=32, null=True),
         ),
     ]

@@ -10,23 +10,31 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0017_auto_20180112_1907'),
+        ("upload", "0017_auto_20180112_1907"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UploadsCreated',
+            name="UploadsCreated",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(db_index=True, unique=True)),
-                ('count', models.PositiveIntegerField()),
-                ('files', models.PositiveIntegerField()),
-                ('skipped', models.PositiveIntegerField()),
-                ('ignored', models.PositiveIntegerField()),
-                ('size', models.PositiveIntegerField()),
-                ('size_avg', models.PositiveIntegerField()),
-                ('modified_at', models.DateTimeField(auto_now=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(db_index=True, unique=True)),
+                ("count", models.PositiveIntegerField()),
+                ("files", models.PositiveIntegerField()),
+                ("skipped", models.PositiveIntegerField()),
+                ("ignored", models.PositiveIntegerField()),
+                ("size", models.PositiveIntegerField()),
+                ("size_avg", models.PositiveIntegerField()),
+                ("modified_at", models.DateTimeField(auto_now=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
         ),
     ]

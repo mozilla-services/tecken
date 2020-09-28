@@ -13,12 +13,17 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0003_upload_ignored_keys'),
+        ("upload", "0003_upload_ignored_keys"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='upload',
-            options={'permissions': (('upload_symbols', 'Upload Symbols Files'), ('view_all_uploads', 'View All Symbols Uploads'))},
+            name="upload",
+            options={
+                "permissions": (
+                    ("upload_symbols", "Upload Symbols Files"),
+                    ("view_all_uploads", "View All Symbols Uploads"),
+                )
+            },
         ),
     ]

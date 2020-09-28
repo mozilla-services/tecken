@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0006_auto_20170728_2004'),
+        ("upload", "0006_auto_20170728_2004"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='attempts',
+            model_name="upload",
+            name="attempts",
             field=models.IntegerField(default=0),
         ),
     ]

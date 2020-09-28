@@ -13,12 +13,12 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('tokens', '0001_initial'),
+        ("tokens", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='token',
-            options={'permissions': (('manage_tokens', 'Manage Your API Tokens'),)},
+            name="token",
+            options={"permissions": (("manage_tokens", "Manage Your API Tokens"),)},
         ),
     ]

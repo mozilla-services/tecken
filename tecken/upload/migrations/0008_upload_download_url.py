@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0007_upload_attempts'),
+        ("upload", "0007_upload_attempts"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='download_url',
+            model_name="upload",
+            name="download_url",
             field=models.URLField(max_length=500, null=True),
         ),
     ]

@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0005_merge_20170718_2027'),
+        ("upload", "0005_merge_20170718_2027"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='upload',
-            name='created_at',
+            model_name="upload",
+            name="created_at",
             field=models.DateTimeField(auto_now_add=True, db_index=True),
         ),
     ]

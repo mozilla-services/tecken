@@ -13,13 +13,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('upload', '0015_auto_20171130_2048'),
+        ("upload", "0015_auto_20171130_2048"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='upload',
-            name='try_symbols',
+            model_name="upload",
+            name="try_symbols",
             field=models.BooleanField(default=False),
         ),
     ]
