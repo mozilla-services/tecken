@@ -89,7 +89,7 @@ class LogEntryAdmin(admin.ModelAdmin):
 @login_required(login_url="/")
 @user_passes_test(lambda user: user.is_active and user.is_staff, login_url="/")
 def site_status(request):
-    context = {"settings": [], "versions": []}
+    context = {"settings": [], "table counts": [], "versions": []}
 
     # Figure out settings first
     def clean_url(value):
@@ -140,6 +140,21 @@ def site_status(request):
         }
     )
     context["settings"].sort(key=lambda x: x["key"])
+
+    # Get some table counts
+    tables = [
+        "download_missingsymbol",
+        "upload_upload",
+        "upload_fileupload",
+        "upload_uploadscreated",
+    ]
+    context["table_counts"] = []
+    for table_name in tables:
+        with connection.cursor() as cursor:
+            cursor.execute("select count(*) from %s" % table_name)
+            row = cursor.fetchone()
+            (value,) = row
+        context["table_counts"].append({"key": table_name, "value": value})
 
     # Now get versions
     with connection.cursor() as cursor:
