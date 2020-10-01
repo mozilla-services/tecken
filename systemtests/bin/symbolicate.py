@@ -103,7 +103,12 @@ def print_stack(ctx, api_url, api_version, debug, stackfile):
             param_hint="api_version",
         )
 
-    payload = json.loads(data)
+    try:
+        payload = json.loads(data)
+    except json.decoder.JSONDecodeError as jde:
+        click.echo("Error: request is not valid JSON: %r\n%r" % (jde, data))
+        return
+
     response_data = request_stack(api_url, payload, api_version, debug)
     if debug:
         click.echo(json.dumps(response_data, indent=2))
