@@ -33,6 +33,11 @@ jobs:
             make build
 
       - run:
+          name: Verify requirements.txt contains correct dependencies
+          command: |
+            docker-compose run --rm --no-deps test-ci bash ./bin/run_verify_reqs.sh
+
+      - run:
           name: Run tests
           command: |
             make testci
