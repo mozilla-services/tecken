@@ -57,36 +57,20 @@ Managing dependencies
 Python dependencies
 -------------------
 
-Python dependencies for all parts of Socorro are split between two files:
+Python dependencies are maintained in the ``requirements.in`` file and
+"compiled" with hashes and dependencies of dependencies in the
+``requirements.txt`` file.
 
-1. ``requirements/default.txt``, containing dependencies that Socorro uses
-   directly.
-2. ``requirements/constraints.txt``, containing dependencies required by the
-   dependencies in ``default.txt`` that Socorro does not use directly.
+To add a new dependency, add it to the file and then do::
 
-Dependencies in both files must be pinned and hashed. Use
-`hashin <https://pypi.python.org/pypi/hashin>`_.
-
-For example, to add ``foobar`` version 5::
-
-  $ hashin -r requirements/default.txt foobar==5
-
-If ``foobar`` has any dependencies that would also be installed, you must add
-them to the constraints file::
-
-  $ hashin -r requirements/constraints.txt bazzbiff==4.0
+   $ make shell
+   $ pip-compile --generate-hashes
 
 Then rebuild your docker environment::
 
   $ make build
 
 If there are problems, it'll tell you.
-
-.. Note::
-
-   If you're unsure what dependencies to add to the constraints file, the error
-   from running ``make build`` should include a list of dependencies that were
-   missing, including their version numbers and hashes.
 
 
 JavaScript dependencies

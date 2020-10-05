@@ -1,0 +1,43 @@
+Sphinx==3.2.1
+black==20.8b1
+boto3==1.15.10
+botocore==1.18.10
+celery==5.0.0
+click==7.1.2
+datadog==0.39.0
+dj-database-url==0.5.0
+django-cache-memoize==0.1.7
+django-configurations==2.2
+django-redis==4.12.1
+dockerflow==2020.6.0
+encore==0.7.0
+flake8==3.8.3
+gunicorn==20.0.4
+jsonschema==3.2.0
+markus[datadog]==2.2.0
+mock==4.0.2
+mozilla-django-oidc==1.2.4
+msgpack==1.0.0
+pip-tools==5.3.1
+psycopg2==2.8.6
+pytest-django==3.10.0
+pytest-mock==3.3.1
+pytest==6.1.0
+python-dateutil==2.8.1
+raven==6.10.0
+requests-mock==1.8.0
+requests==2.24.0
+sphinx-rtd-theme==0.5.0
+sphinxcontrib-httpdomain==1.7.0
+ujson==3.2.0
+urllib3==1.25.10
+urlwait==1.0
+whitenoise==5.2.0
+
+# NOTE(willkg): Need to keep redis at this version because after this, the Python
+# library doesn't work with the version of Redis we're using in production.
+redis==3.4.1
+
+# NOTE(willkg): Django 2.2 is an LTS series so don't upgrade until the next
+# LTS.
+Django==2.2.16
