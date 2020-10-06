@@ -32,7 +32,7 @@ web)  ## Run Tecken web service
     exec ./bin/run_web.sh $@
     ;;
 worker)  ## Run Celery worker
-    exec ${CMD_PREFIX} celery -A tecken.celery:app worker -l info
+    exec ${CMD_PREFIX} celery -A tecken.celery:app worker --loglevel INFO
     ;;
 worker-purge)  ## Purge Celery tasks
     # Start worker but first purge ALL old stale tasks.
@@ -40,7 +40,7 @@ worker-purge)  ## Purge Celery tasks
     # started waaaay too make background tasks when debugging something.
     # Or perhaps the jobs belong to the wrong branch as you stop/checkout/start
     # the docker container.
-    exec celery -A tecken.celery:app worker -l info --purge
+    exec celery -A tecken.celery:app worker --loglevel INFO --purge
     ;;
 bash)  ## Open a bash shell or run something else
     if [ -z "$*" ]; then

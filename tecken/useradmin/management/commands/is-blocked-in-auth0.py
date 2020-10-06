@@ -4,11 +4,10 @@
 
 from urllib.parse import urlparse
 
-import requests
-
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
+from tecken.requests_extra import session_with_retries
 from tecken.useradmin.middleware import find_users
 
 
@@ -22,12 +21,13 @@ class Command(BaseCommand):
         email = options["email"]
         if " " in email or email.count("@") != 1:
             raise CommandError(f"Invalid email {email!r}")
+        session = session_with_retries()
         users = find_users(
             settings.OIDC_RP_CLIENT_ID,
             settings.OIDC_RP_CLIENT_SECRET,
             urlparse(settings.OIDC_OP_USER_ENDPOINT).netloc,
             email,
-            requests,
+            session,
         )
         for user in users:
             if user.get("blocked"):
