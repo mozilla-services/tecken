@@ -218,6 +218,18 @@ def upload_archive(request, upload_dir):
                         response_stream = requests.get(
                             url, stream=True, timeout=(5, 300)
                         )
+                        # NOTE(willkg): The UploadByDownloadForm handles most errors
+                        # when it does a HEAD, so this mostly covers transient errors
+                        # between the HEAD and this GET request.
+                        if response_stream.status_code != 200:
+                            return http.JsonResponse(
+                                {
+                                    "error": "non-200 status code when retrieving %s"
+                                    % url
+                                },
+                                status=400,
+                            )
+
                         with open(download_name, "wb") as f:
                             # Read 1MB at a time
                             chunk_size = 1024 * 1024
