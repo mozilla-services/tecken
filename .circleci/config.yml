@@ -10,7 +10,7 @@ jobs:
 
       - setup_remote_docker:
           docker_layer_caching: true
-          version: 17.09.0-ce
+          version: 19.03.13
 
       - run:
           name: Create version.json
