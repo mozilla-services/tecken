@@ -206,6 +206,8 @@ Upload: /upload/
    :form try: use ``try=1`` if this is an upload of try symbols
 
    :statuscode 201: successful upload of symbols
+   :statuscode 400: if the specified url can't be downloaded; verify that the url
+       can be downloaded and retry
    :statuscode 403: your auth token is invalid and you need to get a new one
    :statuscode 413: your upload is too large; split it into smaller files or switch to
        upload by download url
