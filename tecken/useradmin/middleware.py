@@ -12,7 +12,7 @@ from django.core.cache import cache
 from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
 from django.contrib import auth
 
-from tecken.base.utils import requests_retry_session
+from tecken.requests_extra import session_with_retries
 
 
 logger = logging.getLogger("tecken")
@@ -25,7 +25,7 @@ class Auth0ManagementAPIError(Exception):
 
 @metrics.timer_decorator("useradmin_is_blocked_in_auth0")
 def is_blocked_in_auth0(email):
-    session = requests_retry_session(retries=5)
+    session = session_with_retries(total_retries=5)
     users = find_users(
         settings.OIDC_RP_CLIENT_ID,
         settings.OIDC_RP_CLIENT_SECRET,

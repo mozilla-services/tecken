@@ -11,7 +11,6 @@ import os
 import time
 import concurrent.futures
 
-import requests
 import markus
 from encore.concurrent.futures.synchronous import SynchronousExecutor
 
@@ -21,6 +20,7 @@ from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 
+from tecken.requests_extra import session_with_retries
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.base.decorators import (
     api_login_required,
@@ -214,10 +214,9 @@ def upload_archive(request, upload_dir):
                     logger.info(f"Download to upload {url} ({size_fmt})")
                     redirect_urls = form.cleaned_data["upload"]["redirect_urls"] or None
                     download_name = os.path.join(upload_dir, name)
+                    session = session_with_retries(default_timeout=(5, 300))
                     with metrics.timer("upload_download_by_url"):
-                        response_stream = requests.get(
-                            url, stream=True, timeout=(5, 300)
-                        )
+                        response_stream = session.get(url, stream=True)
                         # NOTE(willkg): The UploadByDownloadForm handles most errors
                         # when it does a HEAD, so this mostly covers transient errors
                         # between the HEAD and this GET request.

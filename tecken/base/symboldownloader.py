@@ -7,14 +7,15 @@ from io import BytesIO
 from gzip import GzipFile
 from functools import wraps
 
-import logging
-import requests
-import markus
 from botocore.exceptions import ClientError
 from cache_memoize import cache_memoize
+import logging
+import markus
+import requests
 
 from django.conf import settings
 
+from tecken.requests_extra import session_with_retries
 from tecken.storage import StorageBucket
 
 
@@ -107,7 +108,8 @@ def exists_in_source(source, key):
 )
 @metrics.timer_decorator("symboldownloader_public_exists")
 def check_url_head(url):
-    return requests.head(url).status_code == 200
+    session = session_with_retries()
+    return session.head(url).status_code == 200
 
 
 class SymbolDownloader:
@@ -247,6 +249,7 @@ class SymbolDownloader:
                     return {"url": file_url, "source": source}
 
     def _get_stream(self, symbol, debugid, filename):
+        session = session_with_retries()
         for source in self.sources:
 
             prefix = source.prefix
@@ -314,7 +317,7 @@ class SymbolDownloader:
                     source.base_url, prefix, symbol, debugid.upper(), filename
                 )
                 logger.debug(f"Looking for symbol file by URL {file_url!r}")
-                response = requests.get(file_url, stream=True)
+                response = session.get(file_url, stream=True)
                 if response.status_code == 404:
                     # logger.warning('{} 404 Not Found'.format(file_url))
                     continue
