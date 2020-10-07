@@ -189,6 +189,8 @@ class Core(AWS, Celery, S3, Configuration):
     # OIDC ID token renewal for this AJAX and curl heavy app.
     SESSION_COOKIE_AGE = values.IntegerValue(60 * 60 * 24 * 365)
 
+    SESSION_COOKIE_SECURE = True
+
     # Where users get redirected after successfully signing in
     LOGIN_REDIRECT_URL = "/?signedin=true"
     LOGIN_REDIRECT_URL_FAILURE = "/?signin=failed"
@@ -233,8 +235,8 @@ class Core(AWS, Celery, S3, Configuration):
     ALLOW_UPLOAD_BY_ANY_DOMAIN = values.BooleanValue(False)
 
     # This is only really meant for the sake of being overrideable by
-    # other setting classes; in particular the 'Test' class.
-    SYNCHRONOUS_UPLOAD_FILE_UPLOAD = False
+    # other setting classes; in particular when running tests.
+    SYNCHRONOUS_UPLOAD_FILE_UPLOAD = values.BooleanValue(False)
 
     DOWNLOAD_LEGACY_PRODUCTS_PREFIXES = [
         "firefox",
@@ -669,49 +671,11 @@ class Localdev(Base):
 class Test(Localdev):
     """Configuration to be used during testing"""
 
-    DEBUG = False
-
-    # Like Celery's old ALWAYS_EAGER option, this tells the code to
-    # swap the ThreadPoolExecutor in for an executor that is
-    # entirely synchronous.
-    SYNCHRONOUS_UPLOAD_FILE_UPLOAD = True
-
-    # We might not enable it in certain environments but we definitely
-    # want to test the code we have.
-    ENABLE_TOKENS_AUTHENTICATION = True
-
-    # This feature flag is always off when testing except the tests
-    # that enable it deliberately.
-    ENABLE_STORE_MISSING_SYMBOLS = False
-
-    # Disable the Auth0 in all tests. THere are some specific tests
-    # that switch it back on to test the Auth0 blocked middleware.
-    ENABLE_AUTH0_BLOCKED_CHECK = False
-
-    SECRET_KEY = values.Value("not-so-secret-after-all")
-    SESSION_COOKIE_SECURE = True
-
-    OIDC_RP_CLIENT_ID = values.Value("not-so-secret-after-all")
-    OIDC_RP_CLIENT_SECRET = values.Value("not-so-secret-after-all")
-
     # nosec
     # Only used for testing to log users in during unit tests
     PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 
-    SYMBOL_URLS = [
-        "https://s3.example.com/public/prefix/?access=public",
-        "https://s3.example.com/private/prefix/",
-    ]
-
     AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
-
-    # This makes sure this is never a real valid URL.
-    OIDC_OP_USER_ENDPOINT = "https://auth.example.com/authorize"
-
-    SYMBOL_FILE_PREFIX = "v0"
-    UPLOAD_DEFAULT_URL = "https://s3.example.com/private/prefix/"
-    UPLOAD_TRY_SYMBOLS_URL = "https://s3.example.com/try/prefix"
-    UPLOAD_URL_EXCEPTIONS = {"*@peterbe.com": "https://s3.example.com/peterbe-com"}
 
     @property
     def CACHES(self):

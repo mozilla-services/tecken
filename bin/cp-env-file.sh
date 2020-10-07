@@ -5,7 +5,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 FILEPATH="$(pwd)/.env"
-DISTFILEPATH="$(pwd)/.env-dist"
+DISTFILEPATH="$(pwd)/docker/config/env-dist"
 
 if [ ! -f "${FILEPATH}" ]; then
     echo "# Copied $(git rev-parse --short HEAD | tr -d '\n') at $(date | tr -d '\n')" > "${FILEPATH}"

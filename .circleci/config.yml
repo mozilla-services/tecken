@@ -28,7 +28,6 @@ jobs:
           name: Build Docker images
           command: |
             docker info
-            cp .env-dist .env
             # build tecken containers
             make build
 
