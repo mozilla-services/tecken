@@ -14,6 +14,7 @@ services:
     environment:
       - DJANGO_CONFIGURATION
     env_file:
+      - docker/config/local_dev.env
       - .env
 
   # Web container is a prod-like fully-functioning container.
@@ -41,6 +42,9 @@ services:
   test:
     extends:
       service: base
+    env_file:
+      - docker/config/local_dev.env
+      - docker/config/test.env
     links:
       - db
       - redis-store
@@ -51,6 +55,9 @@ services:
   test-ci:
     extends:
       service: base
+    env_file:
+      - docker/config/local_dev.env
+      - docker/config/test.env
     links:
       - db
       - redis-store
