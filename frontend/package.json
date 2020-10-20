@@ -7,8 +7,8 @@
     "bulma": "0.9.0",
     "date-fns": "2.16.1",
     "font-awesome": "4.7.0",
-    "mobx": "5.15.6",
-    "mobx-react": "6.3.0",
+    "mobx": "6.0.1",
+    "mobx-react": "7.0.0",
     "raven-js": "3.27.2",
     "react": "16.13.1",
     "react-copy-to-clipboard": "5.0.2",
@@ -32,6 +32,7 @@
     "merge": ">=1.2.1",
     "minimist": ">=1.2.2",
     "mixin-deep": ">=2.0.1",
+    "object-path": ">=0.11.5",
     "set-value": ">=3.0.1"
   },
   "scripts": {
