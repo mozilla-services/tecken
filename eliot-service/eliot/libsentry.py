@@ -2,7 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Module holding Sentry-related functions.
+"""
+Utilities for using Sentry.
 
 Infrastructure for optionally wrapping things in Sentry contexts to capture
 unhandled exceptions.
@@ -18,10 +19,27 @@ from raven.handlers.logging import SentryHandler
 from raven.middleware import Sentry
 
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 # Global Sentry client singleton
 _SENTRY_CLIENT = None
+
+
+class FakeSentryClient:
+    """Fake Sentry Client that logs to the logger."""
+
+    def captureMessage(self, msg):
+        LOGGER.error("%s", msg)
+
+    def captureException(self):
+        LOGGER.exception("captured exception")
+
+
+def get_sentry_client():
+    if _SENTRY_CLIENT:
+        return _SENTRY_CLIENT
+    else:
+        return FakeSentryClient()
 
 
 def setup_sentry_logging():
@@ -44,13 +62,13 @@ def set_sentry_client(sentry_dsn, basedir):
         _SENTRY_CLIENT = Client(
             dsn=sentry_dsn, include_paths=["eliot"], tags={"commit": commit}
         )
-        logger.info("Set up sentry client")
+        LOGGER.info("Set up sentry client")
     else:
         _SENTRY_CLIENT = None
-        logger.info("Removed sentry client")
+        LOGGER.info("Removed sentry client")
 
 
-class WSGILoggingMiddleware(object):
+class WSGILoggingMiddleware:
     """WSGI middleware that logs unhandled exceptions."""
 
     def __init__(self, application):
@@ -64,7 +82,7 @@ class WSGILoggingMiddleware(object):
             return self.application(environ, start_response)
 
         except Exception:
-            logger.exception("Unhandled exception")
+            LOGGER.exception("Unhandled exception")
             exc_info = sys.exc_info()
             start_response(
                 "500 Internal Server Error",

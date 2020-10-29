@@ -10,10 +10,10 @@ Download
 Basics
 ======
 
-Tecken handles requests for symbols files. Tecken takes the request, figures
-out which bucket the file is in, and returns a redirect to that bucket. This
-allows us to use multiple buckets for symbols without requiring everyone to
-maintain lists of buckets.
+The Tecken webapp handles requests for symbols files. Tecken takes the request,
+figures out which bucket the file is in, and returns a redirect to that bucket.
+This allows us to use multiple buckets for symbols without requiring everyone
+to maintain lists of buckets.
 
 For example, at the time of this writing doing a ``GET`` for
 :base_url:`/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym` will

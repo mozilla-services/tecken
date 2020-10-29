@@ -16,7 +16,11 @@ import sys
 from pathlib import Path
 
 BASEDIR = Path(__file__).parent.parent
+# Insert repo base dir which will pick up Tecken webapp things
 sys.path.insert(0, str(BASEDIR))
+
+# Insert Eliot base dir for Eliot things
+sys.path.insert(0, str(BASEDIR / "eliot-service"))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -43,6 +47,7 @@ extlinks = {
 extensions = [
     "sphinx.ext.extlinks",
     "sphinxcontrib.httpdomain",
+    "everett.sphinxext",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

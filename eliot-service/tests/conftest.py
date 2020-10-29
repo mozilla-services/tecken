@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import os
 from pathlib import Path
 import sys
 
@@ -12,21 +13,36 @@ from falcon.testing.client import TestClient
 import markus
 from markus.testing import MetricsMock
 import pytest
+import requests_mock
+import shutil
 
 # Add the eliot project root to sys.path, otherwise tests can't find it
 SYMROOT = str(Path(__file__).parent.parent)
 sys.path.insert(0, SYMROOT)
 
 from eliot.app import get_app  # noqa
-from eliot.logginglib import setup_logging  # noqa
+from eliot.liblogging import setup_logging  # noqa
 
 
-def pytest_runtest_setup():
-    # Make sure we set up logging and metrics to sane default values.
+def pytest_runtest_setup(item):
+    # Clear out the tmp and cache dir from any sym files before tests run
+    tmp_dir = os.environ["ELIOT_TMP_DIR"]
+    cache_dir = os.environ["ELIOT_SYMBOLS_CACHE_DIR"]
+
+    if os.path.exists(tmp_dir):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+    if os.path.exists(cache_dir):
+        shutil.rmtree(cache_dir, ignore_errors=True)
+
+
+def pytest_collection_finish(session):
+    # After pytest test collection has finished, make sure we set up logging and metrics
+    # to sane default values.
     setup_logging(
         ConfigManager.from_dict(
-            {"HOST_ID": "", "LOGGING_LEVEL": "DEBUG", "LOCAL_DEV_ENV": "True"}
-        )
+            {"HOST_ID": "testnode", "LOGGING_LEVEL": "DEBUG", "LOCAL_DEV_ENV": "True"}
+        ),
+        processname="tests",
     )
     markus.configure([{"class": "markus.backends.logging.LoggingMetrics"}])
 
@@ -58,7 +74,7 @@ class EliotTestClient(TestClient):
         config_manager = ConfigManager(
             environments=[ConfigDictEnv(new_config), ConfigOSEnv()]
         )
-        return config_manager
+        return config_manager.with_namespace("eliot")
 
     def rebuild_app(self, new_config=None):
         """Rebuilds the app
@@ -117,3 +133,22 @@ def metricsmock():
 
     """
     return MetricsMock()
+
+
+@pytest.fixture
+def requestsmock():
+    with requests_mock.Mocker() as m:
+        yield m
+
+
+@pytest.fixture
+def tmpcachedir(tmpdir):
+    """Yield a temp cache dir.
+
+    pytest generates a tmpdir for the test, so tmpcachedir ends up being a subdirectory
+    of tmpdir.
+
+    """
+    cachedir = tmpdir / "cache"
+    Path(cachedir).mkdir(parents=True, exist_ok=True)
+    yield cachedir

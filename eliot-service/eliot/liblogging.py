@@ -2,6 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""
+Utilities for logging configuration and usage.
+"""
+
 import logging
 import logging.config
 import socket
@@ -10,7 +14,7 @@ import socket
 _IS_LOGGING_SETUP = False
 
 
-def setup_logging(app_config):
+def setup_logging(app_config, processname):
     """Initialize Python logging configuration."""
     global _IS_LOGGING_SETUP
     if _IS_LOGGING_SETUP:
@@ -24,12 +28,22 @@ def setup_logging(app_config):
             record.host_id = host_id
             return True
 
+    class AddProcessName(logging.Filter):
+        def filter(self, record):
+            record.processname = processname
+            return True
+
     dc = {
         "version": 1,
         "disable_existing_loggers": True,
-        "filters": {"add_hostid": {"()": AddHostID}},
+        "filters": {
+            "add_hostid": {"()": AddHostID},
+            "add_processname": {"()": AddProcessName},
+        },
         "formatters": {
-            "app": {"format": "%(asctime)s %(levelname)s - %(name)s - %(message)s"},
+            "app": {
+                "format": "%(asctime)s %(levelname)s - %(processname)s - %(name)s - %(message)s"
+            },
             "mozlog": {
                 "()": "dockerflow.logging.JsonLogFormatter",
                 "logger_name": "eliot",
@@ -40,13 +54,13 @@ def setup_logging(app_config):
                 "level": "DEBUG",
                 "class": "logging.StreamHandler",
                 "formatter": "app",
-                "filters": ["add_hostid"],
+                "filters": ["add_hostid", "add_processname"],
             },
             "mozlog": {
                 "level": "DEBUG",
                 "class": "logging.StreamHandler",
                 "formatter": "mozlog",
-                "filters": ["add_hostid"],
+                "filters": ["add_hostid", "add_processname"],
             },
         },
         "loggers": {
@@ -69,9 +83,9 @@ def setup_logging(app_config):
 
 def log_config(logger, component):
     """Log configuration for a given component."""
-    for namespace, key, val, opt in component.get_runtime_config():
-        if namespace:
-            namespaced_key = "%s_%s" % ("_".join(namespace), key)
+    for ns, key, val, opt in component.get_runtime_config():
+        if ns:
+            namespaced_key = "%s_%s" % ("_".join(ns), key)
         else:
             namespaced_key = key
 

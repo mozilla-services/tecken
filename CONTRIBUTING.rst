@@ -13,7 +13,7 @@ etiquette guidelines. For more details please see the `CODE_OF_CONDUCT.md file
 Bugs
 ====
 
-All bugs are tracked in `<https://bugzilla.mozilla.org/>`_.
+All bugs are tracked in `Bugzilla <https://bugzilla.mozilla.org/>`_.
 
 Write up a new bug:
 

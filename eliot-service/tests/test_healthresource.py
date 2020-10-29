@@ -30,7 +30,6 @@ class TestHealthChecks:
     def test_heartbeat(self, client):
         resp = client.simulate_get("/__heartbeat__")
         assert resp.status_code == 200
-        assert resp.json == {"errors": [], "info": {}}
 
     def test_broken(self, client):
         resp = client.simulate_get("/__broken__")

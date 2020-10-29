@@ -5,7 +5,7 @@ Redis Documentation
 Usage
 =====
 
-Redis is used for two distinct purposes and the different
+The Tecken webapp uses Redis for two distinct purposes and the different
 configurations shouldn't be mixed.
 
 One is used as an LRU cache for the Symbolication service. It's basically
@@ -16,6 +16,11 @@ of. The LRU functionality is dependent on two things:
   will just continue to fill up until the server/computer runs out of RAM.
 
 * A ``maxmemory-policy`` setting being someting other than ``noeviction``.
+
+.. Note::
+
+   Once we switch to Eliot for symbolication, the above needs to be rewritten
+   or removed.
 
 The other Redis server is used for miscellaneous caching and as a broker
 for message queue workers (TO BE UPDATED).
