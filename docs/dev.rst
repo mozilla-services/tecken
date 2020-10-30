@@ -20,39 +20,25 @@ You can set up a development environment with:
    $ make setup
 
 
-Tecken has a webapp.
+Tecken consists of:
 
-To run the webapp, do:
+1. a webapp (also called Tecken) that covers uploading and downloading symbols
+2. a webapp (Eliot) that covers symbolication
+
+To run these two services, do:
 
 .. code-block:: shell
 
-   # Runs web and ui and required services
    $ make run
 
 
-Now a development server should be available at
-``http://localhost:3000``.
+The Tecken webapp is at: http://localhost:3000
 
-To test the symbolication run::
-
-   $ curl --user-agent "example/1.0" -d '{"stacks":[[[0,11723767],[1, 65802]]],"memoryMap":[["xul.pdb","44E4EC8C2F41492B9369D6B9A059577C2"],["wntdll.pdb","D74F79EB1F8D4A45ABCD2F476CCABACC2"]],"version":4}' http://localhost:3000/symbolicate/v5
-
-
-Database migrations
-===================
-
-We use Django's ORM and thus we do database migrations using Django's
-migration system.
-
-Do this::
-
-   $ make shell
-   app@xxx:/app$ ./manage.py makemigration --name "BUGID_desc" APP
+Eliot is at: http://localhost:8050
 
 
 Managing dependencies
 =====================
-
 
 Python dependencies
 -------------------
@@ -73,8 +59,8 @@ Then rebuild your docker environment::
 If there are problems, it'll tell you.
 
 
-JavaScript dependencies
------------------------
+JavaScript dependencies (Tecken webapp)
+---------------------------------------
 
 Tecken uses `yarn <https://yarnpkg.com/>`_ for JavaScript dependencies. Use the
 ``yarn`` installed in the Docker frontend container:
@@ -116,7 +102,9 @@ To run the tests, do:
 
    $ make test
 
-Tests go in ``tests/``. Data required by tests goes in ``tests/data/``.
+Tests for the Tecken webapp go in ``tecken/tests/``.
+
+Tests for Eliot go in ``eliot-service/tests/``.
 
 If you need to run specific tests or pass in different arguments, you can use
 the testshell:
@@ -128,7 +116,8 @@ the testshell:
 
    <pytest output>
 
-   app@xxx:/app$ pytest tests/test_symbolicate.py
+   app@xxx:/app$ cd tecken/
+   app@xxx:/app/tecken$ pytest tests/test_download.py
 
 
 System tests
@@ -140,13 +129,13 @@ System tests are located in the repository in ``systemtests/``. See the
 System tests can be run against any running environment: local, stage, or prod.
 
 
-Frontend JavaScript tests
--------------------------
+Frontend JavaScript tests (Tecken webapp)
+-----------------------------------------
 
-There are no tests for the JavaScript code. For now, run the app and click
-through the site:
+The Tecken webapp is built using JavaScript and React. There are no tests for
+this code and it has to be tested manually. You can do something like this:
 
-1. go to website
+1. go to Tecken webapp website
 2. wait for front page to load
 3. click on "Home"
 4. click on "Downloads missing"
@@ -163,14 +152,32 @@ through the site:
 15. click on "Sign out"
 
 
-Accounts and first superuser
-============================
+Tecken webapp things
+====================
 
-Users need to create their own API tokens but before they can do that they
-need to be promoted to have that permission at all. The only person/people
-who can give other users permissions is the superuser. To bootstrap
-the user administration you need to create at least one superuser.
-That superuser can promote other users to superusers too.
+The Tecken webapp is at: http://localhost:3000
+
+
+Database migrations
+-------------------
+
+The Tecken webapp uses Django's ORM and thus we do database migrations using
+Django's migration system.
+
+Do this::
+
+   $ make shell
+   app@xxx:/app$ ./manage.py makemigration --name "BUGID_desc" APP
+
+
+Accounts and first superuser
+----------------------------
+
+The Tecken webapp has an accounts system. Users need to create their own API
+tokens but before they can do that they need to be promoted to have that
+permission at all. The only person/people who can give other users permissions
+is the superuser. To bootstrap the user administration you need to create at
+least one superuser.  That superuser can promote other users to superusers too.
 
 This action does NOT require that the user signs in at least once. If the
 user does not exist, it gets created.
@@ -189,8 +196,8 @@ corresponding user in the oidcprovider service like this:
    docker-compose exec oidcprovider /code/manage.py createuser yourname yourpassword yourname@example.com
 
 
-Giving users permission to upload
-=================================
+Giving users permission to upload symbols
+-----------------------------------------
 
 The user should write up a bug. See :ref:`upload-basics`.
 
@@ -211,12 +218,13 @@ Once vouched:
 
 
 Viewing all metrics keys
-========================
+------------------------
 
-To get insight into all metrics keys that are used, a special Markus backend
-is enabled called ``tecken.markus_extra.LogAllMetricsKeys``. It's enabled
-by default in local development. And to inspect its content you can either
-open ``all-metrics-keys.json`` directly (it's git ignored) or you can run:
+In the Tecken webapp, to get insight into all metrics keys that are used, a
+special Markus backend is enabled called
+``tecken.markus_extra.LogAllMetricsKeys``. It's enabled by default in local
+development. And to inspect its content you can either open
+``all-metrics-keys.json`` directly (it's git ignored) or you can run:
 
 .. code-block:: shell
 
@@ -233,7 +241,7 @@ recreated again.
 
 
 Minio (S3 mock server)
-======================
+----------------------
 
 When doing local development we, by default, mock AWS S3 and instead use
 `minio`_. It's API compatible so it should reflect how AWS S3 works but
@@ -247,7 +255,7 @@ use to browse uploaded files. Go to ``http://localhost:9000``.
 
 
 How to do local Upload by Download URL
-======================================
+--------------------------------------
 
 When doing local development and you want to work on doing Symbol Upload
 by HTTP posting the URL, you have a choice. Either put files somewhere
@@ -285,7 +293,7 @@ and one outside in the ``tecke-loadtests`` directory on your host.
 
 
 Debugging a "broken" Redis
-==========================
+--------------------------
 
 By default, we have our Redis Cache configured to swallow all exceptions
 (...and just log them). This is useful because the Redis Cache is only
@@ -313,10 +321,10 @@ verify the session cookie value on each and every request.
 
 
 Auth debugging
-==============
+--------------
 
 Cache/cookeis issues
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 Anyone can test caching and cookies by going to
 `<https://symbols.mozilla.org/__auth_debug__>`_.  That's a good first debugging
@@ -324,7 +332,7 @@ step for helping users figure out auth problems.
 
 
 Auth0 issues
-------------
+~~~~~~~~~~~~
 
 Tecken uses Mozilla SSO. Anyone can log in, but by default accounts don't have
 special permissions to anything.
@@ -355,7 +363,7 @@ override this interval change the environment variable
 
 
 Testing if a user is blocked
-----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To check if a user is blocked, use the ``is-blocked-in-auth0`` which is
 development tool shortcut for what the middleware does:
@@ -363,3 +371,16 @@ development tool shortcut for what the middleware does:
 .. code-block:: shell
 
     $ docker-compose run web python manage.py is-blocked-in-auth0 me@example.com
+
+
+Eliot things
+============
+
+Eliot is at: http://localhost:8050
+
+Eliot spits out its configuration at startup. You can override any of those
+settings in your ``.env`` file.
+
+Eliot runs with a 1gb cache dir in the local dev environment. It caches
+symcache files there so it doesn't have to repeatedly download and parse sym
+files.

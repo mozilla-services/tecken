@@ -31,6 +31,9 @@ case ${SERVICE} in
 web)  ## Run Tecken web service
     exec ./bin/run_web.sh $@
     ;;
+eliot)  ## Run Eliot service
+    exec circusd circus_eliot.ini
+    ;;
 worker)  ## Run Celery worker
     exec ${CMD_PREFIX} celery -A tecken.celery:app worker --loglevel INFO
     ;;

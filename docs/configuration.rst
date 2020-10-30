@@ -4,8 +4,28 @@ Configuration
 
 .. contents::
 
-General Configuration
-=====================
+Tecken Configuration
+====================
+
+Tecken is the webapp that covers uploading, downloading, and symbolication.
+
+.. envvar:: GUNICORN_TIMEOUT
+
+   To specify the timeout value.
+
+   https://docs.gunicorn.org/en/stable/settings.html#timeout
+
+
+.. envvar:: GUNICORN_WORKERS
+
+   To specify the number of gunicorn workers. The default is 4.
+
+   You should set it to ``(2 x $num_cores) + 1``.
+
+   https://docs.gunicorn.org/en/stable/settings.html#workers
+
+   http://docs.gunicorn.org/en/stable/design.html#how-many-workers
+
 
 .. envvar:: DJANGO_CONFIGURATION
 
@@ -57,50 +77,6 @@ General Configuration
       SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
 
 
-Gunicorn
-========
-
-You can set two environment variables:
-
-.. envvar:: GUNICORN_TIMEOUT
-
-   To specify the timeout value.
-
-   https://docs.gunicorn.org/en/stable/settings.html#timeout
-
-.. envvar:: GUNICORN_WORKERS
-
-   To specify the number of gunicorn workers. The default is 4.
-
-   You should set it to ``(2 x $num_cores) + 1``.
-
-   https://docs.gunicorn.org/en/stable/settings.html#workers
-
-   http://docs.gunicorn.org/en/stable/design.html#how-many-workers
-
-
-AWS
-===
-
-The following variables need to be set for access:
-
-.. envvar:: AWS_ACCESS_KEY_ID
-
-   The AWS access key.
-
-.. envvar:: AWS_SECRET_ACCESS_KEY
-
-   The AWS Secret access key.
-
-The account used needs to be able to read, write, and list the
-``org.mozilla.crash-stats.symbols-public`` bucket which is in ``us-west-2``.
-
-Tecken will never create S3 buckets--they are expected to exist.
-
-
-Uploading, downloading, and symbolication
-=========================================
-
 .. envvar:: DJANGO_SYMBOL_URLS
 
    Comma-separated string of urls. Each url specifies an AWS S3 bucket.
@@ -137,6 +113,7 @@ Uploading, downloading, and symbolication
 
       DJANGO_UPLOAD_DEFAULT_URL=https://s3-us-west-2.amazonaws.com/pubbucket/
 
+
 .. envvar:: DJANGO_UPLOAD_URL_EXCEPTIONS
 
    Python dictionary that maps an email address or email address glob pattern
@@ -147,6 +124,7 @@ Uploading, downloading, and symbolication
    .. code-block:: shell
 
       DJANGO_UPLOAD_BUCKET_EXCEPTIONS={"*example.com": "https://s3-us-west-2.amazonaws.com/privbucket/", "foo@bar.com": "https://s3-us-west-2.amazonaws.com/special/"}
+
 
 .. envvar:: DJANGO_ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS
 
@@ -166,32 +144,28 @@ Uploading, downloading, and symbolication
       For example, if you have a ``mybigsymbolzips.example.com`` that redirects to
       ``cloudfront.amazonaws.net`` you need to add both.
 
-Try builds
-==========
 
-Try build symbols are symbols that come from builds with a much more relaxed
-access policy. That's why it's important that these kinds of symbols don't
-override the non-Try build symbols. Also, the nature of them is much more
-short-lived and when stored in S3 they should have a much shorter expiration
-time than all other symbols.
+AWS
+---
 
-.. envvar:: DJANGO_UPLOAD_TRY_SYMBOLS_URL
+The following variables need to be set for access:
 
-   URL to indicates which bucket Try symbol uploads go into by default.
+.. envvar:: AWS_ACCESS_KEY_ID
 
-   For example:
+   The AWS access key.
 
-   .. code-block:: shell
+.. envvar:: AWS_SECRET_ACCESS_KEY
 
-      DJANGO_UPLOAD_TRY_SYMBOLS_URL=https://s3-us-west-2.amazonaws.com/pubbucket/try/
+   The AWS Secret access key.
 
+The account used needs to be able to read, write, and list the
+``org.mozilla.crash-stats.symbols-public`` bucket which is in ``us-west-2``.
 
-   If this isn't set, it defaults to the value of
-   :envvar:`DJANGO_UPLOAD_DEFAULT_URL` with ``try`` added just after the bucket
-   name.
+Tecken will never create S3 buckets--they are expected to exist.
+
 
 PostgreSQL
-==========
+----------
 
 .. envvar:: DATABASE_URL
 
@@ -204,8 +178,9 @@ PostgreSQL
 
       DATABASE_URL="postgres://username:password@hostname/databasename"
 
+
 Redis Cache
-===========
+-----------
 
 .. envvar:: REDIS_URL
 
@@ -245,8 +220,9 @@ Redis Cache
 
    Defaults to 2 seconds.
 
+
 Redis Store
-===========
+-----------
 
 The Redis Store points to a second Redis instance used for caching the output
 of parsing symbols files.
@@ -283,8 +259,9 @@ Expected version is 3.2 or higher.
 .. _`config is not a valid command`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ClientConfig.RestrictedCommands.html
 .. _`ElastiCache Redis Parameter Group`: http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/ParameterGroups.Redis.html#ParameterGroups.Redis.3-2-4
 
+
 StatsD and metrics
-==================
+------------------
 
 .. envvar:: DJANGO_STATSD_HOST
 
@@ -299,12 +276,34 @@ StatsD and metrics
    Defaults to ``""`` (empty string).
 
 
+Try builds
+----------
+
+Try build symbols are symbols that come from builds with a much more relaxed
+access policy. That's why it's important that these kinds of symbols don't
+override the non-Try build symbols. Also, the nature of them is much more
+short-lived and when stored in S3 they should have a much shorter expiration
+time than all other symbols.
+
+.. envvar:: DJANGO_UPLOAD_TRY_SYMBOLS_URL
+
+   URL to indicates which bucket Try symbol uploads go into by default.
+
+   For example:
+
+   .. code-block:: shell
+
+      DJANGO_UPLOAD_TRY_SYMBOLS_URL=https://s3-us-west-2.amazonaws.com/pubbucket/try/
+
+
+   If this isn't set, it defaults to the value of
+   :envvar:`DJANGO_UPLOAD_DEFAULT_URL` with ``try`` added just after the bucket
+   name.
+
+
 .. _auth-configuration:
 
 Authentication
-==============
-
-Prod and stage
 --------------
 
 In the production and stage environments, Tecken uses Mozilla SSO which is a
@@ -329,22 +328,7 @@ self-hosted Auth0 instance that integrates with Mozilla's LDAP system.
    https://mozilla-django-oidc.readthedocs.io/en/stable/settings.html
 
 
-Local development
------------------
-
-For local development, we use this configuration:
-
-.. code-block:: shell
-
-    DJANGO_OIDC_RP_CLIENT_ID=1
-    DJANGO_OIDC_RP_CLIENT_SECRET=bd01adf93cfb
-    DJANGO_OIDC_OP_AUTHORIZATION_ENDPOINT=http://oidc.127.0.0.1.nip.io:8081/openid/authorize
-    DJANGO_OIDC_OP_TOKEN_ENDPOINT=http://oidcprovider:8080/openid/token
-    DJANGO_OIDC_OP_USER_ENDPOINT=http://oidcprovider:8080/openid/userinfo
-    DJANGO_OIDC_VERIFY_SSL=False
-    DJANGO_ENABLE_AUTH0_BLOCKED_CHECK=False
-
-To use the provider:
+To use the provider in local development:
 
 1. Load http://localhost:3000
 2. Click "Sign In" to start an OpenID Connect session on ``oidcprovider``
@@ -360,3 +344,28 @@ You'll remain logged in to ``oidcprovider``, and the account will persist until
 the ``oidcprovider`` container is stopped.
 You can visit http://oidc.127.0.0.1.nip.io:8081/account/logout to manually log
 out.
+
+
+Eliot configuration
+===================
+
+Webapp
+------
+
+The Eliot webapp is run as worker processes by Gunicorn which is run by Circus.
+
+.. autocomponent:: eliot.app.AppConfig
+   :hide-classname:
+   :namespace: eliot
+   :case: upper
+
+
+Disk cache manager
+------------------
+
+The Eliot disk cache manager is run as a single process by Circus.
+
+.. autocomponent:: eliot.cache_manager.AppConfig
+   :hide-classname:
+   :namespace: eliot
+   :case: upper

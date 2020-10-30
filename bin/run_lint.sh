@@ -12,7 +12,7 @@
 
 set -e
 
-BLACKARGS=("--line-length=88" "--target-version=py36" bin tecken systemtests)
+BLACKARGS=("--line-length=88" "--target-version=py36" bin tecken eliot-service systemtests)
 
 if [[ $1 == "--fix" ]]; then
     echo ">>> black fix"

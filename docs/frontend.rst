@@ -5,10 +5,10 @@ Frontend Documentation
 Overview
 ========
 
-The frontend code tries to be as separate from the web server code as possible.
-The frontend is a static app (written in React with ``react-router``) that
-communicates with the web server by making AJAX calls for JSON/REST and
-rendering in run-time.
+The Tecken webapp has a JavaScript React frontend. The frontend code tries to
+be as separate from the web server code as possible.  The frontend is a static
+app (written in React with ``react-router``) that communicates with the web
+server by making AJAX calls for JSON/REST and rendering in run-time.
 
 The goal is for the web server (i.e. Django) to only return pure
 responses in JSON (or plain text or specific to some files) and never
