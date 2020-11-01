@@ -34,7 +34,7 @@ requests==2.24.0
 sphinx-rtd-theme==0.5.0
 sphinxcontrib-httpdomain==1.7.0
 symbolic==7.5.0
-ujson==3.2.0
+ujson==4.0.1
 urllib3==1.25.10
 urlwait==1.0
 whitenoise==5.2.0
