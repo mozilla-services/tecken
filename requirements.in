@@ -24,7 +24,7 @@ mozilla-django-oidc==1.2.4
 msgpack==1.0.0
 pip-tools==5.3.1
 psycopg2==2.8.6
-pytest-django==3.10.0
+pytest-django==4.1.0
 pytest-mock==3.3.1
 pytest==6.1.0
 python-dateutil==2.8.1
