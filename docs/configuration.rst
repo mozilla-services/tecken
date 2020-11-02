@@ -354,6 +354,39 @@ Webapp
 
 The Eliot webapp is run as worker processes by Gunicorn which is run by Circus.
 
+Gunicorn configuration:
+
+.. envvar:: ELIOT_GUNICORN_WORKERS
+
+   Specify the number of gunicorn workers. The default is 4.
+
+   Gunicorn docs suggest to set it to ``(2 x $num_cores) + 1``.
+
+   https://docs.gunicorn.org/en/stable/settings.html#workers
+
+   http://docs.gunicorn.org/en/stable/design.html#how-many-workers
+
+
+.. envvar:: ELIOT_GUNICORN_TIMEOUT
+
+   Specify the timeout value. The default is 300.
+
+   https://docs.gunicorn.org/en/stable/settings.html#timeout
+
+
+.. envvar:: ELIOT_GUNICORN_PORT
+
+   Set the port to listen to. Defaults to 8000.
+
+
+.. envvar:: ELIOT_GUNICORN_CMD_PREFIX
+
+   Set any command prefix to run the gunicorn process in. Default
+   is ``""``.
+
+
+Webapp configuration:
+
 .. autocomponent:: eliot.app.AppConfig
    :hide-classname:
    :namespace: eliot

@@ -94,7 +94,43 @@ Testing
 Unit tests
 ----------
 
-Tecken uses `pytest <https://pytest.org/>`_ for unit tests.
+Tecken webapp and Eliot both have Python unit tests that use the `pytest
+<https://pytest.org/>`_ test framework.
+
+To run all of the unit tests, do:
+
+.. code-block:: shell
+
+   $ make test
+
+
+See :ref:`dev-tecken-tests` and :ref:`dev-eliot-tests` for details.
+
+
+System tests
+------------
+
+System tests are located in the repository in ``systemtests/``. See the
+``README.rst`` there for usage.
+
+System tests can be run against any running environment: local, stage, or prod.
+
+
+Tecken webapp things
+====================
+
+When running the Tecken webapp in the local dev environment, it's at:
+http://localhost:3000
+
+The code is in ``tecken/``.
+
+You can override Tecken webapp configuration in your ``.env`` file.
+
+
+.. _dev-tecken-tests:
+
+Python tests for Tecken webapp
+------------------------------
 
 To run the tests, do:
 
@@ -103,8 +139,6 @@ To run the tests, do:
    $ make test
 
 Tests for the Tecken webapp go in ``tecken/tests/``.
-
-Tests for Eliot go in ``eliot-service/tests/``.
 
 If you need to run specific tests or pass in different arguments, you can use
 the testshell:
@@ -120,17 +154,8 @@ the testshell:
    app@xxx:/app/tecken$ pytest tests/test_download.py
 
 
-System tests
-------------
-
-System tests are located in the repository in ``systemtests/``. See the
-``README.rst`` there for usage.
-
-System tests can be run against any running environment: local, stage, or prod.
-
-
-Frontend JavaScript tests (Tecken webapp)
------------------------------------------
+JavaScript tests
+----------------
 
 The Tecken webapp is built using JavaScript and React. There are no tests for
 this code and it has to be tested manually. You can do something like this:
@@ -150,12 +175,6 @@ this code and it has to be tested manually. You can do something like this:
 13. click on "Symbolication"
 14. click on "Help"
 15. click on "Sign out"
-
-
-Tecken webapp things
-====================
-
-The Tecken webapp is at: http://localhost:3000
 
 
 Database migrations
@@ -376,7 +395,9 @@ development tool shortcut for what the middleware does:
 Eliot things
 ============
 
-Eliot is at: http://localhost:8050
+When running Eliot in the local dev environment, it's at: http://localhost:8050
+
+The code is in ``eliot-service/``.
 
 Eliot spits out its configuration at startup. You can override any of those
 settings in your ``.env`` file.
@@ -384,3 +405,30 @@ settings in your ``.env`` file.
 Eliot runs with a 1gb cache dir in the local dev environment. It caches
 symcache files there so it doesn't have to repeatedly download and parse sym
 files.
+
+
+.. _dev-eliot-tests:
+
+Python tests for Eliot
+----------------------
+
+To run the tests, do:
+
+.. code-block:: shell
+
+   $ make test
+
+Tests for the Tecken webapp go in ``tecken/tests/``.
+
+If you need to run specific tests or pass in different arguments, you can use
+the testshell:
+
+.. code-block:: shell
+
+   $ make testshell
+   app@xxx:/app$ pytest
+
+   <pytest output>
+
+   app@xxx:/app$ cd tecken/
+   app@xxx:/app/tecken$ pytest tests/test_download.py
