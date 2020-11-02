@@ -81,8 +81,8 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${HOST}" "${FN}"
 fi
 
-echo ">>> SYMBOLICATION V4 and V5 TEST"
-for FN in ./data/stacks/*.json
+echo ">>> SYMBOLICATION V4 and V5 TEST (ONLY 20 STACKS)"
+for FN in $(ls ./data/stacks/*.json | sort -u | head -n 20)
 do
     # Verify v4 api
     python ./bin/symbolicate.py verify --api-url="${HOST}symbolicate/v4" --api-version=4 "${FN}"
