@@ -395,16 +395,34 @@ development tool shortcut for what the middleware does:
 Eliot things
 ============
 
+How Eliot works
+---------------
+
 When running Eliot in the local dev environment, it's at: http://localhost:8050
 
 The code is in ``eliot-service/``.
 
-Eliot spits out its configuration at startup. You can override any of those
-settings in your ``.env`` file.
+Eliot logs its configuration at startup. You can override any of those
+configuration settings in your ``.env`` file.
 
-Eliot runs with a 1gb cache dir in the local dev environment. It caches
-symcache files there so it doesn't have to repeatedly download and parse sym
-files.
+Eliot runs in a Docker container and is composed of:
+
+* `circus <https://circus.readthedocs.io/>`_ process which manages:
+
+  * `gunicorn <https://docs.gunicorn.org/en/stable//>`_ which runs multiple
+    worker webapp processes
+  * a disk cache manager process
+
+Symbolication requests come in and are handled by the Eliot webapp. It pulls
+sym files from the urls configured by ``ELIOT_SYMBOL_URLS``. By default, that's
+``https://symbols.mozilla.org/try``.
+
+The Elliot webapp downloads sym files, parses them into symcache files, and
+performs symbol lookups with the symcache files. Parsing sym files and
+generating symcache files takes a long time, so it stores the symcache files in
+a disk cache shared by all webapp processes running in that Docker container.
+The disk cache manager process deletes least recently used items from the disk
+cache to keep it under ``ELIOT_SYMBOLS_CACHE_MAX_SIZE`` bytes.
 
 
 .. _dev-eliot-tests:
