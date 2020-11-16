@@ -45,7 +45,9 @@ def get_sentry_client():
 def setup_sentry_logging():
     """Set up sentry logging of exceptions."""
     if _SENTRY_CLIENT:
-        setup_logging(SentryHandler(_SENTRY_CLIENT))
+        handler = SentryHandler(_SENTRY_CLIENT)
+        handler.setLevel(logging.ERROR)
+        setup_logging(handler)
 
 
 def set_sentry_client(sentry_dsn, basedir):
