@@ -6,13 +6,12 @@
 Contains code for downloading sym files from one or more sources.
 """
 
-import markus
+from functools import wraps
+import time
 
+from eliot.libmarkus import METRICS
 from eliot.librequests import session_with_retries
 from eliot.libsentry import get_sentry_client
-
-
-METRICS = markus.get_metrics(__name__)
 
 
 class FileNotFound(Exception):
@@ -51,6 +50,28 @@ class Source:
         raise NotImplementedError
 
 
+def time_download(key):
+    """Captures timing for a function with success/fail tag."""
+
+    def _time_download(fun):
+        @wraps(fun)
+        def _time_download_fun(*args, **kwargs):
+            start_time = time.perf_counter()
+            try:
+                rv = fun(*args, **kwargs)
+                delta = (time.perf_counter() - start_time) * 1000.0
+                METRICS.histogram(key, value=delta, tags=["response:success"])
+                return rv
+            except Exception:
+                delta = (time.perf_counter() - start_time) * 1000.0
+                METRICS.histogram(key, value=delta, tags=["response:fail"])
+                raise
+
+        return _time_download_fun
+
+    return _time_download
+
+
 class HTTPSource(Source):
     """Source for HTTP/HTTPS requests."""
 
@@ -71,6 +92,7 @@ class HTTPSource(Source):
         # NOTE(willkg): This has to match Tecken's upload code
         return "%s/%s/%s" % (debug_filename, debug_id, filename)
 
+    @time_download("eliot.downloader.download")
     def get(self, debug_filename, debug_id, filename):
         """Retrieve a source url.
 
@@ -91,8 +113,6 @@ class HTTPSource(Source):
 
         resp = self.session.get(url, allow_redirects=True)
         if resp.status_code != 200:
-            METRICS.incr("sym_download", tags=["statuscode:%d" % resp.status_code])
-
             # If the status_code is 404, that's a legitimate FileNotFound. Anything else
             # is either fishy or a server error.
             if resp.status_code == 404:
