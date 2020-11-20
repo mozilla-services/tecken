@@ -30,11 +30,10 @@ import click
 from everett.component import ConfigOptions, RequiredConfigMixin
 import inotify_simple
 from inotify_simple import flags
-import markus
 
 from eliot.app import build_config_manager
 from eliot.liblogging import setup_logging, log_config
-from eliot.libmarkus import setup_metrics
+from eliot.libmarkus import setup_metrics, METRICS
 from eliot.libsentry import set_sentry_client, setup_sentry_logging
 
 
@@ -45,7 +44,6 @@ else:
 
 
 LOGGER = logging.getLogger(MODULE_NAME)
-METRICS = markus.get_metrics(MODULE_NAME)
 REPOROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
 
 
@@ -218,13 +216,15 @@ class DiskCacheManager:
             size = path.stat().st_size
             self.total_size += size
 
-            # If we're beyond the max, then we need to size down as much as we can
+            # If we're beyond the max, then we need to evict items to size down as much
+            # as we can
             while self.lru and self.total_size > self.max_size:
                 rm_path, rm_size = self.lru.popitem(last=False)
                 rm_path = pathlib.Path(rm_path)
                 self.total_size -= rm_size
                 rm_path.unlink(missing_ok=True)
                 LOGGER.debug(f"evicted {rm_path} {rm_size:,d}")
+                METRICS.incr("eliot.diskcache.evict")
 
             # Since the file exists, add it to the lru
             LOGGER.debug(f"added {path} {size:,d}")

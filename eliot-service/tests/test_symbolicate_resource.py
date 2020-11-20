@@ -245,7 +245,10 @@ class TestSymbolicateBase:
                     f"Error looking up debug id in SYM file: {debug_filename} {debug_id}",
                 )
             ]
-            mm.assert_incr("eliot.symbolicate_resource.sym_debug_id_lookup_error")
+            mm.assert_incr(
+                "eliot.symbolicate.parse_sym_file.error",
+                tags=["reason:sym_debug_id_lookup_error"],
+            )
 
     def test_parse_sym_file_debugids(self, caplog, metricsmock, tmpdir):
         """Verify normalizing bad debug ids logs error and metric"""
@@ -262,7 +265,9 @@ class TestSymbolicateBase:
             assert caplog.record_tuples == [
                 ("eliot.symbolicate_resource", 40, "debug_id parse error: 'abcde'")
             ]
-            mm.assert_incr("eliot.symbolicate_resource.bad_debug_id")
+            mm.assert_incr(
+                "eliot.symbolicate.parse_sym_file.error", tags=["reason:bad_debug_id"]
+            )
 
     def test_get_symcache_in_cache(self, tmpcachedir, tmpdir):
         # Set up a DiskCache

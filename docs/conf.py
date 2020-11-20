@@ -22,6 +22,9 @@ sys.path.insert(0, str(BASEDIR))
 # Insert Eliot base dir for Eliot things
 sys.path.insert(0, str(BASEDIR / "eliot-service"))
 
+# Insert this directory to pick up extensions
+sys.path.insert(0, str(Path(__file__).parent))
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -48,6 +51,7 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinxcontrib.httpdomain",
     "everett.sphinxext",
+    "exts.eliot_metrics",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

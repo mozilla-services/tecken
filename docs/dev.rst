@@ -425,6 +425,14 @@ The disk cache manager process deletes least recently used items from the disk
 cache to keep it under ``ELIOT_SYMBOLS_CACHE_MAX_SIZE`` bytes.
 
 
+.. _dev-eliot-metrics:
+
+Metrics
+-------
+
+.. autometrics:: eliot.libmarkus.ELIOT_METRICS
+
+
 .. _dev-eliot-tests:
 
 Python tests for Eliot

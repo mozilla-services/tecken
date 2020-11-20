@@ -33,14 +33,13 @@ import tempfile
 import typing
 
 import falcon
-import markus
 import symbolic
 
 from eliot import downloader
+from eliot.libmarkus import METRICS
 
 
 LOGGER = logging.getLogger(__name__)
-METRICS = markus.get_metrics(__name__)
 
 
 @dataclass
@@ -185,6 +184,7 @@ class SymbolicateBase:
 
         return data
 
+    @METRICS.timer_decorator("eliot.symbolicate.parse_sym_file.parse")
     def parse_sym_file(self, debug_filename, debug_id, data):
         """Convert sym file to symcache file
 
@@ -201,7 +201,9 @@ class SymbolicateBase:
             # If the debug id isn't valid, then there's nothing to parse, so
             # log something, emit a metric, and move on
             LOGGER.error(f"debug_id parse error: {debug_id!r}")
-            METRICS.incr("bad_debug_id")
+            METRICS.incr(
+                "eliot.symbolicate.parse_sym_file.error", tags=["reason:bad_debug_id"]
+            )
             return
 
         try:
@@ -218,7 +220,10 @@ class SymbolicateBase:
                 obj = archive.get_object(debug_id=ndebug_id)
                 symcache = obj.make_symcache()
             except (LookupError, symbolic.ObjectErrorUnsupportedObject):
-                METRICS.incr("sym_debug_id_lookup_error")
+                METRICS.incr(
+                    "eliot.symbolicate.parse_sym_file.error",
+                    tags=["reason:sym_debug_id_lookup_error"],
+                )
                 LOGGER.exception(
                     f"Error looking up debug id in SYM file: {debug_filename} {debug_id}"
                 )
@@ -227,7 +232,10 @@ class SymbolicateBase:
             finally:
                 os.unlink(temp_fp.name)
         except (IOError, OSError):
-            METRICS.incr("sym_tmp_file_error")
+            METRICS.incr(
+                "eliot.symbolicate.parse_sym_file.error",
+                tags=["reason:sym_tmp_file_error"],
+            )
             LOGGER.exception("Error creating tmp file for SYM file")
             return None
 
@@ -298,6 +306,7 @@ class SymbolicateBase:
 
         symbolicated_stacks = []
         for stack_index, stack in enumerate(stacks):
+            METRICS.gauge("eliot.symbolicate.num_frames", value=len(stack))
             symbolicated_stack = []
             for frame_index, frame in enumerate(stack):
                 module_index, module_offset = frame
@@ -364,10 +373,12 @@ class SymbolicateBase:
 
 
 class SymbolicateV4(SymbolicateBase):
+    @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v4"])
     def on_post(self, req, resp):
         try:
             payload = json.load(req.bounded_stream)
         except json.JSONDecodeError:
+            METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
             raise falcon.HTTPBadRequest("Payload is not valid JSON")
 
         stacks = payload.get("stacks", [])
@@ -376,6 +387,9 @@ class SymbolicateV4(SymbolicateBase):
         try:
             validate_modules(modules)
         except InvalidModules as exc:
+            METRICS.incr(
+                "eliot.symbolicate.request_error", tags=["reason:invalid_modules"]
+            )
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
@@ -384,10 +398,17 @@ class SymbolicateV4(SymbolicateBase):
         try:
             validate_stacks(stacks, modules)
         except InvalidStacks as exc:
+            METRICS.incr(
+                "eliot.symbolicate.request_error", tags=["reason:invalid_stacks"]
+            )
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
             raise falcon.HTTPBadRequest(f"job has invalid stacks: {exc}")
+
+        METRICS.gauge(
+            "eliot.symbolicate.num_stacks", value=len(stacks), tags=["version:v4"]
+        )
 
         symdata = self.symbolicate(stacks, modules)
 
@@ -420,10 +441,12 @@ class SymbolicateV4(SymbolicateBase):
 
 
 class SymbolicateV5(SymbolicateBase):
+    @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v5"])
     def on_post(self, req, resp):
         try:
             payload = json.load(req.bounded_stream)
         except json.JSONDecodeError:
+            METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
             raise falcon.HTTPBadRequest("Payload is not valid JSON")
 
         if "jobs" in payload:
@@ -432,10 +455,16 @@ class SymbolicateV5(SymbolicateBase):
             jobs = [payload]
 
         if len(jobs) > MAX_JOBS:
+            METRICS.incr(
+                "eliot.symbolicate.request_error", tags=["reason:too_many_jobs"]
+            )
             raise falcon.HTTPBadRequest(
                 f"please limit number of jobs in a single request to <= {MAX_JOBS}"
             )
 
+        METRICS.gauge(
+            "eliot.symbolicate.num_jobs", value=len(jobs), tags=["version:v5"]
+        )
         LOGGER.debug(f"Number of jobs: {len(jobs)}")
 
         results = []
@@ -446,6 +475,9 @@ class SymbolicateV5(SymbolicateBase):
             try:
                 validate_modules(modules)
             except InvalidModules as exc:
+                METRICS.incr(
+                    "eliot.symbolicate.request_error", tags=["reason:invalid_modules"]
+                )
                 # NOTE(willkg): the str of an exception is the message; we need to
                 # control the message carefully so we're not spitting unsanitized data
                 # back to the user in the error
@@ -454,10 +486,17 @@ class SymbolicateV5(SymbolicateBase):
             try:
                 validate_stacks(stacks, modules)
             except InvalidStacks as exc:
+                METRICS.incr(
+                    "eliot.symbolicate.request_error", tags=["reason:invalid_stacks"]
+                )
                 # NOTE(willkg): the str of an exception is the message; we need to
                 # control the message carefully so we're not spitting unsanitized data
                 # back to the user in the error
                 raise falcon.HTTPBadRequest(f"job {i} has invalid stacks: {exc}")
+
+            METRICS.gauge(
+                "eliot.symbolicate.num_stacks", value=len(stacks), tags=["version:v5"]
+            )
 
             results.append(self.symbolicate(stacks, modules))
 
