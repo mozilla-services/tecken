@@ -36,8 +36,8 @@ ELIOT_METRICS = {
 
         * ``version``: the symbolication api version
 
-           * ``v4``: the v4 API
-           * ``v5``: the v5 API
+          * ``v4``: the v4 API
+          * ``v5``: the v5 API
         """,
     ),
     "eliot.symbolicate.request_error": Metric(
@@ -98,8 +98,8 @@ ELIOT_METRICS = {
 
         * ``version``: the symbolication api version
 
-           * ``v4``: the v4 API
-           * ``v5``: the v5 API
+          * ``v4``: the v4 API
+          * ``v5``: the v5 API
         """,
     ),
     "eliot.symbolicate.num_stacks": Metric(
@@ -111,8 +111,8 @@ ELIOT_METRICS = {
 
         * ``version``: the symbolication api version
 
-           * ``v4``: the v4 API
-           * ``v5``: the v5 API
+          * ``v4``: the v4 API
+          * ``v5``: the v5 API
         """,
     ),
     "eliot.symbolicate.num_frames": Metric(
