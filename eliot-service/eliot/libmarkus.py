@@ -28,7 +28,7 @@ class Metric:
 # outgoing metrics.
 ELIOT_METRICS = {
     "eliot.symbolicate.api": Metric(
-        stat_type="histogram",
+        stat_type="timing",
         description="""\
         Timer for long a symbolication API request takes to handle.
 
@@ -89,10 +89,10 @@ ELIOT_METRICS = {
         Timer for how long it takes to parse sym files with Symbolic.
         """,
     ),
-    "eliot.symbolicate.num_jobs": Metric(
-        stat_type="gauge",
+    "eliot.symbolicate.jobs_count": Metric(
+        stat_type="histogram",
         description="""\
-        Gauge for how many jobs were in the symbolication request.
+        Histogram for how many jobs were in the symbolication request.
 
         Tags:
 
@@ -102,10 +102,10 @@ ELIOT_METRICS = {
           * ``v5``: the v5 API
         """,
     ),
-    "eliot.symbolicate.num_stacks": Metric(
-        stat_type="gauge",
+    "eliot.symbolicate.stacks_count": Metric(
+        stat_type="histogram",
         description="""\
-        Gauge for how many stacks per job were in the symbolication request.
+        Histogram for how many stacks per job were in the symbolication request.
 
         Tags:
 
@@ -115,10 +115,10 @@ ELIOT_METRICS = {
           * ``v5``: the v5 API
         """,
     ),
-    "eliot.symbolicate.num_frames": Metric(
-        stat_type="gauge",
+    "eliot.symbolicate.frames_count": Metric(
+        stat_type="histogram",
         description="""\
-        Gauge for how many frames per stack were in the symbolication request.
+        Histogram for how many frames per stack were in the symbolication request.
         """,
     ),
     "eliot.diskcache.get": Metric(
@@ -159,7 +159,7 @@ ELIOT_METRICS = {
 
 def setup_metrics(app_config, logger=None):
     """Initialize and configures the metrics system."""
-    global _IS_MARKUS_SETUP
+    global _IS_MARKUS_SETUP, METRICS
     if _IS_MARKUS_SETUP:
         return
 
@@ -184,29 +184,51 @@ def setup_metrics(app_config, logger=None):
             }
         )
     markus.configure(markus_backends)
+
+    if app_config("local_dev_env"):
+        # In local dev environment, we want the RegisteredMetricsFilter to
+        # raise exceptions when metrics are used incorrectly.
+        metrics_filter = RegisteredMetricsFilter(metrics=ELIOT_METRICS)
+        METRICS.filters.append(metrics_filter)
+
     _IS_MARKUS_SETUP = True
 
 
+class UnknownMetric(Exception):
+    pass
+
+
+class MetricHasWrongType(Exception):
+    pass
+
+
 class RegisteredMetricsFilter(MetricsFilter):
-    """Filter for enforcing registered metrics emission."""
+    """Filter for enforcing registered metrics emission.
+
+    This is only used in local development and tests.
+
+    """
 
     def __init__(self, metrics):
         self.metrics = metrics
 
     def filter(self, record):
         metric = self.metrics.get(record.key)
+
         if metric is None:
-            LOGGER.warning("metrics key %r is unknown", record.key)
+            raise UnknownMetric("metrics key %r is unknown" % record.key)
 
         elif record.stat_type != metric.stat_type:
-            LOGGER.warning(
-                "metrics key %r has wrong type; got %s expecting %s",
-                record.key,
-                record.stat_type,
-                metric.stat_type,
+            raise MetricHasWrongType(
+                "metrics key %r has wrong type; got %s expecting %s"
+                % (
+                    record.key,
+                    record.stat_type,
+                    metric.stat_type,
+                )
             )
 
         return record
 
 
-METRICS = markus.get_metrics(filters=[RegisteredMetricsFilter(ELIOT_METRICS)])
+METRICS = markus.get_metrics()

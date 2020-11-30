@@ -306,7 +306,7 @@ class SymbolicateBase:
 
         symbolicated_stacks = []
         for stack_index, stack in enumerate(stacks):
-            METRICS.gauge("eliot.symbolicate.num_frames", value=len(stack))
+            METRICS.histogram("eliot.symbolicate.frames_count", value=len(stack))
             symbolicated_stack = []
             for frame_index, frame in enumerate(stack):
                 module_index, module_offset = frame
@@ -406,8 +406,8 @@ class SymbolicateV4(SymbolicateBase):
             # back to the user in the error
             raise falcon.HTTPBadRequest(f"job has invalid stacks: {exc}")
 
-        METRICS.gauge(
-            "eliot.symbolicate.num_stacks", value=len(stacks), tags=["version:v4"]
+        METRICS.histogram(
+            "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v4"]
         )
 
         symdata = self.symbolicate(stacks, modules)
@@ -462,8 +462,8 @@ class SymbolicateV5(SymbolicateBase):
                 f"please limit number of jobs in a single request to <= {MAX_JOBS}"
             )
 
-        METRICS.gauge(
-            "eliot.symbolicate.num_jobs", value=len(jobs), tags=["version:v5"]
+        METRICS.histogram(
+            "eliot.symbolicate.jobs_count", value=len(jobs), tags=["version:v5"]
         )
         LOGGER.debug(f"Number of jobs: {len(jobs)}")
 
@@ -494,8 +494,8 @@ class SymbolicateV5(SymbolicateBase):
                 # back to the user in the error
                 raise falcon.HTTPBadRequest(f"job {i} has invalid stacks: {exc}")
 
-            METRICS.gauge(
-                "eliot.symbolicate.num_stacks", value=len(stacks), tags=["version:v5"]
+            METRICS.histogram(
+                "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v5"]
             )
 
             results.append(self.symbolicate(stacks, modules))
