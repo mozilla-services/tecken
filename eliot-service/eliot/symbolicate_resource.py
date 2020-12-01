@@ -219,7 +219,11 @@ class SymbolicateBase:
                 archive = symbolic.Archive.open(temp_fp.name)
                 obj = archive.get_object(debug_id=ndebug_id)
                 symcache = obj.make_symcache()
-            except (LookupError, symbolic.ObjectErrorUnsupportedObject):
+            except (
+                LookupError,
+                symbolic.ObjectErrorUnknown,
+                symbolic.ObjectErrorUnsupportedObject,
+            ):
                 METRICS.incr(
                     "eliot.symbolicate.parse_sym_file.error",
                     tags=["reason:sym_debug_id_lookup_error"],
