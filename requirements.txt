@@ -152,9 +152,9 @@ django-redis==4.12.1 \
     --hash=sha256:1133b26b75baa3664164c3f44b9d5d133d1b8de45d94d79f38d1adc5b1d502e5 \
     --hash=sha256:306589c7021e6468b2656edc89f62b8ba67e8d5a1c8877e2688042263daa7a63 \
     # via -r requirements.in
-django==2.2.16 \
-    --hash=sha256:62cf45e5ee425c52e411c0742e641a6588b7e8af0d2c274a27940931b2786594 \
-    --hash=sha256:83ced795a0f239f41d8ecabf51cc5fad4b97462a6008dc12e5af3cb9288724ec \
+django==2.2.17 \
+    --hash=sha256:558cb27930defd9a6042133258caf797b2d1dee233959f537e3dc475cb49bd7c \
+    --hash=sha256:cf5370a4d7765a9dd6d42a7b96b53c74f9446cd38209211304b210fe0404b861 \
     # via -r requirements.in, django-redis, mozilla-django-oidc
 dockerflow==2020.10.0 \
     --hash=sha256:226086becc436b5a1995348e26c4fb2ad1d4e5dbc10dffec0c675c9a43306c8b \

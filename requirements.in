@@ -45,4 +45,4 @@ redis==3.4.1
 
 # NOTE(willkg): Django 2.2 is an LTS series so don't upgrade until the next
 # LTS.
-Django==2.2.16
+Django==2.2.17
