@@ -39,9 +39,9 @@ botocore==1.18.18 \
     --hash=sha256:de5f9fc0c7e88ee7ba831fa27475be258ae09ece99143ed623d3618a3c84ee2c \
     --hash=sha256:e224754230e7e015836ba20037cac6321e8e2ce9b8627c14d579fcb37249decd \
     # via -r requirements.in, boto3, s3transfer
-celery==5.0.0 \
-    --hash=sha256:313930fddde703d8e37029a304bf91429cd11aeef63c57de6daca9d958e1f255 \
-    --hash=sha256:72138dc3887f68dc58e1a2397e477256f80f1894c69fa4337f8ed70be460375b \
+celery==5.0.2 \
+    --hash=sha256:012c814967fe89e3f5d2cf49df2dba3de5f29253a7f4f2270e8fce6b901b4ebf \
+    --hash=sha256:930c3acd55349d028c4e7104a7d377729cbcca19d9fce470c17172d9e7f9a8b6 \
     # via -r requirements.in
 certifi==2020.6.20 \
     --hash=sha256:5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3 \
