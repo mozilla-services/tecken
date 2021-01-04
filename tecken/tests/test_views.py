@@ -3,7 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import json
-import os
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -25,7 +25,6 @@ def test_client_task_tester(client, clear_redis_store):
 
     _mock_function = "tecken.views.sample_task.delay"
     with mock.patch(_mock_function, new=fake_task):
-
         response = client.get(url)
         assert response.status_code == 400
         assert b"Make a POST request to this URL first" in response.content
@@ -40,16 +39,13 @@ def test_client_task_tester(client, clear_redis_store):
 
 
 def test_dashboard(client, settings, tmpdir):
-    settings.STATIC_ROOT = tmpdir
-    with open(os.path.join(tmpdir, "index.html"), "wb") as f:
-        f.write(
-            b"""<html>
-            <h1>Hi!</h1>
-            </html>"""
-        )
+    settings.STATIC_ROOT = str(tmpdir)
+    f = Path(tmpdir / "index.html")
+    f.write_bytes(b"<html><h1>Hi!</h1></html>")
+
     response = client.get("/")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html"
+    assert response["content-type"] == "text/html; charset=utf-8"
     html = response.getvalue()
     assert b"<h1>Hi!</h1>" in html
 
@@ -57,34 +53,31 @@ def test_dashboard(client, settings, tmpdir):
 def test_frontend_index_html_redirect(client, settings, tmpdir):
     # If you hit this URL with '/index.html' explicit it redirects.
     # But only if there is no 'index.html' file in settings.STATIC_ROOT.
-    settings.STATIC_ROOT = tmpdir
+    settings.STATIC_ROOT = str(tmpdir)
     response = client.get("/index.html")
     assert response.status_code == 302
     assert response["location"] == "/"
 
 
 def test_frontend_index_html_aliases(client, settings, tmpdir):
-    settings.STATIC_ROOT = tmpdir
-    with open(os.path.join(tmpdir, "index.html"), "wb") as f:
-        f.write(
-            b"""<html>
-            <h1>React Routing!</h1>
-            </html>"""
-        )
+    settings.STATIC_ROOT = str(tmpdir)
+    f = Path(tmpdir / "index.html")
+    f.write_bytes(b"<html><h1>React Routing!</h1></html>")
+
     # For example `/help` is a route taking care of in the React app.
     response = client.get("/help")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html"
+    assert response["content-type"] == "text/html; charset=utf-8"
 
     # Test another one.
     response = client.get("/symbolication")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html"
+    assert response["content-type"] == "text/html; charset=utf-8"
 
     # Should work if there's a second path too
     response = client.get("/help/deeper/page")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html"
+    assert response["content-type"] == "text/html; charset=utf-8"
 
     response = client.get("/neverheardof")
     assert response.status_code == 404
@@ -116,9 +109,10 @@ def test_handler500(rf):
 def test_handler400(rf):
     request = rf.get("/")
     response = handler400(request, NameError("foo is bar"))
+
     assert response.status_code == 400
     assert response["Content-type"] == "application/json"
-    assert json.loads(response.content.decode("utf-8"))["error"] == ("foo is bar")
+    assert json.loads(response.content.decode("utf-8"))["error"] == "foo is bar"
 
 
 def test_handler403(rf):
@@ -126,7 +120,7 @@ def test_handler403(rf):
     response = handler403(request, PermissionDenied("bad boy!"))
     assert response.status_code == 403
     assert response["Content-type"] == "application/json"
-    assert json.loads(response.content.decode("utf-8"))["error"] == ("bad boy!")
+    assert json.loads(response.content.decode("utf-8"))["error"] == "bad boy!"
 
 
 def test_handler404(client):

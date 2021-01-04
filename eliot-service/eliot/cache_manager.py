@@ -149,6 +149,7 @@ class DiskCacheManager:
 
         self.total_size = 0
         self.lru = OrderedDict()
+        self._generator = None
 
     def setup(self):
         setup_logging(self.config, processname="cache_manager")
@@ -244,7 +245,7 @@ class DiskCacheManager:
                 fn = os.path.join(base, fn)
                 self.update_bookkeeping(pathlib.Path(fn))
 
-    def event_generator(self, nonblocking=False):
+    def _event_generator(self, nonblocking=False):
         """Returns a generator of inotify events."""
         if nonblocking:
             # NOTE(willkg): Timeout of 0 should return immediately if there's nothing
@@ -265,8 +266,9 @@ class DiskCacheManager:
         watch_descriptor = inotify.add_watch(str(self.cache_dir), watch_flags)
 
         LOGGER.info("Entering loop")
+        self.running = True
         try:
-            while True:
+            while self.running:
                 for event in inotify.read(timeout=timeout):
                     LOGGER.debug(event)
                     event_flags = flags.from_mask(event.mask)
@@ -295,11 +297,38 @@ class DiskCacheManager:
         finally:
             inotify.rm_watch(watch_descriptor)
 
+        inotify.close()
+
     def run_loop(self):
         """Run cache manager in a loop."""
-        event_loop = self.event_generator()
+        if self._generator is None:
+            self._generator = self._event_generator()
+
         while True:
-            next(event_loop)
+            next(self._generator)
+
+        self.shutdown()
+
+    def run_once(self):
+        """Runs a nonblocking event generator once."""
+        if self._generator is None:
+            self._generator = self._event_generator(nonblocking=True)
+
+        return next(self._generator)
+
+    def shutdown(self):
+        """Shut down an event generator."""
+        if self._generator:
+            # Stop the generator loop
+            self.running = False
+            generator = self._generator
+            self._generator = None
+            try:
+                # Run the generator one more time so it exits the loop and closes
+                # the FileIO
+                next(generator)
+            except StopIteration:
+                pass
 
     def process_delete(self, path, event):
         """Process a delete event."""
