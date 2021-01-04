@@ -4,6 +4,7 @@
 
 import datetime
 import gzip
+from pathlib import Path
 import os
 from io import BytesIO, StringIO
 from unittest import mock
@@ -63,7 +64,7 @@ class FakeUser:
 
 def test_dump_and_extract(tmpdir):
     with open(ZIP_FILE, "rb") as f:
-        file_listings = dump_and_extract(tmpdir, f, ZIP_FILE)
+        file_listings = dump_and_extract(str(tmpdir), f, ZIP_FILE)
     # That .zip file has multiple files in it so it's hard to rely
     # on the order.
     assert len(file_listings) == 3
@@ -77,14 +78,14 @@ def test_dump_and_extract(tmpdir):
 
     # Inside the tmpdir there should now exist these files.
     # Know thy fixtures...
-    assert os.path.isdir(os.path.join(tmpdir, "xpcshell.dbg"))
-    assert os.path.isdir(os.path.join(tmpdir, "flag"))
-    assert os.path.isfile(os.path.join(tmpdir, "build-symbols.txt"))
+    assert Path(tmpdir / "xpcshell.dbg").is_dir()
+    assert Path(tmpdir / "flag").is_dir()
+    assert Path(tmpdir / "build-symbols.txt").is_file()
 
 
 def test_dump_and_extract_duplicate_name_same_size(tmpdir):
     with open(DUPLICATED_SAME_SIZE_ZIP_FILE, "rb") as f:
-        file_listings = dump_and_extract(tmpdir, f, DUPLICATED_SAME_SIZE_ZIP_FILE)
+        file_listings = dump_and_extract(str(tmpdir), f, DUPLICATED_SAME_SIZE_ZIP_FILE)
     # Even though the file contains 2 files.
     assert len(file_listings) == 1
 

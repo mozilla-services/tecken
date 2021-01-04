@@ -2,8 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
 import json
+import os
+from pathlib import Path
 import time
 
 from django import http
@@ -12,7 +13,6 @@ from django.views.decorators.cache import cache_control, never_cache
 from django.core.cache import cache
 from django.shortcuts import redirect
 from django.conf import settings
-from django.views.static import serve
 
 from tecken.base.decorators import api_require_safe
 from tecken.tasks import sample_task
@@ -108,10 +108,7 @@ def task_tester(request):
 
 @api_require_safe
 def contribute_json(request):
-    """Advantages of having our own custom view over using
-    django.view.static.serve is that we get the right content-type
-    and as a view we write a unit test that checks that the JSON is valid
-    and can be deserialized."""
+    """Services the contribute.json file as JSON"""
     with open(os.path.join(settings.BASE_DIR, "contribute.json")) as f:
         contribute_json_dict = json.load(f)
     return http.JsonResponse(contribute_json_dict, json_dumps_params={"indent": 3})
@@ -122,7 +119,8 @@ def frontend_index_html(request, path="/"):
     if request.path_info == "/index.html":
         # remove the static file mention
         return redirect("/")
-    return serve(request, "/index.html", document_root=settings.STATIC_ROOT)
+    index_path = Path(settings.STATIC_ROOT) / "index.html"
+    return http.HttpResponse(index_path.read_bytes())
 
 
 @never_cache
