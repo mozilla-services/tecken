@@ -86,21 +86,11 @@ class SignedInTiles extends React.PureComponent {
         </div>
 
         <div className="tile is-ancestor">
-          <div className="tile is-parent">
+          <div className="tile is-parent is-6">
             <YouTile user={user} />
           </div>
 
-          {user.is_superuser && (
-            <div className="tile is-parent">
-              <UsersTile loading={loading} stats={stats} />
-            </div>
-          )}
-
-          <div
-            className={
-              user.is_superuser ? "tile is-parent is-4" : "tile is-parent is-8"
-            }
-          >
+          <div className="tile is-parent">
             <LinksTile />
           </div>
         </div>
@@ -126,27 +116,6 @@ const YouTile = ({ user }) => (
     ) : (
       <AboutPermissions />
     )}
-  </article>
-);
-
-const UsersTile = ({ loading, stats }) => (
-  <article className="tile is-child box">
-    <p className="title">Users</p>
-    {loading || !stats ? (
-      <Loading />
-    ) : (
-      <p>
-        There <b>{stats.users.total} users</b> in total of which{" "}
-        <b>{stats.users.superusers}</b>{" "}
-        {stats.users.superusers === 1 ? "is superuser" : "are superusers"},
-        <b>{stats.users.not_active}</b> are inactive.
-      </p>
-    )}
-    <p>
-      <Link to="/users">
-        Go to <b>User Management</b>
-      </Link>
-    </p>
   </article>
 );
 
@@ -327,7 +296,7 @@ const TableCountCell = ({ count }) => {
 const AnonymousTiles = ({ signIn, authLoaded }) => (
   <div>
     <div className="tile is-ancestor">
-      <div className="tile is-parent is-12">
+      <div className="tile is-parent is-6">
         <article className="tile is-child box">
           <p className="title">
             What is <b>Mozilla Symbol Server</b>?
@@ -346,24 +315,7 @@ const AnonymousTiles = ({ signIn, authLoaded }) => (
           </div>
         </article>
       </div>
-    </div>
-
-    <div className="tile is-ancestor">
       <div className="tile is-parent">
-        <article className="tile is-child box">
-          <p className="title">Authentication</p>
-          {!authLoaded ? (
-            <Loading />
-          ) : (
-            <p className="has-text-centered">
-              <button onClick={signIn} className="button is-info is-large">
-                Sign In
-              </button>
-            </p>
-          )}
-        </article>
-      </div>
-      <div className="tile is-parent is-8">
         <LinksTile />
       </div>
     </div>
