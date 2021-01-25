@@ -75,6 +75,10 @@ Downloading API
    :query _refresh: use ``_refresh=1`` to force Tecken to look for the symbol file
        in the AWS S3 buckets and update the cache
 
+   :query code_id: the ``code_id`` from the module if any
+
+   :query code_filename: the ``code_filename`` from the module if any
+
    :statuscode 200: symbol file exists
    :statuscode 404: symbol file does not exist
    :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
@@ -96,6 +100,10 @@ Downloading API
 
    :query _refresh: use ``_refresh=1`` to force Tecken to look for the symbol file
        in the AWS S3 buckets and update the cache
+
+   :query code_id: the ``code_id`` from the module if any
+
+   :query code_filename: the ``code_filename`` from the module if any
 
    :statuscode 302: symbol file was found and the final url was returned as a redirect
    :statuscode 400: requested symbol file has bad characters
