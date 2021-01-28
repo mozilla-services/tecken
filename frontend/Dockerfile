@@ -3,7 +3,7 @@
 #
 
 # This should match what we have in the Node section of the main Dockerfile.
-FROM node:14.7.0-slim@sha256:684feb573d3e0433f05e2ca9d71c46997f6f9a9610ccb46705a0385c46d8c427 as frontend
+FROM node:15.7.0-slim@sha256:58953fedf88897d4eb39df31476e45112fa567bdc289936cddebf2357180bd30 as frontend
 
 ARG userid=10001
 ARG groupid=10001

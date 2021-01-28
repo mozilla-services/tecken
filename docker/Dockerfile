@@ -1,4 +1,5 @@
-FROM node:15.5.0-slim@sha256:16e827c805749ab5cb0cdb95c89d3390c1c33939552d0154d58afb05356bffe2 as frontend
+# NOTE(willkg): Make sure to update frontend/Dockerfile when you update this
+FROM node:15.7.0-slim@sha256:58953fedf88897d4eb39df31476e45112fa567bdc289936cddebf2357180bd30 as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
