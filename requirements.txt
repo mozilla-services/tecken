@@ -625,11 +625,11 @@ sqlparse==0.4.1 \
     --hash=sha256:017cde379adbd6a1f15a61873f43e8274179378e95ef3fede90b5aa64d304ed0 \
     --hash=sha256:0f91fd2e829c44362cbcfab3e9ae12e22badaa8a29ad5ff599f9ec109f0454e8
     # via django
-symbolic==8.0.0 \
-    --hash=sha256:076862da85119619d5d8060b849ca7be6ac95cf4c8e1e3e25d24c9231bafb3af \
-    --hash=sha256:2fc72f0afc68c07f804b4fe5423520c7906a934343da5708ac27e65b66a44eef \
-    --hash=sha256:32d03e741890b27360a60a9259d4e71c9434774dbddb7dbd7f1fd9e275667037 \
-    --hash=sha256:b1565623e2e43883ba35b569ab26b7fe2d6f3c4d405b7ce330cd02bee9b46564
+symbolic==8.0.2 \
+    --hash=sha256:25eee370eb5d6d93a2496f21871523cb4b2987df7b8858a8cc066d0ba7ff1b77 \
+    --hash=sha256:52b72cbcb1c555bed63a08c6ae98ee7d24d6a7dcc69fd6d4f154c7ec73471e1d \
+    --hash=sha256:8d2ac9a891b48bf5b7f45222ae96a87b795338cea9f56fd615599cdab1bee42f \
+    --hash=sha256:ce786427f882d2e4756ab3318857bfc5551df5d9486b9de2d6be5f87cd97d17c
     # via -r requirements.in
 toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
