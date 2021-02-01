@@ -22,7 +22,7 @@ markus[datadog]==2.2.0
 mock==4.0.2
 mozilla-django-oidc==1.2.4
 msgpack==1.0.2
-pip-tools==5.4.0
+pip-tools==5.5.0
 psycopg2==2.8.6
 pytest-django==4.1.0
 pytest-mock==3.5.0

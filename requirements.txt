@@ -6,46 +6,51 @@
 #
 alabaster==0.7.12 \
     --hash=sha256:446438bdcca0e05bd45ea2de1668c1d9b032e1a9154c2c259092d77031ddd359 \
-    --hash=sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02 \
+    --hash=sha256:a661d72d58e6ea8a57f7a86e37d86716863ee5e92788398526d58b26a4e4dc02
     # via sphinx
 amqp==5.0.2 \
     --hash=sha256:5b9062d5c0812335c75434bf17ce33d7a20ecfedaa0733faec7379868eb4068a \
-    --hash=sha256:fcd5b3baeeb7fc19b3486ff6d10543099d40ae1f5c9196eae695d1cde1b2f784 \
+    --hash=sha256:fcd5b3baeeb7fc19b3486ff6d10543099d40ae1f5c9196eae695d1cde1b2f784
     # via kombu
 appdirs==1.4.4 \
     --hash=sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41 \
-    --hash=sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128 \
+    --hash=sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128
     # via black
 attrs==20.3.0 \
     --hash=sha256:31b2eced602aa8423c2aea9c76a724617ed67cf9513173fd3a4f03e3a929c7e6 \
-    --hash=sha256:832aa3cde19744e49938b91fea06d69ecb9e649c93ba974535d08ad92164f700 \
-    # via jsonschema, pytest
+    --hash=sha256:832aa3cde19744e49938b91fea06d69ecb9e649c93ba974535d08ad92164f700
+    # via
+    #   jsonschema
+    #   pytest
 babel==2.9.0 \
     --hash=sha256:9d35c22fcc79893c3ecc85ac4a56cde1ecf3f19c540bba0922308a6c06ca6fa5 \
-    --hash=sha256:da031ab54472314f210b0adcff1588ee5d1d1d0ba4dbd07b94dba82bde791e05 \
+    --hash=sha256:da031ab54472314f210b0adcff1588ee5d1d1d0ba4dbd07b94dba82bde791e05
     # via sphinx
 billiard==3.6.3.0 \
     --hash=sha256:bff575450859a6e0fbc2f9877d9b715b0bbc07c3565bb7ed2280526a0cdf5ede \
-    --hash=sha256:d91725ce6425f33a97dfa72fb6bfef0e47d4652acd98a032bd1a7fbf06d5fa6a \
+    --hash=sha256:d91725ce6425f33a97dfa72fb6bfef0e47d4652acd98a032bd1a7fbf06d5fa6a
     # via celery
 black==20.8b1 \
-    --hash=sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea \
+    --hash=sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea
     # via -r requirements.in
 boto3==1.15.10 \
     --hash=sha256:04ce4665dee58c89b0eee784bbb480fb4346a7baeb1d5611f676ae21fd3f553a \
-    --hash=sha256:b12e251dc2adeb020118f1f19f50929359a9586a23012d6a890f8357b9b84e5c \
+    --hash=sha256:b12e251dc2adeb020118f1f19f50929359a9586a23012d6a890f8357b9b84e5c
     # via -r requirements.in
 botocore==1.18.18 \
     --hash=sha256:de5f9fc0c7e88ee7ba831fa27475be258ae09ece99143ed623d3618a3c84ee2c \
-    --hash=sha256:e224754230e7e015836ba20037cac6321e8e2ce9b8627c14d579fcb37249decd \
-    # via -r requirements.in, boto3, s3transfer
+    --hash=sha256:e224754230e7e015836ba20037cac6321e8e2ce9b8627c14d579fcb37249decd
+    # via
+    #   -r requirements.in
+    #   boto3
+    #   s3transfer
 celery==5.0.2 \
     --hash=sha256:012c814967fe89e3f5d2cf49df2dba3de5f29253a7f4f2270e8fce6b901b4ebf \
-    --hash=sha256:930c3acd55349d028c4e7104a7d377729cbcca19d9fce470c17172d9e7f9a8b6 \
+    --hash=sha256:930c3acd55349d028c4e7104a7d377729cbcca19d9fce470c17172d9e7f9a8b6
     # via -r requirements.in
 certifi==2020.12.5 \
     --hash=sha256:1a4995114262bffbc2413b159f2a1a480c969de6e6eb13ee966d470af86af59c \
-    --hash=sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830 \
+    --hash=sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830
     # via requests
 cffi==1.14.4 \
     --hash=sha256:00a1ba5e2e95684448de9b89888ccd02c98d512064b4cb987d48f4b40aa0421e \
@@ -83,27 +88,35 @@ cffi==1.14.4 \
     --hash=sha256:ec80dc47f54e6e9a78181ce05feb71a0353854cc26999db963695f950b5fb375 \
     --hash=sha256:f032b34669220030f905152045dfa27741ce1a6db3324a5bc0b96b6c7420c87b \
     --hash=sha256:f60567825f791c6f8a592f3c6e3bd93dd2934e3f9dac189308426bd76b00ef3b \
-    --hash=sha256:f803eaa94c2fcda012c047e62bc7a51b0bdabda1cad7a92a522694ea2d76e49f \
-    # via cryptography, milksnake
+    --hash=sha256:f803eaa94c2fcda012c047e62bc7a51b0bdabda1cad7a92a522694ea2d76e49f
+    # via
+    #   cryptography
+    #   milksnake
 chardet==4.0.0 \
     --hash=sha256:0d6f53a15db4120f2b08c94f11e7d93d2c911ee118b6b30a04ec3ee8310179fa \
-    --hash=sha256:f864054d66fd9118f2e67044ac8981a54775ec5b67aed0441892edb553d21da5 \
+    --hash=sha256:f864054d66fd9118f2e67044ac8981a54775ec5b67aed0441892edb553d21da5
     # via requests
 circus==0.17.1 \
     --hash=sha256:7e15dd1ef94f06e1aa00ac0dabe05b9e312633a7e58fa5e2361459e7f915f4c5 \
-    --hash=sha256:ca4cf272654d21bb74718cf6bfd9e05d44140d32685edd357cf0d66e18947983 \
+    --hash=sha256:ca4cf272654d21bb74718cf6bfd9e05d44140d32685edd357cf0d66e18947983
     # via -r requirements.in
 click-didyoumean==0.0.3 \
-    --hash=sha256:112229485c9704ff51362fe34b2d4f0b12fc71cc20f6d2b3afabed4b8bfa6aeb \
+    --hash=sha256:112229485c9704ff51362fe34b2d4f0b12fc71cc20f6d2b3afabed4b8bfa6aeb
     # via celery
 click-repl==0.1.6 \
     --hash=sha256:9c4c3d022789cae912aad8a3f5e1d7c2cdd016ee1225b5212ad3e8691563cda5 \
-    --hash=sha256:b9f29d52abc4d6059f8e276132a111ab8d94980afe6a5432b9d996544afa95d5 \
+    --hash=sha256:b9f29d52abc4d6059f8e276132a111ab8d94980afe6a5432b9d996544afa95d5
     # via celery
 click==7.1.2 \
     --hash=sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a \
-    --hash=sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc \
-    # via -r requirements.in, black, celery, click-didyoumean, click-repl, pip-tools
+    --hash=sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc
+    # via
+    #   -r requirements.in
+    #   black
+    #   celery
+    #   click-didyoumean
+    #   click-repl
+    #   pip-tools
 cryptography==3.3.1 \
     --hash=sha256:0003a52a123602e1acee177dc90dd201f9bb1e73f24a070db7d36c588e8f5c7d \
     --hash=sha256:0e85aaae861d0485eb5a79d33226dd6248d2a9f133b81532c8f5aae37de10ff7 \
@@ -118,50 +131,58 @@ cryptography==3.3.1 \
     --hash=sha256:a69bd3c68b98298f490e84519b954335154917eaab52cf582fa2c5c7efc6e812 \
     --hash=sha256:b4890d5fb9b7a23e3bf8abf5a8a7da8e228f1e97dc96b30b95685df840b6914a \
     --hash=sha256:c366df0401d1ec4e548bebe8f91d55ebcc0ec3137900d214dd7aac8427ef3030 \
-    --hash=sha256:dc42f645f8f3a489c3dd416730a514e7a91a59510ddaadc09d04224c098d3302 \
-    # via josepy, mozilla-django-oidc, pyopenssl
+    --hash=sha256:dc42f645f8f3a489c3dd416730a514e7a91a59510ddaadc09d04224c098d3302
+    # via
+    #   josepy
+    #   mozilla-django-oidc
+    #   pyopenssl
 datadog==0.39.0 \
     --hash=sha256:b0ef69a27aad0e4412c1ac3e6894fa1b5741db735515c34dfe1606d8cf30e4e5 \
-    --hash=sha256:b6a42e3e99f704f0a9065e5659e82f11a931c771fc2b119795e86c836f6c5e14 \
-    # via -r requirements.in, markus
+    --hash=sha256:b6a42e3e99f704f0a9065e5659e82f11a931c771fc2b119795e86c836f6c5e14
+    # via
+    #   -r requirements.in
+    #   markus
 decorator==4.4.2 \
     --hash=sha256:41fa54c2a0cc4ba648be4fd43cff00aedf5b9465c9bf18d64325bc225f08f760 \
-    --hash=sha256:e3a62f0520172440ca0dcc823749319382e377f37f140a0b99ef45fecb84bfe7 \
+    --hash=sha256:e3a62f0520172440ca0dcc823749319382e377f37f140a0b99ef45fecb84bfe7
     # via datadog
 dj-database-url==0.5.0 \
     --hash=sha256:4aeaeb1f573c74835b0686a2b46b85990571159ffc21aa57ecd4d1e1cb334163 \
-    --hash=sha256:851785365761ebe4994a921b433062309eb882fedd318e1b0fcecc607ed02da9 \
+    --hash=sha256:851785365761ebe4994a921b433062309eb882fedd318e1b0fcecc607ed02da9
     # via -r requirements.in
 django-cache-memoize==0.1.7 \
     --hash=sha256:5e96349b0159aec1eb79257199a1902ea3ed538231ce7b4fee12e563127ca657 \
-    --hash=sha256:bc7f53725558244af62197d0125732d7ec88ecc1281a3a2f37d77ae1a8c269d3 \
+    --hash=sha256:bc7f53725558244af62197d0125732d7ec88ecc1281a3a2f37d77ae1a8c269d3
     # via -r requirements.in
 django-configurations==2.2 \
     --hash=sha256:0b93cb7042739e2d69cfc6fb81676bbd3cbb63ea19b02e8b681f4cad3a8aaf1b \
-    --hash=sha256:9e3bcea1355ac50a4c9f854f751d214cb17e5f8adf18405a4488d0a1e8945915 \
+    --hash=sha256:9e3bcea1355ac50a4c9f854f751d214cb17e5f8adf18405a4488d0a1e8945915
     # via -r requirements.in
 django-redis==4.12.1 \
     --hash=sha256:1133b26b75baa3664164c3f44b9d5d133d1b8de45d94d79f38d1adc5b1d502e5 \
-    --hash=sha256:306589c7021e6468b2656edc89f62b8ba67e8d5a1c8877e2688042263daa7a63 \
+    --hash=sha256:306589c7021e6468b2656edc89f62b8ba67e8d5a1c8877e2688042263daa7a63
     # via -r requirements.in
 django==2.2.17 \
     --hash=sha256:558cb27930defd9a6042133258caf797b2d1dee233959f537e3dc475cb49bd7c \
-    --hash=sha256:cf5370a4d7765a9dd6d42a7b96b53c74f9446cd38209211304b210fe0404b861 \
-    # via -r requirements.in, django-redis, mozilla-django-oidc
+    --hash=sha256:cf5370a4d7765a9dd6d42a7b96b53c74f9446cd38209211304b210fe0404b861
+    # via
+    #   -r requirements.in
+    #   django-redis
+    #   mozilla-django-oidc
 dockerflow==2020.10.0 \
     --hash=sha256:226086becc436b5a1995348e26c4fb2ad1d4e5dbc10dffec0c675c9a43306c8b \
-    --hash=sha256:36787fa016e5505d71d60c36cd4e0de7b2d1e50059160bd4e93ceb62bb40d3f8 \
+    --hash=sha256:36787fa016e5505d71d60c36cd4e0de7b2d1e50059160bd4e93ceb62bb40d3f8
     # via -r requirements.in
 docutils==0.16 \
     --hash=sha256:0c5b78adfbf7762415433f5515cd5c9e762339e23369dbe8000d84a4bf4ab3af \
-    --hash=sha256:c2de3a60e9e7d07be26b7f2b00ca0309c207e06c100f9cc2a94931fc75a478fc \
+    --hash=sha256:c2de3a60e9e7d07be26b7f2b00ca0309c207e06c100f9cc2a94931fc75a478fc
     # via sphinx
 encore==0.7.0 \
-    --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6 \
+    --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6
     # via -r requirements.in
 everett==1.0.3 \
     --hash=sha256:2c4cb84700a122e5bbc82b1808c22e1f0c17af0c1e0c84711e0e43cb1f7b932d \
-    --hash=sha256:6612917b7bd9c1568a63eabdf04701791f7bb05cbf302eb5dc2b6f1aeb68c61e \
+    --hash=sha256:6612917b7bd9c1568a63eabdf04701791f7bb05cbf302eb5dc2b6f1aeb68c61e
     # via -r requirements.in
 falcon==2.0.0 \
     --hash=sha256:18157af2a4fc3feedf2b5dcc6196f448639acf01c68bc33d4d5a04c3ef87f494 \
@@ -177,50 +198,52 @@ falcon==2.0.0 \
     --hash=sha256:e3782b7b92fefd46a6ad1fd8fe63fe6c6f1b7740a95ca56957f48d1aee34b357 \
     --hash=sha256:e9efa0791b5d9f9dd9689015ea6bce0a27fcd5ecbcd30e6d940bffa4f7f03389 \
     --hash=sha256:eea593cf466b9c126ce667f6d30503624ef24459f118c75594a69353b6c3d5fc \
-    --hash=sha256:f93351459f110b4c1ee28556aef9a791832df6f910bea7b3f616109d534df06b \
+    --hash=sha256:f93351459f110b4c1ee28556aef9a791832df6f910bea7b3f616109d534df06b
     # via -r requirements.in
 flake8==3.8.4 \
     --hash=sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839 \
-    --hash=sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b \
+    --hash=sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b
     # via -r requirements.in
 gunicorn==20.0.4 \
     --hash=sha256:1904bb2b8a43658807108d59c3f3d56c2b6121a701161de0ddf9ad140073c626 \
-    --hash=sha256:cd4a810dd51bf497552cf3f863b575dabd73d6ad6a91075b65936b151cbf4f9c \
+    --hash=sha256:cd4a810dd51bf497552cf3f863b575dabd73d6ad6a91075b65936b151cbf4f9c
     # via -r requirements.in
 idna==2.10 \
     --hash=sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6 \
-    --hash=sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0 \
+    --hash=sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0
     # via requests
 imagesize==1.2.0 \
     --hash=sha256:6965f19a6a2039c7d48bca7dba2473069ff854c36ae6f19d2cde309d998228a1 \
-    --hash=sha256:b1f6b5a4eab1f73479a50fb79fcf729514a900c341d8503d62a62dbc4127a2b1 \
+    --hash=sha256:b1f6b5a4eab1f73479a50fb79fcf729514a900c341d8503d62a62dbc4127a2b1
     # via sphinx
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
-    --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32 \
+    --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
     # via pytest
 inotify_simple==1.3.5 \
-    --hash=sha256:8440ffe49c4ae81a8df57c1ae1eb4b6bfa7acb830099bfb3e305b383005cc128 \
+    --hash=sha256:8440ffe49c4ae81a8df57c1ae1eb4b6bfa7acb830099bfb3e305b383005cc128
     # via -r requirements.in
 jinja2==2.11.2 \
     --hash=sha256:89aab215427ef59c34ad58735269eb58b1a5808103067f7bb9d5836c651b3bb0 \
-    --hash=sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035 \
+    --hash=sha256:f0a4641d3cf955324a89c04f3d94663aa4d638abe8f733ecd3582848e1c37035
     # via sphinx
 jmespath==0.10.0 \
     --hash=sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9 \
-    --hash=sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f \
-    # via boto3, botocore
+    --hash=sha256:cdf6525904cc597730141d61b36f2e4b8ecc257c420fa2f4549bac2c2d0cb72f
+    # via
+    #   boto3
+    #   botocore
 josepy==1.5.0 \
     --hash=sha256:502a36f86efe2a6d09bf7018bca9fd8f8f24d8090a966aa037dbc844459ff9c8 \
-    --hash=sha256:9351a3796e660d42bccd41a8b2a4ae8496d3659b14f57ed79bb52c111a8b0263 \
+    --hash=sha256:9351a3796e660d42bccd41a8b2a4ae8496d3659b14f57ed79bb52c111a8b0263
     # via mozilla-django-oidc
 jsonschema==3.2.0 \
     --hash=sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163 \
-    --hash=sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a \
+    --hash=sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a
     # via -r requirements.in
 kombu==5.0.2 \
     --hash=sha256:6dc509178ac4269b0e66ab4881f70a2035c33d3a622e20585f965986a5182006 \
-    --hash=sha256:f4965fba0a4718d47d470beeb5d6446e3357a62402b16c510b6a2f251e05ac3c \
+    --hash=sha256:f4965fba0a4718d47d470beeb5d6446e3357a62402b16c510b6a2f251e05ac3c
     # via celery
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
@@ -255,27 +278,27 @@ markupsafe==1.1.1 \
     --hash=sha256:cd5df75523866410809ca100dc9681e301e3c27567cf498077e8551b6d20e42f \
     --hash=sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2 \
     --hash=sha256:e249096428b3ae81b08327a63a485ad0878de3fb939049038579ac0ef61e17e7 \
-    --hash=sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be \
+    --hash=sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be
     # via jinja2
 markus[datadog]==2.2.0 \
     --hash=sha256:ed9a275aa4cbfc02e5cf0f2abbd34bc3720c43e432c1448ac7cc36c507111103 \
-    --hash=sha256:f088183e7fef11a4f563f496069ab600942e072dd82e5301b0b896e8fd8b6bcb \
+    --hash=sha256:f088183e7fef11a4f563f496069ab600942e072dd82e5301b0b896e8fd8b6bcb
     # via -r requirements.in
 mccabe==0.6.1 \
     --hash=sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42 \
-    --hash=sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f \
+    --hash=sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f
     # via flake8
 milksnake==0.1.5 \
     --hash=sha256:550ca1fc4222724149ee5a933e6bb8347630c0ed023a2a97701ab94fa256f6b4 \
-    --hash=sha256:dfcd43b78bcf93897a75eea1dadf71c848319f19451cff4f3f3a628a5abe1688 \
+    --hash=sha256:dfcd43b78bcf93897a75eea1dadf71c848319f19451cff4f3f3a628a5abe1688
     # via symbolic
 mock==4.0.2 \
     --hash=sha256:3f9b2c0196c60d21838f307f5825a7b86b678cedc58ab9e50a8988187b4d81e0 \
-    --hash=sha256:dd33eb70232b6118298d516bbcecd26704689c386594f0f3c4f13867b2c56f72 \
+    --hash=sha256:dd33eb70232b6118298d516bbcecd26704689c386594f0f3c4f13867b2c56f72
     # via -r requirements.in
 mozilla-django-oidc==1.2.4 \
     --hash=sha256:6f1064ec35c0dc42a7f6487e8649c9b51db04df52c424f48ebad6fe35e7481c8 \
-    --hash=sha256:a5130790bc71096b864d67486bbdabbbd4efc9bf1a755fb50d1f51891c11f423 \
+    --hash=sha256:a5130790bc71096b864d67486bbdabbbd4efc9bf1a755fb50d1f51891c11f423
     # via -r requirements.in
 msgpack==1.0.2 \
     --hash=sha256:0cb94ee48675a45d3b86e61d13c1e6f1696f0183f0715544976356ff86f741d9 \
@@ -305,31 +328,33 @@ msgpack==1.0.2 \
     --hash=sha256:f3e6aaf217ac1c7ce1563cf52a2f4f5d5b1f64e8729d794165db71da57257f0c \
     --hash=sha256:f484cd2dca68502de3704f056fa9b318c94b1539ed17a4c784266df5d6978c87 \
     --hash=sha256:fae04496f5bc150eefad4e9571d1a76c55d021325dcd484ce45065ebbdd00984 \
-    --hash=sha256:fe07bc6735d08e492a327f496b7850e98cb4d112c56df69b0c844dbebcbb47f6 \
+    --hash=sha256:fe07bc6735d08e492a327f496b7850e98cb4d112c56df69b0c844dbebcbb47f6
     # via -r requirements.in
 mypy-extensions==0.4.3 \
     --hash=sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d \
-    --hash=sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8 \
+    --hash=sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8
     # via black
 packaging==20.8 \
     --hash=sha256:24e0da08660a87484d1602c30bb4902d74816b6985b93de36926f5bc95741858 \
-    --hash=sha256:78598185a7008a470d64526a8059de9aaa449238f280fc9eb6b13ba6c4109093 \
-    # via pytest, sphinx
+    --hash=sha256:78598185a7008a470d64526a8059de9aaa449238f280fc9eb6b13ba6c4109093
+    # via
+    #   pytest
+    #   sphinx
 pathspec==0.8.1 \
     --hash=sha256:86379d6b86d75816baba717e64b1a3a3469deb93bb76d613c9ce79edc5cb68fd \
-    --hash=sha256:aa0cb481c4041bf52ffa7b0d8fa6cd3e88a2ca4879c533c9153882ee2556790d \
+    --hash=sha256:aa0cb481c4041bf52ffa7b0d8fa6cd3e88a2ca4879c533c9153882ee2556790d
     # via black
-pip-tools==5.4.0 \
-    --hash=sha256:a4d3990df2d65961af8b41dacc242e600fdc8a65a2e155ed3d2fc18a5c209f20 \
-    --hash=sha256:b73f76fe6464b95e41d595a9c0302c55a786dbc54b63ae776c540c04e31914fb \
+pip-tools==5.5.0 \
+    --hash=sha256:10841c1e56c234d610d0466447685b9ea4ee4a2c274f858c0ef3c33d9bd0d985 \
+    --hash=sha256:cb0108391366b3ef336185097b3c2c0f3fa115b15098dafbda5e78aef70ea114
     # via -r requirements.in
 pluggy==0.13.1 \
     --hash=sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0 \
-    --hash=sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d \
+    --hash=sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d
     # via pytest
 prompt-toolkit==3.0.8 \
     --hash=sha256:25c95d2ac813909f813c93fde734b6e44406d1477a9faef7c915ff37d39c0a8c \
-    --hash=sha256:7debb9a521e0b1ee7d2fe96ee4bd60ef03c6492784de0547337ca4433e46aa63 \
+    --hash=sha256:7debb9a521e0b1ee7d2fe96ee4bd60ef03c6492784de0547337ca4433e46aa63
     # via click-repl
 psutil==5.8.0 \
     --hash=sha256:0066a82f7b1b37d334e68697faba68e5ad5e858279fd6351c8ca6024e8d6ba64 \
@@ -359,7 +384,7 @@ psutil==5.8.0 \
     --hash=sha256:ea313bb02e5e25224e518e4352af4bf5e062755160f77e4b1767dd5ccb65f876 \
     --hash=sha256:ea372bcc129394485824ae3e3ddabe67dc0b118d262c568b4d2602a7070afdb0 \
     --hash=sha256:f4634b033faf0d968bb9220dd1c793b897ab7f1189956e1aa9eae752527127d3 \
-    --hash=sha256:fcc01e900c1d7bee2a37e5d6e4f9194760a93597c97fee89c4ae51701de03563 \
+    --hash=sha256:fcc01e900c1d7bee2a37e5d6e4f9194760a93597c97fee89c4ae51701de03563
     # via circus
 psycopg2==2.8.6 \
     --hash=sha256:00195b5f6832dbf2876b8bf77f12bdce648224c89c880719c745b90515233301 \
@@ -376,59 +401,67 @@ psycopg2==2.8.6 \
     --hash=sha256:d5062ae50b222da28253059880a871dc87e099c25cb68acf613d9d227413d6f7 \
     --hash=sha256:f22ea9b67aea4f4a1718300908a2fb62b3e4276cf00bd829a97ab5894af42ea3 \
     --hash=sha256:f974c96fca34ae9e4f49839ba6b78addf0346777b46c4da27a7bf54f48d3057d \
-    --hash=sha256:fb23f6c71107c37fd667cb4ea363ddeb936b348bbd6449278eb92c189699f543 \
+    --hash=sha256:fb23f6c71107c37fd667cb4ea363ddeb936b348bbd6449278eb92c189699f543
     # via -r requirements.in
 py==1.10.0 \
     --hash=sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3 \
-    --hash=sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a \
+    --hash=sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a
     # via pytest
 pycodestyle==2.6.0 \
     --hash=sha256:2295e7b2f6b5bd100585ebcb1f616591b652db8a741695b3d8f5d28bdc934367 \
-    --hash=sha256:c58a7d2815e0e8d7972bf1803331fb0152f867bd89adf8a01dfd55085434192e \
+    --hash=sha256:c58a7d2815e0e8d7972bf1803331fb0152f867bd89adf8a01dfd55085434192e
     # via flake8
 pycparser==2.20 \
     --hash=sha256:2d475327684562c3a96cc71adf7dc8c4f0565175cf86b6d7a404ff4c771f15f0 \
-    --hash=sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705 \
+    --hash=sha256:7582ad22678f0fcd81102833f60ef8d0e57288b6b5fb00323d101be910e35705
     # via cffi
 pyflakes==2.2.0 \
     --hash=sha256:0d94e0e05a19e57a99444b6ddcf9a6eb2e5c68d3ca1e98e90707af8152c90a92 \
-    --hash=sha256:35b2d75ee967ea93b55750aa9edbbf72813e06a66ba54438df2cfac9e3c27fc8 \
+    --hash=sha256:35b2d75ee967ea93b55750aa9edbbf72813e06a66ba54438df2cfac9e3c27fc8
     # via flake8
 pygments==2.7.3 \
     --hash=sha256:ccf3acacf3782cbed4a989426012f1c535c9a90d3a7fc3f16d231b9372d2b716 \
-    --hash=sha256:f275b6c0909e5dafd2d6269a656aa90fa58ebf4a74f8fcf9053195d226b24a08 \
+    --hash=sha256:f275b6c0909e5dafd2d6269a656aa90fa58ebf4a74f8fcf9053195d226b24a08
     # via sphinx
 pyopenssl==20.0.1 \
     --hash=sha256:4c231c759543ba02560fcd2480c48dcec4dae34c9da7d3747c508227e0624b51 \
-    --hash=sha256:818ae18e06922c066f777a33f1fca45786d85edfe71cd043de6379337a7f274b \
+    --hash=sha256:818ae18e06922c066f777a33f1fca45786d85edfe71cd043de6379337a7f274b
     # via josepy
 pyparsing==2.4.7 \
     --hash=sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1 \
-    --hash=sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b \
+    --hash=sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b
     # via packaging
 pyrsistent==0.17.3 \
-    --hash=sha256:2e636185d9eb976a18a8a8e96efce62f2905fea90041958d8cc2a189756ebf3e \
+    --hash=sha256:2e636185d9eb976a18a8a8e96efce62f2905fea90041958d8cc2a189756ebf3e
     # via jsonschema
 pytest-django==4.1.0 \
     --hash=sha256:10e384e6b8912ded92db64c58be8139d9ae23fb8361e5fc139d8e4f8fc601bc2 \
-    --hash=sha256:26f02c16d36fd4c8672390deebe3413678d89f30720c16efb8b2a6bf63b9041f \
+    --hash=sha256:26f02c16d36fd4c8672390deebe3413678d89f30720c16efb8b2a6bf63b9041f
     # via -r requirements.in
 pytest-mock==3.5.0 \
     --hash=sha256:4992db789175540d40a193bc60e987b1e69f1a989adad525a44e581c82149b14 \
-    --hash=sha256:f9d77233b3af6c71cec6a8b8b5e9e9a2effd1bb6ff56e9ace72541ff6843ac81 \
+    --hash=sha256:f9d77233b3af6c71cec6a8b8b5e9e9a2effd1bb6ff56e9ace72541ff6843ac81
     # via -r requirements.in
 pytest==6.2.1 \
     --hash=sha256:1969f797a1a0dbd8ccf0fecc80262312729afea9c17f1d70ebf85c5e76c6f7c8 \
-    --hash=sha256:66e419b1899bc27346cb2c993e12c5e5e8daba9073c1fbce33b9807abc95c306 \
-    # via -r requirements.in, pytest-django, pytest-mock
+    --hash=sha256:66e419b1899bc27346cb2c993e12c5e5e8daba9073c1fbce33b9807abc95c306
+    # via
+    #   -r requirements.in
+    #   pytest-django
+    #   pytest-mock
 python-dateutil==2.8.1 \
     --hash=sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c \
-    --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a \
-    # via -r requirements.in, botocore
+    --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a
+    # via
+    #   -r requirements.in
+    #   botocore
 pytz==2020.5 \
     --hash=sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4 \
-    --hash=sha256:180befebb1927b16f6b57101720075a984c019ac16b1b7575673bea42c6c3da5 \
-    # via babel, celery, django
+    --hash=sha256:180befebb1927b16f6b57101720075a984c019ac16b1b7575673bea42c6c3da5
+    # via
+    #   babel
+    #   celery
+    #   django
 pyzmq==20.0.0 \
     --hash=sha256:03638e46d486dd1c118e03c8bf9c634bdcae679600eac6573ae1e54906de7c2f \
     --hash=sha256:0af84f34f27b5c6a0e906c648bdf46d4caebf9c8e6e16db0728f30a58141cad6 \
@@ -458,16 +491,18 @@ pyzmq==20.0.0 \
     --hash=sha256:d92c7f41a53ece82b91703ea433c7d34143248cf0cead33aa11c5fc621c764bf \
     --hash=sha256:dc2f48b575dff6edefd572f1ac84cf0c3f18ad5fcf13384de32df740a010594a \
     --hash=sha256:f0beef935efe78a63c785bb21ed56c1c24448511383e3994927c8bb2caf5e714 \
-    --hash=sha256:f110a4d3f8f01209eec304ed542f6c8054cce9b0f16dfe3d571e57c290e4e133 \
+    --hash=sha256:f110a4d3f8f01209eec304ed542f6c8054cce9b0f16dfe3d571e57c290e4e133
     # via circus
 raven==6.10.0 \
     --hash=sha256:3fa6de6efa2493a7c827472e984ce9b020797d0da16f1db67197bcc23c8fae54 \
-    --hash=sha256:44a13f87670836e153951af9a3c80405d36b43097db869a36e92809673692ce4 \
+    --hash=sha256:44a13f87670836e153951af9a3c80405d36b43097db869a36e92809673692ce4
     # via -r requirements.in
 redis==3.4.1 \
     --hash=sha256:0dcfb335921b88a850d461dc255ff4708294943322bd55de6cfd68972490ca1f \
-    --hash=sha256:b205cffd05ebfd0a468db74f0eedbff8df1a7bfc47521516ade4692991bb0833 \
-    # via -r requirements.in, django-redis
+    --hash=sha256:b205cffd05ebfd0a468db74f0eedbff8df1a7bfc47521516ade4692991bb0833
+    # via
+    #   -r requirements.in
+    #   django-redis
 regex==2020.11.13 \
     --hash=sha256:02951b7dacb123d8ea6da44fe45ddd084aa6777d4b2454fa0da61d569c6fa538 \
     --hash=sha256:0d08e71e70c0237883d0bef12cad5145b84c3705e9c6a588b2a9c7080e5af2a4 \
@@ -509,78 +544,98 @@ regex==2020.11.13 \
     --hash=sha256:e32f5f3d1b1c663af7f9c4c1e72e6ffe9a78c03a31e149259f531e0fed826512 \
     --hash=sha256:e3faaf10a0d1e8e23a9b51d1900b72e1635c2d5b0e1bea1c18022486a8e2e52d \
     --hash=sha256:f7d29a6fc4760300f86ae329e3b6ca28ea9c20823df123a2ea8693e967b29917 \
-    --hash=sha256:f8f295db00ef5f8bae530fc39af0b40486ca6068733fb860b42115052206466f \
+    --hash=sha256:f8f295db00ef5f8bae530fc39af0b40486ca6068733fb860b42115052206466f
     # via black
 requests-mock==1.8.0 \
     --hash=sha256:11215c6f4df72702aa357f205cf1e537cffd7392b3e787b58239bde5fb3db53b \
-    --hash=sha256:e68f46844e4cee9d447150343c9ae875f99fa8037c6dcf5f15bf1fe9ab43d226 \
+    --hash=sha256:e68f46844e4cee9d447150343c9ae875f99fa8037c6dcf5f15bf1fe9ab43d226
     # via -r requirements.in
 requests==2.25.1 \
     --hash=sha256:27973dd4a904a4f13b263a19c866c13b92a39ed1c964655f025f3f8d3d75b804 \
-    --hash=sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e \
-    # via -r requirements.in, datadog, mozilla-django-oidc, requests-mock, sphinx
+    --hash=sha256:c210084e36a42ae6b9219e00e48287def368a26d03a048ddad7bfee44f75871e
+    # via
+    #   -r requirements.in
+    #   datadog
+    #   mozilla-django-oidc
+    #   requests-mock
+    #   sphinx
 s3transfer==0.3.3 \
     --hash=sha256:2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13 \
-    --hash=sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db \
+    --hash=sha256:921a37e2aefc64145e7b73d50c71bb4f26f46e4c9f414dc648c6245ff92cf7db
     # via boto3
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
-    --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced \
-    # via click-repl, cryptography, django-configurations, josepy, jsonschema, mozilla-django-oidc, pip-tools, pyopenssl, python-dateutil, requests-mock, sphinxcontrib-httpdomain
+    --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
+    # via
+    #   click-repl
+    #   cryptography
+    #   django-configurations
+    #   josepy
+    #   jsonschema
+    #   mozilla-django-oidc
+    #   pyopenssl
+    #   python-dateutil
+    #   requests-mock
+    #   sphinxcontrib-httpdomain
 snowballstemmer==2.0.0 \
     --hash=sha256:209f257d7533fdb3cb73bdbd24f436239ca3b2fa67d56f6ff88e86be08cc5ef0 \
-    --hash=sha256:df3bac3df4c2c01363f3dd2cfa78cce2840a79b9f1c2d2de9ce8d31683992f52 \
+    --hash=sha256:df3bac3df4c2c01363f3dd2cfa78cce2840a79b9f1c2d2de9ce8d31683992f52
     # via sphinx
 sphinx-rtd-theme==0.5.0 \
     --hash=sha256:22c795ba2832a169ca301cd0a083f7a434e09c538c70beb42782c073651b707d \
-    --hash=sha256:373413d0f82425aaa28fb288009bf0d0964711d347763af2f1b65cafcb028c82 \
+    --hash=sha256:373413d0f82425aaa28fb288009bf0d0964711d347763af2f1b65cafcb028c82
     # via -r requirements.in
 sphinx==3.3.1 \
     --hash=sha256:1e8d592225447104d1172be415bc2972bd1357e3e12fdc76edf2261105db4300 \
-    --hash=sha256:d4e59ad4ea55efbb3c05cde3bfc83bfc14f0c95aa95c3d75346fcce186a47960 \
-    # via -r requirements.in, sphinx-rtd-theme, sphinxcontrib-httpdomain
+    --hash=sha256:d4e59ad4ea55efbb3c05cde3bfc83bfc14f0c95aa95c3d75346fcce186a47960
+    # via
+    #   -r requirements.in
+    #   sphinx-rtd-theme
+    #   sphinxcontrib-httpdomain
 sphinxcontrib-applehelp==1.0.2 \
     --hash=sha256:806111e5e962be97c29ec4c1e7fe277bfd19e9652fb1a4392105b43e01af885a \
-    --hash=sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58 \
+    --hash=sha256:a072735ec80e7675e3f432fcae8610ecf509c5f1869d17e2eecff44389cdbc58
     # via sphinx
 sphinxcontrib-devhelp==1.0.2 \
     --hash=sha256:8165223f9a335cc1af7ffe1ed31d2871f325254c0423bc0c4c7cd1c1e4734a2e \
-    --hash=sha256:ff7f1afa7b9642e7060379360a67e9c41e8f3121f2ce9164266f61b9f4b338e4 \
+    --hash=sha256:ff7f1afa7b9642e7060379360a67e9c41e8f3121f2ce9164266f61b9f4b338e4
     # via sphinx
 sphinxcontrib-htmlhelp==1.0.3 \
     --hash=sha256:3c0bc24a2c41e340ac37c85ced6dafc879ab485c095b1d65d2461ac2f7cca86f \
-    --hash=sha256:e8f5bb7e31b2dbb25b9cc435c8ab7a79787ebf7f906155729338f3156d93659b \
+    --hash=sha256:e8f5bb7e31b2dbb25b9cc435c8ab7a79787ebf7f906155729338f3156d93659b
     # via sphinx
 sphinxcontrib-httpdomain==1.7.0 \
     --hash=sha256:1fb5375007d70bf180cdd1c79e741082be7aa2d37ba99efe561e1c2e3f38191e \
-    --hash=sha256:ac40b4fba58c76b073b03931c7b8ead611066a6aebccafb34dc19694f4eb6335 \
+    --hash=sha256:ac40b4fba58c76b073b03931c7b8ead611066a6aebccafb34dc19694f4eb6335
     # via -r requirements.in
 sphinxcontrib-jsmath==1.0.1 \
     --hash=sha256:2ec2eaebfb78f3f2078e73666b1415417a116cc848b72e5172e596c871103178 \
-    --hash=sha256:a9925e4a4587247ed2191a22df5f6970656cb8ca2bd6284309578f2153e0c4b8 \
+    --hash=sha256:a9925e4a4587247ed2191a22df5f6970656cb8ca2bd6284309578f2153e0c4b8
     # via sphinx
 sphinxcontrib-qthelp==1.0.3 \
     --hash=sha256:4c33767ee058b70dba89a6fc5c1892c0d57a54be67ddd3e7875a18d14cba5a72 \
-    --hash=sha256:bd9fc24bcb748a8d51fd4ecaade681350aa63009a347a8c14e637895444dfab6 \
+    --hash=sha256:bd9fc24bcb748a8d51fd4ecaade681350aa63009a347a8c14e637895444dfab6
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.4 \
     --hash=sha256:eaa0eccc86e982a9b939b2b82d12cc5d013385ba5eadcc7e4fed23f4405f77bc \
-    --hash=sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a \
+    --hash=sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a
     # via sphinx
 sqlparse==0.4.1 \
     --hash=sha256:017cde379adbd6a1f15a61873f43e8274179378e95ef3fede90b5aa64d304ed0 \
-    --hash=sha256:0f91fd2e829c44362cbcfab3e9ae12e22badaa8a29ad5ff599f9ec109f0454e8 \
+    --hash=sha256:0f91fd2e829c44362cbcfab3e9ae12e22badaa8a29ad5ff599f9ec109f0454e8
     # via django
 symbolic==8.0.0 \
     --hash=sha256:076862da85119619d5d8060b849ca7be6ac95cf4c8e1e3e25d24c9231bafb3af \
     --hash=sha256:2fc72f0afc68c07f804b4fe5423520c7906a934343da5708ac27e65b66a44eef \
     --hash=sha256:32d03e741890b27360a60a9259d4e71c9434774dbddb7dbd7f1fd9e275667037 \
-    --hash=sha256:b1565623e2e43883ba35b569ab26b7fe2d6f3c4d405b7ce330cd02bee9b46564 \
+    --hash=sha256:b1565623e2e43883ba35b569ab26b7fe2d6f3c4d405b7ce330cd02bee9b46564
     # via -r requirements.in
 toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
-    --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f \
-    # via black, pytest
+    --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
+    # via
+    #   black
+    #   pytest
 tornado==6.1 \
     --hash=sha256:0a00ff4561e2929a2c37ce706cb8233b7907e0cdc22eab98888aca5dd3775feb \
     --hash=sha256:0d321a39c36e5f2c4ff12b4ed58d41390460f798422c4504e09eb5678e09998c \
@@ -622,7 +677,7 @@ tornado==6.1 \
     --hash=sha256:ed3ad863b1b40cd1d4bd21e7498329ccaece75db5a5bf58cd3c9f130843e7102 \
     --hash=sha256:f0ba29bafd8e7e22920567ce0d232c26d4d47c8b5cf4ed7b562b5db39fa199c5 \
     --hash=sha256:fa2ba70284fa42c2a5ecb35e322e68823288a4251f9ba9cc77be04ae15eada68 \
-    --hash=sha256:fba85b6cd9c39be262fcd23865652920832b61583de2a2ca907dbd8e8a8c81e5 \
+    --hash=sha256:fba85b6cd9c39be262fcd23865652920832b61583de2a2ca907dbd8e8a8c81e5
     # via circus
 typed-ast==1.4.2 \
     --hash=sha256:07d49388d5bf7e863f7fa2f124b1b1d89d8aa0e2f7812faff0a5658c01c59aa1 \
@@ -654,12 +709,12 @@ typed-ast==1.4.2 \
     --hash=sha256:d003156bb6a59cda9050e983441b7fa2487f7800d76bdc065566b7d728b4581a \
     --hash=sha256:d175297e9533d8d37437abc14e8a83cbc68af93cc9c1c59c2c292ec59a0697a3 \
     --hash=sha256:d746a437cdbca200622385305aedd9aef68e8a645e385cc483bdc5e488f07166 \
-    --hash=sha256:e683e409e5c45d5c9082dc1daf13f6374300806240719f95dc783d1fc942af10 \
+    --hash=sha256:e683e409e5c45d5c9082dc1daf13f6374300806240719f95dc783d1fc942af10
     # via black
 typing-extensions==3.7.4.3 \
     --hash=sha256:7cb407020f00f7bfc3cb3e7881628838e69d8f3fcab2f64742a5e76b2f841918 \
     --hash=sha256:99d4073b617d30288f569d3f13d2bd7548c3a7e4c8de87db09a9d29bb3a4a60c \
-    --hash=sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f \
+    --hash=sha256:dafc7639cde7f1b6e1acc0f457842a83e722ccca8eef5270af2d74792619a89f
     # via black
 ujson==4.0.1 \
     --hash=sha256:078808c385036cba73cad96f498310c61e9b5ae5ac9ea01e7c3996ece544b556 \
@@ -682,27 +737,32 @@ ujson==4.0.1 \
     --hash=sha256:c354c1617b0a4378b6279d0cd511b769500cf3fa7c42e8e004cbbbb6b4c2a875 \
     --hash=sha256:c604024bd853b5df6be7d933e934da8dd139e6159564db7c55b92a9937678093 \
     --hash=sha256:e7ab24942b2d57920d75b817b8eead293026db003247e26f99506bdad86c61b4 \
-    --hash=sha256:f8a60928737a9a47e692fcd661ef2b5d75ba22c7c930025bd95e338f2a6e15bc \
+    --hash=sha256:f8a60928737a9a47e692fcd661ef2b5d75ba22c7c930025bd95e338f2a6e15bc
     # via -r requirements.in
 urllib3==1.25.11 \
     --hash=sha256:8d7eaa5a82a1cac232164990f04874c594c9453ec55eef02eab885aa02fc17a2 \
-    --hash=sha256:f5321fbe4bf3fefa0efd0bfe7fb14e90909eb62a48ccda331726b4319897dd5e \
-    # via -r requirements.in, botocore, requests
+    --hash=sha256:f5321fbe4bf3fefa0efd0bfe7fb14e90909eb62a48ccda331726b4319897dd5e
+    # via
+    #   -r requirements.in
+    #   botocore
+    #   requests
 urlwait==1.0 \
     --hash=sha256:a9bf2da792fa6983fa93f6360108e16615066ab0f9cfb7f53e5faee5f5dffaac \
-    --hash=sha256:eae2c20001efc915166cac79c04bac0088ad5787ec64b36f27afd2f359953b2b \
+    --hash=sha256:eae2c20001efc915166cac79c04bac0088ad5787ec64b36f27afd2f359953b2b
     # via -r requirements.in
 vine==5.0.0 \
     --hash=sha256:4c9dceab6f76ed92105027c49c823800dd33cacce13bdedc5b914e3514b7fb30 \
-    --hash=sha256:7d3b1624a953da82ef63462013bbd271d3eb75751489f9807598e8f340bd637e \
-    # via amqp, celery
+    --hash=sha256:7d3b1624a953da82ef63462013bbd271d3eb75751489f9807598e8f340bd637e
+    # via
+    #   amqp
+    #   celery
 wcwidth==0.2.5 \
     --hash=sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784 \
-    --hash=sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83 \
+    --hash=sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83
     # via prompt-toolkit
 whitenoise==5.2.0 \
     --hash=sha256:05ce0be39ad85740a78750c86a93485c40f08ad8c62a6006de0233765996e5c7 \
-    --hash=sha256:05d00198c777028d72d8b0bbd234db605ef6d60e9410125124002518a48e515d \
+    --hash=sha256:05d00198c777028d72d8b0bbd234db605ef6d60e9410125124002518a48e515d
     # via -r requirements.in
 
 # WARNING: The following packages were not pinned, but pip requires them to be
