@@ -438,9 +438,9 @@ pytest-django==4.1.0 \
     --hash=sha256:10e384e6b8912ded92db64c58be8139d9ae23fb8361e5fc139d8e4f8fc601bc2 \
     --hash=sha256:26f02c16d36fd4c8672390deebe3413678d89f30720c16efb8b2a6bf63b9041f
     # via -r requirements.in
-pytest-mock==3.5.0 \
-    --hash=sha256:4992db789175540d40a193bc60e987b1e69f1a989adad525a44e581c82149b14 \
-    --hash=sha256:f9d77233b3af6c71cec6a8b8b5e9e9a2effd1bb6ff56e9ace72541ff6843ac81
+pytest-mock==3.5.1 \
+    --hash=sha256:379b391cfad22422ea2e252bdfc008edd08509029bcde3c25b2c0bd741e0424e \
+    --hash=sha256:a1e2aba6af9560d313c642dae7e00a2a12b022b80301d9d7fc8ec6858e1dd9fc
     # via -r requirements.in
 pytest==6.2.1 \
     --hash=sha256:1969f797a1a0dbd8ccf0fecc80262312729afea9c17f1d70ebf85c5e76c6f7c8 \
