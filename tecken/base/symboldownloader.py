@@ -57,8 +57,7 @@ def iter_lines(stream, chunk_size=ITER_CHUNK_SIZE):
         else:
             pending = None
 
-        for line in lines:
-            yield line
+        yield from lines
 
     if pending is not None:
         yield pending

@@ -45,8 +45,7 @@ def fetch_supersearch(url, params):
         resp = requests.get(url=url, params=params, headers=headers)
         hits = resp.json()["hits"]
 
-        for hit in hits:
-            yield hit
+        yield from hits
 
         # If there are no more crash ids to get, we return
         total = resp.json()["total"]

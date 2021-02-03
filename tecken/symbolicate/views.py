@@ -737,7 +737,7 @@ class SymbolicateJSON:
                 fields = rest.strip().split(None, 3)
                 if len(fields) != 4:
                     logger.warning(
-                        "FUNC line {} in {} has too few fields".format(line_number, url)
+                        f"FUNC line {line_number} in {url} has too few fields"
                     )
                     continue
                 address = int(fields[0], 16)
@@ -748,9 +748,7 @@ class SymbolicateJSON:
         func_symbols.update(public_symbols)
         t1 = time.time()
         if not total_size:
-            logger.warning(
-                "Downloaded content empty ({!r}, {!r})".format(filename, debug_id)
-            )
+            logger.warning(f"Downloaded content empty ({filename!r}, {debug_id!r})")
         information = {}
         information["symbol_map"] = func_symbols
         information["download_time"] = t1 - t0
@@ -852,9 +850,7 @@ def symbolicate_v4_json(request, json_body):
         if json_body.get("version") != 4:
             return JsonResponse({"error": "Expect version==4"}, status=400)
     except KeyError as exception:
-        return JsonResponse(
-            {"error": 'Missing key JSON "{}"'.format(exception)}, status=400
-        )
+        return JsonResponse({"error": f'Missing key JSON "{exception}"'}, status=400)
 
     symbolicator = SymbolicateJSON(downloader, debug=request._request_debug)
     try:

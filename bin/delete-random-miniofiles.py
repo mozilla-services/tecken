@@ -13,7 +13,6 @@ By deleting only some, you can get a nice scenario where in a given .zip
 upload only some of the files already exists.
 """
 
-from __future__ import print_function  # in case you use Python 2
 
 import os
 import random

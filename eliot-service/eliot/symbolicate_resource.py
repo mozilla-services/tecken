@@ -235,7 +235,7 @@ class SymbolicateBase:
 
             finally:
                 os.unlink(temp_fp.name)
-        except (IOError, OSError):
+        except OSError:
             METRICS.incr(
                 "eliot.symbolicate.parse_sym_file.error",
                 tags=["reason:sym_tmp_file_error"],

@@ -474,11 +474,7 @@ def test_get_stream_private(botomock):
             parsed_response = {"Error": {"Code": "NoSuchKey", "Message": "Not found"}}
             raise ClientError(parsed_response, operation_name)
 
-        return {
-            "Body": BytesIO(
-                bytes("line 1\r\nline 2\r\n{}\r\n".format(long_line), "utf-8")
-            )
-        }
+        return {"Body": BytesIO(bytes(f"line 1\r\nline 2\r\n{long_line}\r\n", "utf-8"))}
 
     urls = ("https://s3.example.com/private/prefix/",)
     downloader = SymbolDownloader(urls)

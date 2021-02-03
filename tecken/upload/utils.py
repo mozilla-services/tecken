@@ -258,7 +258,7 @@ def upload_file_upload(
     if metadata:
         extras["Metadata"] = metadata
 
-    logger.debug("Uploading file {!r} into {!r}".format(key_name, bucket_name))
+    logger.debug(f"Uploading file {key_name!r} into {bucket_name!r}")
     with metrics.timer("upload_put_object"):
         with open(file_path, "rb") as f:
             client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)

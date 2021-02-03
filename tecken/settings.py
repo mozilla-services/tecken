@@ -254,7 +254,7 @@ class Base(Core):
 
     @classmethod
     def setup(cls):
-        super(Base, cls).setup()
+        super().setup()
 
         # For the sake of convenience we want to make UPLOAD_TRY_SYMBOLS_URL
         # optional as an environment variable. If it's not set, set it
@@ -679,7 +679,7 @@ class Test(Localdev):
 
     @property
     def CACHES(self):
-        parent = super(Test, self).CACHES
+        parent = super().CACHES
         parent["default"] = {
             "BACKEND": "tecken.cache_extra.RedisLocMemCache",
             "LOCATION": "unique-snowflake",

@@ -28,13 +28,13 @@ def check_redis_store_connected(app_configs, **kwargs):
         # Note! This name 'store' is specific only to tecken
         connection = get_redis_connection("store")
     except redis.ConnectionError as e:
-        msg = "Could not connect to redis: {!s}".format(e)
+        msg = f"Could not connect to redis: {e!s}"
         errors.append(checks.Error(msg, id=ERROR_CANNOT_CONNECT_REDIS))
     except NotImplementedError as e:
-        msg = "Redis client not available: {!s}".format(e)
+        msg = f"Redis client not available: {e!s}"
         errors.append(checks.Error(msg, id=ERROR_MISSING_REDIS_CLIENT))
     except ImproperlyConfigured as e:
-        msg = 'Redis misconfigured: "{!s}"'.format(e)
+        msg = f'Redis misconfigured: "{e!s}"'
         errors.append(checks.Error(msg, id=ERROR_MISCONFIGURED_REDIS))
     else:
         result = connection.ping()

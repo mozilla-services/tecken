@@ -331,8 +331,7 @@ def upload_archive(request, upload_dir):
     # Do this by making a string first out of all files listed.
 
     content = "\n".join(
-        "{}:{}".format(x.name, x.size)
-        for x in sorted(file_listing, key=lambda x: x.name)
+        f"{x.name}:{x.size}" for x in sorted(file_listing, key=lambda x: x.name)
     )
     # The MD5 is just used to make the temporary S3 file unique in name
     # if the client uploads with the same filename in quick succession.

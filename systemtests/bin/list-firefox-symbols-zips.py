@@ -40,8 +40,7 @@ def tasks_by_changeset(revisions_limit):
     prefix, suffix = NAMESPACE.split(".REV")
     for namespace in index_namespaces(prefix, revisions_limit):
         full_namespace = namespace + suffix
-        for taskid in index_tasks(full_namespace):
-            yield taskid
+        yield from index_tasks(full_namespace)
 
 
 def list_artifacts(taskid):

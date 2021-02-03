@@ -40,8 +40,8 @@ def is_blocked_in_auth0(email):
 
 
 def _get_access_token(client_id, client_secret, domain, session):
-    url = "https://{}/oauth/token".format(domain)
-    audience = "https://{}/api/v2/".format(domain)
+    url = f"https://{domain}/oauth/token"
+    audience = f"https://{domain}/api/v2/"
     payload = {
         "client_id": client_id,
         "client_secret": client_secret,
@@ -57,10 +57,10 @@ def _get_access_token(client_id, client_secret, domain, session):
 def find_users(client_id, client_secret, domain, email, session):
     access_token = _get_access_token(client_id, client_secret, domain, session)
 
-    url = "https://{}/api/v2/users".format(domain)
-    query = {"q": 'email:"{}"'.format(email)}
+    url = f"https://{domain}/api/v2/users"
+    query = {"q": f'email:"{email}"'}
     response = session.get(
-        url, params=query, headers={"Authorization": "Bearer {}".format(access_token)}
+        url, params=query, headers={"Authorization": f"Bearer {access_token}"}
     )
     if response.status_code != 200:
         raise Auth0ManagementAPIError(response.status_code)
