@@ -845,8 +845,8 @@ def test_upload_files(client, settings):
     assert response.status_code == 200
     data = response.json()
     assert data["files"]
-    all_ids = set([file_upload1.id, file_upload2.id])
-    assert set(x["id"] for x in data["files"]) == all_ids
+    all_ids = {file_upload1.id, file_upload2.id}
+    assert {x["id"] for x in data["files"]} == all_ids
     assert data["batch_size"] == settings.API_FILES_BATCH_SIZE
     assert data["total"] == 2
     # Check the 'upload' which should either be None or a dict
@@ -873,7 +873,7 @@ def test_upload_files(client, settings):
     )
     assert response.status_code == 200
     data = response.json()
-    assert set(x["id"] for x in data["files"]) == all_ids
+    assert {x["id"] for x in data["files"]} == all_ids
 
     tomorrow = file_upload1.created_at + datetime.timedelta(days=1)
     file_upload1.completed_at = tomorrow
@@ -893,7 +893,7 @@ def test_upload_files(client, settings):
     response = client.get(url, {"key": "foo.sym"})
     assert response.status_code == 200
     data = response.json()
-    assert set(x["id"] for x in data["files"]) == all_ids
+    assert {x["id"] for x in data["files"]} == all_ids
     response = client.get(url, {"key": "foo.sym, deadbeef"})
     assert response.status_code == 200
     data = response.json()

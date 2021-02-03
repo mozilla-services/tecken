@@ -99,7 +99,7 @@ class DiskCache:
                         "eliot.diskcache.get", value=delta, tags=["result:hit"]
                     )
                     return data
-            except (OSError, IOError):
+            except OSError:
                 error = True
                 LOGGER.exception("Cache error on read")
 
@@ -139,7 +139,7 @@ class DiskCache:
             Path(temp_fp.name).rename(filepath)
             result = "success"
 
-        except (IOError, OSError):
+        except OSError:
             LOGGER.exception("Exception when writing to disk cache")
             result = "fail"
 

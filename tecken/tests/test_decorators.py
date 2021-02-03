@@ -15,7 +15,7 @@ from tecken.base import decorators
 def test_set_request_debug():
     @decorators.set_request_debug
     def myview(request):
-        return http.HttpResponse("debug={}".format(request._request_debug))
+        return http.HttpResponse(f"debug={request._request_debug}")
 
     request = RequestFactory().get("/")
     response = myview(request)

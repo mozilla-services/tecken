@@ -19,7 +19,7 @@ import requests
 
 
 def load_schema(path):
-    with open(path, "r") as fp:
+    with open(path) as fp:
         schema = json.load(fp)
     jsonschema.Draft7Validator.check_schema(schema)
     return schema
@@ -92,7 +92,7 @@ def print_stack(ctx, api_url, api_version, debug, stackfile):
                 param_hint="stackfile",
             )
 
-        with open(stackfile, "r") as fp:
+        with open(stackfile) as fp:
             data = fp.read()
 
     if api_version not in [4, 5]:
@@ -143,7 +143,7 @@ def verify_symbolication(ctx, api_url, api_version, stackfile):
                 param_hint="stackfile",
             )
 
-        with open(stackfile, "r") as fp:
+        with open(stackfile) as fp:
             data = fp.read()
 
     if api_version not in [4, 5]:

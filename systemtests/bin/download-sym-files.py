@@ -49,7 +49,7 @@ def download_sym_files(base_url, csv_file):
     SYM FILE,EXPECTED STATUS CODE
     """
 
-    with open(csv_file, "r") as fp:
+    with open(csv_file) as fp:
         lines = fp.readlines()
 
     for line in lines:

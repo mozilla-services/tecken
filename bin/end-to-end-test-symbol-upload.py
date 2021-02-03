@@ -50,7 +50,7 @@ def run(prod_token, stage_token, use_dev=False):
     print("Took", fmtsecs(t1 - t0))
 
     id = uploaded["id"]
-    url = base + "/api/uploads/upload/{}".format(id)
+    url = base + f"/api/uploads/upload/{id}"
     r = requests.get(url, headers={"auth-token": stage_token})
     r.raise_for_status()
     upload = r.json()["upload"]
@@ -61,7 +61,7 @@ def run(prod_token, stage_token, use_dev=False):
         len([x for x in upload["file_uploads"] if x["completed_at"]]),
     )
     print()
-    url = base + "/uploads/upload/{}".format(id)
+    url = base + f"/uploads/upload/{id}"
     print("To see it, go to:", url)
     print()
     print("It worked! 🎉 🎊 👍🏼 🌈")

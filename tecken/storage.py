@@ -75,7 +75,7 @@ class StorageBucket:
                 self.backend = backend
                 break
         if self.backend is None:
-            raise ValueError("Storage backend not recognized in {!r}".format(url))
+            raise ValueError(f"Storage backend not recognized in {url!r}")
 
         try:
             name, prefix = parsed.path[1:].split("/", 1)
@@ -107,7 +107,7 @@ class StorageBucket:
     @property
     def base_url(self):
         """Return the URL by its domain and bucket name"""
-        return "{}://{}/{}".format(self.scheme, self.netloc, self.name)
+        return f"{self.scheme}://{self.netloc}/{self.name}"
 
     def __repr__(self):
         return (

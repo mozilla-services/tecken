@@ -103,7 +103,7 @@ class JsonHttpResponseNotAllowed(http.JsonResponse):
     status_code = 405
 
     def __init__(self, permitted_methods, data, *args, **kwargs):
-        super(JsonHttpResponseNotAllowed, self).__init__(data, *args, **kwargs)
+        super().__init__(data, *args, **kwargs)
         self["Allow"] = ", ".join(permitted_methods)
 
 

@@ -1081,12 +1081,10 @@ def test_upload_archive_both_skipped(
         assert upload.bucket_region is None
         assert upload.bucket_endpoint_url == "https://s3.example.com"
         # Order isn't predictable so compare using sets.
-        assert set(upload.skipped_keys) == set(
-            [
-                "prefix/v0/flag/deadbeef/flag.jpeg",
-                "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
-            ]
-        )
+        assert set(upload.skipped_keys) == {
+            "prefix/v0/flag/deadbeef/flag.jpeg",
+            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        }
         assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert not FileUpload.objects.all().exists()
