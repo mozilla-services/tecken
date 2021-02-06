@@ -635,8 +635,8 @@ def test_store_missing_symbol_happy_path(metricsmock):
 
     records = metricsmock.get_records()
     assert len(records) == 2
-    assert records[0][1] == "tecken.download_store_missing_symbol"
-    assert records[1][1] == "tecken.download_store_missing_symbol"
+    assert records[0].key == "tecken.download_store_missing_symbol"
+    assert records[1].key == "tecken.download_store_missing_symbol"
 
     # This time with a code_file and code_id
     views.store_missing_symbol(
