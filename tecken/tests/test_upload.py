@@ -365,16 +365,16 @@ def test_upload_archive_happy_path(
     # It's impossible to predict, the order of some metrics records
     # because of the use of ThreadPoolExecutor. So we can't look at them
     # in the exact order.
-    all_tags = [x[1] for x in records]
-    assert all_tags.count("tecken.upload_file_exists") == 2
-    assert all_tags.count("tecken.upload_gzip_payload") == 1  # only 1 .sym
-    assert all_tags.count("tecken.upload_put_object") == 2
-    assert all_tags.count("tecken.upload_dump_and_extract") == 1
-    assert all_tags.count("tecken.upload_file_upload_upload") == 2
-    assert all_tags.count("tecken.upload_file_upload") == 2
-    assert all_tags.count("tecken.upload_uploads") == 1
-    assert all_tags.count("tecken.uploads_created_update") == 1
-    assert all_tags[-2] == "tecken.upload_archive"
+    all_keys = [x.key for x in records]
+    assert all_keys.count("tecken.upload_file_exists") == 2
+    assert all_keys.count("tecken.upload_gzip_payload") == 1  # only 1 .sym
+    assert all_keys.count("tecken.upload_put_object") == 2
+    assert all_keys.count("tecken.upload_dump_and_extract") == 1
+    assert all_keys.count("tecken.upload_file_upload_upload") == 2
+    assert all_keys.count("tecken.upload_file_upload") == 2
+    assert all_keys.count("tecken.upload_uploads") == 1
+    assert all_keys.count("tecken.uploads_created_update") == 1
+    assert all_keys[-2] == "tecken.upload_archive"
 
     invalidate_symbolicate_cache_args = [
         x[0] for x in upload_mock_invalidate_symbolicate_cache.all_delay_arguments
