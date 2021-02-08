@@ -26,6 +26,7 @@ class UserAdminBetter(UserAdmin):
         "is_active",
         "num_uploads",
         "num_api_tokens",
+        "last_upload",
         "in_groups",
         "is_superuser",
         "is_staff",
@@ -43,6 +44,18 @@ class UserAdminBetter(UserAdmin):
         return Upload.objects.filter(user=obj).count()
 
     num_uploads.short_description = "# Uploads"
+
+    def last_upload(self, obj):
+        """Returns most recent upload date or None."""
+        data = (
+            Upload.objects.filter(user=obj)
+            .order_by("-completed_at")
+            .values_list("completed_at", flat=True)
+            .first()
+        )
+        return data
+
+    last_upload.short_description = "Last upload"
 
     def num_api_tokens(self, obj):
         return Token.objects.filter(user=obj).count()
