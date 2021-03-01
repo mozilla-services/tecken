@@ -599,9 +599,9 @@ sphinx-rtd-theme==0.5.1 \
     --hash=sha256:eda689eda0c7301a80cf122dad28b1861e5605cbf455558f3775e1e8200e83a5 \
     --hash=sha256:fa6bebd5ab9a73da8e102509a86f3fcc36dec04a0b52ea80e5a033b2aba00113
     # via -r requirements.in
-sphinx==3.3.1 \
-    --hash=sha256:1e8d592225447104d1172be415bc2972bd1357e3e12fdc76edf2261105db4300 \
-    --hash=sha256:d4e59ad4ea55efbb3c05cde3bfc83bfc14f0c95aa95c3d75346fcce186a47960
+sphinx==3.5.1 \
+    --hash=sha256:11d521e787d9372c289472513d807277caafb1684b33eb4f08f7574c405893a9 \
+    --hash=sha256:e90161222e4d80ce5fc811ace7c6787a226b4f5951545f7f42acf97277bfc35c
     # via
     #   -r requirements.in
     #   sphinx-rtd-theme
