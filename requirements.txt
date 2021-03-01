@@ -129,9 +129,9 @@ cryptography==3.4.4 \
     #   josepy
     #   mozilla-django-oidc
     #   pyopenssl
-datadog==0.39.0 \
-    --hash=sha256:b0ef69a27aad0e4412c1ac3e6894fa1b5741db735515c34dfe1606d8cf30e4e5 \
-    --hash=sha256:b6a42e3e99f704f0a9065e5659e82f11a931c771fc2b119795e86c836f6c5e14
+datadog==0.40.0 \
+    --hash=sha256:4bbd66a02bbcf9cd03ba05194d605a64c9efb7aed90d5e69c6ec42655c3c01a4 \
+    --hash=sha256:6104a24890eee4e09c45a64f617f5076f6ef9e4e53ba3f251ee9e76afe5cfe48
     # via
     #   -r requirements.in
     #   markus
