@@ -34,7 +34,7 @@ def pytest_runtest_setup(item):
 
 def pytest_collection_finish(session):
     # After pytest test collection has finished, make sure we set up logging and metrics
-    # to sane default values.
+    # to sensible default values.
     setup_logging(
         ConfigManager.from_dict(
             {"HOST_ID": "testnode", "LOGGING_LEVEL": "DEBUG", "LOCAL_DEV_ENV": "True"}

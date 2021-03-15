@@ -97,7 +97,7 @@ def run(number, max_size):
             break
 
         # Get the size and see if it's lower than our max size and also
-        # not insane--a 22 byte zip file is just the header
+        # sensible--a 22 byte zip file is just the header
         size = get_content_length(url)
         if 1_000 > size > max_size:
             continue

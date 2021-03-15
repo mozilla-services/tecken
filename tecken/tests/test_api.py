@@ -445,7 +445,7 @@ def test_uploads(client):
     upload = Upload.objects.create(
         user=User.objects.create(email="her@example.com"), size=123_456
     )
-    # sanity check
+    # Confidence check
     assert upload.created_at
     assert not upload.completed_at
 
@@ -824,7 +824,7 @@ def test_upload_files(client, settings):
     upload = Upload.objects.create(
         user=User.objects.create(email="her@example.com"), size=123_456
     )
-    # sanity check
+    # Confidence check
     assert upload.created_at
     assert not upload.completed_at
     # Also, let's pretend there's at least one file upload
