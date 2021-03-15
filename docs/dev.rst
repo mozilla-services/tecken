@@ -407,11 +407,11 @@ configuration settings in your ``.env`` file.
 
 Eliot runs in a Docker container and is composed of:
 
-* `circus <https://circus.readthedocs.io/>`_ process which manages:
+* `Honcho <https://honcho.readthedocs.io/>`_ process which manages:
 
-  * `gunicorn <https://docs.gunicorn.org/en/stable//>`_ which runs multiple
-    worker webapp processes
-  * a disk cache manager process
+  * eliot_web: `gunicorn <https://docs.gunicorn.org/en/stable//>`_ which runs
+    multiple worker webapp processes
+  * eliot_disk_manager: a disk cache manager process
 
 Symbolication requests come in and are handled by the Eliot webapp. It pulls
 sym files from the urls configured by ``ELIOT_SYMBOL_URLS``. By default, that's
