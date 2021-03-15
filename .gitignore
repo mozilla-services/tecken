@@ -29,6 +29,7 @@ miniodata/
 .pytest_cache/
 .cache/
 docsvenv
+frontend/.eslintcache
 
 # Ephemeral systemtest data
 systemtests/data/zip-files/
