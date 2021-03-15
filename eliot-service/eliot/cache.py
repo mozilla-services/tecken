@@ -37,7 +37,7 @@ class DiskCache:
     def __init__(self, cachedir, tmpdir):
         """
         :arg Path cachedir: location for cache--should already exist
-        :arg Path tmpdir: location for temp files--should already exist
+        :arg Path tmpdir: location for temporary files
         """
         self.cachedir = cachedir
         self.tmpdir = tmpdir
