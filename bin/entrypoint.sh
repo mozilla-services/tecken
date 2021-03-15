@@ -10,7 +10,7 @@ if [ -z "$*" ]; then
     echo "usage: entrypoint.sh SERVICE"
     echo ""
     echo "Services:"
-    grep -E '^[a-zA-Z0-9_-]+).*?## .*$$' bin/entrypoint.sh \
+    grep -E '^[a-zA-Z0-9_-]+).*?## .*$$' /app/bin/entrypoint.sh \
         | grep -v grep \
         | sed -n 's/^\(.*\)) \(.*\)##\(.*\)/* \1:\3/p'
     exit 1
@@ -29,10 +29,10 @@ shift
 
 case ${SERVICE} in
 web)  ## Run Tecken web service
-    exec ./bin/run_web.sh $@
+    exec /app/bin/run_web.sh $@
     ;;
 eliot)  ## Run Eliot service
-    exec circusd circus_eliot.ini
+    exec honcho -f /app/eliot-service/Procfile start
     ;;
 worker)  ## Run Celery worker
     exec ${CMD_PREFIX} celery -A tecken.celery:app worker --loglevel INFO
