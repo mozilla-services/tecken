@@ -125,9 +125,10 @@ def frontend_index_html(request, path="/"):
 
 @never_cache
 def auth_debug(request):
-    """Helps to check that your server-client relationship is good and sane.
-    If, in some environment, you can authenticate it might be because
-    cookies don't work or the server cache is busted.
+    """Helps to check that server-client relationship is sensible.
+
+    If, in some environment, you can authenticate it might be because cookies don't work
+    or the server cache is busted.
     """
     out = []
     if cache.get("auth_debug"):

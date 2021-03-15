@@ -1033,7 +1033,6 @@ def test_upload_archive_with_cache_invalidation(
             "xpcshell.dbg", "A7D6F1BB18CD4CB48", "xpcshell.sym"
         )
 
-        # This is just basically to make sense of all the crazy mocking.
         assert len(lookups) == 2
 
 
