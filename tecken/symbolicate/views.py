@@ -9,10 +9,11 @@ from bisect import bisect
 from functools import wraps
 from collections import defaultdict
 
-import markus
-import ujson as json
-import requests
 import botocore
+import markus
+from redis.connection import ResponseError as RedisResponseError
+import requests
+import ujson as json
 
 from django_redis import get_redis_connection
 
@@ -534,7 +535,15 @@ class SymbolicateJSON:
                 # The quickest way to find out is to ask to the length
                 # of the hash map.
                 t0 = time.time()
-                length = redis_store_connection.hlen(store.make_key(cache_key))
+                store_key = store.make_key(cache_key)
+                try:
+                    length = redis_store_connection.hlen(store_key)
+                except RedisResponseError:
+                    # We sometimes get a "WRONGTYPE Operation against a key holding the
+                    # wrong kind of value" suggesting this key is used by something
+                    # else. So we'll treat it as if the length was 0 and the hashmap
+                    # isn't there. bug #1698371
+                    length = 0
                 t1 = time.time()
                 cache_lookup_times.append(t1 - t0)
                 if not length:
