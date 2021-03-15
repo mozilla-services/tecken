@@ -26,13 +26,10 @@ from eliot.liblogging import setup_logging  # noqa
 
 def pytest_runtest_setup(item):
     # Clear out the tmp and cache dir from any sym files before tests run
-    tmp_dir = os.environ["ELIOT_TMP_DIR"]
-    cache_dir = os.environ["ELIOT_SYMBOLS_CACHE_DIR"]
+    cachedir = os.environ["ELIOT_SYMBOLS_CACHE_DIR"]
 
-    if os.path.exists(tmp_dir):
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-    if os.path.exists(cache_dir):
-        shutil.rmtree(cache_dir, ignore_errors=True)
+    if os.path.exists(cachedir):
+        shutil.rmtree(cachedir, ignore_errors=True)
 
 
 def pytest_collection_finish(session):

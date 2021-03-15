@@ -144,7 +144,10 @@ class AppConfig(RequiredConfigMixin):
 class DiskCacheManager:
     def __init__(self, config):
         self.config = config
-        self.cache_dir = pathlib.Path(self.config("symbols_cache_dir")).resolve()
+        # NOTE(willkg): This needs to mirror setup of cachedir in Eliot app
+        self.cachedir = (
+            pathlib.Path(self.config("symbols_cache_dir")).resolve() / "cache"
+        )
         self.max_size = self.config("symbols_cache_max_size")
 
         self.total_size = 0
@@ -160,12 +163,11 @@ class DiskCacheManager:
 
         log_config(LOGGER, self.config)
 
-        # If there's no cache dir, we can't watch anything, so create it
-        if not self.cache_dir.is_dir():
-            self.cache_dir.mkdir(exist_ok=True)
+        # Create the cachedir if we need to
+        self.cachedir.mkdir(parents=True, exist_ok=True)
 
         LOGGER.info(
-            f"DiskCacheManager starting up; watching: {self.cache_dir}, max size: {self.max_size:,d}"
+            f"DiskCacheManager starting up; watching: {self.cachedir}, max size: {self.max_size:,d}"
         )
 
         self.inventory_existing()
@@ -234,13 +236,13 @@ class DiskCacheManager:
         LOGGER.debug(f"lru: count {len(self.lru)}, size {self.total_size:,d}")
 
     def inventory_existing(self):
-        """Walk cache_dir directory and update bookkeeping."""
+        """Walk cachedir directory and update bookkeeping."""
         # Reset everything
         self.total_size = 0
         self.lru = OrderedDict()
 
         # Walk directory and update bookkeeping
-        for base, dirs, files in os.walk(str(self.cache_dir)):
+        for base, dirs, files in os.walk(str(self.cachedir)):
             for fn in files:
                 fn = os.path.join(base, fn)
                 self.update_bookkeeping(pathlib.Path(fn))
@@ -263,7 +265,7 @@ class DiskCacheManager:
             | flags.MOVED_FROM
             | flags.MOVED_TO
         )
-        watch_descriptor = inotify.add_watch(str(self.cache_dir), watch_flags)
+        watch_descriptor = inotify.add_watch(str(self.cachedir), watch_flags)
 
         LOGGER.info("Entering loop")
         self.running = True
@@ -276,7 +278,7 @@ class DiskCacheManager:
                     if flags.ISDIR in event_flags:
                         continue
 
-                    path = self.cache_dir / event.name
+                    path = self.cachedir / event.name
                     if flags.CREATE in event_flags:
                         self.process_create(path, event)
                     elif flags.MOVED_FROM in event_flags:

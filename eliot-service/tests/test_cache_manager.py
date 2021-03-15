@@ -54,8 +54,8 @@ def test_setup_with_no_files_has_empty_lru(cm_client):
 
 
 def test_setup_with_files(cm_client, tmpdir):
-    pathlib.Path(tmpdir / "xul__ABCDE.symc").write_bytes(b"abcde")
-    pathlib.Path(tmpdir / "xul__01234.symc").write_bytes(b"abcdef")
+    pathlib.Path(tmpdir / "cache" / "xul__ABCDE.symc").write_bytes(b"abcde")
+    pathlib.Path(tmpdir / "cache" / "xul__01234.symc").write_bytes(b"abcdef")
 
     # Rebuild with the tmpdir we're using
     cm_client.rebuild({"ELIOT_SYMBOLS_CACHE_DIR": str(tmpdir)})
@@ -82,14 +82,14 @@ def test_addfiles(cm_client, tmpdir):
         assert cm.total_size == 0
 
         # Add one 5-byte file and run loop and make sure it's in the LRU
-        file1 = pathlib.Path(tmpdir / "xul__5byte.symc")
+        file1 = pathlib.Path(tmpdir / "cache" / "xul__5byte.symc")
         file1.write_bytes(b"abcde")
         cm.run_once()
         assert cm.lru == {str(file1): 5}
         assert cm.total_size == 5
 
         # Add one 4-byte file and run loop and now we've got two files in the LRU
-        file2 = pathlib.Path(tmpdir / "xul__4byte.symc")
+        file2 = pathlib.Path(tmpdir / "cache" / "xul__4byte.symc")
         file2.write_bytes(b"abcd")
         cm.run_once()
         assert cm.lru == {str(file1): 5, str(file2): 4}
@@ -101,12 +101,12 @@ def test_addfiles(cm_client, tmpdir):
 
 
 def test_eviction_when_too_big(cm_client, tmpdir):
-    tmpdir = pathlib.Path(tmpdir)
+    cachedir = pathlib.Path(tmpdir)
 
     # Rebuild with the tmpdir we're using
     cm_client.rebuild(
         {
-            "ELIOT_SYMBOLS_CACHE_DIR": str(tmpdir),
+            "ELIOT_SYMBOLS_CACHE_DIR": str(cachedir),
             "ELIOT_SYMBOLS_CACHE_MAX_SIZE": 10,
         }
     )
@@ -120,44 +120,44 @@ def test_eviction_when_too_big(cm_client, tmpdir):
         assert cm.total_size == 0
 
         # Add one 5-byte file and run loop and make sure it's in the LRU
-        file1 = tmpdir / "xul__5byte.symc"
+        file1 = cachedir / "cache" / "xul__5byte.symc"
         file1.write_bytes(b"abcde")
 
         # Add one 4-byte file and run loop and now we've got two files in the LRU
-        file2 = tmpdir / "xul__4byte.symc"
+        file2 = cachedir / "cache" / "xul__4byte.symc"
         file2.write_bytes(b"abcd")
         cm.run_once()
         assert cm.lru == {str(file1): 5, str(file2): 4}
         assert cm.total_size == 9
 
         # Add 1-byte file which gets total size to 10
-        file3 = tmpdir / "xul__3byte.symc"
+        file3 = cachedir / "cache" / "xul__3byte.symc"
         file3.write_bytes(b"a")
         cm.run_once()
         assert cm.lru == {str(file1): 5, str(file2): 4, str(file3): 1}
         assert cm.total_size == 10
 
         # Add file4 of 6 bytes should evict file1 and file2
-        file4 = tmpdir / "xul__6byte.symc"
+        file4 = cachedir / "cache" / "xul__6byte.symc"
         file4.write_bytes(b"abcdef")
         cm.run_once()
         assert cm.lru == {str(file3): 1, str(file4): 6}
         assert cm.total_size == 7
 
         # Verify what's in the cache dir on disk
-        files = [str(path) for path in tmpdir.iterdir()]
+        files = [str(path) for path in (cachedir / "cache").iterdir()]
         assert sorted(files) == sorted([str(file3), str(file4)])
     finally:
         cm.shutdown()
 
 
 def test_eviction_of_least_recently_used(cm_client, tmpdir):
-    tmpdir = pathlib.Path(tmpdir)
+    cachedir = pathlib.Path(tmpdir)
 
     # Rebuild with the tmpdir we're using
     cm_client.rebuild(
         {
-            "ELIOT_SYMBOLS_CACHE_DIR": str(tmpdir),
+            "ELIOT_SYMBOLS_CACHE_DIR": str(cachedir),
             "ELIOT_SYMBOLS_CACHE_MAX_SIZE": 10,
         }
     )
@@ -171,16 +171,16 @@ def test_eviction_of_least_recently_used(cm_client, tmpdir):
         assert cm.total_size == 0
 
         # Add some files
-        file1 = tmpdir / "xul__rose.symc"
+        file1 = cachedir / "cache" / "xul__rose.symc"
         file1.write_bytes(b"ab")
 
-        file2 = tmpdir / "xul__dandelion.symc"
+        file2 = cachedir / "cache" / "xul__dandelion.symc"
         file2.write_bytes(b"ab")
 
-        file3 = tmpdir / "xul__orchid.symc"
+        file3 = cachedir / "cache" / "xul__orchid.symc"
         file3.write_bytes(b"ab")
 
-        file4 = tmpdir / "xul__iris.symc"
+        file4 = cachedir / "cache" / "xul__iris.symc"
         file4.write_bytes(b"ab")
 
         # Access rose so it's recently used
@@ -193,14 +193,14 @@ def test_eviction_of_least_recently_used(cm_client, tmpdir):
 
         # Add new file which will evict files--but not rose which was accessed
         # most recently
-        file5 = tmpdir / "xul__marigold.symc"
+        file5 = cachedir / "cache" / "xul__marigold.symc"
         file5.write_bytes(b"abcdef")
         cm.run_once()
         assert cm.lru == {str(file1): 2, str(file4): 2, str(file5): 6}
         assert cm.total_size == 10
 
         # Verify what's in the cache dir on disk
-        files = [str(path) for path in tmpdir.iterdir()]
+        files = [str(path) for path in (cachedir / "cache").iterdir()]
         assert sorted(files) == sorted([str(file1), str(file4), str(file5)])
     finally:
         cm.shutdown()

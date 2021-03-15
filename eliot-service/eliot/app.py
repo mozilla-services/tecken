@@ -112,11 +112,6 @@ class AppConfig(RequiredConfigMixin):
         doc="Location for caching symcache files.",
     )
     required_config.add_option(
-        "tmp_dir",
-        default="/tmp/junk",
-        doc="Location for temporary files.",
-    )
-    required_config.add_option(
         "symbols_urls",
         default="https://symbols.mozilla.org/try/",
         doc="Comma-separated list of urls to pull symbols files from.",
@@ -163,31 +158,30 @@ class EliotAPI(falcon.API):
         setup_sentry_logging()
         setup_metrics(self.config, LOGGER)
 
-        # Build the tmpdir
-        tmpdir = Path(self.config("tmp_dir"))
+        # Set up cachedir and tmpdir
+        cachedir = Path(self.config("symbols_cache_dir")).resolve()
+        cachecachedir = cachedir / "cache"
+        cachecachedir.mkdir(parents=True, exist_ok=True)
+        tmpdir = cachedir / "tmp"
         tmpdir.mkdir(parents=True, exist_ok=True)
-
-        # Build the cachedir
-        cachedir = Path(self.config("symbols_cache_dir"))
-        cachedir.mkdir(parents=True, exist_ok=True)
 
         self.add_route("version", "/__version__", VersionResource(REPOROOT_DIR))
         self.add_route("heartbeat", "/__heartbeat__", HeartbeatResource())
         self.add_route("lbheartbeat", "/__lbheartbeat__", LBHeartbeatResource())
         self.add_route("broken", "/__broken__", BrokenResource())
 
-        diskcache = DiskCache(cachedir=cachedir, tmpdir=tmpdir)
+        diskcache = DiskCache(cachedir=cachecachedir, tmpdir=tmpdir)
         downloader = SymbolFileDownloader(self.config("symbols_urls"))
         self.add_route("index", "/", IndexResource())
         self.add_route(
             "symbolicate_v4",
             "/symbolicate/v4",
-            SymbolicateV4(downloader, diskcache, tmpdir),
+            SymbolicateV4(downloader=downloader, cache=diskcache, tmpdir=tmpdir),
         )
         self.add_route(
             "symbolicate_v5",
             "/symbolicate/v5",
-            SymbolicateV5(downloader, diskcache, tmpdir),
+            SymbolicateV5(downloader=downloader, cache=diskcache, tmpdir=tmpdir),
         )
 
     def add_route(self, name, uri_template, resource, *args, **kwargs):
