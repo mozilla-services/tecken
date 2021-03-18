@@ -15,7 +15,7 @@ Configuration is in AppConfig and set in environment variables.
 
 To run::
 
-    $ python eliot/cache_manager.py
+    $ /app/bin/run_eliot_disk_manager.sh
 
 """
 
@@ -26,10 +26,10 @@ import pathlib
 import sys
 import traceback
 
+from boltons.dictutils import OneToOne
 import click
 from everett.manager import get_config_for_class, Option
-import inotify_simple
-from inotify_simple import flags
+from inotify_simple import INotify, flags
 
 from eliot.app import build_config_manager
 from eliot.liblogging import setup_logging, log_config
@@ -114,9 +114,21 @@ class DiskCacheManager:
         )
         self.max_size = self.config("symbols_cache_max_size")
 
-        self.total_size = 0
+        # Set up attributes for cache monitoring; these get created in the generator
         self.lru = OrderedDict()
+        self.total_size = 0
+        self.watches = OneToOne()
         self._generator = None
+        self.inotify = None
+        self.watch_flags = (
+            flags.ACCESS
+            | flags.CREATE
+            | flags.DELETE
+            | flags.DELETE_SELF
+            | flags.MODIFY
+            | flags.MOVED_FROM
+            | flags.MOVED_TO
+        )
 
     def setup(self):
         setup_logging(
@@ -141,12 +153,8 @@ class DiskCacheManager:
         self.cachedir.mkdir(parents=True, exist_ok=True)
 
         LOGGER.info(
-            f"DiskCacheManager starting up; watching: {self.cachedir}, max size: {self.max_size:,d}"
+            f"starting up; watching: {self.cachedir}, max size: {self.max_size:,d}"
         )
-
-        self.inventory_existing()
-
-        LOGGER.info(f"Found {len(self.lru)} files ({self.total_size:,d} bytes)")
 
     def verify_configuration(self):
         """Verify configuration by accessing each item
@@ -157,80 +165,57 @@ class DiskCacheManager:
         for key, val in get_config_for_class(self.__class__).items():
             self.config(key)
 
-    def mark_access(self, path):
-        """Mark a file access in the bookkeeping.
+    def add_watch(self, path):
+        wd = self.inotify.add_watch(path, self.watch_flags)
+        self.watches[path] = wd
 
-        :arg Path path: path of the file that was accessed
-
-        """
-        lru_key = str(path)
-        if lru_key in self.lru and path.exists():
-            self.lru.move_to_end(lru_key, last=True)
-            return
-
-    def mark_remove(self, path):
-        """Mark a file remove in the bookkeeping.
-
-        NOTE(willkg): The most commont reason a file is removed is because it was
-        evicted.
-
-        :arg Path path: path of the file that was removed
-
-        """
-        lru_key = str(path)
-        if lru_key in self.lru:
-            size = self.lru.pop(lru_key)
-            self.total_size -= size
-
-    def update_bookkeeping(self, path):
-        """Update bookkeeping for a specified path.
-
-        :arg Path path: the path of the file to update in our bookkeeping
-
-        """
-        lru_key = str(path)
-
-        # If the path is in the cache, remove it
-        if lru_key in self.lru:
-            size = self.lru.pop(lru_key)
-            self.total_size -= size
-            LOGGER.debug(f"removed {path} {size:,d}")
-
-        # If the path exists, calculate new total size, check max size, remove items,
-        # and re-add path.
-        if path.exists():
-            size = path.stat().st_size
-            self.total_size += size
-
-            # If we're beyond the max, then we need to evict items to size down as much
-            # as we can
-            while self.lru and self.total_size > self.max_size:
-                rm_path, rm_size = self.lru.popitem(last=False)
-                rm_path = pathlib.Path(rm_path)
-                self.total_size -= rm_size
-                rm_path.unlink(missing_ok=True)
-                LOGGER.debug(f"evicted {rm_path} {rm_size:,d}")
-                METRICS.incr("eliot.diskcache.evict")
-
-            # Since the file exists, add it to the lru
-            LOGGER.debug(f"added {path} {size:,d}")
-            self.lru[lru_key] = size
-
-        METRICS.gauge("eliot.diskcache.usage", value=self.total_size)
-
-        LOGGER.debug(f"lru: count {len(self.lru)}, size {self.total_size:,d}")
+    def remove_watch(self, path):
+        if path in self.watches:
+            del self.watches[path]
+        else:
+            print(
+                f"something is wrong--{path} not in watches ({list(self.watches.keys())})"
+            )
 
     def inventory_existing(self):
-        """Walk cachedir directory and update bookkeeping."""
-        # Reset everything
-        self.total_size = 0
-        self.lru = OrderedDict()
+        """Sets up LRU from cachedir
 
-        # Walk directory and update bookkeeping
-        for base, dirs, files in os.walk(str(self.cachedir)):
+        This goes through the cachedir and adds watches for directories and adds files
+        to the LRU.
+
+        NOTE(willkg): this does not deal with the max size of the LRU--that'll get
+        handled when we start going through events.
+
+        """
+        cachedir = str(self.cachedir)
+
+        self.add_watch(cachedir)
+        for base, dirs, files in os.walk(cachedir):
+            for dir_ in dirs:
+                path = os.path.join(base, dir_)
+                self.add_watch(path)
+                LOGGER.debug(f"adding watch: {path}")
+
             for fn in files:
-                fn = os.path.join(base, fn)
-                self.update_bookkeeping(pathlib.Path(fn))
+                path = os.path.join(base, fn)
+                size = os.stat(path).st_size
+                self.lru[path] = size
+                self.total_size += size
+                LOGGER.debug(f"adding file: {path} ({size:,d})")
+
+    def make_room(self, size):
+        total_size = self.total_size + size
+        removed = 0
+
+        while self.lru and total_size > self.max_size:
+            rm_path, rm_size = self.lru.popitem(last=False)
+            total_size -= rm_size
+            removed += rm_size
+            os.remove(rm_path)
+            print(f"evicted {rm_path} {rm_size:,d}")
+            METRICS.incr("eliot.diskcache.evict")
+
+        self.total_size -= removed
 
     def _event_generator(self, nonblocking=False):
         """Returns a generator of inotify events."""
@@ -241,50 +226,113 @@ class DiskCacheManager:
         else:
             timeout = 1000
 
-        inotify = inotify_simple.INotify(nonblocking=nonblocking)
-        watch_flags = (
-            flags.ACCESS
-            | flags.CREATE
-            | flags.DELETE
-            | flags.MODIFY
-            | flags.MOVED_FROM
-            | flags.MOVED_TO
-        )
-        watch_descriptor = inotify.add_watch(str(self.cachedir), watch_flags)
+        self.inotify = INotify(nonblocking=nonblocking)
+
+        # Set up watches and LRU with what exists already
+        self.watches = OneToOne()
+        self.lru = OrderedDict()
+        self.total_size = 0
+        self.inventory_existing()
+
+        LOGGER.info(f"Found {len(self.lru)} files ({self.total_size:,d} bytes)")
 
         LOGGER.info("Entering loop")
         self.running = True
+        processed_events = False
         try:
             while self.running:
-                for event in inotify.read(timeout=timeout):
-                    LOGGER.debug(event)
+                for event in self.inotify.read(timeout=timeout):
+                    processed_events = True
                     event_flags = flags.from_mask(event.mask)
-                    # Ignore changes to directories
-                    if flags.ISDIR in event_flags:
+
+                    LOGGER.debug(f"EVENT: {event}")
+                    for flag in event_flags:
+                        LOGGER.debug(f"    {str(flag)}")
+
+                    if flags.IGNORED in event_flags:
                         continue
 
-                    path = self.cachedir / event.name
-                    if flags.CREATE in event_flags:
-                        self.process_create(path, event)
-                    elif flags.MOVED_FROM in event_flags:
-                        self.process_moved_from(path, event)
-                    elif flags.MOVED_TO in event_flags:
-                        self.process_moved_to(path, event)
-                    elif flags.MODIFY in event_flags:
-                        self.process_modify(path, event)
-                    elif flags.DELETE in event_flags:
-                        self.process_delete(path, event)
-                    elif flags.ACCESS in event_flags:
-                        self.process_access(path, event)
+                    dir_path = self.watches.inv[event.wd]
+                    path = os.path.join(dir_path, event.name)
+
+                    if flags.ISDIR in event_flags:
+                        # Handle directory events which update our watch lists
+                        if flags.CREATE in event_flags:
+                            self.add_watch(path)
+
+                        if flags.DELETE_SELF in event_flags:
+                            if path in self.watches:
+                                self.remove_watch(path)
+
                     else:
-                        LOGGER.debug(f"ignored {path} {event}")
+                        # Handle file events which update our LRU cache
+                        if flags.CREATE in event_flags:
+                            if path in self.lru:
+                                print(
+                                    f"something is wrong--create on file that exists {path}"
+                                )
+
+                            else:
+                                size = os.stat(path).st_size
+                                self.make_room(size)
+                                self.lru[path] = size
+                                self.total_size += size
+
+                        elif flags.ACCESS in event_flags:
+                            if path in self.lru:
+                                self.lru.move_to_end(path, last=True)
+
+                        elif flags.MODIFY in event_flags:
+                            size = self.lru[path]
+                            new_size = os.stat(path).st_size
+                            if size != new_size:
+                                self.total_size -= size
+                                self.make_room(new_size)
+                                self.total_size += new_size
+
+                            self.lru[path] = new_size
+                            self.lru.move_to_end(path, last=True)
+
+                        elif flags.DELETE in event_flags:
+                            if path in self.lru:
+                                # NOTE(willkg): DELETE can be triggered by an external thing or
+                                # by the disk cache manager, so it may or may not be in the lru
+                                size = self.lru.pop(path)
+                                self.total_size -= size
+
+                        elif flags.MOVED_TO in event_flags:
+                            if path not in self.lru:
+                                # If the path isn't in self.lru, then treat this like a create
+                                size = os.stat(path).st_size
+                                self.make_room(size)
+                                self.lru[path] = size
+                                self.total_size += size
+
+                        elif flags.MOVED_FROM in event_flags:
+                            if path in self.lru:
+                                # If it was moved out of this directory, then treat it
+                                # like a DELETE
+                                size = self.lru.pop(path)
+                                self.total_size -= size
+
+                        else:
+                            LOGGER.debug(f"ignored {path} {event}")
+
+                if processed_events:
+                    LOGGER.debug(
+                        f"lru: count {len(self.lru)}, size {self.total_size:,d}"
+                    )
+                    METRICS.gauge("eliot.diskcache.usage", value=self.total_size)
+                    processed_events = False
 
                 yield
 
         finally:
-            inotify.rm_watch(watch_descriptor)
+            all_watches = list(self.watches.inv.keys())
+            for wd in all_watches:
+                self.inotify.rm_watch(wd)
 
-        inotify.close()
+        self.inotify.close()
 
     def run_loop(self):
         """Run cache manager in a loop."""
@@ -316,36 +364,6 @@ class DiskCacheManager:
                 next(generator)
             except StopIteration:
                 pass
-
-    def process_delete(self, path, event):
-        """Process a delete event."""
-        LOGGER.debug(f"delete {path}")
-        self.mark_remove(path)
-
-    def process_create(self, path, event):
-        """Process a delete event."""
-        LOGGER.debug(f"create {path}")
-        self.update_bookkeeping(path)
-
-    def process_moved_from(self, path, event):
-        """Process a moved_from event."""
-        LOGGER.debug(f"moved_from {path}")
-        self.mark_remove(path)
-
-    def process_moved_to(self, path, event):
-        """Process a moved_to event."""
-        LOGGER.debug(f"moved_to {path}")
-        self.update_bookkeeping(path)
-
-    def process_modify(self, path, event):
-        """Process a modify event."""
-        LOGGER.debug(f"modify {path}")
-        self.update_bookkeeping(path)
-
-    def process_access(self, path, event):
-        """Process an access event."""
-        LOGGER.debug(f"access {path}")
-        self.mark_access(path)
 
 
 def get_cache_manager(config_manager=None):

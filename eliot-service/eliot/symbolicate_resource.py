@@ -241,7 +241,7 @@ class SymbolicateBase:
             return
 
         # Get the symcache from cache if it's there
-        cache_key = "%s___%s.symc" % (
+        cache_key = "%s/%s.symc" % (
             debug_filename.replace("/", ""),
             debug_id.upper().replace("/", ""),
         )

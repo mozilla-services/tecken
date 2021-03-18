@@ -38,8 +38,7 @@ class DiskCache:
 
     """
 
-    # NOTE(willkg): this puts all files in the same directory--no directory trees
-    BAD_CHARS = re.compile(r"[^A-Za-z0-9._-]")
+    BAD_CHARS = re.compile(r"[^A-Za-z0-9._/-]")
 
     def __init__(self, cachedir, tmpdir):
         """
