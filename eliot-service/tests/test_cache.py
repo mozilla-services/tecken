@@ -18,10 +18,10 @@ from tests.utils import counter
         ("", "%(tmp)s"),
         # Test typical examples
         ("foo", "%(tmp)s/foo"),
-        ("foo/bar/symbols.sym", "%(tmp)s/foo_bar_symbols.sym"),
+        ("foo/bar/symbols.sym", "%(tmp)s/foo/bar/symbols.sym"),
         (
             "xul.pdb/61D2D4F7C2CF4DC64C4C44205044422E1/xul.sym",
-            "%(tmp)s/xul.pdb_61D2D4F7C2CF4DC64C4C44205044422E1_xul.sym",
+            "%(tmp)s/xul.pdb/61D2D4F7C2CF4DC64C4C44205044422E1/xul.sym",
         ),
         # Test leading / and .
         ("/foo", "%(tmp)s/foo"),
@@ -30,7 +30,7 @@ from tests.utils import counter
         # Test bad characters
         ("/foo()*$", "%(tmp)s/foo____"),
         # Test multiple / .
-        ("foo/bar/baz/baz2", "%(tmp)s/foo_bar_baz_baz2"),
+        ("foo/bar/baz/baz2", "%(tmp)s/foo/bar/baz/baz2"),
     ],
     ids=counter(),
 )
