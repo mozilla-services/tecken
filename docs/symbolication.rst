@@ -12,8 +12,8 @@ Background
 Stacks
 ------
 
-The stack is denoted as a list of lists. Each frame in the stack is composed
-of two things:
+The stack is a list of lists. Each frame in the stack is composed of two
+things:
 
 1. the index in the modules list for the module for this frame
 2. the memory offset relative to the base memory address for that module as
