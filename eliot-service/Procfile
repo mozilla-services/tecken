@@ -1,2 +1,2 @@
 eliot_web: /app/bin/run_eliot_web.sh
-eliot_disck_manager: /app/bin/run_eliot_disk_manager.sh
+eliot_disk_manager: /app/bin/run_eliot_disk_manager.sh
