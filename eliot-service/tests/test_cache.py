@@ -45,16 +45,17 @@ class TestDiskCache:
         key = "foo___bar.sym"
         assert key not in diskcache
 
-        diskcache.set(key, b"abcde")
+        diskcache.set(key, {"symcache": b"abcde"})
         assert key in diskcache
 
     def test_get(self, tmpcachedir, tmpdir):
         """DiskCache.get returns a bytes object of the file on the filesystem"""
         diskcache = DiskCache(cachedir=Path(tmpcachedir), tmpdir=Path(tmpdir))
+
         key = "foo___bar.sym"
-        data = b"abcde"
+        data = {"symfile": b"abcde"}
         filepath = diskcache.key_to_filepath(key)
-        filepath.write_bytes(data)
+        diskcache.write_to_file(filepath, data)
 
         assert diskcache.get(key) == data
         assert type(diskcache.get(key)) == type(data)
@@ -78,31 +79,31 @@ class TestDiskCache:
         """DiskCache.get returns file even if default is specified"""
         diskcache = DiskCache(cachedir=Path(tmpcachedir), tmpdir=Path(tmpdir))
         key = "foo/bar.sym"
-        data = b"abcde"
-        default_data = b"12345"
+        data = {"symfile": b"abcde"}
+        default_data = {"symfile": b"12345"}
         filepath = diskcache.key_to_filepath(key)
-        filepath.write_bytes(data)
+        diskcache.write_to_file(filepath, data)
         assert diskcache.get(key, default=default_data) == data
 
     def test_set(self, tmpcachedir, tmpdir):
         """DiskCache.set creates a file"""
         diskcache = DiskCache(cachedir=Path(tmpcachedir), tmpdir=Path(tmpdir))
         key = "foo/bar.sym"
-        data = b"abcde"
+        data = {"symfile": b"abcde"}
 
         diskcache.set(key, data)
         filepath = diskcache.key_to_filepath(key)
-        assert filepath.read_bytes() == data
+        assert diskcache.read_from_file(filepath) == data
 
     def test_set_overwrite(self, tmpcachedir, tmpdir):
         """DiskCache.set overwrites existing files"""
         diskcache = DiskCache(cachedir=Path(tmpcachedir), tmpdir=Path(tmpdir))
         key = "foo/bar.sym"
-        data = b"abcde"
-        data2 = b"12345"
+        data = {"symfile": b"abcde"}
+        data2 = {"symfile": b"12345"}
 
         filepath = diskcache.key_to_filepath(key)
-        filepath.write_bytes(data)
+        diskcache.write_to_file(filepath, data)
 
         diskcache.set(key, data2)
-        assert filepath.read_bytes() == data2
+        assert diskcache.read_from_file(filepath) == data2

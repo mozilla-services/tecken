@@ -4,17 +4,21 @@
 
 from io import BytesIO
 from pathlib import Path
+import types
 
 import pytest
 
 from eliot.cache import DiskCache
 from eliot.downloader import SymbolFileDownloader
 from eliot.symbolicate_resource import (
-    validate_modules,
     InvalidModules,
-    validate_stacks,
     InvalidStacks,
+    ModuleInfo,
     SymbolicateBase,
+    bytes_split_generator,
+    get_module_filename,
+    validate_modules,
+    validate_stacks,
 )
 
 from tests.utils import counter
@@ -285,16 +289,24 @@ class TestSymbolicateBase:
         )
         data = BytesIO()
         symcache.dump_into(data)
-        data = data.getvalue()
+        data = {"filename": debug_filename, "symcache": data.getvalue()}
 
         cache_key = "%s___%s.symc" % (debug_filename, debug_id.upper())
         cache.set(cache_key, data)
 
+        module_info = ModuleInfo(
+            filename=debug_filename,
+            debug_filename=debug_filename,
+            debug_id=debug_id,
+            has_symcache=None,
+            symcache=None,
+        )
+
         # Get the symcache which should be in the cache and make sure it's the
         # same one we put in
-        symcache = base.get_symcache(debug_filename, debug_id)
-        assert symcache is not None
-        assert symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
+        base.get_symcache(module_info)
+        assert module_info.symcache is not None
+        assert module_info.symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
 
     def test_get_symcache_not_in_cache(self, requestsmock, tmpcachedir, tmpdir):
         # Set up a DiskCache
@@ -315,11 +327,19 @@ class TestSymbolicateBase:
             content=data,
         )
 
+        module_info = ModuleInfo(
+            filename=debug_filename,
+            debug_filename=debug_filename,
+            debug_id=debug_id,
+            has_symcache=None,
+            symcache=None,
+        )
+
         # Get the symcache which should be in the cache and make sure it's the
         # same one we put in
-        symcache = base.get_symcache(debug_filename, debug_id)
-        assert symcache is not None
-        assert symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
+        base.get_symcache(module_info)
+        assert module_info.symcache is not None
+        assert module_info.symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
 
     def test_symbolicate(self, requestsmock, tmpcachedir, tmpdir):
         # Set up a DiskCache
@@ -353,6 +373,55 @@ class TestSymbolicateBase:
                         "function_offset": "0x0",
                         "line": 1,
                         "module": "testproj",
+                        "module_offset": "0x5380",
+                    }
+                ]
+            ],
+        }
+
+    def test_symbolicate_pe_file(self, requestsmock, tmpcachedir, tmpdir):
+        """Test symbolication and "module" picks up the PE filename"""
+        # Set up a DiskCache
+        cache = DiskCache(cachedir=Path(tmpcachedir), tmpdir=Path(tmpdir))
+
+        # Set up a SymbolicateBase with a downloader
+        downloader = SymbolFileDownloader(source_urls=[FAKE_HOST])
+        base = SymbolicateBase(downloader=downloader, cache=cache, tmpdir=tmpdir)
+
+        symfile = (
+            "MODULE windows x86_64 0185139C8F04FFC94C4C44205044422E1 xul.pdb\n"
+            "INFO CODE_ID 60533C886EFD000 xul.dll\n"
+            "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd//etc\n"
+            "FUNC 5380 44 0 somefunc\n"
+            "5380 9 1 0\n"
+            "5389 36 2 0\n"
+            "53bf 5 3 0\n"
+        )
+
+        # Set up the test with the data in the cache
+        debug_filename = "xul.pdb"
+        debug_id = "0185139C8F04FFC94C4C44205044422E1"
+        data = symfile.encode("utf-8")
+
+        requestsmock.get(
+            f"{FAKE_HOST}{debug_filename}/{debug_id}/xul.sym",
+            status_code=200,
+            content=data,
+        )
+
+        stacks = [[[0, int("5380", 16)]]]
+        modules = [["xul.pdb", "0185139C8F04FFC94C4C44205044422E1"]]
+
+        assert base.symbolicate(stacks, modules) == {
+            "found_modules": {"xul.pdb/0185139C8F04FFC94C4C44205044422E1": True},
+            "stacks": [
+                [
+                    {
+                        "frame": 0,
+                        "function": "somefunc",
+                        "function_offset": "0x0",
+                        "line": 1,
+                        "module": "xul.dll",
                         "module_offset": "0x5380",
                     }
                 ]
@@ -613,3 +682,50 @@ class TestSymbolicateV5:
                 }
             ],
         }
+
+
+def test_bytes_split_generator():
+    symfile = (
+        "MODULE windows x86_64 0185139C8F04FFC94C4C44205044422E1 xul.pdb\n"
+        "INFO CODE_ID 60533C886EFD000 xul.dll\n"
+        "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd/etc\n"
+    )
+    symfile_bytes = symfile.encode("utf-8")
+    # This should return the same as splitlines()--the difference is that it's
+    # returning a generator
+    assert isinstance(bytes_split_generator(symfile_bytes, b"\n"), types.GeneratorType)
+    assert (
+        list(bytes_split_generator(symfile_bytes, b"\n")) == symfile_bytes.splitlines()
+    )
+
+
+def test_get_module_filename_no_info():
+    """No INFO line should return debug_filename"""
+    symfile = (
+        "MODULE Linux x86_64 D48F191186D67E69DF025AD71FB91E1F0 testproj\n"
+        "FILE 0 /home/willkg/projects/testproj/src/main.rs\n"
+        "FUNC 5380 44 0 testproj::main\n"
+    )
+    symfile_bytes = symfile.encode("utf-8")
+    assert get_module_filename(symfile_bytes, "testproj") == "testproj"
+
+
+def test_get_module_windows():
+    """Windows files should return PE filename"""
+    symfile = (
+        "MODULE windows x86_64 0185139C8F04FFC94C4C44205044422E1 xul.pdb\n"
+        "INFO CODE_ID 60533C886EFD000 xul.dll\n"
+        "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd//etc\n"
+    )
+    symfile_bytes = symfile.encode("utf-8")
+    assert get_module_filename(symfile_bytes, "nofilename.pdb") == "xul.dll"
+
+
+def test_get_module_no_pe_filename():
+    symfile = (
+        "MODULE Linux x86_64 6C0CFDB91476E3E45DCB01FABB49DDA90 libxul.so\n"
+        "INFO CODE_ID B9FD0C6C7614E4E35DCB01FABB49DDA913586357\n"
+        "FILE 0 /build/firefox-ifRHdl/firefox-87.0+build3/memory/volatile/etc\n"
+    )
+    symfile_bytes = symfile.encode("utf-8")
+    assert get_module_filename(symfile_bytes, "libxul.so") == "libxul.so"

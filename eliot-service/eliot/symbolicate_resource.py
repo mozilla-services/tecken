@@ -15,7 +15,7 @@ Resource implementing the Symbolication v4 and v5 APIs.
 
    For example, ``11FB836EE6723C07BFF775900077457B0``.
 
-``filename``
+``sym_filename``
    This is the symbol filename. Generally, it's the ``debug_filename`` with ``.sym``
    appended except for ``.pdb`` files where ``.sym`` replaces ``.pdb.
 
@@ -43,10 +43,16 @@ LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
-class Module:
+class ModuleInfo:
+    # The filename. e.g. xul.dll on Windows or the same as debug_filename
+    filename: str
+    # The debug filename. e.g. xul.pdb
     debug_filename: str
+    # The debug id for the module
     debug_id: str
+    # Whether or not we have a symcache. True/False or None
     has_symcache: typing.Optional[bool]
+    # The symbolic symcache instance
     symcache: any
 
 
@@ -149,6 +155,58 @@ def validate_stacks(stacks, modules):
                 )
 
 
+def bytes_split_generator(item, sep):
+    """Takes a bytes or bytearray and returns a generator of parts split on sep
+
+    :arg item: bytes-like object
+    :arg sep: bytes-like object
+
+    :returns: generator splitting the item
+
+    """
+    index = 0
+    len_item = len(item)
+
+    while index <= len_item:
+        next_index = item.find(sep, index)
+        if next_index == -1:
+            break
+
+        yield item[index:next_index]
+        index = next_index + len(sep)
+
+
+def get_module_filename(sym_file, debug_filename):
+    """Returns the module filename
+
+    On Windows, this will be the pe_file in the INFO line:
+
+        INFO CODE_ID xxx pe_file
+
+    On other platforms, this is the debug_filename.
+
+    :arg bytes sym_file: the sym file as bytes
+    :arg str debug_filename: the debug filename
+
+    :returns: the module filename
+
+    """
+    # Iterate through the first few lines of the file until we hit FILE in which
+    # case there's no INFO for some reason or we hit the first INFO.
+    for line in bytes_split_generator(sym_file, b"\n"):
+        if line.startswith(b"INFO"):
+            parts = line.split(b" ")
+            if len(parts) == 4:
+                return parts[-1].decode("utf-8").strip()
+            else:
+                break
+
+        elif line.startswith((b"FILE", b"PUBLIC", b"FUNC")):
+            break
+
+    return debug_filename
+
+
 class SymbolicateBase:
     def __init__(self, downloader, cache, tmpdir):
         self.downloader = downloader
@@ -165,12 +223,12 @@ class SymbolicateBase:
 
         """
         if debug_filename.endswith(".pdb"):
-            filename = debug_filename[:-4] + ".sym"
+            sym_filename = debug_filename[:-4] + ".sym"
         else:
-            filename = debug_filename + ".sym"
+            sym_filename = debug_filename + ".sym"
 
         try:
-            data = self.downloader.get(debug_filename, debug_id, filename)
+            data = self.downloader.get(debug_filename, debug_id, sym_filename)
 
         except downloader.FileNotFound:
             return None
@@ -245,46 +303,58 @@ class SymbolicateBase:
 
         return symcache
 
-    def get_symcache(self, debug_filename, debug_id):
+    def get_symcache(self, module_info):
         """Gets the symcache for a given module.
 
-        This uses the cachemanager and downloader to get the symcache.
+        This uses the cachemanager and downloader to get the symcache. It modifies
+        the Module in place.
 
-        :arg debug_filename: the debug filename
-        :arg debug_id: the debug id
-
-        :returns: symcache or None
+        :arg module_info: the ModuleInfo data class
 
         """
+        debug_filename = module_info.debug_filename
+        debug_id = module_info.debug_id
+
+        if not debug_filename or not debug_id:
+            # There isn't anything to get, so mark the module and return this
+            module_info.has_symcache = False
+            return
+
         # Get the symcache from cache if it's there
         cache_key = "%s___%s.symc" % (
             debug_filename.replace("/", ""),
             debug_id.upper().replace("/", ""),
         )
-        data = None
-        try:
+
+        if cache_key in self.cache:
+            # Pull it from cache if we can
             data = self.cache.get(cache_key)
-            return symbolic.SymCache.from_bytes(data)
+            module_info.symcache = symbolic.SymCache.from_bytes(data["symcache"])
+            module_info.filename = data["filename"]
 
-        except KeyError:
-            pass
+        else:
+            # Download the SYM file from one of the sources
+            sym_file = self.download_sym_file(debug_filename, debug_id)
+            if sym_file is not None:
+                # Extract the module filename--this is either debug_filename or
+                # pe_filename on Windows
+                module_filename = get_module_filename(sym_file, debug_filename)
 
-        # Download the SYM file from one of the sources
-        sym_file = self.download_sym_file(debug_filename, debug_id)
-        if sym_file is None:
-            return
+                # Parse the SYM file into a symcache
+                symcache = self.parse_sym_file(debug_filename, debug_id, sym_file)
 
-        # Parse the SYM file into a symcache
-        symcache = self.parse_sym_file(debug_filename, debug_id, sym_file)
+                # If we have a valid symcache file, cache it to disk
+                if symcache is not None:
+                    data = BytesIO()
+                    symcache.dump_into(data)
 
-        # If we have a valid symcache file, cache it to disk
-        if symcache is not None:
-            data = BytesIO()
-            symcache.dump_into(data)
-            self.cache.set(cache_key, data.getvalue())
+                    module_info.symcache = symcache
+                    module_info.filename = module_filename
 
-        # Return whatever we found
-        return symcache
+                    data = {"symcache": data.getvalue(), "filename": module_filename}
+                    self.cache.set(cache_key, data)
+
+        module_info.has_symcache = module_info.symcache is not None
 
     def symbolicate(self, stacks, modules):
         """Takes stacks and modules and returns symbolicated stacks.
@@ -299,7 +369,8 @@ class SymbolicateBase:
         """
         # Build list of Module instances so we can keep track of what we've used/seen
         module_records = [
-            Module(
+            ModuleInfo(
+                filename=debug_filename,
                 debug_filename=debug_filename,
                 debug_id=debug_id,
                 has_symcache=None,
@@ -314,7 +385,7 @@ class SymbolicateBase:
             symbolicated_stack = []
             for frame_index, frame in enumerate(stack):
                 module_index, module_offset = frame
-                module = None
+                module_info = None
                 data = {
                     "frame": frame_index,
                     "module": "<unknown>",
@@ -322,40 +393,35 @@ class SymbolicateBase:
                 }
 
                 if module_index >= 0:
-                    module = module_records[module_index]
-                    data["module"] = module.debug_filename
+                    module_info = module_records[module_index]
 
-                    if module_offset < 0 or module.has_symcache is False:
+                    if module_offset < 0 or module_info.has_symcache is False:
                         # This isn't an offset in this module or there's no symcache
                         # available, so don't do anything
                         pass
 
-                    elif (
-                        module.symcache is None
-                        and module.debug_filename
-                        and module.debug_id
-                    ):
-                        # If there's a debug_filename and debug_id, then fetch the
-                        # symcache and update the bookkeeping
-                        LOGGER.debug(f"get_symcache for {module!r}")
-                        module.symcache = self.get_symcache(
-                            module.debug_filename, module.debug_id
-                        )
-                        module.has_symcache = module.symcache is not None
+                    elif module_info.symcache is None:
+                        LOGGER.debug(f"get_symcache for {module_info!r}")
+                        # NOTE(willkg): This mutates module
+                        self.get_symcache(module_info)
 
-                    if module.symcache is not None:
-                        lineinfo = module.symcache.lookup(module_offset)
+                    if module_info.symcache is not None:
+                        lineinfo = module_info.symcache.lookup(module_offset)
                         if lineinfo:
-                            # Grab the first in the list. At some point, we might want
-                            # to look at the other lines it returns (inlined functions),
-                            # but with SYM files, there's only one.
+                            # NOTE(willkg): Grab the first in the list. At some point,
+                            # we might want to look at the other lines it returns
+                            # (inlined functions), but with SYM files, there's only one.
                             lineinfo = lineinfo[0]
 
+                            # FIXME(willkg): do we want symbol or function_name--the
+                            # latter is demangled
                             data["function"] = lineinfo.symbol
                             data["function_offset"] = hex(
                                 module_offset - lineinfo.sym_addr
                             )
                             data["line"] = lineinfo.line
+
+                    data["module"] = module_info.filename
 
                 symbolicated_stack.append(data)
 
@@ -365,8 +431,8 @@ class SymbolicateBase:
         # on whether we found the sym file (True), didn't find it (False), or never
         # looked for it (None)
         found_modules = {
-            f"{module.debug_filename}/{module.debug_id}": module.has_symcache
-            for module in module_records
+            f"{module_info.debug_filename}/{module_info.debug_id}": module_info.has_symcache
+            for module_info in module_records
         }
 
         # Return symbolicated stack
