@@ -146,7 +146,12 @@ def make_stacks_save(ctx, outputdir, crashids):
 
         print("%s..." % crashid)
         crash_report = fetch_crash_report(crashid)
-        data = build_stack(crash_report)
+        try:
+            data = build_stack(crash_report)
+        except Exception as exc:
+            print(f"Exception thrown: {exc!r}")
+            data = None
+
         if not data or not data["stacks"][0]:
             print("Nothing to save.")
             continue
