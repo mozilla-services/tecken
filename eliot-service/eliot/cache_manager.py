@@ -233,6 +233,8 @@ class DiskCacheManager:
             LOGGER.debug(f"added {path} {size:,d}")
             self.lru[lru_key] = size
 
+        METRICS.gauge("eliot.diskcache.usage", value=self.total_size)
+
         LOGGER.debug(f"lru: count {len(self.lru)}, size {self.total_size:,d}")
 
     def inventory_existing(self):
