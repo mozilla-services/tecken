@@ -368,6 +368,7 @@ class TestSymbolicateBase:
             "stacks": [
                 [
                     {
+                        "file": "/home/willkg/projects/testproj/src/main.rs",
                         "frame": 0,
                         "function": "testproj::main",
                         "function_offset": "0x0",
@@ -417,6 +418,10 @@ class TestSymbolicateBase:
             "stacks": [
                 [
                     {
+                        "file": (
+                            "hg:hg.mozilla.org/releases/mozilla-release"
+                            ":media/libjpeg/simd//etc"
+                        ),
                         "frame": 0,
                         "function": "somefunc",
                         "function_offset": "0x0",
@@ -670,6 +675,7 @@ class TestSymbolicateV5:
                     "stacks": [
                         [
                             {
+                                "file": "/home/willkg/projects/testproj/src/main.rs",
                                 "frame": 0,
                                 "function": "testproj::main",
                                 "function_offset": "0x0",
