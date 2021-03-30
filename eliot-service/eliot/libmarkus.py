@@ -150,9 +150,10 @@ ELIOT_METRICS = {
     ),
     "eliot.diskcache.evict": Metric(
         stat_type="incr",
-        description="""\
-        Counter for disk cache evictions.
-        """,
+        description="Counter for disk cache evictions.",
+    ),
+    "eliot.diskcache.usage": Metric(
+        stat_type="gauge", description="Gauge for how much of the cache is in use."
     ),
 }
 
