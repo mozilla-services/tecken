@@ -21,7 +21,6 @@ jsonschema==3.2.0
 markus[datadog]==3.0.0
 mock==4.0.3
 mozilla-django-oidc==1.2.4
-msgpack==1.0.2
 pip-tools==5.5.0
 psycopg2==2.8.6
 pytest-django==4.1.0
@@ -39,8 +38,13 @@ urllib3==1.25.11
 urlwait==1.0
 whitenoise==5.2.0
 
+# NOTE(willkg): django-redis doesn't have an install extras kind of thing, but
+# we use the django-redis MSGPackSerializer which uses msgpack so we need to
+# explicitly declare it a dependency
+msgpack==1.0.2
+
 # NOTE(willkg): Need to keep redis at this version because after this, the Python
-# library doesn't work with the version of Redis we're using in production.
+# library doesn't work with the version of Redis we're using in production
 redis==3.4.1
 
 # NOTE(willkg): Django 2.2 is an LTS series so don't upgrade until the next
