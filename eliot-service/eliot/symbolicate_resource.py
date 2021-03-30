@@ -419,6 +419,12 @@ class SymbolicateBase:
                             data["function_offset"] = hex(
                                 module_offset - lineinfo.sym_addr
                             )
+                            if lineinfo.base_dir and lineinfo.filename:
+                                data["file"] = "/".join(
+                                    [lineinfo.base_dir, lineinfo.filename]
+                                )
+                            elif lineinfo.filename:
+                                data["file"] = lineinfo.filename
                             data["line"] = lineinfo.line
 
                     data["module"] = module_info.filename
