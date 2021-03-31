@@ -46,6 +46,7 @@ FUNC 5380 44 0 testproj::main
         ],
         # More valid debug_filename/debug_id combinations
         [
+            ["<unknown>", "000000000000000000000000000000000"],
             ["TestTuple", "E60AA9C29CE869B87051DD17CFBE249F0"],
             ["IAccessible2proxy.dll.pdb", "F4753D4B2BE8489A897B6AF76E301E541"],
             ["qipcap.dll", "5F8599C48000"],
