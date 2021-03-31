@@ -65,7 +65,7 @@ class TestDiskCache:
         diskcache = DiskCache(cachedir=Path(tmpcachedir), tmpdir=Path(tmpdir))
         key = "foo___bar.sym"
 
-        with pytest.raises(KeyError, match="does not exist"):
+        with pytest.raises(KeyError, match="not in cache"):
             diskcache.get(key)
 
     def test_get_default(self, tmpcachedir, tmpdir):

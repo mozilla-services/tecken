@@ -326,13 +326,13 @@ class SymbolicateBase:
             debug_id.upper().replace("/", ""),
         )
 
-        if cache_key in self.cache:
+        try:
             # Pull it from cache if we can
             data = self.cache.get(cache_key)
             module_info.symcache = symbolic.SymCache.from_bytes(data["symcache"])
             module_info.filename = data["filename"]
 
-        else:
+        except KeyError:
             # Download the SYM file from one of the sources
             sym_file = self.download_sym_file(debug_filename, debug_id)
             if sym_file is not None:

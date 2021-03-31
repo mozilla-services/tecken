@@ -74,6 +74,10 @@ class DiskCache:
 
         This lets you use the Python "in" operator.
 
+        .. Note::
+
+           This doesn't guarantee that the item can be read from cache without error.
+
         :arg str key: the key to retrieve for
 
         :returns: bool
@@ -146,7 +150,8 @@ class DiskCache:
 
         :returns: data as dict
 
-        :raises KeyError: if there's no key and no default is given
+        :raises KeyError: if there's no key or there's an error when reading from
+            cache and no default is given
 
         """
         error = False
@@ -173,7 +178,7 @@ class DiskCache:
         )
         if default != NO_DEFAULT:
             return default
-        raise KeyError(f"key {filepath!r} does not exist")
+        raise KeyError(f"key {filepath!r} not in cache")
 
     def set(self, key, data):
         """Set contents for a given key.
