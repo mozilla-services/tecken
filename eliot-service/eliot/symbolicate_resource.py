@@ -69,7 +69,7 @@ VALID_DEBUG_ID = re.compile(r"^([A-Fa-f0-9]*)$")
 
 # A valid debug filename consists of zero or more alpha-numeric characters, some
 # punctuation, and spaces.
-VALID_DEBUG_FILENAME = re.compile(r"^([A-Za-z0-9_.+{}@ -]*)$")
+VALID_DEBUG_FILENAME = re.compile(r"^([A-Za-z0-9_.+{}@<> -]*)$")
 
 # Maximum number of symbolication jobs to do in a single request
 MAX_JOBS = 10
