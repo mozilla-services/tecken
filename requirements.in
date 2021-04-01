@@ -21,7 +21,7 @@ jsonschema==3.2.0
 markus[datadog]==3.0.0
 mock==4.0.3
 mozilla-django-oidc==1.2.4
-pip-tools==5.5.0
+pip-tools==6.0.1
 psycopg2==2.8.6
 pytest-django==4.1.0
 pytest-mock==3.5.1
