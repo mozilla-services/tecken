@@ -203,9 +203,9 @@ falcon==2.0.0 \
     --hash=sha256:eea593cf466b9c126ce667f6d30503624ef24459f118c75594a69353b6c3d5fc \
     --hash=sha256:f93351459f110b4c1ee28556aef9a791832df6f910bea7b3f616109d534df06b
     # via -r requirements.in
-flake8==3.9.1 \
-    --hash=sha256:1aa8990be1e689d96c745c5682b687ea49f2e05a443aff1f8251092b0014e378 \
-    --hash=sha256:3b9f848952dddccf635be78098ca75010f073bfe14d2c6bda867154bea728d2a
+flake8==3.9.2 \
+    --hash=sha256:07528381786f2a6237b061f6e96610a4167b226cb926e2aa2b6b1d78057c576b \
+    --hash=sha256:bf8fd333346d844f616e8d47905ef3a3384edae6b4e9beb0c5101e25e3110907
     # via -r requirements.in
 gunicorn==20.1.0 \
     --hash=sha256:e0a968b5ba15f8a328fdfd7ab1fcb5af4470c28aaf7e55df02a99bc13138e6e8
