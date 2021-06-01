@@ -438,6 +438,32 @@ class TestSymbolicateBase:
 class TestSymbolicateV4:
     PATH = "/symbolicate/v4"
 
+    def test_cors(self, client):
+        result = client.simulate_options(
+            self.PATH,
+            headers={
+                "Origin": "example.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        assert result.status_code == 200
+        assert result.headers["Access-Control-Allow-Origin"] == "*"
+        expected_headers = [
+            "accept",
+            "accept-encoding",
+            "authorization",
+            "content-type",
+            "dnt",
+            "origin",
+            "user-agent",
+            "x-csrftoken",
+            "x-requested-with",
+        ]
+        assert result.headers["Access-Control-Expose-Headers"] == ", ".join(
+            expected_headers
+        )
+        assert result.headers["Access-Control-Allow-Methods"] == "POST"
+
     def test_bad_request(self, client):
         # Wrong HTTP method
         result = client.simulate_get(self.PATH)
@@ -533,6 +559,32 @@ class TestSymbolicateV4:
 
 class TestSymbolicateV5:
     PATH = "/symbolicate/v5"
+
+    def test_cors(self, client):
+        result = client.simulate_options(
+            self.PATH,
+            headers={
+                "Origin": "example.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        assert result.status_code == 200
+        assert result.headers["Access-Control-Allow-Origin"] == "*"
+        expected_headers = [
+            "accept",
+            "accept-encoding",
+            "authorization",
+            "content-type",
+            "dnt",
+            "origin",
+            "user-agent",
+            "x-csrftoken",
+            "x-requested-with",
+        ]
+        assert result.headers["Access-Control-Expose-Headers"] == ", ".join(
+            expected_headers
+        )
+        assert result.headers["Access-Control-Allow-Methods"] == "POST"
 
     def test_bad_request(self, client):
         # Wrong HTTP method

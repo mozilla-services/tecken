@@ -41,6 +41,10 @@ def request_stack(url, payload, api_version, is_debug):
     if is_debug:
         headers["Debug"] = "true"
 
+    # NOTE(willkg): this triggers the Allow-Control-* CORS headers, but maybe we want to
+    # make the origin specifiable via the command line arguments
+    headers["Origin"] = "http://example.com"
+
     resp = requests.post(url, headers=headers, json=payload, **options)
     if is_debug:
         click.echo(click.style(f"Response: {resp.status_code} {resp.reason}"))

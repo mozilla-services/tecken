@@ -88,7 +88,7 @@ class EliotTestClient(TestClient):
     def get_resource_by_name(self, name):
         """Retrieves the Falcon API resource by name"""
         # NOTE(willkg): The "app" here is a middleware which should have an .application
-        # attribute which is the actual EliotAPI that we want.
+        # attribute which is the actual EliotApp that we want.
         return self.app.application.get_resource_by_name(name)
 
 
