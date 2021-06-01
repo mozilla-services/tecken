@@ -136,7 +136,7 @@ class AppConfig(RequiredConfigMixin):
             self.config(key)
 
 
-class EliotAPI(falcon.API):
+class EliotAPI(falcon.App):
     """Falcon API for Eliot."""
 
     def __init__(self, config):
