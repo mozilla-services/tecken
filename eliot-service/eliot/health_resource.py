@@ -35,10 +35,8 @@ class VersionResource:
     def on_get(self, req, resp):
         """Implement GET HTTP request."""
         METRICS.incr("version.count")
-        version_info = json.dumps(get_version(self.basedir) or {})
-        resp.content_type = "application/json; charset=utf-8"
         resp.status = falcon.HTTP_200
-        resp.body = version_info
+        resp.text = json.dumps(get_version(self.basedir) or {})
 
 
 class LBHeartbeatResource:

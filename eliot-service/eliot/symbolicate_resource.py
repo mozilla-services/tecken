@@ -455,7 +455,7 @@ class SymbolicateV4(SymbolicateBase):
             payload = json.load(req.bounded_stream)
         except json.JSONDecodeError:
             METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
-            raise falcon.HTTPBadRequest("Payload is not valid JSON")
+            raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
 
         stacks = payload.get("stacks", [])
         modules = payload.get("memoryMap", [])
@@ -469,7 +469,7 @@ class SymbolicateV4(SymbolicateBase):
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
-            raise falcon.HTTPBadRequest(f"job has invalid modules: {exc}")
+            raise falcon.HTTPBadRequest(title=f"job has invalid modules: {exc}")
 
         try:
             validate_stacks(stacks, modules)
@@ -480,7 +480,7 @@ class SymbolicateV4(SymbolicateBase):
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
-            raise falcon.HTTPBadRequest(f"job has invalid stacks: {exc}")
+            raise falcon.HTTPBadRequest(title=f"job has invalid stacks: {exc}")
 
         METRICS.histogram(
             "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v4"]
@@ -513,7 +513,7 @@ class SymbolicateV4(SymbolicateBase):
             "symbolicatedStacks": symbolicated_stacks,
             "knownModules": known_modules,
         }
-        resp.body = json.dumps(results)
+        resp.text = json.dumps(results)
 
 
 class SymbolicateV5(SymbolicateBase):
@@ -523,7 +523,7 @@ class SymbolicateV5(SymbolicateBase):
             payload = json.load(req.bounded_stream)
         except json.JSONDecodeError:
             METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
-            raise falcon.HTTPBadRequest("Payload is not valid JSON")
+            raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
 
         if "jobs" in payload:
             jobs = payload["jobs"]
@@ -535,7 +535,7 @@ class SymbolicateV5(SymbolicateBase):
                 "eliot.symbolicate.request_error", tags=["reason:too_many_jobs"]
             )
             raise falcon.HTTPBadRequest(
-                f"please limit number of jobs in a single request to <= {MAX_JOBS}"
+                title=f"please limit number of jobs in a single request to <= {MAX_JOBS}"
             )
 
         METRICS.histogram(
@@ -557,7 +557,7 @@ class SymbolicateV5(SymbolicateBase):
                 # NOTE(willkg): the str of an exception is the message; we need to
                 # control the message carefully so we're not spitting unsanitized data
                 # back to the user in the error
-                raise falcon.HTTPBadRequest(f"job {i} has invalid modules: {exc}")
+                raise falcon.HTTPBadRequest(title=f"job {i} has invalid modules: {exc}")
 
             try:
                 validate_stacks(stacks, modules)
@@ -568,7 +568,7 @@ class SymbolicateV5(SymbolicateBase):
                 # NOTE(willkg): the str of an exception is the message; we need to
                 # control the message carefully so we're not spitting unsanitized data
                 # back to the user in the error
-                raise falcon.HTTPBadRequest(f"job {i} has invalid stacks: {exc}")
+                raise falcon.HTTPBadRequest(title=f"job {i} has invalid stacks: {exc}")
 
             METRICS.histogram(
                 "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v5"]
@@ -576,4 +576,4 @@ class SymbolicateV5(SymbolicateBase):
 
             results.append(self.symbolicate(stacks, modules))
 
-        resp.body = json.dumps({"results": results})
+        resp.text = json.dumps({"results": results})
