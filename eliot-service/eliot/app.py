@@ -3,7 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 """
-Holds the EliotAPI code. EliotAPI is a WSGI app implemented using Falcon.
+Holds the EliotApp code. EliotApp is a WSGI app implemented using Falcon.
 """
 
 import logging
@@ -136,11 +136,26 @@ class AppConfig(RequiredConfigMixin):
             self.config(key)
 
 
-class EliotAPI(falcon.App):
-    """Falcon API for Eliot."""
+class EliotApp(falcon.App):
+    """Falcon App for Eliot."""
 
     def __init__(self, config):
-        super().__init__()
+        cors_middleware = falcon.CORSMiddleware(
+            allow_origins="*",
+            expose_headers=[
+                "accept",
+                "accept-encoding",
+                "authorization",
+                "content-type",
+                "dnt",
+                "origin",
+                "user-agent",
+                "x-csrftoken",
+                "x-requested-with",
+            ],
+        )
+
+        super().__init__(middleware=cors_middleware)
         self.config = config
         self._all_resources = {}
 
@@ -216,11 +231,11 @@ class EliotAPI(falcon.App):
 
 
 def get_app(config_manager=None):
-    """Build and return EliotAPI instance.
+    """Build and return EliotApp instance.
 
     :arg config_manager: Everet ConfigManager to use; if None, it will build one
 
-    :returns: EliotAPI instance
+    :returns: EliotApp instance
 
     """
     if config_manager is None:
@@ -230,7 +245,7 @@ def get_app(config_manager=None):
     app_config.verify_configuration()
 
     # Build the app
-    app = EliotAPI(app_config)
+    app = EliotApp(app_config)
 
     # Set the app up and verify setup
     app.setup()
