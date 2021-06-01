@@ -163,9 +163,9 @@ django-redis==4.12.1 \
     --hash=sha256:1133b26b75baa3664164c3f44b9d5d133d1b8de45d94d79f38d1adc5b1d502e5 \
     --hash=sha256:306589c7021e6468b2656edc89f62b8ba67e8d5a1c8877e2688042263daa7a63
     # via -r requirements.in
-django==2.2.22 \
-    --hash=sha256:db2214db1c99017cbd971e58824e6f424375154fe358afc30e976f5b99fc6060 \
-    --hash=sha256:e831105edb153af1324de44d06091ca75520a227456387dda4a47d2f1cc2731a
+django==2.2.23 \
+    --hash=sha256:12cfc045a4ccb2348719aaaa77b17e66a26bff9fc238b4c765a3e825ef92e414 \
+    --hash=sha256:2710bff9dd480cf886e38947ee00aea3d6b9b04b77a748e352e3ce447b0fe17f
     # via
     #   -r requirements.in
     #   django-redis
