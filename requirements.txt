@@ -45,9 +45,9 @@ botocore==1.18.18 \
     #   -r requirements.in
     #   boto3
     #   s3transfer
-celery==5.0.5 \
-    --hash=sha256:5e8d364e058554e83bbb116e8377d90c79be254785f357cb2cec026e79febe13 \
-    --hash=sha256:f4efebe6f8629b0da2b8e529424de376494f5b7a743c321c8a2ddc2b1414921c
+celery==5.1.2 \
+    --hash=sha256:8d9a3de9162965e97f8e8cc584c67aad83b3f7a267584fa47701ed11c3e0d4b0 \
+    --hash=sha256:9dab2170b4038f7bf10ef2861dbf486ddf1d20592290a1040f7b7a1259705d42
     # via -r requirements.in
 certifi==2020.12.5 \
     --hash=sha256:1a4995114262bffbc2413b159f2a1a480c969de6e6eb13ee966d470af86af59c \
@@ -260,9 +260,9 @@ jsonschema==3.2.0 \
     --hash=sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163 \
     --hash=sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a
     # via -r requirements.in
-kombu==5.0.2 \
-    --hash=sha256:6dc509178ac4269b0e66ab4881f70a2035c33d3a622e20585f965986a5182006 \
-    --hash=sha256:f4965fba0a4718d47d470beeb5d6446e3357a62402b16c510b6a2f251e05ac3c
+kombu==5.1.0 \
+    --hash=sha256:01481d99f4606f6939cdc9b637264ed353ee9e3e4f62cfb582324142c41a572d \
+    --hash=sha256:e2dedd8a86c9077c350555153825a31e456a0dc20c15d5751f00137ec9c75f0a
     # via celery
 markupsafe==1.1.1 \
     --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
@@ -656,6 +656,7 @@ vine==5.0.0 \
     # via
     #   amqp
     #   celery
+    #   kombu
 wcwidth==0.2.5 \
     --hash=sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784 \
     --hash=sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83
