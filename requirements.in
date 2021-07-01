@@ -8,7 +8,7 @@ datadog==0.41.0
 dj-database-url==0.5.0
 django-cache-memoize==0.1.8
 django-configurations==2.2
-django-redis==4.12.1
+django-redis==5.0.0
 dockerflow==2020.10.0
 encore==0.7.0
 everett==1.0.3
