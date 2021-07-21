@@ -27,7 +27,7 @@ import sys
 import traceback
 
 import click
-from everett.component import ConfigOptions, RequiredConfigMixin
+from everett.manager import get_config_for_class, Option
 import inotify_simple
 from inotify_simple import flags
 
@@ -57,7 +57,7 @@ def handle_exception(exctype, value, tb):
 sys.excepthook = handle_exception
 
 
-class AppConfig(RequiredConfigMixin):
+class AppConfig:
     """Application-level config.
 
     Defines configuration needed for Eliot disk cache manager and convenience methods
@@ -65,63 +65,51 @@ class AppConfig(RequiredConfigMixin):
 
     """
 
-    required_config = ConfigOptions()
-    required_config.add_option(
-        "local_dev_env",
-        default="False",
-        parser=bool,
-        doc="Whether or not this is a local development environment.",
-        alternate_keys=["root:local_dev_env"],
-    )
-    required_config.add_option(
-        "host_id",
-        default="",
-        doc=(
-            "Identifier for the host that is running Eliot. This identifies "
-            "this Eliot instance in the logs and makes it easier to correlate "
-            "Eliot logs with other data. For example, the value could be a "
-            "public hostname, an instance id, or something like that. If you do not "
-            "set this, then socket.gethostname() is used instead."
-        ),
-        alternate_keys=["root:host_id"],
-    )
-    required_config.add_option(
-        "logging_level",
-        default="INFO",
-        doc="The logging level to use. DEBUG, INFO, WARNING, ERROR or CRITICAL",
-    )
-    required_config.add_option(
-        "statsd_host", default="localhost", doc="Hostname for statsd server."
-    )
-    required_config.add_option(
-        "statsd_port", default="8124", doc="Port for statsd server.", parser=int
-    )
-    required_config.add_option(
-        "statsd_namespace", default="", doc="Namespace for statsd metrics."
-    )
-    required_config.add_option(
-        "secret_sentry_dsn",
-        default="",
-        doc=(
-            "Sentry DSN to use. If this is not set an unhandled exception logging "
-            "middleware will be used instead.\n\n"
-            "See https://docs.sentry.io/quickstart/#configure-the-dsn for details."
-        ),
-    )
-    required_config.add_option(
-        "symbols_cache_dir",
-        default="/tmp/cache",
-        doc="Location for caching symcache files.",
-    )
-    required_config.add_option(
-        "symbols_cache_max_size",
-        default=str(1024 * 1024 * 1024),
-        parser=int,
-        doc=(
-            "Max size (bytes) of symbols cache. You can use _ to group digits for "
-            "legibility."
-        ),
-    )
+    class Config:
+        local_dev_env = Option(
+            default="False",
+            parser=bool,
+            doc="Whether or not this is a local development environment.",
+            alternate_keys=["root:local_dev_env"],
+        )
+        host_id = Option(
+            default="",
+            doc=(
+                "Identifier for the host that is running Eliot. This identifies "
+                "this Eliot instance in the logs and makes it easier to correlate "
+                "Eliot logs with other data. For example, the value could be a "
+                "public hostname, an instance id, or something like that. If you do not "
+                "set this, then socket.gethostname() is used instead."
+            ),
+            alternate_keys=["root:host_id"],
+        )
+        logging_level = Option(
+            default="INFO",
+            doc="The logging level to use. DEBUG, INFO, WARNING, ERROR or CRITICAL",
+        )
+        statsd_host = Option(default="localhost", doc="Hostname for statsd server.")
+        statsd_port = Option(default="8124", doc="Port for statsd server.", parser=int)
+        statsd_namespace = Option(default="", doc="Namespace for statsd metrics.")
+        secret_sentry_dsn = Option(
+            default="",
+            doc=(
+                "Sentry DSN to use. If this is not set an unhandled exception logging "
+                "middleware will be used instead.\n\n"
+                "See https://docs.sentry.io/quickstart/#configure-the-dsn for details."
+            ),
+        )
+        symbols_cache_dir = Option(
+            default="/tmp/cache",
+            doc="Location for caching symcache files.",
+        )
+        symbols_cache_max_size = Option(
+            default=str(1024 * 1024 * 1024),
+            parser=int,
+            doc=(
+                "Max size (bytes) of symbols cache. You can use _ to group digits for "
+                "legibility."
+            ),
+        )
 
     def __init__(self, config_manager):
         self.config_manager = config_manager
@@ -137,7 +125,7 @@ class AppConfig(RequiredConfigMixin):
         This will raise a configuration error if something isn't right.
 
         """
-        for key, opt in self.required_config.options.items():
+        for key, val in get_config_for_class(self.__class__).items():
             self.config(key)
 
 
@@ -155,8 +143,18 @@ class DiskCacheManager:
         self._generator = None
 
     def setup(self):
-        setup_logging(self.config, processname="cache_manager")
-        setup_metrics(self.config)
+        setup_logging(
+            logging_level=self.config("logging_level"),
+            debug=self.config("local_dev_env"),
+            host_id=self.config("host_id"),
+            processname="cache_manager",
+        )
+        setup_metrics(
+            statsd_host=self.config("statsd_host"),
+            statsd_port=self.config("statsd_port"),
+            statsd_namespace=self.config("statsd_namespace"),
+            debug=self.config("local_dev_env"),
+        )
 
         set_sentry_client(self.config("secret_sentry_dsn"), str(REPOROOT_DIR))
         setup_sentry_logging()
@@ -373,8 +371,7 @@ def get_cache_manager(config_manager=None):
     app_config = AppConfig(config_manager)
     app_config.verify_configuration()
 
-    manager = DiskCacheManager(app_config)
-    return manager
+    return DiskCacheManager(app_config)
 
 
 @click.command(help="See https://tecken.readthedocs.io/en/latest/symbolication.html")

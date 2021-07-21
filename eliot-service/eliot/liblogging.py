@@ -10,18 +10,29 @@ import logging
 import logging.config
 import socket
 
+from everett.manager import get_runtime_config, generate_uppercase_key
+
 
 _IS_LOGGING_SETUP = False
 
 
-def setup_logging(app_config, processname):
-    """Initialize Python logging configuration."""
+def setup_logging(logging_level, debug=False, host_id=None, processname=None):
+    """Initialize Python logging configuration.
+
+    Note: This only sets up logging once per process. Additional calls will get ignored.
+
+    :arg logging_level: the level to log at
+    :arg debug: whether or not to log to the console in an easier-to-read fashion
+    :arg host_id: the host id to log
+    :arg processname: the process name to log
+
+    """
     global _IS_LOGGING_SETUP
     if _IS_LOGGING_SETUP:
-        # NOTE(willkg): This makes it so that logging is only set up once per process.
         return
 
-    host_id = app_config("host_id") or socket.gethostname()
+    host_id = host_id or socket.gethostname()
+    processname = processname or "main"
 
     class AddHostID(logging.Filter):
         def filter(self, record):
@@ -65,15 +76,15 @@ def setup_logging(app_config, processname):
         },
         "loggers": {
             "eliot": {
-                "level": app_config("logging_level"),
+                "level": logging_level,
             }
         },
         "root": {"handlers": ["mozlog"], "level": "WARNING"},
     }
 
-    if app_config("local_dev_env"):
-        # In a local development environment, we log to the console in a human-readable
-        # fashion and add a markus logger
+    if debug:
+        # In debug mode (only the local development environment), we log to the console
+        # in a human-readable fashion and add a markus logger
         dc["loggers"]["markus"] = {"level": "INFO"}
         dc["root"]["handlers"] = ["console"]
 
@@ -82,17 +93,19 @@ def setup_logging(app_config, processname):
 
 
 def log_config(logger, component):
-    """Log configuration for a given component."""
-    for ns, key, val, opt in component.get_runtime_config():
-        if ns:
-            namespaced_key = "%s_%s" % ("_".join(ns), key)
-        else:
-            namespaced_key = key
+    """Log configuration for a given component.
 
-        namespaced_key = namespaced_key.upper()
+    :arg logger: a Python logging logger
+    :arg component: the component with a Config property to log the configuration of
 
-        if "secret" in opt.key.lower() and val:
-            msg = "%s=*****" % namespaced_key
-        else:
-            msg = "%s=%s" % (namespaced_key, val)
-        logger.info(msg)
+    """
+    for ns, key, value, option in get_runtime_config(component.config, component):
+        # This gets rid of NO_VALUE
+        value = value or ""
+
+        # "secret" is an indicator that the value is secret and shouldn't get logged
+        if "secret" in key.lower() and value:
+            value = "*****"
+
+        full_key = generate_uppercase_key(key, ns).upper()
+        logger.info(f"{full_key}={value}")

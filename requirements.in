@@ -11,7 +11,7 @@ django-configurations==2.2
 django-redis==5.0.0
 dockerflow==2020.10.0
 encore==0.7.0
-everett==1.0.3
+everett==2.0.0
 falcon==3.0.1
 flake8==3.9.2
 gunicorn==20.1.0
