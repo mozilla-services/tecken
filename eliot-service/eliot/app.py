@@ -10,8 +10,13 @@ import logging
 import logging.config
 from pathlib import Path
 
-from everett.manager import ConfigManager, ConfigOSEnv, ListOf
-from everett.component import ConfigOptions, RequiredConfigMixin
+from everett.manager import (
+    ConfigManager,
+    ConfigOSEnv,
+    get_config_for_class,
+    ListOf,
+    Option,
+)
 import falcon
 
 from eliot.cache import DiskCache
@@ -56,67 +61,55 @@ def build_config_manager():
     return config.with_namespace("eliot")
 
 
-class AppConfig(RequiredConfigMixin):
+class AppConfig:
     """Application-level config.
 
     Defines configuration needed for Eliot and convenience methods for accessing it.
 
     """
 
-    required_config = ConfigOptions()
-    required_config.add_option(
-        "local_dev_env",
-        default="False",
-        parser=bool,
-        doc="Whether or not this is a local development environment.",
-        alternate_keys=["root:local_dev_env"],
-    )
-    required_config.add_option(
-        "host_id",
-        default="",
-        doc=(
-            "Identifier for the host that is running Eliot. This identifies "
-            "this Eliot instance in the logs and makes it easier to correlate "
-            "Eliot logs with other data. For example, the value could be a "
-            "public hostname, an instance id, or something like that. If you do not "
-            "set this, then socket.gethostname() is used instead."
-        ),
-        alternate_keys=["root:host_id"],
-    )
-    required_config.add_option(
-        "logging_level",
-        default="INFO",
-        doc="The logging level to use. DEBUG, INFO, WARNING, ERROR or CRITICAL",
-    )
-    required_config.add_option(
-        "statsd_host", default="localhost", doc="Hostname for statsd server."
-    )
-    required_config.add_option(
-        "statsd_port", default="8124", doc="Port for statsd server.", parser=int
-    )
-    required_config.add_option(
-        "statsd_namespace", default="", doc="Namespace for statsd metrics."
-    )
-    required_config.add_option(
-        "secret_sentry_dsn",
-        default="",
-        doc=(
-            "Sentry DSN to use. If this is not set an unhandled exception logging "
-            "middleware will be used instead. "
-            "See https://docs.sentry.io/quickstart/#configure-the-dsn for details."
-        ),
-    )
-    required_config.add_option(
-        "symbols_cache_dir",
-        default="/tmp/cache",
-        doc="Location for caching symcache files.",
-    )
-    required_config.add_option(
-        "symbols_urls",
-        default="https://symbols.mozilla.org/try/",
-        doc="Comma-separated list of urls to pull symbols files from.",
-        parser=ListOf(str),
-    )
+    class Config:
+        local_dev_env = Option(
+            default="False",
+            parser=bool,
+            doc="Whether or not this is a local development environment.",
+            alternate_keys=["root:local_dev_env"],
+        )
+        host_id = Option(
+            default="",
+            doc=(
+                "Identifier for the host that is running Eliot. This identifies "
+                "this Eliot instance in the logs and makes it easier to correlate "
+                "Eliot logs with other data. For example, the value could be a "
+                "public hostname, an instance id, or something like that. If you do not "
+                "set this, then socket.gethostname() is used instead."
+            ),
+            alternate_keys=["root:host_id"],
+        )
+        logging_level = Option(
+            default="INFO",
+            doc="The logging level to use. DEBUG, INFO, WARNING, ERROR or CRITICAL",
+        )
+        statsd_host = Option(default="localhost", doc="Hostname for statsd server.")
+        statsd_port = Option(default="8124", doc="Port for statsd server.", parser=int)
+        statsd_namespace = Option(default="", doc="Namespace for statsd metrics.")
+        secret_sentry_dsn = Option(
+            default="",
+            doc=(
+                "Sentry DSN to use. If this is not set an unhandled exception logging "
+                "middleware will be used instead. "
+                "See https://docs.sentry.io/quickstart/#configure-the-dsn for details."
+            ),
+        )
+        symbols_cache_dir = Option(
+            default="/tmp/cache",
+            doc="Location for caching symcache files.",
+        )
+        symbols_urls = Option(
+            default="https://symbols.mozilla.org/try/",
+            doc="Comma-separated list of urls to pull symbols files from.",
+            parser=ListOf(str),
+        )
 
     def __init__(self, config_manager):
         self.config_manager = config_manager
@@ -132,7 +125,7 @@ class AppConfig(RequiredConfigMixin):
         This will raise a configuration error if something isn't right.
 
         """
-        for key, opt in self.required_config.options.items():
+        for key, val in get_config_for_class(self.__class__).items():
             self.config(key)
 
 
@@ -162,7 +155,12 @@ class EliotApp(falcon.App):
     def setup(self):
         # Set up logging and sentry first, so we have something to log to. Then
         # build and log everything else.
-        setup_logging(self.config, processname="webapp")
+        setup_logging(
+            logging_level=self.config("logging_level"),
+            debug=self.config("local_dev_env"),
+            host_id=self.config("host_id"),
+            processname="webapp",
+        )
         LOGGER.info("Repository root: %s", REPOROOT_DIR)
         set_sentry_client(self.config("secret_sentry_dsn"), REPOROOT_DIR)
 
@@ -171,7 +169,12 @@ class EliotApp(falcon.App):
 
         # Set up Sentry exception logger if we're so configured
         setup_sentry_logging()
-        setup_metrics(self.config, LOGGER)
+        setup_metrics(
+            statsd_host=self.config("statsd_host"),
+            statsd_port=self.config("statsd_port"),
+            statsd_namespace=self.config("statsd_namespace"),
+            debug=self.config("local_dev_env"),
+        )
 
         # Set up cachedir and tmpdir
         cachedir = Path(self.config("symbols_cache_dir")).resolve()
@@ -244,10 +247,8 @@ def get_app(config_manager=None):
     app_config = AppConfig(config_manager)
     app_config.verify_configuration()
 
-    # Build the app
+    # Create the app and verify configuration
     app = EliotApp(app_config)
-
-    # Set the app up and verify setup
     app.setup()
     app.verify()
 

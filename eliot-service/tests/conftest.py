@@ -36,9 +36,9 @@ def pytest_collection_finish(session):
     # After pytest test collection has finished, make sure we set up logging and metrics
     # to sensible default values.
     setup_logging(
-        ConfigManager.from_dict(
-            {"HOST_ID": "testnode", "LOGGING_LEVEL": "DEBUG", "LOCAL_DEV_ENV": "True"}
-        ),
+        logging_level="DEBUG",
+        debug=True,
+        host_id="testcode",
         processname="tests",
     )
     markus.configure([{"class": "markus.backends.logging.LoggingMetrics"}])

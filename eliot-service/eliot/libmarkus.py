@@ -158,8 +158,15 @@ ELIOT_METRICS = {
 }
 
 
-def setup_metrics(app_config, logger=None):
-    """Initialize and configures the metrics system."""
+def setup_metrics(statsd_host, statsd_port, statsd_namespace, debug=False):
+    """Initialize and configures the metrics system.
+
+    :arg statsd_host: the statsd host to send metrics to
+    :arg statsd_port: the port on the host to send metrics to
+    :arg statsd_namespace: the namespace (if any) for these metrics
+    :arg debug: whether or not to additionally log metrics to the logger
+
+    """
     global _IS_MARKUS_SETUP, METRICS
     if _IS_MARKUS_SETUP:
         return
@@ -168,13 +175,13 @@ def setup_metrics(app_config, logger=None):
         {
             "class": "markus.backends.datadog.DatadogMetrics",
             "options": {
-                "statsd_host": app_config("statsd_host"),
-                "statsd_port": app_config("statsd_port"),
-                "statsd_namespace": app_config("statsd_namespace"),
+                "statsd_host": statsd_host,
+                "statsd_port": statsd_port,
+                "statsd_namespace": statsd_namespace,
             },
         }
     ]
-    if app_config("local_dev_env"):
+    if debug:
         markus_backends.append(
             {
                 "class": "markus.backends.logging.LoggingMetrics",
@@ -186,7 +193,7 @@ def setup_metrics(app_config, logger=None):
         )
     markus.configure(markus_backends)
 
-    if app_config("local_dev_env"):
+    if debug:
         # In local dev environment, we want the RegisteredMetricsFilter to
         # raise exceptions when metrics are used incorrectly.
         metrics_filter = RegisteredMetricsFilter(metrics=ELIOT_METRICS)
