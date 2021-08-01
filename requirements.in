@@ -30,7 +30,7 @@ pytest==6.2.2
 python-dateutil==2.8.1
 raven==6.10.0
 requests-mock==1.9.3
-requests==2.25.1
+requests==2.26.0
 sphinx-rtd-theme==0.5.2
 sphinxcontrib-httpdomain==1.7.0
 symbolic==8.3.0
