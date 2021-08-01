@@ -166,9 +166,9 @@ django==2.2.24 \
     #   -r requirements.in
     #   django-redis
     #   mozilla-django-oidc
-django-cache-memoize==0.1.8 \
-    --hash=sha256:81b00714b50917431ce12a4544e0630a70c86fed27755a82186efc2945b8f8b3 \
-    --hash=sha256:f85ca71ddfe3d61d561d5a382736f83148fb75e542585e7028b65d6d3681ec85
+django-cache-memoize==0.1.10 \
+    --hash=sha256:63e8faa245a41c0dbad843807e9f21a6e59eba8e6e50df310fdf6485a6749843 \
+    --hash=sha256:676299313079cde9242ae84db0160e80b1d44e8dd6bc9b1f4f1247e11b30c9e0
     # via -r requirements.in
 django-configurations==2.2 \
     --hash=sha256:0b93cb7042739e2d69cfc6fb81676bbd3cbb63ea19b02e8b681f4cad3a8aaf1b \
