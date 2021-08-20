@@ -51,6 +51,7 @@ extensions = [
     "sphinxcontrib.httpdomain",
     "everett.sphinxext",
     "exts.eliot_metrics",
+    "exts.adr_log",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -162,7 +163,9 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ['_static']
-html_static_path = []
+html_static_path = ["_static"]
+
+html_css_files = ["css/custom.css"]
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
