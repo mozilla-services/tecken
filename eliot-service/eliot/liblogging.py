@@ -92,14 +92,15 @@ def setup_logging(logging_level, debug=False, host_id=None, processname=None):
     _IS_LOGGING_SETUP = True
 
 
-def log_config(logger, component):
+def log_config(logger, config_manager, component):
     """Log configuration for a given component.
 
     :arg logger: a Python logging logger
+    :arg config_manager: an Everett ConfigManager instance
     :arg component: the component with a Config property to log the configuration of
 
     """
-    for ns, key, value, option in get_runtime_config(component.config, component):
+    for ns, key, value, option in get_runtime_config(config_manager, component):
         # This gets rid of NO_VALUE
         value = value or ""
 

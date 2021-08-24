@@ -352,7 +352,7 @@ Eliot configuration
 Webapp
 ------
 
-The Eliot webapp is run as worker processes by Gunicorn which is run by Circus.
+The Eliot webapp is run as worker processes by Gunicorn which is run by Honcho.
 
 Gunicorn configuration:
 
@@ -387,7 +387,7 @@ Gunicorn configuration:
 
 Webapp configuration:
 
-.. autocomponent:: eliot.app.AppConfig
+.. autocomponent:: eliot.app.EliotApp
    :hide-classname:
    :namespace: eliot
    :case: upper
@@ -396,9 +396,9 @@ Webapp configuration:
 Disk cache manager
 ------------------
 
-The Eliot disk cache manager is run as a single process by Circus.
+The Eliot disk cache manager is run as a single process by Honcho.
 
-.. autocomponent:: eliot.cache_manager.AppConfig
+.. autocomponent:: eliot.cache_manager.DiskCacheManager
    :hide-classname:
    :namespace: eliot
    :case: upper

@@ -191,9 +191,9 @@ docutils==0.16 \
 encore==0.7.0 \
     --hash=sha256:da358decda1f0b22519c76a8aa7a25351359b2a09f768400fc87dacc8756eda6
     # via -r requirements.in
-everett==2.0.0 \
-    --hash=sha256:83f319300c950e5935a2399fab2f5ac07eb6b8421cafae7974d1884306b5b3e4 \
-    --hash=sha256:f4463e036f6e10ae2069a90cdcd77ab8ad5ac9242984e005dafdf146e8369b9e
+everett==2.0.1 \
+    --hash=sha256:2a08c4401ddd707f3161927e11a817cdaebabd71447f6a962612ec74b91e3898 \
+    --hash=sha256:f79bc7abc1a9f5b0db54dbfee3408eb0b3afd9f8040a4e77cc824e0347a6034d
     # via -r requirements.in
 falcon==3.0.1 \
     --hash=sha256:0212df91414c13c08a9cf4023488b2d47956712f712332f420bb0c7bdf39c6fa \
