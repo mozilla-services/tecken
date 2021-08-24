@@ -61,12 +61,8 @@ def build_config_manager():
     return config.with_namespace("eliot")
 
 
-class AppConfig:
-    """Application-level config.
-
-    Defines configuration needed for Eliot and convenience methods for accessing it.
-
-    """
+class EliotApp(falcon.App):
+    """Falcon App for Eliot."""
 
     class Config:
         local_dev_env = Option(
@@ -112,27 +108,6 @@ class AppConfig:
         )
 
     def __init__(self, config_manager):
-        self.config_manager = config_manager
-        self.config = config_manager.with_options(self)
-
-    def __call__(self, key):
-        """Return configuration for given key."""
-        return self.config(key)
-
-    def verify_configuration(self):
-        """Verify configuration by accessing each item
-
-        This will raise a configuration error if something isn't right.
-
-        """
-        for key, val in get_config_for_class(self.__class__).items():
-            self.config(key)
-
-
-class EliotApp(falcon.App):
-    """Falcon App for Eliot."""
-
-    def __init__(self, config):
         cors_middleware = falcon.CORSMiddleware(
             allow_origins="*",
             expose_headers=[
@@ -149,7 +124,8 @@ class EliotApp(falcon.App):
         )
 
         super().__init__(middleware=cors_middleware)
-        self.config = config
+        self.config_manager = config_manager
+        self.config = config_manager.with_options(self)
         self._all_resources = {}
 
     def setup(self):
@@ -164,11 +140,13 @@ class EliotApp(falcon.App):
         LOGGER.info("Repository root: %s", REPOROOT_DIR)
         set_sentry_client(self.config("secret_sentry_dsn"), REPOROOT_DIR)
 
-        # Log application configuration
-        log_config(LOGGER, self.config)
-
         # Set up Sentry exception logger if we're so configured
         setup_sentry_logging()
+
+        # Log application configuration
+        log_config(LOGGER, self.config_manager, self)
+
+        # Set up metrics
         setup_metrics(
             statsd_host=self.config("statsd_host"),
             statsd_port=self.config("statsd_port"),
@@ -232,6 +210,15 @@ class EliotApp(falcon.App):
     def verify(self):
         """Verify that Eliot is ready to start."""
 
+    def verify_configuration(self):
+        """Verify configuration by accessing each item
+
+        This will raise a configuration error if something isn't right.
+
+        """
+        for key, val in get_config_for_class(self.__class__).items():
+            self.config(key)
+
 
 def get_app(config_manager=None):
     """Build and return EliotApp instance.
@@ -244,18 +231,16 @@ def get_app(config_manager=None):
     if config_manager is None:
         config_manager = build_config_manager()
 
-    app_config = AppConfig(config_manager)
-    app_config.verify_configuration()
-
     # Create the app and verify configuration
-    app = EliotApp(app_config)
+    app = EliotApp(config_manager)
+    app.verify_configuration()
     app.setup()
     app.verify()
 
     # Wrap the app in some kind of unhandled exception notification mechanism
-    app = wsgi_capture_exceptions(app)
+    wsgi_app = wsgi_capture_exceptions(app)
 
-    if app_config("local_dev_env"):
+    if app.config("local_dev_env"):
         LOGGER.info("Eliot is running! http://localhost:8050")
 
-    return app
+    return wsgi_app
