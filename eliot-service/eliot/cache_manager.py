@@ -57,14 +57,7 @@ def handle_exception(exctype, value, tb):
 sys.excepthook = handle_exception
 
 
-class AppConfig:
-    """Application-level config.
-
-    Defines configuration needed for Eliot disk cache manager and convenience methods
-    for accessing it.
-
-    """
-
+class DiskCacheManager:
     class Config:
         local_dev_env = Option(
             default="False",
@@ -115,23 +108,6 @@ class AppConfig:
         self.config_manager = config_manager
         self.config = config_manager.with_options(self)
 
-    def __call__(self, key):
-        """Return configuration for given key."""
-        return self.config(key)
-
-    def verify_configuration(self):
-        """Verify configuration by accessing each item
-
-        This will raise a configuration error if something isn't right.
-
-        """
-        for key, val in get_config_for_class(self.__class__).items():
-            self.config(key)
-
-
-class DiskCacheManager:
-    def __init__(self, config):
-        self.config = config
         # NOTE(willkg): This needs to mirror setup of cachedir in Eliot app
         self.cachedir = (
             pathlib.Path(self.config("symbols_cache_dir")).resolve() / "cache"
@@ -159,7 +135,7 @@ class DiskCacheManager:
         set_sentry_client(self.config("secret_sentry_dsn"), str(REPOROOT_DIR))
         setup_sentry_logging()
 
-        log_config(LOGGER, self.config)
+        log_config(LOGGER, self.config, self)
 
         # Create the cachedir if we need to
         self.cachedir.mkdir(parents=True, exist_ok=True)
@@ -171,6 +147,15 @@ class DiskCacheManager:
         self.inventory_existing()
 
         LOGGER.info(f"Found {len(self.lru)} files ({self.total_size:,d} bytes)")
+
+    def verify_configuration(self):
+        """Verify configuration by accessing each item
+
+        This will raise a configuration error if something isn't right.
+
+        """
+        for key, val in get_config_for_class(self.__class__).items():
+            self.config(key)
 
     def mark_access(self, path):
         """Mark a file access in the bookkeeping.
@@ -368,10 +353,7 @@ def get_cache_manager(config_manager=None):
     if config_manager is None:
         config_manager = build_config_manager()
 
-    app_config = AppConfig(config_manager)
-    app_config.verify_configuration()
-
-    return DiskCacheManager(app_config)
+    return DiskCacheManager(config_manager)
 
 
 @click.command(help="See https://tecken.readthedocs.io/en/latest/symbolication.html")
@@ -392,6 +374,7 @@ def main(print_config):
         log_config(ClickEchoLogger(), cache_manager.config)
         return
 
+    cache_manager.verify_configuration()
     cache_manager.setup()
     cache_manager.run_loop()
 
