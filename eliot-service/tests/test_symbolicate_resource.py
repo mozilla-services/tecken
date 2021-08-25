@@ -4,7 +4,6 @@
 
 from io import BytesIO
 from pathlib import Path
-import types
 
 import pytest
 
@@ -15,8 +14,6 @@ from eliot.symbolicate_resource import (
     InvalidStacks,
     ModuleInfo,
     SymbolicateBase,
-    bytes_split_generator,
-    get_module_filename,
     validate_modules,
     validate_stacks,
 )
@@ -245,10 +242,15 @@ class TestSymbolicateBase:
             assert symcache is None
             assert caplog.record_tuples == [
                 (
+                    "eliot.libsymbolic",
+                    40,
+                    f"error looking up debug id in SYM file: {debug_filename} {debug_id}",
+                ),
+                (
                     "eliot.symbolicate_resource",
                     40,
-                    f"Error looking up debug id in SYM file: {debug_filename} {debug_id}",
-                )
+                    f"sym file parse error: testproj '{debug_id}'",
+                ),
             ]
             mm.assert_incr(
                 "eliot.symbolicate.parse_sym_file.error",
@@ -741,50 +743,3 @@ class TestSymbolicateV5:
                 }
             ],
         }
-
-
-def test_bytes_split_generator():
-    symfile = (
-        "MODULE windows x86_64 0185139C8F04FFC94C4C44205044422E1 xul.pdb\n"
-        "INFO CODE_ID 60533C886EFD000 xul.dll\n"
-        "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd/etc\n"
-    )
-    symfile_bytes = symfile.encode("utf-8")
-    # This should return the same as splitlines()--the difference is that it's
-    # returning a generator
-    assert isinstance(bytes_split_generator(symfile_bytes, b"\n"), types.GeneratorType)
-    assert (
-        list(bytes_split_generator(symfile_bytes, b"\n")) == symfile_bytes.splitlines()
-    )
-
-
-def test_get_module_filename_no_info():
-    """No INFO line should return debug_filename"""
-    symfile = (
-        "MODULE Linux x86_64 D48F191186D67E69DF025AD71FB91E1F0 testproj\n"
-        "FILE 0 /home/willkg/projects/testproj/src/main.rs\n"
-        "FUNC 5380 44 0 testproj::main\n"
-    )
-    symfile_bytes = symfile.encode("utf-8")
-    assert get_module_filename(symfile_bytes, "testproj") == "testproj"
-
-
-def test_get_module_windows():
-    """Windows files should return PE filename"""
-    symfile = (
-        "MODULE windows x86_64 0185139C8F04FFC94C4C44205044422E1 xul.pdb\n"
-        "INFO CODE_ID 60533C886EFD000 xul.dll\n"
-        "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd//etc\n"
-    )
-    symfile_bytes = symfile.encode("utf-8")
-    assert get_module_filename(symfile_bytes, "nofilename.pdb") == "xul.dll"
-
-
-def test_get_module_no_pe_filename():
-    symfile = (
-        "MODULE Linux x86_64 6C0CFDB91476E3E45DCB01FABB49DDA90 libxul.so\n"
-        "INFO CODE_ID B9FD0C6C7614E4E35DCB01FABB49DDA913586357\n"
-        "FILE 0 /build/firefox-ifRHdl/firefox-87.0+build3/memory/volatile/etc\n"
-    )
-    symfile_bytes = symfile.encode("utf-8")
-    assert get_module_filename(symfile_bytes, "libxul.so") == "libxul.so"

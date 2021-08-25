@@ -24,19 +24,23 @@ Resource implementing the Symbolication v4 and v5 APIs.
 """
 
 from dataclasses import dataclass
-from io import BytesIO
 import json
 import logging
-import os
 import re
-import tempfile
 import typing
 
 import falcon
-import symbolic
 
 from eliot import downloader
 from eliot.libmarkus import METRICS
+from eliot.libsymbolic import (
+    BadDebugIDError,
+    bytes_to_symcache,
+    get_module_filename,
+    parse_sym_file,
+    ParseSymFileError,
+    symcache_to_bytes,
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -155,58 +159,6 @@ def validate_stacks(stacks, modules):
                 )
 
 
-def bytes_split_generator(item, sep):
-    """Takes a bytes or bytearray and returns a generator of parts split on sep
-
-    :arg item: bytes-like object
-    :arg sep: bytes-like object
-
-    :returns: generator splitting the item
-
-    """
-    index = 0
-    len_item = len(item)
-
-    while index <= len_item:
-        next_index = item.find(sep, index)
-        if next_index == -1:
-            break
-
-        yield item[index:next_index]
-        index = next_index + len(sep)
-
-
-def get_module_filename(sym_file, debug_filename):
-    """Returns the module filename
-
-    On Windows, this will be the pe_file in the INFO line:
-
-        INFO CODE_ID xxx pe_file
-
-    On other platforms, this is the debug_filename.
-
-    :arg bytes sym_file: the sym file as bytes
-    :arg str debug_filename: the debug filename
-
-    :returns: the module filename
-
-    """
-    # Iterate through the first few lines of the file until we hit FILE in which
-    # case there's no INFO for some reason or we hit the first INFO.
-    for line in bytes_split_generator(sym_file, b"\n"):
-        if line.startswith(b"INFO"):
-            parts = line.split(b" ")
-            if len(parts) == 4:
-                return parts[-1].decode("utf-8").strip()
-            else:
-                break
-
-        elif line.startswith((b"FILE", b"PUBLIC", b"FUNC")):
-            break
-
-    return debug_filename
-
-
 class SymbolicateBase:
     def __init__(self, downloader, cache, tmpdir):
         self.downloader = downloader
@@ -254,54 +206,22 @@ class SymbolicateBase:
 
         """
         try:
-            ndebug_id = symbolic.normalize_debug_id(debug_id)
-        except symbolic.ParseDebugIdError:
+            return parse_sym_file(debug_filename, debug_id, data, self.tmpdir)
+
+        except BadDebugIDError:
             # If the debug id isn't valid, then there's nothing to parse, so
             # log something, emit a metric, and move on
             LOGGER.error(f"debug_id parse error: {debug_id!r}")
             METRICS.incr(
                 "eliot.symbolicate.parse_sym_file.error", tags=["reason:bad_debug_id"]
             )
-            return
 
-        try:
-            temp_fp = tempfile.NamedTemporaryFile(
-                mode="w+b", suffix=".sym", dir=self.tmpdir, delete=False
-            )
-            try:
-                temp_fp.write(data)
-                temp_fp.close()
-                LOGGER.debug(
-                    f"Created temp file {debug_filename} {debug_id} {temp_fp.name}"
-                )
-                archive = symbolic.Archive.open(temp_fp.name)
-                obj = archive.get_object(debug_id=ndebug_id)
-                symcache = obj.make_symcache()
-            except (
-                LookupError,
-                symbolic.ObjectErrorUnknown,
-                symbolic.ObjectErrorUnsupportedObject,
-            ):
-                METRICS.incr(
-                    "eliot.symbolicate.parse_sym_file.error",
-                    tags=["reason:sym_debug_id_lookup_error"],
-                )
-                LOGGER.exception(
-                    f"Error looking up debug id in SYM file: {debug_filename} {debug_id}"
-                )
-                return
-
-            finally:
-                os.unlink(temp_fp.name)
-        except OSError:
+        except ParseSymFileError as psfe:
+            LOGGER.error(f"sym file parse error: {debug_filename} {debug_id!r}")
             METRICS.incr(
                 "eliot.symbolicate.parse_sym_file.error",
-                tags=["reason:sym_tmp_file_error"],
+                tags=[f"reason:{psfe.reason_code}"],
             )
-            LOGGER.exception("Error creating tmp file for SYM file")
-            return None
-
-        return symcache
 
     def get_symcache(self, module_info):
         """Gets the symcache for a given module.
@@ -329,7 +249,7 @@ class SymbolicateBase:
         try:
             # Pull it from cache if we can
             data = self.cache.get(cache_key)
-            module_info.symcache = symbolic.SymCache.from_bytes(data["symcache"])
+            module_info.symcache = bytes_to_symcache(data["symcache"])
             module_info.filename = data["filename"]
 
         except KeyError:
@@ -345,13 +265,12 @@ class SymbolicateBase:
 
                 # If we have a valid symcache file, cache it to disk
                 if symcache is not None:
-                    data = BytesIO()
-                    symcache.dump_into(data)
+                    data = symcache_to_bytes(symcache)
 
                     module_info.symcache = symcache
                     module_info.filename = module_filename
 
-                    data = {"symcache": data.getvalue(), "filename": module_filename}
+                    data = {"symcache": data, "filename": module_filename}
                     self.cache.set(cache_key, data)
 
         module_info.has_symcache = module_info.symcache is not None
