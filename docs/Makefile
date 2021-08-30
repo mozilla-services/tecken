@@ -18,3 +18,10 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+.PHONY: graphviz
+graphviz:
+	# Compile graphviz dot diagrams to PNG images
+	#
+	# Note: This requires graphviz be installed on your machine.
+	dot diagrams/arch.gv -Tpng -o images/arch.png
