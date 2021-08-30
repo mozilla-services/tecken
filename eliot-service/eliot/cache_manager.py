@@ -47,9 +47,26 @@ LOGGER = logging.getLogger(MODULE_NAME)
 REPOROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
 
 
+class LastUpdatedOrderedDict(OrderedDict):
+    """Store items in the order the keys were last added or updated"""
+
+    def __setitem__(self, key, value):
+        """Create or update a key"""
+        super().__setitem__(key, value)
+        self.move_to_end(key, last=True)
+
+    def touch(self, key):
+        """Update last-updated for key"""
+        self.move_to_end(key, last=True)
+
+    def popoldest(self):
+        """Pop the oldest item"""
+        return self.popitem(last=False)
+
+
 def handle_exception(exctype, value, tb):
     LOGGER.error(
-        "Unhandled exception. Exiting.\n"
+        "unhandled exception. Exiting.\n"
         + "".join(traceback.format_exception(exctype, value, tb))
     )
 
@@ -115,7 +132,7 @@ class DiskCacheManager:
         self.max_size = self.config("symbols_cache_max_size")
 
         # Set up attributes for cache monitoring; these get created in the generator
-        self.lru = OrderedDict()
+        self.lru = LastUpdatedOrderedDict()
         self.total_size = 0
         self.watches = OneToOne()
         self._generator = None
@@ -172,10 +189,6 @@ class DiskCacheManager:
     def remove_watch(self, path):
         if path in self.watches:
             del self.watches[path]
-        else:
-            print(
-                f"something is wrong--{path} not in watches ({list(self.watches.keys())})"
-            )
 
     def inventory_existing(self):
         """Sets up LRU from cachedir
@@ -208,11 +221,11 @@ class DiskCacheManager:
         removed = 0
 
         while self.lru and total_size > self.max_size:
-            rm_path, rm_size = self.lru.popitem(last=False)
+            rm_path, rm_size = self.lru.popoldest()
             total_size -= rm_size
             removed += rm_size
             os.remove(rm_path)
-            print(f"evicted {rm_path} {rm_size:,d}")
+            LOGGER.debug(f"evicted {rm_path} {rm_size:,d}")
             METRICS.incr("eliot.diskcache.evict")
 
         self.total_size -= removed
@@ -230,13 +243,13 @@ class DiskCacheManager:
 
         # Set up watches and LRU with what exists already
         self.watches = OneToOne()
-        self.lru = OrderedDict()
+        self.lru = LastUpdatedOrderedDict()
         self.total_size = 0
         self.inventory_existing()
 
-        LOGGER.info(f"Found {len(self.lru)} files ({self.total_size:,d} bytes)")
+        LOGGER.info(f"found {len(self.lru)} files ({self.total_size:,d} bytes)")
 
-        LOGGER.info("Entering loop")
+        LOGGER.info("entering loop")
         self.running = True
         processed_events = False
         try:
@@ -245,9 +258,8 @@ class DiskCacheManager:
                     processed_events = True
                     event_flags = flags.from_mask(event.mask)
 
-                    LOGGER.debug(f"EVENT: {event}")
-                    for flag in event_flags:
-                        LOGGER.debug(f"    {str(flag)}")
+                    flags_list = ", ".join([str(flag) for flag in event_flags])
+                    LOGGER.debug(f"EVENT: {event}: {flags_list}")
 
                     if flags.IGNORED in event_flags:
                         continue
@@ -267,12 +279,7 @@ class DiskCacheManager:
                     else:
                         # Handle file events which update our LRU cache
                         if flags.CREATE in event_flags:
-                            if path in self.lru:
-                                print(
-                                    f"something is wrong--create on file that exists {path}"
-                                )
-
-                            else:
+                            if path not in self.lru:
                                 size = os.stat(path).st_size
                                 self.make_room(size)
                                 self.lru[path] = size
@@ -280,7 +287,7 @@ class DiskCacheManager:
 
                         elif flags.ACCESS in event_flags:
                             if path in self.lru:
-                                self.lru.move_to_end(path, last=True)
+                                self.lru.touch(path)
 
                         elif flags.MODIFY in event_flags:
                             size = self.lru[path]
@@ -291,7 +298,6 @@ class DiskCacheManager:
                                 self.total_size += new_size
 
                             self.lru[path] = new_size
-                            self.lru.move_to_end(path, last=True)
 
                         elif flags.DELETE in event_flags:
                             if path in self.lru:
