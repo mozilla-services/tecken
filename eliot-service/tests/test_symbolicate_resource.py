@@ -295,7 +295,6 @@ class TestSymbolicateBase:
         data = {"filename": debug_filename, "symcache": data.getvalue()}
 
         cache_key = "%s/%s.symc" % (debug_filename, debug_id.upper())
-        print(cache_key)
         cache.set(cache_key, data)
 
         module_info = ModuleInfo(

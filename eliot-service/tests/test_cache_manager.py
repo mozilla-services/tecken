@@ -7,7 +7,38 @@ import pathlib
 from everett.manager import ConfigManager, ConfigDictEnv, ConfigOSEnv
 import pytest
 
-from eliot.cache_manager import get_cache_manager
+from eliot.cache_manager import get_cache_manager, LastUpdatedOrderedDict
+
+
+class TestLastUpdatedOrderedDict:
+    def test_set(self):
+        lru = LastUpdatedOrderedDict()
+
+        lru["key1"] = 1
+        lru["key2"] = 2
+        assert list(lru.items()) == [("key1", 1), ("key2", 2)]
+
+        lru["key1"] = 3
+        assert list(lru.items()) == [("key2", 2), ("key1", 3)]
+
+    def test_touch(self):
+        lru = LastUpdatedOrderedDict()
+
+        lru["key1"] = 1
+        lru["key2"] = 2
+
+        lru.touch("key1")
+        assert list(lru.items()) == [("key2", 2), ("key1", 1)]
+
+    def test_popoldest(self):
+        lru = LastUpdatedOrderedDict()
+
+        lru["key1"] = 1
+        lru["key2"] = 2
+
+        oldest = lru.popoldest()
+        assert oldest == ("key1", 1)
+        assert list(lru.items()) == [("key2", 2)]
 
 
 class DiskCacheManagerTestClient:
