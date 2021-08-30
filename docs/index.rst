@@ -1,20 +1,25 @@
-=====================
-Mozilla Symbol Server
-=====================
+======
+Tecken
+======
 
+Tecken is the `Mozilla Symbol Server <https://symbols.mozilla.org/>`_. It is
+used by Mozilla.
 
-Mozilla Symbol Server, codename "Tecken", is a web service for handling all
-things symbols for Mozilla platform. In particular three major features:
+* Free software: Mozilla Public License version 2.0
+* Tecken (symbol upload / symbol download / symbolication)
 
-1. Symbol Upload
-2. Symbol Download
-3. Symbolication
+  * Code: `<https://github.com/mozilla-services/tecken/>`_
+  * Documentation: `<https://tecken.readthedocs.io/>`_
+  * Bugs: `Report a Tecken bug <https://bugzilla.mozilla.org/enter_bug.cgi?format=__standard__&product=Tecken>`_
+
+* Chat: `#crashreporting matrix channel <https://chat.mozilla.org/#/room/#crashreporting:mozilla.org>`_
 
 
 .. toctree::
    :caption: Users
    :maxdepth: 1
 
+   overview
    upload
    download
    symbolication
@@ -31,6 +36,7 @@ things symbols for Mozilla platform. In particular three major features:
    redis
    adr_log
    endtoendtesting
+
 
 Indices and tables
 ==================
