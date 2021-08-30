@@ -1,0 +1,48 @@
+/*
+  Tecken architecture diagram.
+
+  Uses "dot" from graphviz suite to compile.
+
+  After editing this, run from the parent directory:
+
+      make graphviz
+
+  to update images in ../images/.
+*/
+digraph G {
+  size="6,8";
+  rankdir=LR;
+  splines=lines;
+
+  subgraph apps {
+    rank=same;
+
+    webapp [shape=rect, label="webapp"];
+    eliotwebapp [shape=rect, label="eliot webapp"];
+    celeryworker [shape=rect, label="celery"];
+  }
+
+  subgraph stores {
+    rank=sink;
+
+    awss3public [shape=tab, labe="AWS S3 (public)", style=filled, fillcolor=gray];
+    awss3private [shape=tab, labe="AWS S3 (private)", style=filled, fillcolor=gray];
+    postgres [shape=tab, label="Postgres", style=filled, fillcolor=gray];
+    rediscache [shape=tab, labe="Redis (cache)", style=filled, fillcolor=gray];
+    redisstore [shape=tab, labe="Redis (store)", style=filled, fillcolor=gray];
+  }
+
+  webapp -> postgres;
+  webapp -> rediscache [label="symbolication cache", fontsize=10];
+  webapp -> redisstore;
+  webapp -> awss3public [label="save / lookup", fontsize=10];
+  webapp -> awss3private [label="save", fontsize=10];
+
+  eliotwebapp -> webapp [label="sym lookups", weight=4, fontsize=10];
+
+  client [shape=box3d, label="users"];
+  client -> webapp [label="API / web", fontsize=10];
+  client -> eliotwebapp [label="API", fontsize=10];
+
+  { rank=source; client; }
+}
