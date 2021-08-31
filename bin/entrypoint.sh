@@ -35,9 +35,11 @@ eliot)  ## Run Eliot service
     exec honcho -f /app/eliot-service/Procfile start
     ;;
 worker)  ## Run Celery worker
+    # FIXME(willkg): 1728210: remove this after we remove the celery infra
     exec ${CMD_PREFIX} celery -A tecken.celery:app worker --loglevel INFO
     ;;
 worker-purge)  ## Purge Celery tasks
+    # FIXME(willkg): 1728210: remove this after we remove the celery infra
     # Start worker but first purge ALL old stale tasks.
     # Only useful in local development where you might have accidentally
     # started waaaay too make background tasks when debugging something.

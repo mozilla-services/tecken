@@ -5,7 +5,6 @@
 import json
 import os
 from pathlib import Path
-import time
 
 from django import http
 from django.views.decorators.csrf import csrf_exempt
@@ -15,7 +14,6 @@ from django.shortcuts import redirect
 from django.conf import settings
 
 from tecken.base.decorators import api_require_safe
-from tecken.tasks import sample_task
 
 
 @csrf_exempt
@@ -81,29 +79,6 @@ def csrf_failure(request, reason=""):
     return http.JsonResponse(
         {"error": reason or "CSRF failure", "csrf_error": True}, status=403
     )
-
-
-@csrf_exempt
-def task_tester(request):
-    if request.method == "POST":
-        cache.set("marco", "ping", 10)
-        value = request.POST.get("value", "polo")
-        sample_task.delay("marco", value, 10)
-        return http.HttpResponse("Now make a GET request to this URL\n", status=201)
-    else:
-        if not cache.get("marco"):
-            return http.HttpResponseBadRequest(
-                "Make a POST request to this URL first\n"
-            )
-        for i in range(3):
-            value = cache.get("marco")
-            if value and value != "ping":
-                return http.HttpResponse("It works!\n")
-            time.sleep(1)
-
-        return http.HttpResponseServerError(
-            "Tried 4 times (4 seconds) and no luck :(\n"
-        )
 
 
 @api_require_safe

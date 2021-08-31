@@ -153,26 +153,16 @@ class UploadsCreated(models.Model):
         size_avg = (
             aggregates_numbers["size_avg"] and int(aggregates_numbers["size_avg"]) or 0
         )
-        # XXX Can we just use update_or_create?? Probably wait till Django 2.1.1
-        if cls.objects.filter(date=date).exists():
-            # Update!
-            cls.objects.filter(date=date).update(
-                date=date,
-                count=count,
-                files=files,
-                skipped=skipped,
-                ignored=ignored,
-                size=size,
-                size_avg=size_avg,
-            )
-            return cls.objects.get(date=date)
-        else:
-            return cls.objects.create(
-                date=date,
-                count=count,
-                files=files,
-                skipped=skipped,
-                ignored=ignored,
-                size=size,
-                size_avg=size_avg,
-            )
+
+        obj, created = cls.objects.update_or_create(
+            date=date,
+            defaults={
+                "count": count,
+                "files": files,
+                "skipped": skipped,
+                "ignored": ignored,
+                "size": size,
+                "size_avg": size_avg,
+            },
+        )
+        return obj

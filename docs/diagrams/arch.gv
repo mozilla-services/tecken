@@ -19,7 +19,6 @@ digraph G {
 
     webapp [shape=rect, label="webapp"];
     eliotwebapp [shape=rect, label="eliot webapp"];
-    celeryworker [shape=rect, label="celery"];
   }
 
   subgraph stores {

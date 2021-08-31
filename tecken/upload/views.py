@@ -20,24 +20,22 @@ from django.utils import timezone
 from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 
-from tecken.requests_extra import session_with_retries
-from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.base.decorators import (
     api_login_required,
     api_any_permission_required,
     api_require_POST,
     make_tempdir,
 )
+from tecken.base.utils import filesizeformat, invalid_key_name_characters
+from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
+from tecken.upload.models import Upload, UploadsCreated
 from tecken.upload.utils import (
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
     DuplicateFileDifferentSize,
     upload_file_upload,
 )
-from tecken.symbolicate.tasks import invalidate_symbolicate_cache_task
-from tecken.upload.models import Upload
-from tecken.upload.tasks import update_uploads_created_task
-from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
+from tecken.requests_extra import session_with_retries
 from tecken.storage import StorageBucket
 
 
@@ -401,9 +399,6 @@ def upload_archive(request, upload_dir):
 
     if file_uploads_created:
         logger.info(f"Created {file_uploads_created} FileUpload objects")
-        # If there were some file uploads, there will be some symbol keys
-        # that we can send to a background task to invalidate.
-        invalidate_symbolicate_cache_task.delay(uploaded_symbol_keys)
     else:
         logger.info(f"No file uploads created for {upload_obj!r}")
 
@@ -414,8 +409,12 @@ def upload_archive(request, upload_dir):
     )
 
     # Re-calculate the UploadsCreated for today.
-    update_uploads_created_task.delay()
-
+    # FIXME(willkg): when/if we get a scheduled task runner, we should move this
+    # to that
+    date = timezone.now().date()
+    with metrics.timer("uploads_created_update"):
+        UploadsCreated.update(date)
+    logger.info(f"UploadsCreated updated for {date!r}")
     metrics.incr(
         "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{bucket_info.name}"]
     )
