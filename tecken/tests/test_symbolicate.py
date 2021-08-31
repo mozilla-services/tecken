@@ -18,7 +18,6 @@ from django.utils import timezone
 from tecken.base.symboldownloader import SymbolDownloader, SymbolDownloadError
 from tecken.symbolicate import views
 from tecken.symbolicate.views import UNKNOWN_MODULE
-from tecken.symbolicate.tasks import invalidate_symbolicate_cache
 
 
 SAMPLE_SYMBOL_CONTENT = {
@@ -1303,79 +1302,6 @@ def test_symbolicate_v5_json_reused_memory_maps(
     result3 = result["results"][2]
     assert result3["debug"]["downloads"]["count"] == 1
     assert result3["debug"]["cache_lookups"]["count"] == 2
-
-
-def test_invalidate_symbols_invalidates_cache(
-    clear_redis_store, botomock, json_poster, settings
-):
-    settings.SYMBOL_URLS = ["https://s3.example.com/private/prefix/"]
-    reload_downloader("https://s3.example.com/private/prefix/")
-
-    mock_api_calls = []
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "GetObject"
-        if mock_api_calls:
-            # This means you're here for the second time.
-            # Pretend we have the symbol this time.
-            mock_api_calls.append((operation_name, api_params))
-            return {"Body": BytesIO(bytes(SAMPLE_SYMBOL_CONTENT["xul.sym"], "utf-8"))}
-        else:
-            mock_api_calls.append((operation_name, api_params))
-            if api_params["Key"].endswith("xul.sym"):
-                parsed_response = {
-                    "Error": {"Code": "NoSuchKey", "Message": "Not found"}
-                }
-                raise ClientError(parsed_response, operation_name)
-            raise NotImplementedError(api_params)
-
-    with botomock(mock_api_call):
-        url = reverse("symbolicate:symbolicate_v5_json")
-        response = json_poster(
-            url,
-            {
-                "stacks": [[[0, 11_723_767]]],
-                "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
-            },
-        )
-        result = response.json()
-        result1 = result["results"][0]
-        stack1 = result1["stacks"][0]
-        frame1 = stack1[0]
-        assert "function" not in frame1  # module couldn't be found
-        assert len(mock_api_calls) == 1
-
-        response = json_poster(
-            url,
-            {
-                "stacks": [[[0, 11_723_767]]],
-                "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
-            },
-        )
-        result = response.json()
-        result1 = result["results"][0]
-        stack1 = result1["stacks"][0]
-        frame1 = stack1[0]
-        assert "function" not in frame1  # module still couldn't be found
-        # Expected because the cache stores that the file can't be found.
-        assert len(mock_api_calls) == 1
-
-        # Pretend an upload comes in and stores those symbols.
-        invalidate_symbolicate_cache([("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2")])
-        response = json_poster(
-            url,
-            {
-                "stacks": [[[0, 11_723_767]]],
-                "memoryMap": [["xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2"]],
-            },
-        )
-        result = response.json()
-        result1 = result["results"][0]
-        stack1 = result1["stacks"][0]
-        frame1 = stack1[0]
-        assert frame1["function"]
-        assert frame1["function"] == "XREMain::XRE_mainRun()"
-        assert len(mock_api_calls) == 2
 
 
 def test_change_symbols_urls_invalidates_cache(

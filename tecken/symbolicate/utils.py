@@ -4,7 +4,6 @@
 
 import hashlib
 
-from django.core.cache import caches
 from django.conf import settings
 
 
@@ -38,20 +37,3 @@ def make_symbol_key_cache_key(symbol_key, prefix=None):
     assert isinstance(symbol_key, (tuple, list)), symbol_key
     assert len(symbol_key) == 2, symbol_key
     return "symbol:{}:{}/{}".format(prefix, *symbol_key)
-
-
-def invalidate_symbolicate_cache(symbol_keys, prefix=None):
-    """Makes sure all symbolication caching stored for this list of
-    symbol keys is removed from the Redis store."""
-    all_keys = []
-    for symbol_key in symbol_keys:
-        # Every symbol, for the sake of symbolication, is stored in two
-        # ways:
-        # 1) symbol_key + ':keys'  (plain SET)
-        # 2) symbol_key (as hashmap)
-        cache_key = make_symbol_key_cache_key(symbol_key, prefix=prefix)
-        all_keys.append(cache_key)  # the hashmap
-        all_keys.append(cache_key + ":keys")  # the list of all offsets
-
-    store = caches["store"]
-    store.delete_many(all_keys)

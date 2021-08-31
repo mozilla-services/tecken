@@ -31,7 +31,6 @@ used by Mozilla.
    contributing
    dev
    configuration
-   celery
    frontend
    redis
    adr_log

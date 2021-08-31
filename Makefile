@@ -45,7 +45,7 @@ setup: .env  ## | Initialize services.
 
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
-	docker-compose up web eliot worker frontend
+	docker-compose up web eliot frontend
 
 .PHONY: stop
 stop: .env  ## | Stop docker containers.
@@ -76,8 +76,8 @@ redis-store-cli: .env .docker-build  ## | Open Redis CLI to store Redis server.
 
 .PHONY: psql
 psql: .env .docker-build  ## | Open psql cli.
-	@echo "Password is 'postgres'."
-	docker-compose run --rm db psql -h db -U postgres
+	@echo "NOTE: Password is 'postgres'."
+	docker-compose run --rm db psql -h db -U postgres -d tecken
 
 .PHONY: test
 test: .env .docker-build  ## | Run Python unit test suite.

@@ -25,7 +25,6 @@ from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
-from tecken.upload.tasks import update_uploads_created_task
 from tecken.upload.utils import (
     dump_and_extract,
     key_existing,
@@ -109,8 +108,6 @@ def test_upload_archive_custom_bucket_name(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
     settings,
 ):
     """Pretend that the user specifies a particular custom bucket name."""
@@ -178,8 +175,6 @@ def test_upload_archive_with_ignorable_files(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
     settings,
 ):
     # The default upload URL setting uses Google Cloud Storage.
@@ -238,8 +233,6 @@ def test_upload_archive_happy_path(
     botomock,
     fakeuser,
     metricsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
@@ -322,8 +315,6 @@ def test_upload_archive_happy_path(
         assert upload.skipped_keys is None
         assert upload.ignored_keys == ["build-symbols.txt"]
 
-    assert len(upload_mock_update_uploads_created_task.all_delay_arguments) == 1
-
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
@@ -347,9 +338,6 @@ def test_upload_archive_happy_path(
         completed_at__isnull=False,
     )
 
-    # Manually execute 'update_uploads_created_task' because it's mocked
-    # in the context of the view function.
-    update_uploads_created_task()
     uploads_created = UploadsCreated.objects.all().get()
     assert uploads_created.date == timezone.now().date()
     assert uploads_created.count == 1
@@ -374,22 +362,7 @@ def test_upload_archive_happy_path(
     assert all_keys.count("tecken.upload_file_upload") == 2
     assert all_keys.count("tecken.upload_uploads") == 1
     assert all_keys.count("tecken.uploads_created_update") == 1
-    assert all_keys[-2] == "tecken.upload_archive"
-
-    invalidate_symbolicate_cache_args = [
-        x[0] for x in upload_mock_invalidate_symbolicate_cache.all_delay_arguments
-    ]
-    # The upload should have triggered a call to
-    # tecken.symbolicate.tasks.invalidate_symbolicate_cache
-    # one time for these uploaded files
-    (call_args,) = invalidate_symbolicate_cache_args
-    # And the first (and only argument) should be a list of tuples
-    (first_arg,) = call_args
-    # Use `sorted()` because the order is unpredictable.
-    assert sorted(first_arg) == [
-        ("flag", "deadbeef"),
-        ("xpcshell.dbg", "A7D6F1BB18CD4CB48"),
-    ]
+    assert all_keys.count("tecken.upload_archive") == 1
 
 
 @pytest.mark.django_db
@@ -397,8 +370,6 @@ def test_upload_try_symbols_happy_path(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_try_symbols")
@@ -482,8 +453,6 @@ def test_upload_try_symbols_happy_path(
         assert upload.ignored_keys == ["build-symbols.txt"]
         assert upload.try_symbols
 
-    assert len(upload_mock_update_uploads_created_task.all_delay_arguments) == 1
-
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
@@ -513,8 +482,6 @@ def test_upload_archive_one_uploaded_one_skipped(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -664,8 +631,6 @@ def test_upload_archive_key_lookup_cached(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -748,8 +713,6 @@ def test_upload_archive_key_lookup_cached_without_metadata(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
     """Same as test_upload_archive_key_lookup_cached() but without
     any metadata."""
@@ -833,8 +796,6 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
     client,
     botomock,
     fakeuser,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
 
     token = Token.objects.create(user=fakeuser)
@@ -896,9 +857,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
 
 
 @pytest.mark.django_db
-def test_upload_archive_one_uploaded_one_errored(
-    client, botomock, fakeuser, upload_mock_invalidate_symbolicate_cache
-):
+def test_upload_archive_one_uploaded_one_errored(client, botomock, fakeuser):
     class AnyUnrecognizedError(Exception):
         """Doesn't matter much what the exception is. What matters is that
         it happens during a boto call."""
@@ -955,8 +914,6 @@ def test_upload_archive_with_cache_invalidation(
     botomock,
     fakeuser,
     settings,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
     settings.SYMBOL_URLS = ["https://s3.example.com/mybucket"]
     settings.UPLOAD_DEFAULT_URL = "https://s3.example.com/mybucket"
@@ -1037,9 +994,7 @@ def test_upload_archive_with_cache_invalidation(
 
 
 @pytest.mark.django_db
-def test_upload_archive_both_skipped(
-    client, botomock, fakeuser, upload_mock_update_uploads_created_task
-):
+def test_upload_archive_both_skipped(client, botomock, fakeuser):
 
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
@@ -1096,8 +1051,6 @@ def test_upload_archive_by_url(
     fakeuser,
     settings,
     requestsmock,
-    upload_mock_invalidate_symbolicate_cache,
-    upload_mock_update_uploads_created_task,
 ):
 
     requestsmock.head(
@@ -1587,23 +1540,6 @@ def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):
     assert not form.is_valid()
     (validation_errors,) = form.errors.as_data().values()
     assert "Too many redirects" in validation_errors[0].message
-
-
-@pytest.mark.django_db
-def test_update_uploads_created_task_empty():
-    update_uploads_created_task()
-    uploads_created = UploadsCreated.objects.all().get()
-    assert uploads_created.date == timezone.now().date()
-    assert uploads_created.count == 0
-    assert uploads_created.files == 0
-    assert uploads_created.skipped == 0
-    assert uploads_created.ignored == 0
-    assert uploads_created.size == 0
-    assert uploads_created.size_avg == 0
-
-    # Just to be sure, execute again and nothing should change.
-    update_uploads_created_task()
-    assert UploadsCreated.objects.all().count() == 1
 
 
 @pytest.mark.django_db
