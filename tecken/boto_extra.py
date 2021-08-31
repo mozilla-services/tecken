@@ -5,6 +5,9 @@
 from botocore.exceptions import EndpointConnectionError, ClientError
 
 
+# FIXME(willkg): 1728210: remove this after we remove celery infra
+
+
 class OwnEndpointConnectionError(EndpointConnectionError):
     """Because the botocore.exceptions.EndpointConnectionError can't be
     pickled, if this exception happens during task work, celery

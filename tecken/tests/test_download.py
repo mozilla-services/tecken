@@ -13,15 +13,12 @@ from urllib.parse import urlparse
 import pytest
 
 from django.core.management import call_command
-from django.db import OperationalError
 from django.urls import reverse
 from django.utils import timezone
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
 from tecken.download.models import MissingSymbol
-from tecken.download.tasks import store_missing_symbol_task
-from tecken.download.utils import store_missing_symbol
 
 
 _here = os.path.dirname(__file__)
@@ -602,18 +599,6 @@ def test_missingsymbols(client, settings):
 
 
 @pytest.mark.django_db
-def test_store_missing_symbol_task_happy_path():
-    store_missing_symbol_task("foo.pdb", "HEX", "foo.sym", code_file="file")
-    assert MissingSymbol.objects.get(
-        symbol="foo.pdb",
-        debugid="HEX",
-        filename="foo.sym",
-        code_file="file",
-        code_id__isnull=True,
-    )
-
-
-@pytest.mark.django_db
 def test_store_missing_symbol_happy_path(metricsmock):
     views.store_missing_symbol("foo.pdb", "ABCDEF12345", "foo.sym")
     missing_symbol = MissingSymbol.objects.get(
@@ -710,58 +695,6 @@ def test_store_missing_symbol_client(client, botomock, settings):
         # cache. So it shouldn't have called it more than
         # once.
         assert MissingSymbol.objects.filter(count=1).count() == 1
-
-
-@pytest.mark.django_db
-def test_store_missing_symbol_client_operationalerror(client, botomock, settings):
-    """If the *storing* of a missing symbols causes an OperationalError, the
-    main client that requests should still be a 404.  On the inside, what we do
-    is catch the operational error, and instead call out to a celery job that
-    does it instead.
-
-    This test is a bit cryptic. The S3 call is mocked. The calling of the
-    'store_missing_symbol()' function (that is in 'downloads/views.py') is
-    mocked. Lastly, the wrapped task function 'store_missing_symbol_task()' is
-    also mocked (so we don't actually call out to Redis).  Inside the mocked
-    call to the celery task, we actually call the original
-    'tecken.download.utils.store_missing_symbol' function just to make sure the
-    MissingSymbol record gets created.
-
-    """
-    settings.ENABLE_STORE_MISSING_SYMBOLS = True
-    reload_downloaders("https://s3.example.com/private/prefix/")
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        return {}
-
-    url = reverse(
-        "download:download_symbol",
-        args=("foo.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "foo.ex_"),
-    )
-
-    task_arguments = []
-
-    def fake_task(*args, **kwargs):
-        store_missing_symbol(*args, **kwargs)
-        task_arguments.append(args)
-
-    store_args = []
-
-    def mock_store_missing_symbols(*args, **kwargs):
-        store_args.append(args)
-        raise OperationalError("On noes!")
-
-    _mock_function = "tecken.download.views.store_missing_symbol_task.delay"
-    with botomock(mock_api_call), mock.patch(
-        "tecken.download.views.store_missing_symbol", new=mock_store_missing_symbols
-    ), mock.patch(_mock_function, new=fake_task):
-        response = client.get(url, {"code_file": "something"})
-        assert response.status_code == 404
-        assert response.content == b"Symbol Not Found"
-        assert len(store_args) == 1
-        assert len(task_arguments) == 1
-        assert MissingSymbol.objects.all().count() == 1
 
 
 def test_client_with_bad_filenames(client, botomock):

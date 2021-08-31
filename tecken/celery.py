@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+# FIXME(willkg): 1728210: remove this after we remove celery infra
 import os
 
 from celery import Celery
@@ -24,11 +25,6 @@ app = Celery("tecken")
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
 app.config_from_object("django.conf:settings", namespace="CELERY")
-
-# Specifically list the apps that have tasks.py
-# Note! If not doing this you get a strange RuntimeError
-# ('path' must be None or a list, not <class '_frozen_importlib_external._NamespacePath'>)  # noqa
-app.autodiscover_tasks(["tecken", "tecken.download", "tecken.symbolicate"])
 
 
 @app.task(bind=True)

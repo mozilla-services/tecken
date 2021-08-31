@@ -4,38 +4,13 @@
 
 import json
 from pathlib import Path
-from unittest import mock
 
 import pytest
 
-from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
-from tecken.tasks import sample_task
 from tecken.views import handler500, handler400, handler403
-
-
-@pytest.mark.django_db
-def test_client_task_tester(client, clear_redis_store):
-    url = reverse("task_tester")
-
-    def fake_task(key, value, expires):
-        cache.set(key, value, expires)
-
-    _mock_function = "tecken.views.sample_task.delay"
-    with mock.patch(_mock_function, new=fake_task):
-        response = client.get(url)
-        assert response.status_code == 400
-        assert b"Make a POST request to this URL first" in response.content
-
-        response = client.post(url)
-        assert response.status_code == 201
-        assert b"Now make a GET request to this URL" in response.content
-
-        response = client.get(url)
-        assert response.status_code == 200
-        assert b"It works!" in response.content
 
 
 def test_dashboard(client, settings, tmpdir):
@@ -81,11 +56,6 @@ def test_frontend_index_html_aliases(client, settings, tmpdir):
 
     response = client.get("/neverheardof")
     assert response.status_code == 404
-
-
-def test_sample_task(clear_redis_store):
-    sample_task("foo", "bar", 1)
-    cache.get("foo") == "bar"
 
 
 def test_contribute_json(client):

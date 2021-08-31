@@ -90,18 +90,6 @@ services:
       - redis-cache
     command: web
 
-  worker:
-    extends:
-      service: base
-    depends_on:
-      - base
-    links:
-      - db
-      - redis-cache
-    volumes:
-      - $PWD:/app
-    command: worker-purge
-
   frontend:
     build:
       context: .

@@ -20,7 +20,6 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.utils import invalid_key_name_characters
 from tecken.download.models import MissingSymbol
 from tecken.download.utils import store_missing_symbol
-from tecken.download.tasks import store_missing_symbol_task
 from tecken.download.forms import DownloadForm, DownloadsMissingForm
 from tecken.storage import StorageBucket
 
@@ -163,22 +162,19 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
 def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
     """Store the fact that a symbol could not be found.
 
-    The purpose of this is be able to answer "What symbol fetches have
-    recently been attempted and failed?" With that knowledge, we can
-    deduce which symbols are commonly needed in symbolication but failed
-    to be available. Then you can try to go and get hold of them and
-    thus have less symbol 404s in the future.
+    The purpose of this is be able to answer "What symbol fetches have recently been
+    attempted and failed?" With that knowledge, we can deduce which symbols are commonly
+    needed in symbolication but failed to be available. Then you can try to go and get
+    hold of them and thus have less symbol 404s in the future.
 
-    Because this is expected to be called A LOT (in particular from
-    Socorro's Processor) we have to do this rapidly in a database
-    that is suitable for many fast writes.
-    See https://bugzilla.mozilla.org/show_bug.cgi?id=1361854#c5
-    for the backstory about expected traffic.
+    Because this is expected to be called A LOT (in particular from Socorro's Processor)
+    we have to do this rapidly in a database that is suitable for many fast writes.  See
+    https://bugzilla.mozilla.org/show_bug.cgi?id=1361854#c5 for the backstory about
+    expected traffic.
 
-    The URL used when requesting the file will only ever be
-    'symbol', 'debugid' and 'filename', but some services, like Socorro's
-    stackwalker is actually aware of other parameters that are
-    relevant only to this URL. Hence 'code_file' and 'code_id' which
+    The URL used when requesting the file will only ever be 'symbol', 'debugid' and
+    'filename', but some services, like Socorro's stackwalker is actually aware of other
+    parameters that are relevant only to this URL. Hence 'code_file' and 'code_id' which
     are both optional.
 
     """
@@ -188,9 +184,7 @@ def log_symbol_get_404(symbol, debugid, filename, code_file="", code_id=""):
                 symbol, debugid, filename, code_file=code_file, code_id=code_id
             )
         except OperationalError:
-            store_missing_symbol_task.delay(
-                symbol, debugid, filename, code_file=code_file, code_id=code_id
-            )
+            logger.exception("error when storing missing symbol")
 
 
 @metrics.timer("missingsymbols_csv")

@@ -81,15 +81,6 @@ def requestsmock():
         yield m
 
 
-@pytest.fixture
-def celery_config():
-    return {
-        "broker_url": "redis://redis-cache:6379/0",
-        "result_backend": "redis://redis-cache:6379/0",
-        "task_always_eager": True,
-    }
-
-
 # This needs to be imported at least once. Otherwise the mocking
 # done in botomock() doesn't work.
 # (peterbe) Would like to know why but for now let's just comply.
@@ -168,42 +159,6 @@ def botomock():
 @pytest.fixture
 def fakeuser():
     return User.objects.create(username="peterbe", email="peterbe@example.com")
-
-
-def _mock_invalidate_symbolicate_cache(function_path):
-    class FakeTask:
-        all_delay_arguments = []
-
-        def delay(self, *args, **kwargs):
-            self.all_delay_arguments.append((args, kwargs))
-
-    fake_task = FakeTask()
-
-    with mock.patch(function_path, new=fake_task):
-        yield fake_task
-
-
-@pytest.fixture
-def upload_mock_invalidate_symbolicate_cache():
-    """Yields an object that is the mocking substitute of some task
-    functions that are imported by the views.
-    If a view function (that you know your test will execute) depends
-    on 'tecken.symbolicate.tasks.invalidate_symbolicate_cache', add
-    this fixture to your test. Then you can access all the arguments
-    sent to it as `.delay()` arguments and keyword arguments.
-    """
-
-    class FakeTask:
-        all_delay_arguments = []
-
-        def delay(self, *args, **kwargs):
-            self.all_delay_arguments.append((args, kwargs))
-
-    fake_task = FakeTask()
-
-    _mock_function = "tecken.upload.views.invalidate_symbolicate_cache_task"
-    with mock.patch(_mock_function, new=fake_task):
-        yield fake_task
 
 
 @pytest.fixture

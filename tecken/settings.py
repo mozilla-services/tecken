@@ -26,6 +26,7 @@ class AWS:
     }
 
 
+# FIXME(willkg): 1728210: remove after we remove celery infra
 class Celery:
 
     # Add a 5 minute soft timeout to all Celery tasks.
