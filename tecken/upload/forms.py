@@ -10,7 +10,7 @@ from requests.exceptions import ConnectionError, RetryError
 from django import forms
 from django.conf import settings
 
-from tecken.requests_extra import session_with_retries
+from tecken.librequests import session_with_retries
 
 
 class UploadByDownloadRemoteError(Exception):
