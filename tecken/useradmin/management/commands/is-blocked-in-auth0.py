@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from tecken.requests_extra import session_with_retries
+from tecken.librequests import session_with_retries
 from tecken.useradmin.middleware import find_users
 
 

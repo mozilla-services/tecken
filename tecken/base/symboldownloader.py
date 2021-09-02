@@ -15,7 +15,7 @@ import requests
 
 from django.conf import settings
 
-from tecken.requests_extra import session_with_retries
+from tecken.librequests import session_with_retries
 from tecken.storage import StorageBucket
 
 

@@ -12,7 +12,7 @@ from django.core.cache import cache
 from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
 from django.contrib import auth
 
-from tecken.requests_extra import session_with_retries
+from tecken.librequests import session_with_retries
 
 
 logger = logging.getLogger("tecken")
