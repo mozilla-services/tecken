@@ -35,7 +35,7 @@ from tecken.upload.utils import (
     DuplicateFileDifferentSize,
     upload_file_upload,
 )
-from tecken.requests_extra import session_with_retries
+from tecken.librequests import session_with_retries
 from tecken.storage import StorageBucket
 
 
