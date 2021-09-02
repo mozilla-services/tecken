@@ -4,7 +4,7 @@
 
 import pickle
 
-from tecken.boto_extra import (
+from tecken.libboto import (
     OwnEndpointConnectionError,
     OwnClientError,
 )
