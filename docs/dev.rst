@@ -241,7 +241,7 @@ Viewing all metrics keys
 
 In the Tecken webapp, to get insight into all metrics keys that are used, a
 special Markus backend is enabled called
-``tecken.markus_extra.LogAllMetricsKeys``. It's enabled by default in local
+``tecken.libmarkus.LogAllMetricsKeys``. It's enabled by default in local
 development. And to inspect its content you can either open
 ``all-metrics-keys.json`` directly (it's git ignored) or you can run:
 
