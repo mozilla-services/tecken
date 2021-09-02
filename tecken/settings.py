@@ -681,7 +681,7 @@ class Test(Localdev):
     def CACHES(self):
         parent = super().CACHES
         parent["default"] = {
-            "BACKEND": "tecken.cache_extra.RedisLocMemCache",
+            "BACKEND": "tecken.libcache.RedisLocMemCache",
             "LOCATION": "unique-snowflake",
         }
         return parent
