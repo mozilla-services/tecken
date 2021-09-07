@@ -31,6 +31,16 @@ FUNC 5380 44 0 testproj::main
 """
 
 
+NTDLL_SYM = """\
+MODULE windows x86_64 F86EB934B42FBB79B2595AA25907695C1 ntdll.pdb
+INFO CODE_ID 0532197720E000 ntdll.dll
+FUNC 1008 106 0 LdrpGetModuleName
+PUBLIC 1120 0 LdrQueryNextListEntry
+PUBLIC 1140 0 LdrQueryModuleInfoFromLdrEntry
+FUNC 1260 4a 0 LdrpReadMemory
+"""
+
+
 @pytest.mark.parametrize(
     argnames="modules",
     argvalues=[
@@ -737,6 +747,52 @@ class TestSymbolicateV5:
                                 "line": 1,
                                 "module": "testproj",
                                 "module_offset": "0x5380",
+                            },
+                        ]
+                    ],
+                }
+            ],
+        }
+
+    def test_line_and_no_file(self, requestsmock, client):
+        """Test output when symbolic returns line: 0 but no file info"""
+        requestsmock.get(
+            "http://symbols.example.com/ntdll.pdb/F86EB934B42FBB79B2595AA25907695C1/ntdll.sym",
+            status_code=200,
+            text=NTDLL_SYM,
+        )
+
+        result = client.simulate_post(
+            self.PATH,
+            json={
+                "jobs": [
+                    # job 0
+                    {
+                        "stacks": [[[0, int("1008", 16)]]],
+                        "memoryMap": [
+                            ["ntdll.pdb", "F86EB934B42FBB79B2595AA25907695C1"],
+                        ],
+                    },
+                ]
+            },
+        )
+        assert result.status_code == 200
+        assert result.headers["Content-Type"].startswith("application/json")
+        assert result.json == {
+            "results": [
+                {
+                    # This sym file exists
+                    "found_modules": {
+                        "ntdll.pdb/F86EB934B42FBB79B2595AA25907695C1": True
+                    },
+                    "stacks": [
+                        [
+                            {
+                                "frame": 0,
+                                "function": "LdrpGetModuleName",
+                                "function_offset": "0x0",
+                                "module": "ntdll.dll",
+                                "module_offset": "0x1008",
                             },
                         ]
                     ],
