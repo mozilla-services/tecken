@@ -344,7 +344,11 @@ class SymbolicateBase:
                                 )
                             elif lineinfo.filename:
                                 data["file"] = lineinfo.filename
-                            data["line"] = lineinfo.line
+
+                            # Only add a "line" if there's a file--otherwise the line
+                            # doesn't mean anything
+                            if data.get("file"):
+                                data["line"] = lineinfo.line
 
                     data["module"] = module_info.filename
 
