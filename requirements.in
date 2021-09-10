@@ -10,7 +10,7 @@ dj-database-url==0.5.0
 django-cache-memoize==0.1.10
 django-configurations==2.2
 django-redis==5.0.0
-dockerflow==2020.10.0
+dockerflow==2021.7.0
 encore==0.7.0
 everett==2.0.1
 falcon==3.0.1
