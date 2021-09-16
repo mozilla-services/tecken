@@ -14,9 +14,7 @@ import sys
 
 from dockerflow.version import get_version
 from raven import Client
-from raven.conf import setup_logging
 from raven.handlers.logging import SentryHandler
-from raven.middleware import Sentry
 
 
 LOGGER = logging.getLogger(__name__)
@@ -47,7 +45,9 @@ def setup_sentry_logging():
     if _SENTRY_CLIENT:
         handler = SentryHandler(_SENTRY_CLIENT)
         handler.setLevel(logging.ERROR)
-        setup_logging(handler)
+
+        # Add the SentryHandler to the root logger
+        logging.getLogger().addHandler(handler)
 
 
 def set_sentry_client(sentry_dsn, basedir):
@@ -91,17 +91,17 @@ class WSGILoggingMiddleware:
                 [("content-type", "application/json; charset=utf-8")],
                 exc_info,
             )
-            return [b'{"msg": "COUGH! Internal Server Error"}']
+            return [b'{"msg": "Internal Server Error"}']
 
 
 def wsgi_capture_exceptions(app):
-    """Wrap a WSGI app with some kind of unhandled exception capture.
+    """Wrap a WSGI app with unhandled exception capture.
 
-    If a Sentry client is configured, then this will send unhandled exceptions
-    to Sentry. Otherwise, it will send them as part of the middleware.
+    This will log (using the logger) any unhandled exception. That way Sentry can pick
+    it up.
+
+    NOTE(willkg): Falcon 3.0 doesn't let uncaught errors bubble up anymore, so it's
+    possible this doesn't do anything.
 
     """
-    if _SENTRY_CLIENT is None:
-        return WSGILoggingMiddleware(app)
-    else:
-        return Sentry(app, _SENTRY_CLIENT)
+    return WSGILoggingMiddleware(app)
