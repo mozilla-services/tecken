@@ -18,6 +18,7 @@ from everett.manager import (
     Option,
 )
 import falcon
+from falcon.errors import HTTPInternalServerError
 
 from eliot.cache import DiskCache
 from eliot.downloader import SymbolFileDownloader
@@ -143,6 +144,9 @@ class EliotApp(falcon.App):
         # Set up Sentry exception logger if we're so configured
         setup_sentry_logging()
 
+        # Set up uncaught error handler
+        self.add_error_handler(Exception, self.uncaught_error_handler)
+
         # Log application configuration
         log_config(LOGGER, self.config_manager, self)
 
@@ -206,6 +210,18 @@ class EliotApp(falcon.App):
     def get_resources(self):
         """Return a list of registered resources."""
         return self._all_resources.values()
+
+    def uncaught_error_handler(self, req, resp, ex, params):
+        """Handle uncaught exceptions
+
+        Falcon calls this for exceptions that don't subclass HTTPError. We want
+        to log an exception, then kick off Falcon's internal error handling
+        code for the HTTP response.
+
+        """
+        # We're still in an exception context, so sys.exc_info() still has the details.
+        LOGGER.exception("Unhandled exception")
+        self._compose_error_response(req, resp, HTTPInternalServerError())
 
     def verify(self):
         """Verify that Eliot is ready to start."""
