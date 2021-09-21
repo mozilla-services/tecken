@@ -1,5 +1,8 @@
 # NOTE(willkg): Make sure to update frontend/Dockerfile when you update this
-FROM node:16.9.0-slim@sha256:fca208cb6a90179412cc78ac590a81c3b802b2d3a66b202e31586a9b702e101c as frontend
+#
+# NOTE(willkg): We're using node 14 because of this issue:
+# https://github.com/docker/for-mac/issues/5831
+FROM node:14.17.6-slim@sha256:56e3ae9f6981acb5525427c37eacc73c8ad400f0fef155c4064447f220816cbc as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
