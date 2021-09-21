@@ -45,6 +45,7 @@ else:
 
 LOGGER = logging.getLogger(MODULE_NAME)
 REPOROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
+MAX_ERRORS = 10
 
 
 class LastUpdatedOrderedDict(OrderedDict):
@@ -252,77 +253,90 @@ class DiskCacheManager:
         LOGGER.info("entering loop")
         self.running = True
         processed_events = False
+        num_unhandled_errors = 0
         try:
             while self.running:
-                for event in self.inotify.read(timeout=timeout):
-                    processed_events = True
-                    event_flags = flags.from_mask(event.mask)
+                try:
+                    for event in self.inotify.read(timeout=timeout):
+                        processed_events = True
+                        event_flags = flags.from_mask(event.mask)
 
-                    flags_list = ", ".join([str(flag) for flag in event_flags])
-                    LOGGER.debug(f"EVENT: {event}: {flags_list}")
+                        flags_list = ", ".join([str(flag) for flag in event_flags])
+                        LOGGER.debug(f"EVENT: {event}: {flags_list}")
 
-                    if flags.IGNORED in event_flags:
-                        continue
+                        if flags.IGNORED in event_flags:
+                            continue
 
-                    dir_path = self.watches.inv[event.wd]
-                    path = os.path.join(dir_path, event.name)
+                        dir_path = self.watches.inv[event.wd]
+                        path = os.path.join(dir_path, event.name)
 
-                    if flags.ISDIR in event_flags:
-                        # Handle directory events which update our watch lists
-                        if flags.CREATE in event_flags:
-                            self.add_watch(path)
+                        if flags.ISDIR in event_flags:
+                            # Handle directory events which update our watch lists
+                            if flags.CREATE in event_flags:
+                                self.add_watch(path)
 
-                        if flags.DELETE_SELF in event_flags:
-                            if path in self.watches:
-                                self.remove_watch(path)
-
-                    else:
-                        # Handle file events which update our LRU cache
-                        if flags.CREATE in event_flags:
-                            if path not in self.lru:
-                                size = os.stat(path).st_size
-                                self.make_room(size)
-                                self.lru[path] = size
-                                self.total_size += size
-
-                        elif flags.ACCESS in event_flags:
-                            if path in self.lru:
-                                self.lru.touch(path)
-
-                        elif flags.MODIFY in event_flags:
-                            size = self.lru[path]
-                            new_size = os.stat(path).st_size
-                            if size != new_size:
-                                self.total_size -= size
-                                self.make_room(new_size)
-                                self.total_size += new_size
-
-                            self.lru[path] = new_size
-
-                        elif flags.DELETE in event_flags:
-                            if path in self.lru:
-                                # NOTE(willkg): DELETE can be triggered by an external thing or
-                                # by the disk cache manager, so it may or may not be in the lru
-                                size = self.lru.pop(path)
-                                self.total_size -= size
-
-                        elif flags.MOVED_TO in event_flags:
-                            if path not in self.lru:
-                                # If the path isn't in self.lru, then treat this like a create
-                                size = os.stat(path).st_size
-                                self.make_room(size)
-                                self.lru[path] = size
-                                self.total_size += size
-
-                        elif flags.MOVED_FROM in event_flags:
-                            if path in self.lru:
-                                # If it was moved out of this directory, then treat it
-                                # like a DELETE
-                                size = self.lru.pop(path)
-                                self.total_size -= size
+                            if flags.DELETE_SELF in event_flags:
+                                if path in self.watches:
+                                    self.remove_watch(path)
 
                         else:
-                            LOGGER.debug(f"ignored {path} {event}")
+                            # Handle file events which update our LRU cache
+                            if flags.CREATE in event_flags:
+                                if path not in self.lru:
+                                    size = os.stat(path).st_size
+                                    self.make_room(size)
+                                    self.lru[path] = size
+                                    self.total_size += size
+
+                            elif flags.ACCESS in event_flags:
+                                if path in self.lru:
+                                    self.lru.touch(path)
+
+                            elif flags.MODIFY in event_flags:
+                                size = self.lru[path]
+                                new_size = os.stat(path).st_size
+                                if size != new_size:
+                                    self.total_size -= size
+                                    self.make_room(new_size)
+                                    self.total_size += new_size
+
+                                self.lru[path] = new_size
+
+                            elif flags.DELETE in event_flags:
+                                if path in self.lru:
+                                    # NOTE(willkg): DELETE can be triggered by an
+                                    # external thing or by the disk cache manager, so it
+                                    # may or may not be in the lru
+                                    size = self.lru.pop(path)
+                                    self.total_size -= size
+
+                            elif flags.MOVED_TO in event_flags:
+                                if path not in self.lru:
+                                    # If the path isn't in self.lru, then treat this
+                                    # like a create
+                                    size = os.stat(path).st_size
+                                    self.make_room(size)
+                                    self.lru[path] = size
+                                    self.total_size += size
+
+                            elif flags.MOVED_FROM in event_flags:
+                                if path in self.lru:
+                                    # If it was moved out of this directory, then treat
+                                    # it like a DELETE
+                                    size = self.lru.pop(path)
+                                    self.total_size -= size
+
+                            else:
+                                LOGGER.debug(f"ignored {path} {event}")
+
+                except Exception:
+                    LOGGER.exception("Exception thrown while handling events.")
+
+                    # If there are more than 10 unhandled errors, it's probably
+                    # something seriously wrong and the loop should terminate
+                    num_unhandled_errors += 1
+                    if num_unhandled_errors >= MAX_ERRORS:
+                        raise
 
                 if processed_events:
                     LOGGER.debug(
@@ -336,7 +350,12 @@ class DiskCacheManager:
         finally:
             all_watches = list(self.watches.inv.keys())
             for wd in all_watches:
-                self.inotify.rm_watch(wd)
+                try:
+                    self.inotify.rm_watch(wd)
+                except Exception:
+                    # We're ending the loop, so if there's some exception, we should
+                    # print it but move on.
+                    LOGGER.exception("Exception thrown while removing watches")
 
         self.inotify.close()
 
