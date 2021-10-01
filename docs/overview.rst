@@ -26,15 +26,9 @@ Rough architecture diagram of Tecken:
    :alt: Tecken architecture diagram
 
 
-.. Note::
-
-   We're in the process of splitting out the symbolication API from the Tecken
-   webapp into a separate microservice called Eliott.
-
-
 Important services in the diagram:
 
-* **Webapp:**
+* **Symbols service (aka symbols.mozilla.org):**
 
   Host: https://symbols.mozilla.org/
 
@@ -53,11 +47,12 @@ Important services in the diagram:
 
     .. Note::
 
-       2021-08-30: The symbolication API is being rewritten as a separate microservice.
+       2021-10-01: The symbolication API in the Tecken webapp is deprecated.
+       Use https://symbolication.services.mozilla.com/ instead.
 
-* **Eliot webapp (aka symbolication.mozilla.org):**
+* **Eliot sybmolication service (aka symbolication.services.mozilla.com):**
 
-  Host: https://symbolication.mozilla.org/
+  Host: https://symbolication.services.mozilla.com/
 
   The Eliot webapp is a symbolication API microservice that uses the `Symbolic
   library <https://github.com/getsentry/symbolic>`_ to parse SYM files and do
@@ -67,6 +62,26 @@ Important services in the diagram:
   <https://github.com/mozilla-services/tecken/tree/main/eliot-service>`_
   subdirectory.
 
-  .. Note::
 
-     2021-08-30: This isn't in production, yet, so the url doesn't work.
+Repository structure
+====================
+
+Here's a bunch of top-level directories and what's in them::
+
+    bin/                    -- scripts for running and developing
+    docker/                 -- Dockerfile and image building bits
+    docs/                   -- documentation
+    favicons/               -- favicons used by Tecken webapp
+    frontend/               -- Tecken webapp JS frontend
+    schemas/                -- API schemas
+
+These directories have test stuff in them::
+
+    loadtest/               -- Eliot loadtest scripts
+    systemtests/            -- systemtests for Tecken and Eliot
+
+These directories hold code for the Tecken webapp service and the Eliot
+symbolication service::
+
+    eliot-service/          -- Eliot symbolication service unit tests and code
+    tecken/                 -- Tecken webapp service unit tests and code
