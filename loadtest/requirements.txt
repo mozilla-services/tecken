@@ -1,0 +1,4 @@
+click==8.0.1
+jsonschema==4.0.1
+requests==2.26.0
+molotov==2.3
