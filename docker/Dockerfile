@@ -2,7 +2,7 @@
 #
 # NOTE(willkg): We're using node 14 because of this issue:
 # https://github.com/docker/for-mac/issues/5831
-FROM node:14.17.6-slim@sha256:56e3ae9f6981acb5525427c37eacc73c8ad400f0fef155c4064447f220816cbc as frontend
+FROM node:16.10.0-slim@sha256:9bec98898848c3e3a1346bc74ab04c2072da9d0149d8be1ea0485dbf39fd658f as frontend
 
 # these build args are turned into env vars
 # and used in bin/build_frontend.sh
