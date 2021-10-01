@@ -34,3 +34,8 @@ frontend/.eslintcache
 # Ephemeral systemtest data
 systemtests/data/zip-files/
 systemtests/data/stacks/
+
+# Ephemeral loadtest data
+loadtest/venv/
+loadtest/stacks/
+loadtest/.venv-build
