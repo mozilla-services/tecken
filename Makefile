@@ -116,3 +116,8 @@ lintci: .env .docker-build  ## | Lint code in test-ci container.
 lintfix: .env .docker-build  ## | Reformat code.
 	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh --fix
 	docker-compose run --rm frontend lintfix
+
+.PHONY: rebuildreqs
+rebuildreqs: .env .docker-build  ## | Rebuild requirements.txt file.
+	-rm requirements.txt
+	docker-compose run --rm web bash pip-compile --generate-hashes
