@@ -3,11 +3,12 @@ Configuration
 =============
 
 .. contents::
+   :local:
 
-Tecken Configuration
-====================
+Symbols Service configuration
+=============================
 
-Tecken is the webapp that covers uploading, downloading, and symbolication.
+The Symbols Service covers uploading and downloading symbols.
 
 .. envvar:: GUNICORN_TIMEOUT
 
@@ -346,13 +347,14 @@ You can visit http://oidc.127.0.0.1.nip.io:8081/account/logout to manually log
 out.
 
 
-Eliot configuration
-===================
+Symbolication Service configuration (Eliot)
+===========================================
 
 Webapp
 ------
 
-The Eliot webapp is run as worker processes by Gunicorn which is run by Honcho.
+The Symbolication Service (aka Eliot) is run as worker processes by Gunicorn
+which is run by Honcho.
 
 Gunicorn configuration:
 
@@ -396,7 +398,7 @@ Webapp configuration:
 Disk cache manager
 ------------------
 
-The Eliot disk cache manager is run as a single process by Honcho.
+The disk cache manager is run as a single process by Honcho.
 
 .. autocomponent:: eliot.cache_manager.DiskCacheManager
    :hide-classname:
