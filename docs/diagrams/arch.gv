@@ -17,8 +17,8 @@ digraph G {
   subgraph apps {
     rank=same;
 
-    webapp [shape=rect, label="webapp"];
-    eliotwebapp [shape=rect, label="eliot webapp"];
+    symbolswebapp [shape=rect, label="symbols webapp"];
+    symbolicationwebapp [shape=rect, label="symbolication webapp"];
   }
 
   subgraph stores {
@@ -31,17 +31,17 @@ digraph G {
     redisstore [shape=tab, labe="Redis (store)", style=filled, fillcolor=gray];
   }
 
-  webapp -> postgres;
-  webapp -> rediscache [label="symbolication cache", fontsize=10];
-  webapp -> redisstore;
-  webapp -> awss3public [label="save / lookup", fontsize=10];
-  webapp -> awss3private [label="save", fontsize=10];
+  symbolswebapp -> postgres;
+  symbolswebapp -> rediscache [label="symbolication cache", fontsize=10];
+  symbolswebapp -> redisstore;
+  symbolswebapp -> awss3public [label="save / lookup", fontsize=10];
+  symbolswebapp -> awss3private [label="save", fontsize=10];
 
-  eliotwebapp -> webapp [label="sym lookups", weight=4, fontsize=10];
+  symbolicationwebapp -> symbolswebapp [label="sym lookups", weight=4, fontsize=10];
 
   client [shape=box3d, label="users"];
-  client -> webapp [label="API / web", fontsize=10];
-  client -> eliotwebapp [label="API", fontsize=10];
+  client -> symbolswebapp [label="HTTP", fontsize=10];
+  client -> symbolicationwebapp [label="HTTP", fontsize=10];
 
   { rank=source; client; }
 }

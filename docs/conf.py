@@ -69,7 +69,7 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "Tecken: Mozilla Symbol Server"
+project = "Tecken: Symbols at Mozilla"
 copyright = "2016-2021 Mozilla Foundation"
 author = "Tecken team"
 

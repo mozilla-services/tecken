@@ -22,8 +22,8 @@ You can set up a development environment with:
 
 Tecken consists of:
 
-1. a webapp (also called Tecken) that covers uploading and downloading symbols
-2. a webapp (Eliot) that covers symbolication
+1. a Symbols Service webapp that covers uploading and downloading symbols
+2. a Symbolication Service webapp (Eliot) that covers symbolication
 
 To run these two services, do:
 
@@ -32,9 +32,9 @@ To run these two services, do:
    $ make run
 
 
-The Tecken webapp is at: http://localhost:3000
+The Symbols Service webapp is at: http://localhost:3000
 
-Eliot is at: http://localhost:8050
+The Symbolication Service webapp is at: http://localhost:8050
 
 
 Managing dependencies
@@ -59,8 +59,8 @@ Then rebuild your docker environment::
 If there are problems, it'll tell you.
 
 
-JavaScript dependencies (Tecken webapp)
----------------------------------------
+JavaScript dependencies (Symbols Service)
+-----------------------------------------
 
 Tecken uses `yarn <https://yarnpkg.com/>`_ for JavaScript dependencies. Use the
 ``yarn`` installed in the Docker frontend container:
@@ -104,7 +104,7 @@ To run all of the unit tests, do:
    $ make test
 
 
-See :ref:`dev-tecken-tests` and :ref:`dev-eliot-tests` for details.
+See :ref:`dev-symbols-tests` and :ref:`dev-symbolication-tests` for details.
 
 
 System tests
@@ -116,21 +116,21 @@ System tests are located in the repository in ``systemtests/``. See the
 System tests can be run against any running environment: local, stage, or prod.
 
 
-Tecken webapp things
-====================
+Symbols Service webapp things
+=============================
 
 When running the Tecken webapp in the local dev environment, it's at:
 http://localhost:3000
 
 The code is in ``tecken/``.
 
-You can override Tecken webapp configuration in your ``.env`` file.
+You can override Symbols Service webapp configuration in your ``.env`` file.
 
 
-.. _dev-tecken-tests:
+.. _dev-symbols-tests:
 
-Python tests for Tecken webapp
-------------------------------
+Python tests for Symbols Service webapp
+---------------------------------------
 
 To run the tests, do:
 
@@ -138,7 +138,7 @@ To run the tests, do:
 
    $ make test
 
-Tests for the Tecken webapp go in ``tecken/tests/``.
+Tests for the Symbols Service webapp go in ``tecken/tests/``.
 
 If you need to run specific tests or pass in different arguments, you can use
 the testshell:
@@ -152,6 +152,8 @@ the testshell:
 
    app@xxx:/app$ cd tecken/
    app@xxx:/app/tecken$ pytest tests/test_download.py
+
+   <pytest output>
 
 
 JavaScript tests
@@ -180,8 +182,8 @@ this code and it has to be tested manually. You can do something like this:
 Database migrations
 -------------------
 
-The Tecken webapp uses Django's ORM and thus we do database migrations using
-Django's migration system.
+The Symbols Service webapp uses Django's ORM and thus we do database migrations
+using Django's migration system.
 
 Do this::
 
@@ -192,14 +194,17 @@ Do this::
 Accounts and first superuser
 ----------------------------
 
-The Tecken webapp has an accounts system. Users need to create their own API
-tokens but before they can do that they need to be promoted to have that
-permission at all. The only person/people who can give other users permissions
-is the superuser. To bootstrap the user administration you need to create at
-least one superuser.  That superuser can promote other users to superusers too.
+The Symbols Service webapp has an accounts system.
 
-This action does NOT require that the user signs in at least once. If the
-user does not exist, it gets created.
+Users need to create their own API tokens but before they can do that they need
+to be promoted to have that permission at all.
+
+The only person/people who can give other users permissions is the superuser.
+To bootstrap the user administration you need to create at least one superuser.
+That superuser can promote other users to superusers too.
+
+This action does NOT require that the user signs in at least once. If the user
+does not exist, it gets created.
 
 The easiest way to create your first superuser is to use ``docker-compose``:
 
@@ -239,8 +244,8 @@ Once vouched:
 Viewing all metrics keys
 ------------------------
 
-In the Tecken webapp, to get insight into all metrics keys that are used, a
-special Markus backend is enabled called
+In the Symbols Service webapp, to get insight into all metrics keys that are
+used, a special Markus backend is enabled called
 ``tecken.libmarkus.LogAllMetricsKeys``. It's enabled by default in local
 development. And to inspect its content you can either open
 ``all-metrics-keys.json`` directly (it's git ignored) or you can run:
@@ -251,9 +256,9 @@ development. And to inspect its content you can either open
     app@xxx:/app$ ./bin/list-all-metrics-keys.py
 
 Now you can see a list of all keys that are used. Take this and, for example,
-make sure you make a graph in Datadog of each and everyone. If there's a key
-in there that you know you don't need or care about in Datadog, then delete
-it from the code.
+make sure you make a graph in Datadog of each and everyone. If there's a key in
+there that you know you don't need or care about in Datadog, then delete it
+from the code.
 
 The file ``all-metrics-keys.json`` can be deleted any time and it will be
 recreated again.
@@ -353,8 +358,8 @@ step for helping users figure out auth problems.
 Auth0 issues
 ~~~~~~~~~~~~
 
-Tecken uses Mozilla SSO. Anyone can log in, but by default accounts don't have
-special permissions to anything.
+Symbols Service uses Mozilla SSO. Anyone can log in, but by default accounts
+don't have special permissions to anything.
 
 A potential pattern is that a user logs in with their work email
 (e.g. ``example@mozilla.com``), gets permissions to create API tokens,
@@ -392,20 +397,21 @@ development tool shortcut for what the middleware does:
     $ docker-compose run web python manage.py is-blocked-in-auth0 me@example.com
 
 
-Eliot things
-============
+Symbolication Service webapp things (Eliot)
+===========================================
 
-How Eliot works
----------------
+How Symbolication Service works
+-------------------------------
 
-When running Eliot in the local dev environment, it's at: http://localhost:8050
+When running Symbolication Service webapp in the local dev environment, it's
+at: http://localhost:8050
 
 The code is in ``eliot-service/``.
 
-Eliot logs its configuration at startup. You can override any of those
-configuration settings in your ``.env`` file.
+Symbolication Service webapp logs its configuration at startup. You can
+override any of those configuration settings in your ``.env`` file.
 
-Eliot runs in a Docker container and is composed of:
+Symbolication Service webapp runs in a Docker container and is composed of:
 
 * `Honcho <https://honcho.readthedocs.io/>`_ process which manages:
 
@@ -413,19 +419,19 @@ Eliot runs in a Docker container and is composed of:
     multiple worker webapp processes
   * eliot_disk_manager: a disk cache manager process
 
-Symbolication requests come in and are handled by the Eliot webapp. It pulls
-sym files from the urls configured by ``ELIOT_SYMBOL_URLS``. By default, that's
+Symbolication Service webapp handles HTTP requests by pulling sym files from
+the urls configured by ``ELIOT_SYMBOL_URLS``. By default, that's
 ``https://symbols.mozilla.org/try``.
 
-The Elliot webapp downloads sym files, parses them into symcache files, and
-performs symbol lookups with the symcache files. Parsing sym files and
-generating symcache files takes a long time, so it stores the symcache files in
-a disk cache shared by all webapp processes running in that Docker container.
-The disk cache manager process deletes least recently used items from the disk
-cache to keep it under ``ELIOT_SYMBOLS_CACHE_MAX_SIZE`` bytes.
+The Symbolication Service webapp downloads sym files, parses them into symcache
+files, and performs symbol lookups with the symcache files. Parsing sym files
+and generating symcache files takes a long time, so it stores the symcache
+files in a disk cache shared by all webapp processes running in that Docker
+container. The disk cache manager process deletes least recently used items
+from the disk cache to keep it under ``ELIOT_SYMBOLS_CACHE_MAX_SIZE`` bytes.
 
 
-.. _dev-eliot-metrics:
+.. _dev-symbolication-metrics:
 
 Metrics
 -------
@@ -433,18 +439,18 @@ Metrics
 .. autometrics:: eliot.libmarkus.ELIOT_METRICS
 
 
-.. _dev-eliot-tests:
+.. _dev-symbolication-tests:
 
-Python tests for Eliot
-----------------------
+Python tests for Symbolication Service
+--------------------------------------
 
-To run the tests, do:
+To run all the tests, do:
 
 .. code-block:: shell
 
    $ make test
 
-Tests for the Tecken webapp go in ``tecken/tests/``.
+Tests for the Symbolication Service webapp go in ``eliot-service/tests/``.
 
 If you need to run specific tests or pass in different arguments, you can use
 the testshell:
@@ -452,9 +458,11 @@ the testshell:
 .. code-block:: shell
 
    $ make testshell
-   app@xxx:/app$ pytest
+   app@xxx:/app$ cd eliot-service
+   app@xxx:/app/eliot-service$ pytest
 
    <pytest output>
 
-   app@xxx:/app$ cd tecken/
-   app@xxx:/app/tecken$ pytest tests/test_download.py
+   app@xxx:/app/eliot-service$ pytest tests/test_app.py
+
+   <pytest output>
