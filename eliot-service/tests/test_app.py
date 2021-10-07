@@ -8,3 +8,16 @@ class Test404:
         result = client.simulate_get("/foo")
         assert result.status_code == 404
         assert result.headers["Content-Type"].startswith("application/json")
+
+
+class TestIndexAndStatic:
+    def test_index_page(self, client):
+        result = client.simulate_get("/")
+        assert result.status_code == 200
+        assert result.headers["Content-Type"].startswith("text/html")
+        assert "Mozilla Symbolication Server" in result.text
+
+    def test_static_page(self, client):
+        result = client.simulate_get("/static/pageload.js")
+        assert result.status_code == 200
+        assert result.headers["Content-Type"].startswith("application/javascript")

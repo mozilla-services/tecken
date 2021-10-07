@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="theme-color" content="#000000">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="/static/tailwindcss/tailwind.2.2.16.min.css">
+    <link rel="stylesheet" href="/static/highlightjs/agate.css">
+    <link rel="stylesheet" href="/static/style.css">
+
+    <title>Mozilla Symbolication Server</title>
+  </head>
+
+  <body class="leading-normal tracking-normal">
+    <div class="flex flex-col h-screen justify-between">
+
+      <header class="h-10">
+        <nav id="header" class="p-0 m-0">
+          <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
+            <div class="pl-4 flex items-center">
+              <a class="no-underline hover:no-underline font-bold text-xl lg:text-3xl" href="/">
+                Mozilla Symbolication Server
+              </a>
+            </div>
+            <div class="w-full flex-grow lg:flex lg:items-center lg:w-auto hidden mt-2 lg:mt-0 lg:bg-transparent p-4 lg:p-0 z-20" id="nav-content">
+              <ul class="list-reset lg:flex justify-end flex-1 items-center">
+                <li class="mr-3">
+                  <a class="inline-block no-underline hover:text-blue-500 py-2 px-4" href="https://tecken.readthedocs.io/">Help</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <hr class="border-b border-black-100 opacity-75 my-0 py-0" />
+        </nav>
+      </header>
+
+      <main class="h-auto w-full mb-auto">
+        <div class="container mx-auto p-3">
+          <h1 class="my-4 text-4xl font-bold leading-tight">Symbolication</h1>
+
+          <h2 class="my-4 text-2xl font-bold">Summary</h2>
+          <p class="py-2">
+            This is the Mozilla Symbolication Server. It exposes an API for
+            converting memory addresses to symbols using debug information
+            uploaded during builds of Mozilla products.
+            It relies on the <a class="text-blue-800 hover:text-blue-500" href="https://github.com/getsentry/symbolic">Symbolic</a> library
+            for parsing debug information files and looking up addresses.
+          </p>
+
+          <h2 class="my-4 text-2xl font-bold">API</h2>
+          <p class="py-2">
+            <a class="text-blue-800 hover:text-blue-500" href="https://tecken.readthedocs.io/en/latest/symbolication.html">API documentation</a>
+          </p>
+          <p class="py-2">
+            Python example:
+          </p>
+          <pre class="px-4 bg-333 m-0 text-sm"><code class="language-python">
+import requests
+
+payload = {
+    "jobs": [
+        {
+            "memoryMap": [
+                [
+                    "xul.pdb",
+                    "44E4EC8C2F41492B9369D6B9A059577C2"
+                ],
+                [
+                    "wntdll.pdb",
+                    "D74F79EB1F8D4A45ABCD2F476CCABACC2"
+                ]
+            ],
+            "stacks": [
+                [
+                    [0, 11723767],
+                    [1, 65802]
+                ]
+            ]
+        }
+    ]
+}
+
+// Please use a unique user agent. It helps us debug issues, size the
+// servers based on load, and notify users of changes and migrations.
+headers = {
+    "User-Agent": "example-agent/1.0 (+https://example.com/)",
+}
+
+resp = requests.post(
+    "https://symbolication.services.mozilla.com/symbolicate/v5",
+    headers=headers,
+    json=payload,
+)
+
+print(resp.json())
+          </code></pre>
+          <p class="py-2 pt-5">
+            For detailed API and usage information, see the
+            <a class="text-blue-800 hover:text-blue-500" href="https://tecken.readthedocs.io/en/latest/symbolication.html">API documentation</a>.
+          </p>
+
+          <h2 class="my-4 text-2xl font-bold">Code</h2>
+          <p class="py-2">
+            <a class="text-blue-800 hover:text-blue-500" href="https://github.com/mozilla-services/tecken/tree/main/eliot-service">Code for the Symbolication server.</a>
+          </p>
+
+          <h2 class="my-4 text-2xl font-bold">Bugs</h2>
+          <p class="py-2">
+            Found a problem? Please
+            <a class="text-blue-800 hover:text-blue-500" href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=Symbolication">file a bug</a>.
+          </p>
+        </div>
+      </main>
+
+      <footer class="h-10 w-full border-t border-black-100 opacity-75">
+        <div class="container mx-auto px-3">
+          <div class="w-full flex flex-row py-6">
+            <div class="flex-1">
+              <ul>
+                <li>
+                  Mozilla Symbolication Server
+                </li>
+                <li>
+                  <a class="no-underline hover:underline text-gray-500 hover:text-blue-500" href="https://github.com/mozilla-services/tecken/tree/main/eliot-service">Powered by Eliot (part of Tecken)</a>
+                </li>
+                <li>
+                  <a class="no-underline hover:underline text-gray-500 hover:text-blue-500" href="https://tecken.readthedocs.io/">Documentation</a>
+                </li>
+                <li>
+                  <a class="no-underline hover:underline text-gray-500 hover:text-blue-500" href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=Symbolication">File a bug</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script src="/static/highlightjs/highlight.11.2.0.min.js"></script>
+    <script src="/static/pageload.js"></script>
+  </body>
+</html>

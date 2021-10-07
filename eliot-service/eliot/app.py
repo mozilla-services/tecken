@@ -28,7 +28,6 @@ from eliot.health_resource import (
     LBHeartbeatResource,
     VersionResource,
 )
-from eliot.index_resource import IndexResource
 from eliot.liblogging import setup_logging, log_config
 from eliot.libmarkus import setup_metrics
 from eliot.libsentry import (
@@ -41,6 +40,7 @@ from eliot.symbolicate_resource import SymbolicateV4, SymbolicateV5
 
 LOGGER = logging.getLogger(__name__)
 REPOROOT_DIR = str(Path(__file__).parent.parent.parent)
+STATICROOT_DIR = str(Path(__file__).parent / "static")
 
 
 def build_config_manager():
@@ -60,6 +60,17 @@ def build_config_manager():
         ),
     )
     return config.with_namespace("eliot")
+
+
+class IndexResource:
+    def __init__(self, staticroot_dir):
+        self.staticroot_dir = staticroot_dir
+        self.data = (Path(self.staticroot_dir) / "index.html").read_text()
+
+    def on_get(self, req, resp):
+        resp.content_type = falcon.MEDIA_HTML
+        resp.status = falcon.HTTP_200
+        resp.text = self.data
 
 
 class EliotApp(falcon.App):
@@ -172,7 +183,6 @@ class EliotApp(falcon.App):
 
         diskcache = DiskCache(cachedir=cachecachedir, tmpdir=tmpdir)
         downloader = SymbolFileDownloader(self.config("symbols_urls"))
-        self.add_route("index", "/", IndexResource())
         self.add_route(
             "symbolicate_v4",
             "/symbolicate/v4",
@@ -183,6 +193,10 @@ class EliotApp(falcon.App):
             "/symbolicate/v5",
             SymbolicateV5(downloader=downloader, cache=diskcache, tmpdir=tmpdir),
         )
+
+        # Add the index.html resource and static route last
+        self.add_route("index", "/", IndexResource(STATICROOT_DIR))
+        self.add_static_route("/static/", STATICROOT_DIR)
 
     def add_route(self, name, uri_template, resource, *args, **kwargs):
         """Add specified Falcon route.
