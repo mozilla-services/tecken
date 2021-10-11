@@ -116,6 +116,18 @@ System tests are located in the repository in ``systemtests/``. See the
 System tests can be run against any running environment: local, stage, or prod.
 
 
+Load tests
+----------
+
+At various points, we've done some minor load testing of the system. The
+scripts are located in:
+
+https://github.com/mozilla-services/tecken-loadtests/
+
+They're good for bootstrapping another load testing effort, but they're not
+otherwise maintained.
+
+
 Symbols Service webapp things
 =============================
 
