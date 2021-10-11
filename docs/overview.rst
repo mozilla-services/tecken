@@ -78,7 +78,6 @@ Here's a bunch of top-level directories and what's in them::
 
 These directories have test stuff in them::
 
-    loadtest/               -- loadtest scripts
     systemtests/            -- systemtests for Symbolication and Symbols services
 
 These directories hold code for the Tecken webapp service and the Eliot
