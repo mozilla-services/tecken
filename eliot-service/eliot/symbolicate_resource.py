@@ -23,10 +23,13 @@ Resource implementing the Symbolication v4 and v5 APIs.
 
 """
 
+from collections import Counter
+import contextlib
 from dataclasses import dataclass
 import json
 import logging
 import re
+import time
 import typing
 
 import falcon
@@ -58,6 +61,55 @@ class ModuleInfo:
     has_symcache: typing.Optional[bool]
     # The symbolic symcache instance
     symcache: any
+
+
+class DebugStats:
+    """Class for keeping track of metrics and such."""
+
+    def __init__(self):
+        self.data = {}
+
+    def _setvalue(self, data, key, value):
+        ptr = data
+        if isinstance(key, str):
+            parts = key.split(".")
+        else:
+            parts = key
+        for part in parts[:-1]:
+            if part not in ptr:
+                ptr[part] = {}
+            ptr = ptr[part]
+
+        ptr[parts[-1]] = value
+
+    def _getvalue(self, data, key, default=None):
+        ptr = data
+        if isinstance(key, str):
+            parts = key.split(".")
+        else:
+            parts = key
+        for part in parts:
+            if part not in ptr:
+                return default
+            ptr = ptr[part]
+        return ptr
+
+    def set(self, key, value):
+        self._setvalue(self.data, key, value)
+
+    def incr(self, key, value=1):
+        current_value = self._getvalue(self.data, key, default=0)
+        self._setvalue(self.data, key, current_value + value)
+
+    @contextlib.contextmanager
+    def timer(self, key):
+        start_time = time.perf_counter()
+
+        yield
+
+        end_time = time.perf_counter()
+        delta = end_time - start_time
+        self._setvalue(self.data, key, delta)
 
 
 class InvalidModules(Exception):
@@ -223,13 +275,15 @@ class SymbolicateBase:
                 tags=[f"reason:{psfe.reason_code}"],
             )
 
-    def get_symcache(self, module_info):
+    def get_symcache(self, module_info, debug_stats):
         """Gets the symcache for a given module.
 
         This uses the cachemanager and downloader to get the symcache. It modifies
         the Module in place.
 
         :arg module_info: the ModuleInfo data class
+        :arg debug_stats: DebugStats instance for keeping track of timings and other
+            useful things
 
         """
         debug_filename = module_info.debug_filename
@@ -241,6 +295,9 @@ class SymbolicateBase:
             return
 
         # Get the symcache from cache if it's there
+        start_time = time.perf_counter()
+        debug_stats.incr("cache_lookups.count", 1)
+
         cache_key = "%s/%s.symc" % (
             debug_filename.replace("/", ""),
             debug_id.upper().replace("/", ""),
@@ -251,8 +308,17 @@ class SymbolicateBase:
             data = self.cache.get(cache_key)
             module_info.symcache = bytes_to_symcache(data["symcache"])
             module_info.filename = data["filename"]
-
+            debug_stats.incr("cache_lookups.hits", 1)
         except KeyError:
+            debug_stats.incr("cache_lookups.hits", 0)
+
+        end_time = time.perf_counter()
+        debug_stats.incr("cache_lookups.time", end_time - start_time)
+
+        # We didn't find it in the cache, so try to download it
+        if module_info.symcache is None:
+            start_time = time.perf_counter()
+
             # Download the SYM file from one of the sources
             sym_file = self.download_sym_file(debug_filename, debug_id)
             if sym_file is not None:
@@ -273,14 +339,35 @@ class SymbolicateBase:
                     data = {"symcache": data, "filename": module_filename}
                     self.cache.set(cache_key, data)
 
+                    end_time = time.perf_counter()
+                    debug_stats.incr("downloads.count", 1)
+                    debug_stats.incr(
+                        [
+                            "downloads",
+                            "size_per_module",
+                            f"{debug_filename}/{debug_id}",
+                        ],
+                        len(sym_file),
+                    )
+                    debug_stats.incr(
+                        [
+                            "downloads",
+                            "time_per_module",
+                            f"{debug_filename}/{debug_id}",
+                        ],
+                        end_time - start_time,
+                    )
+
         module_info.has_symcache = module_info.symcache is not None
 
-    def symbolicate(self, stacks, modules):
+    def symbolicate(self, stacks, modules, debug_stats):
         """Takes stacks and modules and returns symbolicated stacks.
 
         :arg stacks: list of stacks each of which is a list of
             (module index, module offset)
         :arg modules: list of (debug_filename, debug_id)
+        :arg debug_stats: DebugStats instance for keeping track of timings and other
+            useful things
 
         :returns: dict with "stacks" and "found_modules" keys per the symbolication v5
             response
@@ -322,7 +409,7 @@ class SymbolicateBase:
                     elif module_info.symcache is None:
                         LOGGER.debug(f"get_symcache for {module_info!r}")
                         # NOTE(willkg): This mutates module
-                        self.get_symcache(module_info)
+                        self.get_symcache(module_info, debug_stats)
 
                     if module_info.symcache is not None:
                         lineinfo = module_info.symcache.lookup(module_offset)
@@ -364,13 +451,12 @@ class SymbolicateBase:
             for module_info in module_records
         }
 
-        # Return symbolicated stack
-        return {
-            "stacks": symbolicated_stacks,
-            "found_modules": found_modules,
-        }
+        # Return metadata and symbolication results
+        return {"stacks": symbolicated_stacks, "found_modules": found_modules}
 
 
+# NOTE(Willkg): This API endpoint version is deprecated. We shouldn't add new features
+# or fix bugs with it.
 class SymbolicateV4(SymbolicateBase):
     @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v4"])
     def on_post(self, req, resp):
@@ -382,6 +468,10 @@ class SymbolicateV4(SymbolicateBase):
 
         stacks = payload.get("stacks", [])
         modules = payload.get("memoryMap", [])
+
+        # NOTE(willkg): we define this and pass it around, but don't return it in the
+        # results because this API is deprecated
+        debug_stats = DebugStats()
 
         try:
             validate_modules(modules)
@@ -409,7 +499,7 @@ class SymbolicateV4(SymbolicateBase):
             "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v4"]
         )
 
-        symdata = self.symbolicate(stacks, modules)
+        symdata = self.symbolicate(stacks, modules, debug_stats)
 
         # Convert the symbolicate output to symbolicate/v4 output
         def frame_to_function(frame):
@@ -448,6 +538,8 @@ class SymbolicateV5(SymbolicateBase):
             METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
             raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
 
+        is_debug = req.get_header("Debug", default=False)
+
         if "jobs" in payload:
             jobs = payload["jobs"]
         else:
@@ -466,37 +558,104 @@ class SymbolicateV5(SymbolicateBase):
         )
         LOGGER.debug(f"Number of jobs: {len(jobs)}")
 
-        results = []
-        for i, job in enumerate(jobs):
-            stacks = job.get("stacks", [])
-            modules = job.get("memoryMap", [])
+        debug_stats = DebugStats()
 
-            try:
-                validate_modules(modules)
-            except InvalidModules as exc:
-                METRICS.incr(
-                    "eliot.symbolicate.request_error", tags=["reason:invalid_modules"]
+        with debug_stats.timer("time"):
+            results = []
+            for i, job in enumerate(jobs):
+                stacks = job.get("stacks", [])
+                modules = job.get("memoryMap", [])
+
+                try:
+                    validate_modules(modules)
+                except InvalidModules as exc:
+                    METRICS.incr(
+                        "eliot.symbolicate.request_error",
+                        tags=["reason:invalid_modules"],
+                    )
+                    # NOTE(willkg): the str of an exception is the message; we need to
+                    # control the message carefully so we're not spitting unsanitized data
+                    # back to the user in the error
+                    raise falcon.HTTPBadRequest(
+                        title=f"job {i} has invalid modules: {exc}"
+                    )
+
+                try:
+                    validate_stacks(stacks, modules)
+                except InvalidStacks as exc:
+                    METRICS.incr(
+                        "eliot.symbolicate.request_error",
+                        tags=["reason:invalid_stacks"],
+                    )
+                    # NOTE(willkg): the str of an exception is the message; we need to
+                    # control the message carefully so we're not spitting unsanitized data
+                    # back to the user in the error
+                    raise falcon.HTTPBadRequest(
+                        title=f"job {i} has invalid stacks: {exc}"
+                    )
+
+                METRICS.histogram(
+                    "eliot.symbolicate.stacks_count",
+                    value=len(stacks),
+                    tags=["version:v5"],
                 )
-                # NOTE(willkg): the str of an exception is the message; we need to
-                # control the message carefully so we're not spitting unsanitized data
-                # back to the user in the error
-                raise falcon.HTTPBadRequest(title=f"job {i} has invalid modules: {exc}")
+                debug_stats.incr("stacks.count", len(stacks))
 
-            try:
-                validate_stacks(stacks, modules)
-            except InvalidStacks as exc:
-                METRICS.incr(
-                    "eliot.symbolicate.request_error", tags=["reason:invalid_stacks"]
+                results.append(self.symbolicate(stacks, modules, debug_stats))
+
+        # Peel off the symbolication v5 results from the returns
+        response = {"results": results}
+
+        # Add debug information if requested
+        if is_debug:
+            all_modules = Counter()
+            # Calculate modules
+            for result in results:
+                all_modules.update(
+                    [
+                        key
+                        for key, val in result["found_modules"].items()
+                        if val is not None
+                    ]
                 )
-                # NOTE(willkg): the str of an exception is the message; we need to
-                # control the message carefully so we're not spitting unsanitized data
-                # back to the user in the error
-                raise falcon.HTTPBadRequest(title=f"job {i} has invalid stacks: {exc}")
-
-            METRICS.histogram(
-                "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v5"]
+            debug_stats.set(
+                "modules.count", value=sum([val for key, val in all_modules.items()])
             )
+            for key, count in all_modules.items():
+                debug_stats.set(["modules", "stacks_per_module", key], count)
 
-            results.append(self.symbolicate(stacks, modules))
+            # Add 0 values if we need them
+            debug_stats.incr("cache_lookups.count", 0)
+            debug_stats.incr("cache_lookups.time", 0)
+            debug_stats.incr("downloads.count", 0)
+            debug_stats.incr("downloads.time", 0)
+            debug_stats.incr("downloads.size", 0)
 
-        resp.text = json.dumps({"results": results})
+            response["debug"] = debug_stats.data
+
+            """
+                "time": 0,
+                "stacks": {
+                    "count": total_stacks,
+                },
+                "modules": {
+                    # FIXME: Calculate modules_lookup count of set of modules we looked
+                    # up (true or false)
+                    # "count": len(modules_lookups),
+
+                    # FIXME: Calculate stacks_per_module; map of (filename, debug_id) ->
+                    # count
+                    # "stacks_per_module": stacks_per_module,
+                },
+                "cache_lookups": {
+                    # "count": len(cache_lookup_times),
+                    # "time": float(sum(cache_lookup_times)),
+                },
+                "downloads": {
+                    # "count": len(download_times),
+                    # "time": float(sum(download_times)),
+                    # "size": float(sum(download_sizes)),
+                },
+            }
+            """
+        resp.text = json.dumps(response)
