@@ -4,6 +4,7 @@
 
 from io import BytesIO
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 
@@ -13,6 +14,7 @@ from eliot.symbolicate_resource import (
     InvalidModules,
     InvalidStacks,
     ModuleInfo,
+    DebugStats,
     SymbolicateBase,
     validate_modules,
     validate_stacks,
@@ -315,11 +317,15 @@ class TestSymbolicateBase:
             symcache=None,
         )
 
+        debug_stats = DebugStats()
+
         # Get the symcache which should be in the cache and make sure it's the
         # same one we put in
-        base.get_symcache(module_info)
+        base.get_symcache(module_info, debug_stats)
         assert module_info.symcache is not None
         assert module_info.symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
+
+        assert debug_stats.data["cache_lookups"] == {"count": 1, "hits": 1, "time": ANY}
 
     def test_get_symcache_not_in_cache(self, requestsmock, tmpcachedir, tmpdir):
         # Set up a DiskCache
@@ -348,11 +354,15 @@ class TestSymbolicateBase:
             symcache=None,
         )
 
+        debug_stats = DebugStats()
+
         # Get the symcache which should be in the cache and make sure it's the
         # same one we put in
-        base.get_symcache(module_info)
+        base.get_symcache(module_info, debug_stats)
         assert module_info.symcache is not None
         assert module_info.symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
+
+        assert debug_stats.data["cache_lookups"] == {"count": 1, "hits": 0, "time": ANY}
 
     def test_symbolicate(self, requestsmock, tmpcachedir, tmpdir):
         # Set up a DiskCache
@@ -375,8 +385,9 @@ class TestSymbolicateBase:
 
         stacks = [[[0, int("5380", 16)]]]
         modules = [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]]
+        debug_stats = DebugStats()
 
-        assert base.symbolicate(stacks, modules) == {
+        assert base.symbolicate(stacks, modules, debug_stats) == {
             "found_modules": {"testproj/D48F191186D67E69DF025AD71FB91E1F0": True},
             "stacks": [
                 [
@@ -391,6 +402,18 @@ class TestSymbolicateBase:
                     }
                 ]
             ],
+        }
+        assert debug_stats.data == {
+            "cache_lookups": {"count": 1, "hits": 0, "time": ANY},
+            "downloads": {
+                "count": 1,
+                "size_per_module": {
+                    "testproj/D48F191186D67E69DF025AD71FB91E1F0": 177,
+                },
+                "time_per_module": {
+                    "testproj/D48F191186D67E69DF025AD71FB91E1F0": ANY,
+                },
+            },
         }
 
     def test_symbolicate_pe_file(self, requestsmock, tmpcachedir, tmpdir):
@@ -425,8 +448,9 @@ class TestSymbolicateBase:
 
         stacks = [[[0, int("5380", 16)]]]
         modules = [["xul.pdb", "0185139C8F04FFC94C4C44205044422E1"]]
+        debug_stats = DebugStats()
 
-        assert base.symbolicate(stacks, modules) == {
+        assert base.symbolicate(stacks, modules, debug_stats) == {
             "found_modules": {"xul.pdb/0185139C8F04FFC94C4C44205044422E1": True},
             "stacks": [
                 [
