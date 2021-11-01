@@ -2,7 +2,7 @@ Sphinx==4.2.0
 black==21.9b0
 boltons==21.0.0
 boto3==1.18.53
-botocore==1.21.53
+botocore==1.21.65
 celery==5.1.2
 click==7.1.2
 datadog==0.42.0
