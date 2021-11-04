@@ -13,7 +13,7 @@
   </head>
 
   <body class="leading-normal tracking-normal">
-    <div class="container mx-auto max-w-screen-lg flex flex-col h-screen justify-between">
+    <div class="container mx-auto max-w-screen-xl flex flex-col h-screen justify-between">
       <header class="h-10">
         <nav id="header" class="p-0 m-0">
           <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
@@ -48,8 +48,9 @@
           </p>
 
           <h2 class="my-4 text-2xl font-bold">API</h2>
-          <p class="py-2">
-            <a class="text-blue-800 hover:text-blue-500" href="https://tecken.readthedocs.io/en/latest/symbolication.html">API documentation</a>
+          <p class="py-2 pt-5">
+            For detailed API and usage information, see the
+            <a class="text-blue-800 hover:text-blue-500" href="https://tecken.readthedocs.io/en/latest/symbolication.html">API documentation</a>.
           </p>
           <p class="py-2">
             Python example:
@@ -57,47 +58,47 @@
           <pre class="px-4 bg-333 m-0 text-sm"><code class="language-python">
 import requests
 
+# Payload consists of one job with a single stack to be symbolicated.
+#
+# Note that these debug files may no longer exist, so this may not symbolicate
+# well.
 payload = {
-    "jobs": [
-        {
-            "memoryMap": [
-                [
-                    "xul.pdb",
-                    "44E4EC8C2F41492B9369D6B9A059577C2"
-                ],
-                [
-                    "wntdll.pdb",
-                    "D74F79EB1F8D4A45ABCD2F476CCABACC2"
-                ]
-            ],
-            "stacks": [
-                [
-                    [0, 11723767],
-                    [1, 65802]
-                ]
-            ]
-        }
-    ]
+  "jobs": [
+    {
+      "memoryMap": [
+        [
+          "xul.pdb",                           # debug filename
+          "44E4EC8C2F41492B9369D6B9A059577C2"  # debug id
+        ],
+        [
+          "wntdll.pdb",                        # debug filename
+          "D74F79EB1F8D4A45ABCD2F476CCABACC2"  # debug id
+        ]
+      ],
+      "stacks": [
+        [
+          [0, 11723767],                       # module index 0, module offset (dec) 11723767
+          [1, 65802]                           # module index 1, module offset (dec) 65802
+        ]
+      ]
+    }
+  ]
 }
 
 # Please use a unique user agent. It helps us debug issues, size the
 # servers based on load, and notify users of changes and migrations.
 headers = {
-    "User-Agent": "example-agent/1.0 (+https://example.com/)",
+  "User-Agent": "example-agent/1.0 (+https://example.com/)",
 }
 
 resp = requests.post(
-    "https://symbolication.services.mozilla.com/symbolicate/v5",
-    headers=headers,
-    json=payload,
+  "https://symbolication.services.mozilla.com/symbolicate/v5",
+  headers=headers,
+  json=payload,
 )
 
 print(resp.json())
           </code></pre>
-          <p class="py-2 pt-5">
-            For detailed API and usage information, see the
-            <a class="text-blue-800 hover:text-blue-500" href="https://tecken.readthedocs.io/en/latest/symbolication.html">API documentation</a>.
-          </p>
 
           <h2 class="my-4 text-2xl font-bold">Code</h2>
           <p class="py-2">
