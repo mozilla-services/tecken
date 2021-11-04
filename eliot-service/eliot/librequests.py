@@ -8,7 +8,24 @@ Utilities for using the requests library.
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.exceptions import ConnectionError, ReadTimeout
+from urllib3.util.retry import (
+    ConnectTimeoutError,
+    ProtocolError,
+    ProxyError,
+    ReadTimeoutError,
+)
+
+
+# Exceptions that indicate an HTTP request should be retried
+RETRYABLE_EXCEPTIONS = (
+    ConnectionError,
+    ConnectTimeoutError,
+    ProtocolError,
+    ProxyError,
+    ReadTimeout,
+    ReadTimeoutError,
+)
 
 
 class HTTPAdapterWithTimeout(HTTPAdapter):
@@ -37,23 +54,8 @@ class HTTPAdapterWithTimeout(HTTPAdapter):
         return super().send(*args, **kwargs)
 
 
-def session_with_retries(
-    total_retries=5,
-    backoff_factor=0.2,
-    status_forcelist=(429, 500, 504),
-    default_timeout=5.0,
-):
-    """Returns session that retries on HTTP 429, 500, and 504 with default timeout
-
-    :arg int total_retries: total number of times to retry
-
-    :arg float backoff_factor: number of seconds to increment by between
-        attempts
-
-        For example, 0.1 will back off 0.1s, then 0.2s, then 0.3s, ...
-
-    :arg tuple of HTTP codes status_forcelist: tuple of HTTP codes to
-        retry on
+def requests_session(default_timeout=5.0):
+    """Returns session that has a default timeout
 
     :arg varies default_timeout: number of seconds before timing out
 
@@ -63,20 +65,12 @@ def session_with_retries(
     :returns: a requests Session instance
 
     """
-    retries = Retry(
-        total=total_retries,
-        backoff_factor=backoff_factor,
-        status_forcelist=list(status_forcelist),
-    )
-
     session = requests.Session()
 
     # Set the User-Agent header so we can distinguish our stuff from other stuff
     session.headers.update({"User-Agent": "tecken-requests/1.0"})
 
-    adapter = HTTPAdapterWithTimeout(
-        max_retries=retries, default_timeout=default_timeout
-    )
+    adapter = HTTPAdapterWithTimeout(default_timeout=default_timeout)
     session.mount("http://", adapter)
     session.mount("https://", adapter)
 

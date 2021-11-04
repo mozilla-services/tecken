@@ -1,4 +1,5 @@
 Sphinx==4.2.0
+backoff==1.11.1
 black==21.10b0
 boltons==21.0.0
 boto3==1.19.7

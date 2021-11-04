@@ -9,8 +9,11 @@ Contains code for downloading sym files from one or more sources.
 from functools import wraps
 import time
 
+import backoff
+from requests.exceptions import ConnectionError
+
 from eliot.libmarkus import METRICS
-from eliot.librequests import session_with_retries
+from eliot.librequests import requests_session, RETRYABLE_EXCEPTIONS
 from eliot.libsentry import get_sentry_client
 
 
@@ -77,7 +80,7 @@ class HTTPSource(Source):
 
     def __init__(self, source_url):
         self.source_url = source_url.rstrip("/") + "/"
-        self.session = session_with_retries()
+        self.session = requests_session()
 
     def _make_key(self, debug_filename, debug_id, filename):
         """Generates a key from given arguments
@@ -93,6 +96,49 @@ class HTTPSource(Source):
         return "%s/%s/%s" % (debug_filename, debug_id, filename)
 
     @time_download("eliot.downloader.download")
+    @backoff.on_exception(
+        wait_gen=backoff.expo,
+        max_tries=5,
+        exception=RETRYABLE_EXCEPTIONS,
+    )
+    def download_file(self, url):
+        """Downloads file at url and returns bytes
+
+        :arg url: the url of the file to download
+
+        :returns: bytes
+
+        :raises FileNotFound: if the file cannot be found
+
+        :raises ErrorFileNotFound: if the file cannot be found because of some possibly
+            transient error like a timeout or a connection error
+
+        :raises ConnetionError: if status_code is 500 and retries are exhausted
+
+        """
+        resp = self.session.get(url, allow_redirects=True)
+        if resp.status_code == 200:
+            return resp.content
+
+        # These status codes are retryable, so raise an exception that will
+        # force backoff.on_exception to retry this entire method
+        if resp.status_code in (429, 500, 504):
+            raise ConnectionError(f"retryable status code {resp.status_code}")
+
+        # If the status_code is 404, that's a legitimate FileNotFound. Anything else
+        # is either fishy or a server error.
+        if resp.status_code == 404:
+            raise FileNotFound("status_code: %s" % resp.status_code)
+
+        # NOTE(willkg): This might be noisy, but we'll hone it as we get a better
+        # feel for what "normal" and "abnormal" errors look like
+        get_sentry_client().captureMessage(
+            "error: symbol downloader got %s: %s"
+            % (resp.status_code, resp.content[:100])
+        )
+
+        raise ErrorFileNotFound("status_code: %s" % resp.status_code)
+
     def get(self, debug_filename, debug_id, filename):
         """Retrieve a source url.
 
@@ -111,23 +157,10 @@ class HTTPSource(Source):
         key = self._make_key(debug_filename, debug_id, filename)
         url = "%s%s" % (self.source_url, key)
 
-        resp = self.session.get(url, allow_redirects=True)
-        if resp.status_code != 200:
-            # If the status_code is 404, that's a legitimate FileNotFound. Anything else
-            # is either fishy or a server error.
-            if resp.status_code == 404:
-                raise FileNotFound("status_code: %s" % resp.status_code)
-
-            # NOTE(willkg): This might be noisy, but we'll hone it as we get a better
-            # feel for what "normal" and "abnormal" errors look like
-            get_sentry_client().captureMessage(
-                "error: symbol downloader got %s: %s"
-                % (resp.status_code, resp.content[:100])
-            )
-
-            raise ErrorFileNotFound("status_code: %s" % resp.status_code)
-
-        return resp.content
+        try:
+            return self.download_file(url)
+        except RETRYABLE_EXCEPTIONS as e:
+            raise ErrorFileNotFound(f"status_code: {e}")
 
 
 class SymbolFileDownloader:
