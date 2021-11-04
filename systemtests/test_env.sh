@@ -31,18 +31,21 @@ case $1 in
     "local")
         export DESTRUCTIVE_TESTS=1
         export BAD_TOKEN_TEST=1
-        HOST=http://web:8000/
+        TECKENHOST=http://web:8000/
+        ELIOTHOST=http://eliot:8000/
         export AUTH_TOKEN="${LOCAL_AUTH_TOKEN}"
         ;;
     "stage")
         export DESTRUCTIVE_TESTS=1
         export BAD_TOKEN_TEST=1
-        HOST=https://symbols.stage.mozaws.net/
+        TECKENHOST=https://symbols.stage.mozaws.net/
+        ELIOTHOST=https://symbolication.stage.mozaws.net/
         export AUTH_TOKEN="${STAGE_AUTH_TOKEN}"
         ;;
     "prod")
         echo "Running tests in prod--skipping destructive tests!"
-        HOST=https://symbols.mozilla.org/
+        TECKENHOST=https://symbols.mozilla.org/
+        ELIOTHOST=https://symbolication.services.mozilla.com/
         export AUTH_TOKEN="${PROD_AUTH_TOKEN}"
         ;;
     *)
@@ -51,7 +54,8 @@ case $1 in
         ;;
 esac
 
-echo "HOST: ${HOST}"
+echo "TECKENHOST: ${TECKENHOST}"
+echo "ELIOTHOST: ${ELIOTHOST}"
 echo ""
 
 # DESTRUCTIVE TESTS
@@ -59,13 +63,13 @@ if [ "${DESTRUCTIVE_TESTS}" == "1" ]; then
     echo ">>> UPLOAD TEST (DESTRUCTIVE)"
     for FN in ./data/zip-files/*.zip
     do
-        python ./bin/upload-symbols.py --expect-code=201 --auth-token="${AUTH_TOKEN}" --base-url="${HOST}" "${FN}"
+        python ./bin/upload-symbols.py --expect-code=201 --auth-token="${AUTH_TOKEN}" --base-url="${TECKENHOST}" "${FN}"
     done
     echo ""
 
     echo ">>> UPLOAD BY DOWNLOAD TEST (DESTRUCTIVE)"
     URL=$(python bin/list-firefox-symbols-zips.py --number=1 --max-size=1000000000)
-    python ./bin/upload-symbols-by-download.py --base-url="${HOST}" --auth-token="${AUTH_TOKEN}" "${URL}"
+    python ./bin/upload-symbols-by-download.py --base-url="${TECKENHOST}" --auth-token="${AUTH_TOKEN}" "${URL}"
     echo ""
 else
     echo ">>> SKIPPING DESTRUCTIVE TESTS"
@@ -78,23 +82,26 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     echo ">>> UPLOAD WITH BAD TOKEN TEST--this should return a 403 and error and not a RemoteDisconnected"
     FN=$(ls -S ./data/zip-files/*.zip | head -n 1)
     ls -l ${FN}
-    python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${HOST}" "${FN}"
+    python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${TECKENHOST}" "${FN}"
 fi
 
 echo ">>> SYMBOLICATION V4 and V5 TEST (ONLY 20 STACKS)"
 for FN in $(ls ./data/stacks/*.json | sort -u | head -n 20)
 do
-    # Verify v4 api
-    python ./bin/symbolicate.py verify --api-url="${HOST}symbolicate/v4" --api-version=4 "${FN}"
-    # Verify v5 api
-    python ./bin/symbolicate.py verify --api-url="${HOST}symbolicate/v5" --api-version=5 "${FN}"
+    # Verify v4 and v5 api for TECKENHOST
+    python ./bin/symbolicate.py verify --api-url="${TECKENHOST}symbolicate/v4" --api-version=4 "${FN}"
+    python ./bin/symbolicate.py verify --api-url="${TECKENHOST}symbolicate/v5" --api-version=5 "${FN}"
+
+    # Verify v4 and v5 api for ELIOTHOST
+    python ./bin/symbolicate.py verify --api-url="${ELIOTHOST}symbolicate/v4" --api-version=4 "${FN}"
+    python ./bin/symbolicate.py verify --api-url="${ELIOTHOST}symbolicate/v5" --api-version=5 "${FN}"
 done
 
 echo ""
 
 echo ">>> DOWNLOAD TEST"
-python ./bin/download-sym-files.py --base-url="${HOST}" ./data/sym_files_to_download.csv
+python ./bin/download-sym-files.py --base-url="${TECKENHOST}" ./data/sym_files_to_download.csv
 echo ""
 
 echo ">>> DOWNLOAD MISSING SYMBOLS CSV TEST"
-python ./bin/download-missing-symbols.py --base-url="${HOST}"
+python ./bin/download-missing-symbols.py --base-url="${TECKENHOST}"
