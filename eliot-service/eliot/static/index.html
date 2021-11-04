@@ -13,8 +13,7 @@
   </head>
 
   <body class="leading-normal tracking-normal">
-    <div class="flex flex-col h-screen justify-between">
-
+    <div class="container mx-auto max-w-screen-lg flex flex-col h-screen justify-between">
       <header class="h-10">
         <nav id="header" class="p-0 m-0">
           <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
@@ -23,8 +22,8 @@
                 Mozilla Symbolication Server
               </a>
             </div>
-            <div class="w-full flex-grow lg:flex lg:items-center lg:w-auto hidden mt-2 lg:mt-0 lg:bg-transparent p-4 lg:p-0 z-20" id="nav-content">
-              <ul class="list-reset lg:flex justify-end flex-1 items-center">
+            <div class="flex-grow items-center w-auto mt-0 bg-transparent p-0 z-20" id="nav-content">
+              <ul class="list-reset flex justify-end flex-1 items-center">
                 <li class="mr-3">
                   <a class="inline-block no-underline hover:text-blue-500 py-2 px-4" href="https://tecken.readthedocs.io/">Help</a>
                 </li>
@@ -81,8 +80,8 @@ payload = {
     ]
 }
 
-// Please use a unique user agent. It helps us debug issues, size the
-// servers based on load, and notify users of changes and migrations.
+# Please use a unique user agent. It helps us debug issues, size the
+# servers based on load, and notify users of changes and migrations.
 headers = {
     "User-Agent": "example-agent/1.0 (+https://example.com/)",
 }
