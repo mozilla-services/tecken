@@ -20,12 +20,12 @@ builds of Mozilla products that were uploaded to the Mozilla Symbols Server.
 
    There are two different implementations of the Symbolication API:
 
-   ==================  ===========================================================
+   ==================  =========================================================
    Status              URL
-   ==================  ===========================================================
-   Old and deprecated  https://symbols.mozilla.org/symbolication/v5
-   New                 https://symbolication.services.mozilla.com/symbolication/v5
-   ==================  ===========================================================
+   ==================  =========================================================
+   Old and deprecated  https://symbols.mozilla.org/symbolicate/v5
+   New                 https://symbolication.services.mozilla.com/symbolicate/v5
+   ==================  =========================================================
 
    Please migrate to using the new server.
 
