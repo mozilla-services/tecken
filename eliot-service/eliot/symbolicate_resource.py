@@ -217,6 +217,26 @@ class SymbolicateBase:
         self.cache = cache
         self.tmpdir = tmpdir
 
+    def check_proxied(self, req):
+        """Checks if the request was proxied and emits an incr
+
+        We split the symbolication API out to its own service and domain and changed the
+        nginx configuration for the old domain to proxy symbolication API requests to
+        the new one. When a request is proxied, this header is added::
+
+            TeckenProxied: 1
+
+        We want to see proxied vs. non-proxied requests, so we capture that in this
+        method.
+
+        We can remove this once we no longer need to proxy requests.
+
+        :arg req: the Request
+
+        """
+        is_proxied = req.get_header("TeckenProxied", default="0")
+        METRICS.incr("eliot.symbolicate.proxied", tags=[f"proxied:{is_proxied}"])
+
     def download_sym_file(self, debug_filename, debug_id):
         """Download a symbol file.
 
@@ -460,6 +480,8 @@ class SymbolicateBase:
 class SymbolicateV4(SymbolicateBase):
     @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v4"])
     def on_post(self, req, resp):
+        self.check_proxied(req)
+
         try:
             payload = json.load(req.bounded_stream)
         except json.JSONDecodeError:
@@ -532,6 +554,8 @@ class SymbolicateV4(SymbolicateBase):
 class SymbolicateV5(SymbolicateBase):
     @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v5"])
     def on_post(self, req, resp):
+        self.check_proxied(req)
+
         try:
             payload = json.load(req.bounded_stream)
         except json.JSONDecodeError:

@@ -592,6 +592,61 @@ class TestSymbolicateV4:
             "symbolicatedStacks": [["testproj::main (in testproj)"]],
         }
 
+    def test_symbolication_not_proxied(self, requestsmock, metricsmock, client):
+        """Test symbolication with no TeckenProxied header"""
+        requestsmock.get(
+            "http://symbols.example.com/testproj/D48F191186D67E69DF025AD71FB91E1F0/testproj.sym",
+            status_code=200,
+            text=TESTPROJ_SYM,
+        )
+
+        with metricsmock as mm:
+            result = client.simulate_post(
+                self.PATH,
+                json={
+                    "stacks": [[[0, int("5380", 16)]]],
+                    "memoryMap": [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]],
+                    "version": 4,
+                },
+            )
+            assert result.status_code == 200
+            assert result.headers["Content-Type"].startswith("application/json")
+
+            # Assert the request was not proxied
+            mm.assert_incr(
+                "eliot.symbolicate.proxied",
+                tags=["proxied:0"],
+            )
+
+    def test_symbolication_proxied(self, requestsmock, metricsmock, client):
+        """Test symbolication when TeckenProxied header exists and is 1"""
+        requestsmock.get(
+            "http://symbols.example.com/testproj/D48F191186D67E69DF025AD71FB91E1F0/testproj.sym",
+            status_code=200,
+            text=TESTPROJ_SYM,
+        )
+
+        with metricsmock as mm:
+            result = client.simulate_post(
+                self.PATH,
+                headers={
+                    "TeckenProxied": "1",
+                },
+                json={
+                    "stacks": [[[0, int("5380", 16)]]],
+                    "memoryMap": [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]],
+                    "version": 4,
+                },
+            )
+            assert result.status_code == 200
+            assert result.headers["Content-Type"].startswith("application/json")
+
+            # Assert the request was proxied
+            mm.assert_incr(
+                "eliot.symbolicate.proxied",
+                tags=["proxied:1"],
+            )
+
 
 class TestSymbolicateV5:
     PATH = "/symbolicate/v5"
@@ -823,3 +878,68 @@ class TestSymbolicateV5:
                 }
             ],
         }
+
+    def test_symbolication_not_proxied(self, requestsmock, metricsmock, client):
+        """Test symbolication with no TeckenProxied header"""
+        requestsmock.get(
+            "http://symbols.example.com/testproj/D48F191186D67E69DF025AD71FB91E1F0/testproj.sym",
+            status_code=200,
+            text=TESTPROJ_SYM,
+        )
+
+        with metricsmock as mm:
+            result = client.simulate_post(
+                self.PATH,
+                json={
+                    "jobs": [
+                        # job 0
+                        {
+                            "stacks": [[[0, int("5380", 16)]]],
+                            "memoryMap": [
+                                ["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]
+                            ],
+                        },
+                    ]
+                },
+            )
+            assert result.status_code == 200
+            assert result.headers["Content-Type"].startswith("application/json")
+
+            # Assert the request was proxied
+            mm.assert_incr(
+                "eliot.symbolicate.proxied",
+                tags=["proxied:0"],
+            )
+
+    def test_symbolication_proxied(self, requestsmock, metricsmock, client):
+        """Test symbolication when TeckenProxied header exists and is 1"""
+        requestsmock.get(
+            "http://symbols.example.com/testproj/D48F191186D67E69DF025AD71FB91E1F0/testproj.sym",
+            status_code=200,
+            text=TESTPROJ_SYM,
+        )
+
+        with metricsmock as mm:
+            result = client.simulate_post(
+                self.PATH,
+                headers={"TeckenProxied": "1"},
+                json={
+                    "jobs": [
+                        # job 0
+                        {
+                            "stacks": [[[0, int("5380", 16)]]],
+                            "memoryMap": [
+                                ["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]
+                            ],
+                        },
+                    ]
+                },
+            )
+            assert result.status_code == 200
+            assert result.headers["Content-Type"].startswith("application/json")
+
+            # Assert the request was proxied
+            mm.assert_incr(
+                "eliot.symbolicate.proxied",
+                tags=["proxied:1"],
+            )

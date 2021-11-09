@@ -40,6 +40,17 @@ ELIOT_METRICS = {
           * ``v5``: the v5 API
         """,
     ),
+    "eliot.symbolicate.proxied": Metric(
+        stat_type="incr",
+        description="""\
+        Counter for symbolication requests tagged by whether they
+        were proxied or not.
+
+        Tags:
+
+        * ``proxied``: "1" if proxied, "0" if not
+        """,
+    ),
     "eliot.symbolicate.request_error": Metric(
         stat_type="incr",
         description="""\
