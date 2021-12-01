@@ -30,9 +30,9 @@ billiard==3.6.4.0 \
     --hash=sha256:299de5a8da28a783d51b197d496bef4f1595dd023a93a4f59dde1886ae905547 \
     --hash=sha256:87103ea78fa6ab4d5c751c4909bcff74617d985de7fa8b672cf8618afd5a875b
     # via celery
-black==21.10b0 \
-    --hash=sha256:6eb7448da9143ee65b856a5f3676b7dda98ad9abe0f87fce8c59291f15e82a5b \
-    --hash=sha256:a9952229092e325fe5f3dae56d81f639b23f7131eb840781947e4b2886030f33
+black==21.11b1 \
+    --hash=sha256:802c6c30b637b28645b7fde282ed2569c0cd777dbe493a41b6a03c1d903f99ac \
+    --hash=sha256:a042adbb18b3262faad5aff4e834ff186bb893f95ba3a8013f09de1e5569def2
     # via -r requirements.in
 boltons==21.0.0 \
     --hash=sha256:65e70a79a731a7fe6e98592ecfb5ccf2115873d01dbc576079874629e5c90f13 \
