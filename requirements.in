@@ -23,7 +23,7 @@ jsonschema==4.1.2
 markus[datadog]==4.0.0
 mock==4.0.3
 mozilla-django-oidc==2.0.0
-msgpack==1.0.2
+msgpack==1.0.3
 pip-tools==6.4.0
 pytest-django==4.4.0
 pytest-mock==3.6.1
