@@ -34,7 +34,7 @@ requests-mock==1.9.3
 requests==2.26.0
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-httpdomain==1.8.0
-symbolic==8.3.2
+symbolic==8.5.0
 ujson==4.2.0
 urllib3==1.26.7
 urlwait==1.0
