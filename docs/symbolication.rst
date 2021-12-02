@@ -18,7 +18,8 @@ builds of Mozilla products that were uploaded to the Mozilla Symbols Server.
 
 .. Note:: 2021-10-07
 
-   There are two different implementations of the Symbolication API:
+   The old symbolication API service hosted on symbols.mozilla.org is
+   deprecated.
 
    ==================  =========================================================
    Status              URL
@@ -27,7 +28,7 @@ builds of Mozilla products that were uploaded to the Mozilla Symbols Server.
    New                 https://symbolication.services.mozilla.com/symbolicate/v5
    ==================  =========================================================
 
-   Please migrate to using the new server.
+   Please update to the new service.
 
 
 Stacks
