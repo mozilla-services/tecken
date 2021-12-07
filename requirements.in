@@ -46,7 +46,7 @@ redis==3.4.1
 
 # NOTE(willkg): Django 2.2 is an LTS series so don't upgrade until the next
 # LTS.
-Django==2.2.24
+Django==2.2.25
 
 # NOTE(willkg): have to stay with 2.8.6 until we upgrade to Django 3.2;
 # https://github.com/psycopg/psycopg2/issues/1293
