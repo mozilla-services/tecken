@@ -119,8 +119,8 @@ lintfix: .env .docker-build  ## | Reformat code.
 
 .PHONY: rebuildreqs
 rebuildreqs: .env .docker-build  ## | Rebuild requirements.txt file after requirements.in changes.
-	docker-compose run --rm web bash pip-compile --generate-hashes
+	docker-compose run --rm --no-deps web bash pip-compile --generate-hashes
 
 .PHONY: updatereqs
 updatereqs: .env .docker-build  ## | Update deps in requirements.txt file.
-	docker-compose run --rm web bash pip-compile --generate-hashes -U
+	docker-compose run --rm --no-deps web bash pip-compile --generate-hashes -U
