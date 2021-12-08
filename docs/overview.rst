@@ -22,7 +22,7 @@ Architecture
 
 Rough architecture diagram of Tecken:
 
-.. image:: images/arch.png
+.. image:: drawio/tecken_architecture.drawio.png
    :alt: Tecken architecture diagram
 
 
