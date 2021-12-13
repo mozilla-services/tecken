@@ -4,8 +4,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Sends a stack for symbolication with a Symbols server using the
-# Symbolicate API.
+# Sends a stack for symbolication with a Symbols server using the symbolicate service
+# API.
 
 # Usage: ./bin/symbolicate.py FILE
 
@@ -74,14 +74,14 @@ def symbolicate_group():
 @symbolicate_group.command("print")
 @click.option(
     "--api-url",
-    default="https://symbols.mozilla.org/symbolicate/v4",
+    default="https://symbolication.services.mozilla.com/symbolicate/v5",
     help="The API url to use.",
 )
 @click.option(
     "--api-version",
-    default=4,
+    default=5,
     type=int,
-    help="The API version to use; 4 or 5; defaults to 4.",
+    help="The API version to use; 4 or 5; defaults to 5.",
 )
 @click.option(
     "--debug/--no-debug", default=False, help="Whether to include debug info."
@@ -128,14 +128,14 @@ def print_stack(ctx, api_url, api_version, debug, stackfile):
 @symbolicate_group.command("verify")
 @click.option(
     "--api-url",
-    default="https://symbols.mozilla.org/symbolicate/v4",
+    default="https://symbolication.services.mozilla.com/symbolicate/v5",
     help="The API url to use.",
 )
 @click.option(
     "--api-version",
-    default=4,
+    default=5,
     type=int,
-    help="The API version to use; 4 or 5; defaults to 4.",
+    help="The API version to use; 4 or 5; defaults to 5.",
 )
 @click.argument("stackfile", required=False)
 @click.pass_context
