@@ -179,15 +179,16 @@ django==2.2.25 \
     --hash=sha256:b1e65eaf371347d4b13eb7e061b09786c973061de95390c327c85c1e2aa2349c
     # via
     #   -r requirements.in
+    #   django-configurations
     #   django-redis
     #   mozilla-django-oidc
 django-cache-memoize==0.1.10 \
     --hash=sha256:63e8faa245a41c0dbad843807e9f21a6e59eba8e6e50df310fdf6485a6749843 \
     --hash=sha256:676299313079cde9242ae84db0160e80b1d44e8dd6bc9b1f4f1247e11b30c9e0
     # via -r requirements.in
-django-configurations==2.2 \
-    --hash=sha256:0b93cb7042739e2d69cfc6fb81676bbd3cbb63ea19b02e8b681f4cad3a8aaf1b \
-    --hash=sha256:9e3bcea1355ac50a4c9f854f751d214cb17e5f8adf18405a4488d0a1e8945915
+django-configurations==2.3.1 \
+    --hash=sha256:65e2e9b68a699d9403663b17c367e5e31ffd3739d4ddf995e04217416876dba1 \
+    --hash=sha256:e2ca25530e184f0ee3b7f5ae69563461a93a8914493306ee0bf6d71e7d8ad1d0
     # via -r requirements.in
 django-redis==5.0.0 \
     --hash=sha256:048f665bbe27f8ff2edebae6aa9c534ab137f1e8fa7234147ef470df3f3aa9b8 \
@@ -653,7 +654,6 @@ six==1.16.0 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
     #   click-repl
-    #   django-configurations
     #   pyopenssl
     #   python-dateutil
     #   requests-mock
