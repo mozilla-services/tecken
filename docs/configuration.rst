@@ -10,16 +10,21 @@ Symbols Service configuration
 
 The Symbols Service covers uploading and downloading symbols.
 
-.. envvar:: GUNICORN_TIMEOUT
+.. everett:option:: GUNICORN_TIMEOUT
+   :default: "300"
 
-   To specify the timeout value.
+   Specifies the timeout value.
 
    https://docs.gunicorn.org/en/stable/settings.html#timeout
 
+   Used in `bin/run_web.sh
+   <https://github.com/mozilla-services/tecken/blob/main/bin/run_web.sh>`_.
 
-.. envvar:: GUNICORN_WORKERS
 
-   To specify the number of gunicorn workers. The default is 4.
+.. everett:option:: GUNICORN_WORKERS
+   :default: "1"
+
+   Specifies the number of gunicorn workers.
 
    You should set it to ``(2 x $num_cores) + 1``.
 
@@ -27,23 +32,24 @@ The Symbols Service covers uploading and downloading symbols.
 
    http://docs.gunicorn.org/en/stable/design.html#how-many-workers
 
+   Used in `bin/run_web.sh
+   <https://github.com/mozilla-services/tecken/blob/main/bin/run_web.sh>`_.
+
 
 .. envvar:: DJANGO_CONFIGURATION
 
-   Determines the settings class to use.
+   Specifies the settings class to use. Defaults to "Prod".
 
-   Options:
+   This must be set as an environment variable.
+
+   Possible values:
 
    * ``Prod``: production configuration
    * ``Stage``: stage configuration
    * ``Localdev``: local development environment configuration
 
-   The Dockerfile sets this to ``Prod``, but if you use docker-compose
-   to start everything, it'll pick up ``Localdev``.
-
-   .. code-block:: shell
-
-      DJANGO_CONFIGURATION=Localdev
+   The Dockerfile sets this to ``Prod``, but if you use docker-compose to start
+   everything, it'll use ``Localdev``.
 
 
 .. envvar:: DJANGO_SECRET_KEY
@@ -65,6 +71,7 @@ The Symbols Service covers uploading and downloading symbols.
    .. code-block:: shell
 
        DJANGO_ALLOWED_HOSTS=symbols.mozilla.org
+
 
 .. envvar:: SENTRY_DSN, SENTRY_PUBLIC_DSN
 
@@ -358,40 +365,56 @@ which is run by Honcho.
 
 Gunicorn configuration:
 
-.. envvar:: ELIOT_GUNICORN_WORKERS
+.. everett:option:: ELIOT_GUNICORN_WORKERS
+   :default: "1"
 
-   Specify the number of gunicorn workers. The default is 4.
+   Specifies the number of gunicorn workers.
 
    Gunicorn docs suggest to set it to ``(2 x $num_cores) + 1``.
 
    https://docs.gunicorn.org/en/stable/settings.html#workers
 
-   http://docs.gunicorn.org/en/stable/design.html#how-many-workers
+   https://docs.gunicorn.org/en/stable/design.html#how-many-workers
+
+   Used in `bin/run_eliot_web.sh
+   <https://github.com/mozilla-services/tecken/blob/main/bin/run_eliot_web.sh>`_.
 
 
-.. envvar:: ELIOT_GUNICORN_TIMEOUT
+.. everett:option:: ELIOT_GUNICORN_TIMEOUT
+   :default: "300"
 
-   Specify the timeout value. The default is 300.
+   Specifies the timeout value.
 
    https://docs.gunicorn.org/en/stable/settings.html#timeout
 
-
-.. envvar:: ELIOT_GUNICORN_PORT
-
-   Set the port to listen to. Defaults to 8000.
+   Used in `bin/run_eliot_web.sh
+   <https://github.com/mozilla-services/tecken/blob/main/bin/run_eliot_web.sh>`_.
 
 
-.. envvar:: ELIOT_GUNICORN_CMD_PREFIX
+.. everett:option:: ELIOT_GUNICORN_PORT
+   :default: "8000"
 
-   Set any command prefix to run the gunicorn process in. Default
-   is ``""``.
+   Specifies the port to listen to.
+
+   Used in `bin/run_eliot_web.sh
+   <https://github.com/mozilla-services/tecken/blob/main/bin/run_eliot_web.sh>`_.
+
+
+.. everett:option:: ELIOT_GUNICORN_CMD_PREFIX
+   :default: ""
+
+   Specifies a command prefix to run the gunicorn process in.
+
+   Used in `bin/run_eliot_web.sh
+   <https://github.com/mozilla-services/tecken/blob/main/bin/run_eliot_web.sh>`_.
 
 
 Webapp configuration:
 
-.. autocomponent:: eliot.app.EliotApp
-   :hide-classname:
-   :namespace: eliot
+.. autocomponentconfig:: eliot.app.EliotApp
+   :show-table:
+   :hide-name:
+   :namespace: ELIOT
    :case: upper
 
 
@@ -400,7 +423,8 @@ Disk cache manager
 
 The disk cache manager is run as a single process by Honcho.
 
-.. autocomponent:: eliot.cache_manager.DiskCacheManager
-   :hide-classname:
-   :namespace: eliot
+.. autocomponentconfig:: eliot.cache_manager.DiskCacheManager
+   :show-table:
+   :hide-name:
+   :namespace: ELIOT
    :case: upper
