@@ -96,6 +96,7 @@ testshell: .env .docker-build  ## | Open shell in test environment.
 
 .PHONY: docs
 docs: .env .docker-build  ## | Build docs.
+	docker-compose run --rm --user ${USE_UID} --no-deps test bash make -C docs/ clean
 	docker-compose run --rm --user ${USE_UID} --no-deps test bash make -C docs/ html
 
 .PHONY: docs
