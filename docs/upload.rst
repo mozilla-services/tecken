@@ -232,6 +232,12 @@ filename.
 
 Records of the upload and what files were in it are available on the website.
 
+.. Note::
+
+   Symbols files can not be overwritten. Once a file is uploaded, any future
+   upload attempts for that debug_filename/debug_id combination will be
+   skipped.
+
 
 Which S3 Bucket
 ===============
