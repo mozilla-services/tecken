@@ -5,6 +5,7 @@
 import datetime
 
 from django.core.management.base import BaseCommand
+from django.db import connection, reset_queries
 from django.utils import timezone
 
 from tecken.upload.models import Upload, FileUpload
@@ -36,16 +37,25 @@ class Command(BaseCommand):
         uploads = Upload.objects.filter(try_symbols=is_try, created_at__lte=cutoff)
         file_uploads = FileUpload.objects.filter(upload__in=uploads)
 
-        # Delete fileupload first because it's got a foreignkey to upload
         if is_dry_run:
             fileupload_count = file_uploads.count()
-        else:
-            fileupload_count = file_uploads.delete()[0]
-
-        if is_dry_run:
             upload_count = uploads.count()
+
         else:
-            upload_count = uploads.delete()[0]
+            # NOTE(willkg): We use ._raw_delete() instead of .delete() here because
+            # .dete() causes a SELECT which pulls back all the data of the stuff to be
+            # deleted which is really intense and makes it not possible to run these
+            # queries in prod. It does that to prevent an integrity error because
+            # FileUpload has on_delete SET_NULL.
+            #
+            # We make sure to delete FileUpload before Upload, to prevent the integrity
+            # error.
+
+            del_query = file_uploads._chain()
+            fileupload_count = file_uploads._raw_delete(using=del_query.db)
+
+            del_query = uploads._chain()
+            upload_count = uploads._raw_delete(using=del_query.db)
 
         self.stdout.write(
             f"cleanse_upload: try={is_try}, cutoff={cutoff.date()}: "
@@ -53,6 +63,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # NOTE(willkg): if DEBUG=False, there's nothing to reset and this is a no-op
+        reset_queries()
+
         is_dry_run = options["dry_run"]
         today = timezone.now()
         today.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -74,3 +87,7 @@ class Command(BaseCommand):
         # Now cleanse regular records
         cutoff = today - datetime.timedelta(days=REGULAR_RECORD_AGE_CUTOFF)
         self.delete_records(is_dry_run=is_dry_run, is_try=False, cutoff=cutoff)
+
+        # NOTE(willkg): this only prints the SQL when DEBUG=True
+        for query in connection.queries:
+            self.stdout.write(f"{query}")
