@@ -70,7 +70,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Tecken: Symbols at Mozilla"
-copyright = "2016-2021 Mozilla Foundation"
+copyright = "2016-2022 Mozilla Foundation"
 author = "Tecken team"
 
 # The version info for the project you're documenting, acts as replacement for
