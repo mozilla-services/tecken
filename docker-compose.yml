@@ -29,6 +29,7 @@ services:
       - "8000:8000"
     links:
       - db
+      - fakesentry
       - redis-store
       - redis-cache
       - minio
@@ -136,6 +137,15 @@ services:
     # volumes:
     #   - $PWD/miniodata:/export
     command: server /export
+
+  # https://github.com/willkg/kent
+  fakesentry:
+    build:
+      context: docker/images/fakesentry
+    image: local/tecken_fakesentry
+    ports:
+      - "8090:8090"
+    command: run --host 0.0.0.0 --port 8090
 
   # https://hub.docker.com/r/mozilla/oidc-testprovider
   oidcprovider:
