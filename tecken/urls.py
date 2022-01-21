@@ -31,6 +31,7 @@ register_converter(FrontendRoutesPrefixConverter, "frontendroutes")
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("__auth_debug__", views.auth_debug, name="auth_debug"),
+    path("__broken__", views.broken_view, name="broken"),
     path("symbolicate/", include("tecken.symbolicate.urls", namespace="symbolicate")),
     path("oidc/", include("mozilla_django_oidc.urls")),
     path("upload/", include("tecken.upload.urls", namespace="upload")),
