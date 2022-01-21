@@ -166,6 +166,21 @@ class Core(AWS, Celery, S3, Configuration):
         "security.W004",  # Strict-Transport-Security is set in Nginx
     ]
 
+    # Sentry setup
+    SENTRY_DSN = values.SecretValue(environ_prefix=None)
+
+    SENTRY_CELERY_LOGLEVEL = logging.INFO
+
+    @property
+    def RAVEN_CONFIG(self):
+        config = {"dsn": self.SENTRY_DSN, "transport": RequestsHTTPTransport}
+        if self.VERSION:
+            config["release"] = (
+                self.VERSION.get("version") or self.VERSION.get("commit") or ""
+            )
+        return config
+
+    # OIDC setup
     OIDC_RP_CLIENT_ID = values.SecretValue()
     OIDC_RP_CLIENT_SECRET = values.SecretValue()
 
@@ -722,26 +737,12 @@ class Stage(Base):
         DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
         return DATABASES
 
-    # Sentry setup
-    SENTRY_DSN = values.Value(environ_prefix=None)
-
     MIDDLEWARE = (
         "raven.contrib.django.raven_compat.middleware"
         ".SentryResponseErrorIdMiddleware",
     ) + Base.MIDDLEWARE
 
     INSTALLED_APPS = Base.INSTALLED_APPS + ["raven.contrib.django.raven_compat"]
-
-    SENTRY_CELERY_LOGLEVEL = logging.INFO
-
-    @property
-    def RAVEN_CONFIG(self):
-        config = {"dsn": self.SENTRY_DSN, "transport": RequestsHTTPTransport}
-        if self.VERSION:
-            config["release"] = (
-                self.VERSION.get("version") or self.VERSION.get("commit") or ""
-            )
-        return config
 
     # Defaulting to 'localhost' here because that's where the Datadog
     # agent is expected to run in production.
@@ -771,6 +772,7 @@ class Tools(Localdev):
     """Configuration for tools that need to run with no configuration."""
 
     SECRET_KEY = "junk"
+    SENTRY_DSN = "junk"
     ENABLE_TOKENS_AUTHENTICATION = False
     SYMBOL_URLS = []
     UPLOAD_DEFAULT_URL = ""
