@@ -131,3 +131,8 @@ def test_heartbeat_no_warnings(client, botomock):
         response = client.get("/__heartbeat__")
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
+
+
+def test_broken(client):
+    with pytest.raises(Exception):
+        client.get(reverse("broken"))

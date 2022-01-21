@@ -121,3 +121,12 @@ def auth_debug(request):
     return http.HttpResponse(
         "\n".join([""] + out), content_type="text/plain; charset=utf-8"
     )
+
+
+def broken_view(request):
+    """Raises an unhandled exception to test Sentry.
+
+    Always have this behind some kind of basicauth.
+
+    """
+    raise Exception("Intentional exception")
