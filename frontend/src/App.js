@@ -13,7 +13,6 @@ import {
   Link,
 } from "react-router-dom";
 import { withRouter } from "react-router";
-import Raven from "raven-js";
 import { observer } from "mobx-react";
 import "bulma/css/bulma.css";
 
@@ -32,10 +31,6 @@ import FetchError from "./FetchError";
 import Fetch from "./Fetch";
 import DisplayAPIRequests from "./APIRequests";
 import store from "./Store";
-
-if (process.env.REACT_APP_SENTRY_PUBLIC_DSN) {
-  Raven.config(process.env.REACT_APP_SENTRY_PUBLIC_DSN).install();
-}
 
 const NavWithRouter = withRouter(Nav);
 
