@@ -39,6 +39,8 @@ if SENTRY_DSN:
     # Dockerflow logs all unhandled exceptions to request.summary so then Sentry reports
     # it twice
     ignore_logger("request.summary")
+    # This warning is unhelpful, so ignore it
+    ignore_logger("django.security.DisallowedHost")
 
 else:
     print("SENTRY_DSN is not defined. SENTRY is not being set up.")
