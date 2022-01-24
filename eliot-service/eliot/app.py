@@ -30,11 +30,7 @@ from eliot.health_resource import (
 )
 from eliot.liblogging import setup_logging, log_config
 from eliot.libmarkus import setup_metrics
-from eliot.libsentry import (
-    set_sentry_client,
-    setup_sentry_logging,
-    wsgi_capture_exceptions,
-)
+from eliot.libsentry import setup_sentry
 from eliot.symbolicate_resource import SymbolicateV4, SymbolicateV5
 
 
@@ -141,19 +137,7 @@ class EliotApp(falcon.App):
         self._all_resources = {}
 
     def setup(self):
-        # Set up logging and sentry first, so we have something to log to. Then
-        # build and log everything else.
-        setup_logging(
-            logging_level=self.config("logging_level"),
-            debug=self.config("local_dev_env"),
-            host_id=self.config("host_id"),
-            processname="webapp",
-        )
         LOGGER.info("Repository root: %s", REPOROOT_DIR)
-        set_sentry_client(self.config("secret_sentry_dsn"), REPOROOT_DIR)
-
-        # Set up Sentry exception logger if we're so configured
-        setup_sentry_logging()
 
         # Set up uncaught error handler
         self.add_error_handler(Exception, self.uncaught_error_handler)
@@ -261,16 +245,28 @@ def get_app(config_manager=None):
     if config_manager is None:
         config_manager = build_config_manager()
 
+    # Set up logging and sentry first, so we have something to log to. Then
+    # build and log everything else.
+    app_config = config_manager.with_options(EliotApp)
+    setup_logging(
+        logging_level=app_config("logging_level"),
+        debug=app_config("local_dev_env"),
+        host_id=app_config("host_id"),
+        processname="webapp",
+    )
+    setup_sentry(
+        basedir=str(REPOROOT_DIR),
+        host_id=app_config("host_id"),
+        sentry_dsn=app_config("secret_sentry_dsn"),
+    )
+
     # Create the app and verify configuration
     app = EliotApp(config_manager)
     app.verify_configuration()
     app.setup()
     app.verify()
 
-    # Wrap the app in some kind of unhandled exception notification mechanism
-    wsgi_app = wsgi_capture_exceptions(app)
-
     if app.config("local_dev_env"):
         LOGGER.info("Eliot is running! http://localhost:8050")
 
-    return wsgi_app
+    return app

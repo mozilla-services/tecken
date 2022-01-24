@@ -11,10 +11,10 @@ import time
 
 import backoff
 from requests.exceptions import ConnectionError
+from sentry_sdk import capture_message
 
 from eliot.libmarkus import METRICS
 from eliot.librequests import requests_session, RETRYABLE_EXCEPTIONS
-from eliot.libsentry import get_sentry_client
 
 
 class FileNotFound(Exception):
@@ -128,16 +128,15 @@ class HTTPSource(Source):
         # If the status_code is 404, that's a legitimate FileNotFound. Anything else
         # is either fishy or a server error.
         if resp.status_code == 404:
-            raise FileNotFound("status_code: %s" % resp.status_code)
+            raise FileNotFound(f"status_code: {resp.status_code}")
 
         # NOTE(willkg): This might be noisy, but we'll hone it as we get a better
         # feel for what "normal" and "abnormal" errors look like
-        get_sentry_client().captureMessage(
-            "error: symbol downloader got %s: %s"
-            % (resp.status_code, resp.content[:100])
+        capture_message(
+            f"error: symbol downloader got {resp.status_code}: {resp.content[:100]}"
         )
 
-        raise ErrorFileNotFound("status_code: %s" % resp.status_code)
+        raise ErrorFileNotFound(f"status_code: {resp.status_code}")
 
     def get(self, debug_filename, debug_id, filename):
         """Retrieve a source url.

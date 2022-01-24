@@ -34,7 +34,7 @@ from inotify_simple import INotify, flags
 from eliot.app import build_config_manager
 from eliot.liblogging import setup_logging, log_config
 from eliot.libmarkus import setup_metrics, METRICS
-from eliot.libsentry import set_sentry_client, setup_sentry_logging
+from eliot.libsentry import setup_sentry_logging
 
 
 if __name__ == "__main__":
@@ -162,8 +162,11 @@ class DiskCacheManager:
             debug=self.config("local_dev_env"),
         )
 
-        set_sentry_client(self.config("secret_sentry_dsn"), str(REPOROOT_DIR))
-        setup_sentry_logging()
+        setup_sentry_logging(
+            basedir=str(REPOROOT_DIR),
+            host_id=self.config("host_id"),
+            sentry_dsn=self.config("secret_sentry_dsn"),
+        )
 
         log_config(LOGGER, self.config, self)
 
