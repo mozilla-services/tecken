@@ -19,8 +19,3 @@ os.environ.setdefault("DJANGO_CONFIGURATION", "Localdev")
 from configurations.wsgi import get_wsgi_application  # noqa
 
 application = get_wsgi_application()
-
-if "SENTRY_DSN" in os.environ:
-    from raven.contrib.django.raven_compat.middleware.wsgi import Sentry
-
-    application = Sentry(application)
