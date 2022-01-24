@@ -7,7 +7,6 @@ Django settings for tecken project.
 """
 
 import logging
-import subprocess
 import os
 from urllib.parse import urlparse
 
@@ -21,14 +20,19 @@ from sentry_sdk.integrations.logging import ignore_logger
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(THIS_DIR)
 
-VERSION = get_version(BASE_DIR)
+VERSION_FILE = get_version(BASE_DIR)
 
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN:
+    version = ""
+    if VERSION_FILE:
+        version = VERSION_FILE.get("version", "") or VERSION_FILE.get("commit", "")
+    version = version or "unknown"
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        release=VERSION,
+        release=version,
         send_default_pii=False,
         integrations=[DjangoIntegration()],
     )
@@ -609,20 +613,6 @@ class Localdev(Base):
                     default="", environ_name=param, environ_prefix="AWS"
                 )
 
-    @property
-    def VERSION(self):
-        # this was breaking in ci
-        return {}
-        output = subprocess.check_output(
-            # Use the absolute path of 'git' here to avoid 'git'
-            # not being the git we expect in Docker.
-            ["/usr/bin/git", "describe", "--tags", "--always", "--abbrev=0"]
-        )  # nosec
-        if output:
-            return {"version": output.decode().strip()}
-        else:
-            return {}
-
     MARKUS_BACKENDS = [
         # Commented out, but uncomment if you want to see all the
         # metrics sent to markus.
@@ -775,8 +765,6 @@ class Tools(Localdev):
             "LOCATION": "unique-snowflake",
         },
     }
-
-    VERSION = {}
 
     MARKUS_BACKENDS = [
         {
