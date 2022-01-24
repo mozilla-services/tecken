@@ -13,7 +13,31 @@ from urllib.parse import urlparse
 
 from configurations import Configuration, values
 from dockerflow.version import get_version
-from raven.transport.requests import RequestsHTTPTransport
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import ignore_logger
+
+
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(THIS_DIR)
+
+VERSION = get_version(BASE_DIR)
+
+
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        release=VERSION,
+        send_default_pii=False,
+        integrations=[DjangoIntegration()],
+    )
+    # Dockerflow logs all unhandled exceptions to request.summary so then Sentry reports
+    # it twice
+    ignore_logger("request.summary")
+
+else:
+    print("SENTRY_DSN is not defined. SENTRY is not being set up.")
 
 
 class AWS:
@@ -55,11 +79,6 @@ class Core(AWS, Celery, S3, Configuration):
     """Settings that will never change per-environment."""
 
     # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-    THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-    BASE_DIR = os.path.dirname(THIS_DIR)
-
-    VERSION = get_version(BASE_DIR)
-
     INSTALLED_APPS = [
         "whitenoise.runserver_nostatic",
         # Django apps
@@ -166,19 +185,7 @@ class Core(AWS, Celery, S3, Configuration):
         "security.W004",  # Strict-Transport-Security is set in Nginx
     ]
 
-    # Sentry setup
-    SENTRY_DSN = values.SecretValue(environ_prefix=None)
-
     SENTRY_CELERY_LOGLEVEL = logging.INFO
-
-    @property
-    def RAVEN_CONFIG(self):
-        config = {"dsn": self.SENTRY_DSN, "transport": RequestsHTTPTransport}
-        if self.VERSION:
-            config["release"] = (
-                self.VERSION.get("version") or self.VERSION.get("commit") or ""
-            )
-        return config
 
     # OIDC setup
     OIDC_RP_CLIENT_ID = values.SecretValue()
@@ -363,15 +370,9 @@ class Base(Core):
                     "class": "logging.StreamHandler",
                     "formatter": ("json" if self.LOGGING_USE_JSON else "verbose"),
                 },
-                "sentry": {
-                    "level": "ERROR",
-                    "class": (
-                        "raven.contrib.django.raven_compat.handlers.SentryHandler"
-                    ),
-                },
                 "null": {"class": "logging.NullHandler"},
             },
-            "root": {"level": "INFO", "handlers": ["sentry", "console"]},
+            "root": {"level": "INFO", "handlers": ["console"]},
             "loggers": {
                 "django": {
                     "level": "INFO",
@@ -385,16 +386,6 @@ class Base(Core):
                 },
                 "django.request": {
                     "level": "INFO",
-                    "handlers": ["console"],
-                    "propagate": False,
-                },
-                "raven": {
-                    "level": "DEBUG",
-                    "handlers": ["console"],
-                    "propagate": False,
-                },
-                "sentry.errors": {
-                    "level": "DEBUG",
                     "handlers": ["console"],
                     "propagate": False,
                 },
@@ -737,13 +728,6 @@ class Stage(Base):
         DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
         return DATABASES
 
-    MIDDLEWARE = (
-        "raven.contrib.django.raven_compat.middleware"
-        ".SentryResponseErrorIdMiddleware",
-    ) + Base.MIDDLEWARE
-
-    INSTALLED_APPS = Base.INSTALLED_APPS + ["raven.contrib.django.raven_compat"]
-
     # Defaulting to 'localhost' here because that's where the Datadog
     # agent is expected to run in production.
     STATSD_HOST = values.Value("localhost")
@@ -772,7 +756,6 @@ class Tools(Localdev):
     """Configuration for tools that need to run with no configuration."""
 
     SECRET_KEY = "junk"
-    SENTRY_DSN = "junk"
     ENABLE_TOKENS_AUTHENTICATION = False
     SYMBOL_URLS = []
     UPLOAD_DEFAULT_URL = ""

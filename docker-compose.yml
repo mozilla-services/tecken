@@ -62,6 +62,7 @@ services:
       - docker/config/test.env
     links:
       - db
+      - fakesentry
       - redis-store
       - redis-cache
     volumes:
@@ -75,6 +76,7 @@ services:
       - docker/config/test.env
     links:
       - db
+      - fakesentry
       - redis-store
       - redis-cache
 
