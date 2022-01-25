@@ -4,44 +4,7 @@
 
 from django.core import checks
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-from dockerflow.health import (
-    ERROR_CANNOT_CONNECT_REDIS,
-    ERROR_MISSING_REDIS_CLIENT,
-    ERROR_MISCONFIGURED_REDIS,
-    ERROR_REDIS_PING_FAILED,
-)
 from tecken.storage import StorageBucket, StorageError
-
-
-def check_redis_store_connected(app_configs, **kwargs):
-    """
-    This code is copied from the dockerflow.django.checks but with a
-    different name of the connection.
-    """
-    import redis
-    from django_redis import get_redis_connection
-
-    errors = []
-
-    try:
-        # Note! This name 'store' is specific only to tecken
-        connection = get_redis_connection("store")
-    except redis.ConnectionError as e:
-        msg = f"Could not connect to redis: {e!s}"
-        errors.append(checks.Error(msg, id=ERROR_CANNOT_CONNECT_REDIS))
-    except NotImplementedError as e:
-        msg = f"Redis client not available: {e!s}"
-        errors.append(checks.Error(msg, id=ERROR_MISSING_REDIS_CLIENT))
-    except ImproperlyConfigured as e:
-        msg = f'Redis misconfigured: "{e!s}"'
-        errors.append(checks.Error(msg, id=ERROR_MISCONFIGURED_REDIS))
-    else:
-        result = connection.ping()
-        if not result:
-            msg = "Redis ping failed"
-            errors.append(checks.Error(msg, id=ERROR_REDIS_PING_FAILED))
-    return errors
 
 
 def check_storage_urls(app_configs, **kwargs):

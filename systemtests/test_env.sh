@@ -85,13 +85,9 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${TECKENHOST}" "${FN}"
 fi
 
-echo ">>> SYMBOLICATION V4 and V5 TEST (ONLY 20 STACKS)"
+echo ">>> SYMBOLICATION V4 AND V5 TEST (ONLY 20 STACKS)"
 for FN in $(ls ./data/stacks/*.json | sort -u | head -n 20)
 do
-    # Verify v4 and v5 api for TECKENHOST
-    python ./bin/symbolicate.py verify --api-url="${TECKENHOST}symbolicate/v4" --api-version=4 "${FN}"
-    python ./bin/symbolicate.py verify --api-url="${TECKENHOST}symbolicate/v5" --api-version=5 "${FN}"
-
     # Verify v4 and v5 api for ELIOTHOST
     python ./bin/symbolicate.py verify --api-url="${ELIOTHOST}symbolicate/v4" --api-version=4 "${FN}"
     python ./bin/symbolicate.py verify --api-url="${ELIOTHOST}symbolicate/v5" --api-version=5 "${FN}"

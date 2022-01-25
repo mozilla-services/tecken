@@ -61,18 +61,13 @@ clean: .env stop  ## | Stop and remove docker containers and artifacts.
 	rm -fr .docker-build
 	rm -rf frontend/build/
 
-.PHONY: clear-caches
-clear-caches:  ## | Clear Redis caches.
+.PHONY: clear-cache
+clear-cache:  ## | Clear Redis cache.
 	docker-compose run --rm redis-cache redis-cli -h redis-cache FLUSHDB
-	docker-compose run --rm redis-store redis-cli -h redis-store FLUSHDB
 
 .PHONY: redis-cache-cli
 redis-cache-cli: .env .docker-build  ## | Open Redis CLI to cache Redis server.
 	docker-compose run --rm redis-cache redis-cli -h redis-cache
-
-.PHONY: redis-store-cli
-redis-store-cli: .env .docker-build  ## | Open Redis CLI to store Redis server.
-	docker-compose run --rm redis-store redis-cli -h redis-store
 
 .PHONY: psql
 psql: .env .docker-build  ## | Open psql cli.
@@ -81,17 +76,17 @@ psql: .env .docker-build  ## | Open psql cli.
 
 .PHONY: test
 test: .env .docker-build  ## | Run Python unit test suite.
-	docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+	docker-compose up -d db redis-cache minio statsd oidcprovider
 	docker-compose run --rm test bash ./bin/run_test.sh
 
 .PHONY: testci
 testci: .env .docker-build  ## | Run Python unit test suite in test-ci container.
-	docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+	docker-compose up -d db redis-cache minio statsd oidcprovider
 	docker-compose run --rm test-ci bash ./bin/run_test.sh
 
 .PHONY: testshell
 testshell: .env .docker-build  ## | Open shell in test environment.
-	docker-compose up -d db redis-store redis-cache minio statsd oidcprovider
+	docker-compose up -d db redis-cache minio statsd oidcprovider
 	docker-compose run --rm test bash ./bin/run_test.sh --shell
 
 .PHONY: docs
