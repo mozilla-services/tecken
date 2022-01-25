@@ -14,11 +14,6 @@ from django.contrib.auth.models import User
 from django.core.cache import caches
 
 
-@pytest.fixture
-def clear_redis_store():
-    caches["store"].clear()
-
-
 @pytest.fixture(autouse=True)
 def clear_cache():
     caches["default"].clear()

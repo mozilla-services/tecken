@@ -23,14 +23,12 @@ services:
       service: base
     depends_on:
       - db
-      - redis-store
       - redis-cache
     ports:
       - "8000:8000"
     links:
       - db
       - fakesentry
-      - redis-store
       - redis-cache
       - minio
       - oidcprovider
@@ -63,7 +61,6 @@ services:
     links:
       - db
       - fakesentry
-      - redis-store
       - redis-cache
     volumes:
       - $PWD:/app
@@ -77,7 +74,6 @@ services:
     links:
       - db
       - fakesentry
-      - redis-store
       - redis-cache
 
   # Web container is a prod-like fully-functioning container.
@@ -88,7 +84,6 @@ services:
       - "8000:8000"
     links:
       - db
-      - redis-store
       - redis-cache
     command: web
 
@@ -119,10 +114,6 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=tecken
-
-  # https://hub.docker.com/_/redis
-  redis-store:
-    build: ./docker/images/redis
 
   redis-cache:
     image: redis:3.2

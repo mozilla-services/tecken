@@ -308,7 +308,7 @@ def test_client_with_cache_refreshed(client, botomock):
         assert len(mock_api_calls) == 2
 
 
-def test_client_404(client, botomock, clear_redis_store):
+def test_client_404(client, botomock):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     def mock_api_call(self, operation_name, api_params):
@@ -329,7 +329,7 @@ def test_client_404(client, botomock, clear_redis_store):
 
 
 @pytest.mark.django_db
-def test_client_404_logged(client, botomock, clear_redis_store, settings):
+def test_client_404_logged(client, botomock, settings):
     reload_downloaders("https://s3.example.com/private/prefix/")
 
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
@@ -401,7 +401,7 @@ def test_client_404_logged(client, botomock, clear_redis_store, settings):
 
 
 @pytest.mark.django_db
-def test_client_404_logged_bad_code_file(client, botomock, clear_redis_store, settings):
+def test_client_404_logged_bad_code_file(client, botomock, settings):
     """The root of this test is to test something that's been observed
     to happen in production; query strings for missing symbols with
     values that contain URL encoded nullbytes (%00).

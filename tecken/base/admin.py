@@ -171,10 +171,6 @@ def site_status(request):
         {"key": "Tecken", "value": dockerflow_get_version(settings.BASE_DIR)}
     )
     context["versions"].append({"key": "Django", "value": get_version()})
-    redis_store_info = get_redis_connection("store").info()
-    context["versions"].append(
-        {"key": "Redis Store", "value": redis_store_info["redis_version"]}
-    )
     try:
         redis_cache_info = get_redis_connection("default").info()
     except NotImplementedError:

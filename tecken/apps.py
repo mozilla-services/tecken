@@ -33,8 +33,6 @@ class TeckenAppConfig(AppConfig):
 
         self._fix_default_redis_connection()
 
-        self._redis_store_eviction_policy()
-
         self._check_mandatory_settings()
 
         self._check_upload_url_is_download_url()
@@ -67,33 +65,6 @@ class TeckenAppConfig(AppConfig):
         if "LocMemCache" not in settings.CACHES["default"]["BACKEND"]:
             connection = get_redis_connection("default")
             connection.info()
-
-    @staticmethod
-    def _redis_store_eviction_policy():
-        """Check that the Redis 'store' is configured to have an LRU
-        eviction policy.
-        In production we assume AWS ElastiCache so we can't do anything
-        about it (if it's not set correctly) but issue a logger error.
-        In DEBUG mode (i.e. local Docker development), we can actually
-        set it here and now.
-        """
-        connection = get_redis_connection("store")
-        maxmemory_policy = connection.info()["maxmemory_policy"]
-        if maxmemory_policy != "allkeys-lru":  # pragma: no cover
-            if settings.DEBUG:
-                connection.config_set("maxmemory-policy", "allkeys-lru")
-                logger.warning(
-                    "The 'store' Redis cache was not configured to be an "
-                    "LRU cache because the maxmemory-policy was set to '{}'. "
-                    "Now changed to 'allkeys-lru'.".format(maxmemory_policy)
-                )
-            else:
-                logger.error(
-                    "In production the Redis store HAS to be set to: "
-                    "maxmemory-policy=allkeys-lru "
-                    "In AWS ElastiCache this is done by setting up "
-                    "Parameter Group with maxmemory-policy=allkeys-lru"
-                )
 
     @staticmethod
     def _check_mandatory_settings():

@@ -21,7 +21,6 @@ if [ ! -z ${DEVELOPMENT+check} ]; then
     echo "Waiting for services..."
     urlwait postgres://db:5432 10
     urlwait redis://redis-cache:6379 10
-    urlwait redis://redis-store:6379 10
 fi
 
 SERVICE=$1

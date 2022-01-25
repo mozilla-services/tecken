@@ -309,12 +309,9 @@ class Base(Core):
     CONN_MAX_AGE = values.IntegerValue(60)
 
     REDIS_URL = values.Value("redis://redis-cache:6379/0")
-    REDIS_STORE_URL = values.Value("redis://redis-store:6379/0")
 
     REDIS_SOCKET_CONNECT_TIMEOUT = values.IntegerValue(1)
     REDIS_SOCKET_TIMEOUT = values.IntegerValue(2)
-    REDIS_STORE_SOCKET_CONNECT_TIMEOUT = values.IntegerValue(1)
-    REDIS_STORE_SOCKET_TIMEOUT = values.IntegerValue(2)
 
     # Use redis as the Celery broker.
     @property
@@ -340,16 +337,6 @@ class Base(Core):
                     "SOCKET_CONNECT_TIMEOUT": self.REDIS_SOCKET_CONNECT_TIMEOUT,
                     "SOCKET_TIMEOUT": self.REDIS_SOCKET_TIMEOUT,
                     "IGNORE_EXCEPTIONS": self.REDIS_IGNORE_EXCEPTIONS,
-                },
-            },
-            "store": {
-                "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": self.REDIS_STORE_URL,
-                "OPTIONS": {
-                    "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",  # noqa
-                    "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",  # noqa
-                    "SOCKET_CONNECT_TIMEOUT": self.REDIS_STORE_SOCKET_CONNECT_TIMEOUT,
-                    "SOCKET_TIMEOUT": self.REDIS_STORE_SOCKET_TIMEOUT,
                 },
             },
         }
@@ -491,13 +478,6 @@ class Base(Core):
     # anybody uploading with an @example.com email address.
     UPLOAD_URL_EXCEPTIONS = values.DictValue({})
 
-    # XXX Can this be deleted?
-    # When an upload comes in, we need to store it somewhere that it
-    # can be shared between the webapp and the Celery worker.
-    # In production-like environments this can't be a local filesystem
-    # path but needs to one that is shared across servers. E.g. EFS.
-    # UPLOAD_INBOX_DIRECTORY = values.Value("./upload-inbox")
-
     # The default prefix for locating all symbols
     SYMBOL_FILE_PREFIX = values.Value("v1")
 
@@ -529,7 +509,6 @@ class Base(Core):
         "dockerflow.django.checks.check_database_connected",
         "dockerflow.django.checks.check_migrations_applied",
         "dockerflow.django.checks.check_redis_connected",
-        "tecken.libdockerflow.check_redis_store_connected",
         "tecken.libdockerflow.check_storage_urls",
     ]
 
@@ -753,15 +732,10 @@ class Tools(Localdev):
     UPLOAD_REATTEMPT_LIMIT_SECONDS = 60
 
     REDIS_URL = ""
-    REDIS_STORE_URL = ""
 
     DATABASES = {}
     CACHES = {
         "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "unique-snowflake",
-        },
-        "store": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "unique-snowflake",
         },
