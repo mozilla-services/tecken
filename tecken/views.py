@@ -18,17 +18,6 @@ from tecken.base.decorators import api_require_safe
 
 @csrf_exempt
 def dashboard(request):
-    if request.method == "POST" and request.body:
-        # We *used* to allow symbolication off the '/' root URL. It was
-        # due to legacy when Tecken became a mix of Socorro's symbol upload,
-        # Snappy's symbolication, etc.
-        # It's time to get out of that habit and start using the right
-        # endpoint explicitly.
-        return http.HttpResponse(
-            "See http://tecken.readthedocs.io/en/latest/symbolication.html",
-            status=410,  # Gone
-        )
-
     absolute_url = request.build_absolute_uri()
     if (
         absolute_url.endswith(settings.LOGIN_REDIRECT_URL) and settings.DEBUG

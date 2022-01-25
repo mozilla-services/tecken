@@ -97,7 +97,6 @@ class Core(AWS, Celery, S3, Configuration):
         # Project specific apps
         "tecken.apps.TeckenAppConfig",
         "tecken.base",
-        "tecken.symbolicate",
         "tecken.download",
         "tecken.upload",
         "tecken.tokens",

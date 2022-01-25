@@ -20,7 +20,6 @@ urlpatterns = [
     path("_auth/", views.auth, name="auth"),
     path("stats/", views.stats, name="stats"),
     path("stats/uploads", views.stats_uploads, name="stats_uploads"),
-    path("stats/symbolication", views.stats_symbolication, name="stats_symbolication"),
     path("tokens/", views.tokens, name="tokens"),
     path("tokens/token/<int:id>/extend", views.extend_token, name="extend_token"),
     path("tokens/token/<int:id>", views.delete_token, name="delete_token"),
