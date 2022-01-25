@@ -26,7 +26,6 @@ import Upload from "./Upload";
 import UploadNow from "./UploadNow";
 import Files from "./Files";
 import File from "./File";
-import Symbolication from "./Symbolication";
 import FetchError from "./FetchError";
 import Fetch from "./Fetch";
 import DisplayAPIRequests from "./APIRequests";
@@ -166,7 +165,6 @@ const App = observer(
                   <Route path="/uploads/upload" exact component={UploadNow} />
                   <Route path="/uploads/upload/:id" component={Upload} />
                   <Route path="/uploads" exact component={Uploads} />
-                  <Route path="/symbolication" component={Symbolication} />
                   <Route component={NoMatch} />
                 </Switch>
 

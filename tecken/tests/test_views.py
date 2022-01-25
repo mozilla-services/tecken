@@ -44,11 +44,6 @@ def test_frontend_index_html_aliases(client, settings, tmpdir):
     assert response.status_code == 200
     assert response["content-type"] == "text/html; charset=utf-8"
 
-    # Test another one.
-    response = client.get("/symbolication")
-    assert response.status_code == 200
-    assert response["content-type"] == "text/html; charset=utf-8"
-
     # Should work if there's a second path too
     response = client.get("/help/deeper/page")
     assert response.status_code == 200

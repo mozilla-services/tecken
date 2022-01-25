@@ -28,7 +28,6 @@ from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationF
 from tecken.base.utils import filesizeformat
 from tecken.download.models import MissingSymbol
 from tecken.storage import StorageBucket
-from tecken.symbolicate.views import get_symbolication_count_key
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload, UploadsCreated
 from tecken.upload.views import get_possible_bucket_urls
@@ -888,31 +887,6 @@ def stats_uploads(request):
         "today": count_uploads(today),
         "yesterday": count_uploads(yesterday, end=today),
         "this_month": count_uploads(start_month),
-    }
-    return http.JsonResponse(context)
-
-
-@api_login_required
-def stats_symbolication(request):
-    context = {}
-
-    def count_symbolications(prefix, dateobj):
-        cache_key = get_symbolication_count_key(prefix, dateobj)
-        return cache.get(cache_key, 0)
-
-    today = timezone.now()
-    start_today = today.replace(hour=0, minute=0, second=0)
-    start_yesterday = start_today - datetime.timedelta(days=1)
-
-    context["symbolications"] = {
-        "v4": {
-            "today": count_symbolications("v4", today),
-            "yesterday": count_symbolications("v4", start_yesterday),
-        },
-        "v5": {
-            "today": count_symbolications("v5", today),
-            "yesterday": count_symbolications("v5", start_yesterday),
-        },
     }
     return http.JsonResponse(context)
 

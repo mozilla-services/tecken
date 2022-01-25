@@ -90,13 +90,6 @@ const Nav = observer(
                     Uploads
                   </NavLink>
                 )}
-              <NavLink
-                to="/symbolication"
-                className="navbar-item"
-                activeClassName="is-active"
-              >
-                Symbolication
-              </NavLink>
               {store.currentUser && store.currentUser.is_superuser ? (
                 <a className="navbar-item" href={this.props.adminLink()}>
                   Admin
