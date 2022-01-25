@@ -339,6 +339,7 @@ class DiskCacheManager:
                     # something seriously wrong and the loop should terminate
                     num_unhandled_errors += 1
                     if num_unhandled_errors >= MAX_ERRORS:
+                        LOGGER.error("Exceeded maximum number of errors.")
                         raise
 
                 if processed_events:
