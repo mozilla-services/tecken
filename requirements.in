@@ -25,6 +25,7 @@ mock==4.0.3
 mozilla-django-oidc==2.0.0
 msgpack==1.0.3
 pip-tools==6.4.0
+psycopg2==2.9.3
 pytest-django==4.5.2
 pytest-mock==3.6.1
 pytest==6.2.5
@@ -44,10 +45,5 @@ whitenoise==5.3.0
 # library doesn't work with the version of Redis we're using in production
 redis==3.4.1
 
-# NOTE(willkg): Django 2.2 is an LTS series so don't upgrade until the next
-# LTS.
-Django==2.2.26
-
-# NOTE(willkg): have to stay with 2.8.6 until we upgrade to Django 3.2;
-# https://github.com/psycopg/psycopg2/issues/1293
-psycopg2==2.8.6
+# NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
+Django==3.2.11
