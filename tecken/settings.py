@@ -22,7 +22,6 @@ BASE_DIR = os.path.dirname(THIS_DIR)
 
 VERSION_FILE = get_version(BASE_DIR)
 
-
 SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
 if SENTRY_DSN:
     version = ""
@@ -44,6 +43,9 @@ if SENTRY_DSN:
 
 else:
     print("SENTRY_DSN is not defined. SENTRY is not being set up.")
+
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 class AWS:
@@ -166,8 +168,10 @@ class Core(AWS, Celery, S3, Configuration):
         },
     ]
 
+    MEDIA_URL = "/media/"
+
     STATIC_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build"))
-    STATIC_URL = "/"
+    STATIC_URL = "/static/"
 
     # The default Cache-Control max-age used,
     WHITENOISE_MAX_AGE = values.IntegerValue(60 * 60)
@@ -181,13 +185,17 @@ class Core(AWS, Celery, S3, Configuration):
     # with confidence we do these good deeds in Nginx.
     # https://docs.djangoproject.com/en/1.11/ref/checks/#security
     SILENCED_SYSTEM_CHECKS = [
-        "security.W001",  # Dealt with using Nginx headers
-        "security.W002",  # Dealt with using Nginx headers
-        "security.W003",  # CSRF is explicit only on the views that need it
+        # Dealt with using Nginx headers
+        "security.W001",
+        # Dealt with using Nginx headers
+        "security.W002",
+        # CSRF is explicit only on the views that need it
+        "security.W003",
         # We can't set SECURE_HSTS_INCLUDE_SUBDOMAINS since this runs under a
         # mozilla.org subdomain
         "security.W005",
-        "security.W004",  # Strict-Transport-Security is set in Nginx
+        # Strict-Transport-Security is set in Nginx
+        "security.W004",
     ]
 
     SENTRY_CELERY_LOGLEVEL = logging.INFO
