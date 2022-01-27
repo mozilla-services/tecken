@@ -9,7 +9,6 @@ from functools import wraps
 from django import http
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.utils.decorators import available_attrs
 from django.contrib.auth.decorators import permission_required, user_passes_test
 
 logger = logging.getLogger("tecken")
@@ -117,7 +116,7 @@ def api_require_http_methods(request_method_list):
     """
 
     def decorator(func):
-        @wraps(func, assigned=available_attrs(func))
+        @wraps(func)
         def inner(request, *args, **kwargs):
             if request.method not in request_method_list:
                 message = f"Method Not Allowed ({request.method}): {request.path}"
