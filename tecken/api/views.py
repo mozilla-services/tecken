@@ -125,18 +125,18 @@ def tokens(request):
     def serialize_permissions(permissions):
         return [{"name": x.name, "id": x.id} for x in permissions]
 
-    all_permissions = (
+    all_permissions = [
         Permission.objects.get(codename="upload_symbols"),
         Permission.objects.get(codename="upload_try_symbols"),
         Permission.objects.get(codename="view_all_uploads"),
         Permission.objects.get(codename="manage_tokens"),
-    )
+    ]
     all_user_permissions = request.user.get_all_permissions()
     possible_permissions = [
         x
         for x in all_permissions
         if (
-            f"{x.content_type}.{x.codename}" in all_user_permissions
+            f"{x.content_type.model}.{x.codename}" in all_user_permissions
             or request.user.is_superuser
         )
     ]
