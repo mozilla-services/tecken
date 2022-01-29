@@ -121,7 +121,7 @@ class Core(AWS, Celery, S3, Configuration):
     # to check that a once-authenticated user is still a valid user.
     # So if that's "disabled", that's why we have rather short session
     # cookie age.
-    MIDDLEWARE = (
+    MIDDLEWARE = [
         "dockerflow.django.middleware.DockerflowMiddleware",
         # 'django.middleware.csrf.CsrfViewMiddleware',
         "django.contrib.sessions.middleware.SessionMiddleware",
@@ -132,17 +132,17 @@ class Core(AWS, Celery, S3, Configuration):
         "tecken.useradmin.middleware.NotBlockedInAuth0Middleware",
         "whitenoise.middleware.WhiteNoiseMiddleware",
         "django.contrib.messages.middleware.MessageMiddleware",
-    )
+    ]
 
     ROOT_URLCONF = "tecken.urls"
 
     WSGI_APPLICATION = "tecken.wsgi.application"
 
     # Add the django-allauth authentication backend.
-    AUTHENTICATION_BACKENDS = (
+    AUTHENTICATION_BACKENDS = [
         "django.contrib.auth.backends.ModelBackend",
         "mozilla_django_oidc.auth.OIDCAuthenticationBackend",
-    )
+    ]
 
     # Internationalization
     # https://docs.djangoproject.com/en/1.9/topics/i18n/
