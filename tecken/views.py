@@ -2,8 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-import json
-import os
 from pathlib import Path
 
 from django import http
@@ -73,9 +71,9 @@ def csrf_failure(request, reason=""):
 @api_require_safe
 def contribute_json(request):
     """Services the contribute.json file as JSON"""
-    with open(os.path.join(settings.BASE_DIR, "contribute.json")) as f:
-        contribute_json_dict = json.load(f)
-    return http.JsonResponse(contribute_json_dict, json_dumps_params={"indent": 3})
+    path = Path(settings.BASE_DIR) / "contribute.json"
+    data = path.open("rb")
+    return http.FileResponse(data)
 
 
 @cache_control(max_age=60 * 60 * (not settings.DEBUG))
@@ -84,7 +82,8 @@ def frontend_index_html(request, path="/"):
         # remove the static file mention
         return redirect("/")
     index_path = Path(settings.STATIC_ROOT) / "index.html"
-    return http.HttpResponse(index_path.read_bytes())
+    data = index_path.open("rb")
+    return http.FileResponse(data)
 
 
 @never_cache

@@ -13,19 +13,22 @@ from django.urls import reverse
 from tecken.views import handler500, handler400, handler403
 
 
-def test_dashboard(client, settings, tmpdir):
+def test_dashboard(client, db, settings, tmpdir):
     settings.STATIC_ROOT = str(tmpdir)
     f = Path(tmpdir / "index.html")
     f.write_bytes(b"<html><h1>Hi!</h1></html>")
 
     response = client.get("/")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html; charset=utf-8"
+    assert response["content-type"] == "text/html"
     html = response.getvalue()
     assert b"<h1>Hi!</h1>" in html
 
+    # .close() to avoid ResourceWarning for unclosed file object.
+    response.close()
 
-def test_frontend_index_html_redirect(client, settings, tmpdir):
+
+def test_frontend_index_html_redirect(client, db, settings, tmpdir):
     # If you hit this URL with '/index.html' explicit it redirects.
     # But only if there is no 'index.html' file in settings.STATIC_ROOT.
     settings.STATIC_ROOT = str(tmpdir)
@@ -33,8 +36,11 @@ def test_frontend_index_html_redirect(client, settings, tmpdir):
     assert response.status_code == 302
     assert response["location"] == "/"
 
+    # .close() to avoid ResourceWarning for unclosed file object.
+    response.close()
 
-def test_frontend_index_html_aliases(client, settings, tmpdir):
+
+def test_frontend_index_html_aliases(client, db, settings, tmpdir):
     settings.STATIC_ROOT = str(tmpdir)
     f = Path(tmpdir / "index.html")
     f.write_bytes(b"<html><h1>React Routing!</h1></html>")
@@ -42,18 +48,27 @@ def test_frontend_index_html_aliases(client, settings, tmpdir):
     # For example `/help` is a route taking care of in the React app.
     response = client.get("/help")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html; charset=utf-8"
+    assert response["content-type"] == "text/html"
+
+    # .close() to avoid ResourceWarning for unclosed file object.
+    response.close()
 
     # Should work if there's a second path too
     response = client.get("/help/deeper/page")
     assert response.status_code == 200
-    assert response["content-type"] == "text/html; charset=utf-8"
+    assert response["content-type"] == "text/html"
+
+    # .close() to avoid ResourceWarning for unclosed file object.
+    response.close()
 
     response = client.get("/neverheardof")
     assert response.status_code == 404
 
+    # .close() to avoid ResourceWarning for unclosed file object.
+    response.close()
 
-def test_contribute_json(client):
+
+def test_contribute_json(client, db):
     url = reverse("contribute_json")
     response = client.get(url)
     assert response.status_code == 200
@@ -61,6 +76,9 @@ def test_contribute_json(client):
     # the view would Internal Server Error if the ./contribute.json
     # file on disk is invalid.
     assert response["Content-type"] == "application/json"
+
+    # .close() to avoid ResourceWarning for unclosed file object.
+    response.close()
 
 
 def test_handler500(rf):
