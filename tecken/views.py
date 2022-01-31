@@ -77,11 +77,25 @@ def contribute_json(request):
 
 
 @cache_control(max_age=60 * 60 * (not settings.DEBUG))
+def manifest_json(request):
+    path = Path(settings.FRONTEND_ROOT) / "manifest.json"
+    data = path.open("rb")
+    return http.FileResponse(data)
+
+
+@cache_control(max_age=60 * 60 * (not settings.DEBUG))
+def favicon(request):
+    path = Path(settings.FRONTEND_ROOT) / "favicon.ico"
+    data = path.open("rb")
+    return http.FileResponse(data)
+
+
+@cache_control(max_age=60 * 60 * (not settings.DEBUG))
 def frontend_index_html(request, path="/"):
     if request.path_info == "/index.html":
         # remove the static file mention
         return redirect("/")
-    index_path = Path(settings.STATIC_ROOT) / "index.html"
+    index_path = Path(settings.FRONTEND_ROOT) / "index.html"
     data = index_path.open("rb")
     return http.FileResponse(data)
 

@@ -14,7 +14,7 @@ from tecken.views import handler500, handler400, handler403
 
 
 def test_dashboard(client, db, settings, tmpdir):
-    settings.STATIC_ROOT = str(tmpdir)
+    settings.FRONTEND_ROOT = str(tmpdir)
     f = Path(tmpdir / "index.html")
     f.write_bytes(b"<html><h1>Hi!</h1></html>")
 
@@ -30,8 +30,8 @@ def test_dashboard(client, db, settings, tmpdir):
 
 def test_frontend_index_html_redirect(client, db, settings, tmpdir):
     # If you hit this URL with '/index.html' explicit it redirects.
-    # But only if there is no 'index.html' file in settings.STATIC_ROOT.
-    settings.STATIC_ROOT = str(tmpdir)
+    # But only if there is no 'index.html' file in settings.FRONTEND_ROOT.
+    settings.FRONTEND_ROOT = str(tmpdir)
     response = client.get("/index.html")
     assert response.status_code == 302
     assert response["location"] == "/"
@@ -41,7 +41,7 @@ def test_frontend_index_html_redirect(client, db, settings, tmpdir):
 
 
 def test_frontend_index_html_aliases(client, db, settings, tmpdir):
-    settings.STATIC_ROOT = str(tmpdir)
+    settings.FRONTEND_ROOT = str(tmpdir)
     f = Path(tmpdir / "index.html")
     f.write_bytes(b"<html><h1>React Routing!</h1></html>")
 
