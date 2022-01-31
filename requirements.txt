@@ -179,9 +179,9 @@ dj-database-url==0.5.0 \
     --hash=sha256:4aeaeb1f573c74835b0686a2b46b85990571159ffc21aa57ecd4d1e1cb334163 \
     --hash=sha256:851785365761ebe4994a921b433062309eb882fedd318e1b0fcecc607ed02da9
     # via -r requirements.in
-django==3.2.11 \
-    --hash=sha256:0a0a37f0b93aef30c4bf3a839c187e1175bcdeb7e177341da0cb7b8194416891 \
-    --hash=sha256:69c94abe5d6b1b088bf475e09b7b74403f943e34da107e798465d2045da27e75
+django==4.0.1 \
+    --hash=sha256:2485eea3cc4c3bae13080dee866ebf90ba9f98d1afe8fda89bfb0eb2e218ef86 \
+    --hash=sha256:7cd8e8a3ed2bc0dfda05ce1e53a9c81b30eefd7aa350e538a18884475e4d4ce2
     # via
     #   -r requirements.in
     #   django-configurations
@@ -546,7 +546,6 @@ pytz==2021.3 \
     # via
     #   babel
     #   celery
-    #   django
 redis==3.4.1 \
     --hash=sha256:0dcfb335921b88a850d461dc255ff4708294943322bd55de6cfd68972490ca1f \
     --hash=sha256:b205cffd05ebfd0a468db74f0eedbff8df1a7bfc47521516ade4692991bb0833
