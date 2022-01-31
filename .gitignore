@@ -7,7 +7,6 @@ MANIFEST
 coverage.xml
 *.db
 dist/
-/static/
 .cache/
 revision.txt
 version.json

@@ -170,7 +170,10 @@ class Core(AWS, Celery, S3, Configuration):
 
     MEDIA_URL = "/media/"
 
-    STATIC_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build"))
+    # Root directory for frontend files like index.html
+    FRONTEND_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build/"))
+
+    STATIC_ROOT = values.Value(default=os.path.join(BASE_DIR, "frontend/build/static/"))
     STATIC_URL = "/static/"
 
     # The default Cache-Control max-age used,
