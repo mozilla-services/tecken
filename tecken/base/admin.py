@@ -156,6 +156,19 @@ def site_status(request):
             (value,) = row
         context["table_counts"].append({"key": table_name, "value": value})
 
+    # Get migration status
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, app, name, applied FROM django_migrations")
+            cols = [col[0] for col in cursor.description]
+            django_db_data = [dict(zip(cols, row)) for row in cursor.fetchall()]
+            django_db_error = ""
+    except Exception as exc:
+        django_db_data = []
+        django_db_error = f"error: {exc}"
+    context["django_db_data"] = django_db_data
+    context["django_db_error"] = django_db_error
+
     # Now get versions
     with connection.cursor() as cursor:
         cursor.execute("select version()")

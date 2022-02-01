@@ -49,6 +49,32 @@
       </tbody>
     </table>
 
+    <h2>DB migration status</h2>
+    {% if django_db_error %}
+      <p>{{ django_db_error }}</p>
+    {% else %}
+      <table>
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>app</th>
+            <th>name</th>
+            <th>applied</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in django_db_data %}
+            <tr>
+              <td>{{ row.id }}</td>
+              <td>{{ row.app }}</td>
+              <td>{{ row.name }}</td>
+              <td>{{ row.applied }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
     <h2>Versions</h2>
     <table>
       <thead>
