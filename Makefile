@@ -36,7 +36,7 @@ help:
 
 .PHONY: build
 build: .env  ## | Build docker images.
-	docker-compose build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend
+	docker-compose build --no-cache --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend
 	touch .docker-build
 
 .PHONY: setup
