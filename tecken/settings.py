@@ -45,7 +45,7 @@ else:
     print("SENTRY_DSN is not defined. SENTRY is not being set up.")
 
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 
 class AWS:
