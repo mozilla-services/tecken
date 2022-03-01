@@ -290,9 +290,9 @@ josepy==1.11.0 \
     --hash=sha256:40ef59f2f537ec01bafe698dad66281f6ccf4642f747411647db403ab8fa9a2d \
     --hash=sha256:8473f6674497383627621b40aacb4955afdd4e7b205dca45a68486aa989bab60
     # via mozilla-django-oidc
-jsonschema==4.3.3 \
-    --hash=sha256:eb7a69801beb7325653aa8fd373abbf9ff8f85b536ab2812e5e8287b522fb6a2 \
-    --hash=sha256:f210d4ce095ed1e8af635d15c8ee79b586f656ab54399ba87b8ab87e5bff0ade
+jsonschema==4.4.0 \
+    --hash=sha256:636694eb41b3535ed608fe04129f26542b59ed99808b4f688aa32dcf55317a83 \
+    --hash=sha256:77281a1f71684953ee8b3d488371b162419767973789272434bbc3f29d9c8823
     # via -r requirements.in
 kombu==5.2.3 \
     --hash=sha256:81a90c1de97e08d3db37dbf163eaaf667445e1068c98bfd89f051a40e9f6dbbd \
