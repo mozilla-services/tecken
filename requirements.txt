@@ -191,9 +191,9 @@ django-cache-memoize==0.1.10 \
     --hash=sha256:63e8faa245a41c0dbad843807e9f21a6e59eba8e6e50df310fdf6485a6749843 \
     --hash=sha256:676299313079cde9242ae84db0160e80b1d44e8dd6bc9b1f4f1247e11b30c9e0
     # via -r requirements.in
-django-configurations==2.3.1 \
-    --hash=sha256:65e2e9b68a699d9403663b17c367e5e31ffd3739d4ddf995e04217416876dba1 \
-    --hash=sha256:e2ca25530e184f0ee3b7f5ae69563461a93a8914493306ee0bf6d71e7d8ad1d0
+django-configurations==2.3.2 \
+    --hash=sha256:bd1a77a60735839b7d105912cc3977735fa005ea06544c632fbd322d1e021677 \
+    --hash=sha256:c0363b0111df6536442186d0f23d12138390eaa9f4f97ce46950ee78856a46c9
     # via -r requirements.in
 django-redis==5.2.0 \
     --hash=sha256:1d037dc02b11ad7aa11f655d26dac3fb1af32630f61ef4428860a2e29ff92026 \
