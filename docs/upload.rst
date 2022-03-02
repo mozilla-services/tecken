@@ -13,12 +13,64 @@ Uploading symbols
 Basics
 ======
 
-Tecken lets you upload symbols. It stores these symbols files in an AWS S3
-bucket allowing others to download them and symbolicate stacks against them.
+Tecken lets you upload symbols. It stores these symbols files allowing others
+to use the download API to access them for symbolicating stacks, profiling,
+debugging, etc.
 
-When building products, you end up with a lot of symbols files that are very
-large. Tecken upload requires you to package all the files into a ZIP file.
-This both collects them and also compresses them.
+When building software, you can run `dump_syms
+<https://github.com/mozilla/dump_syms/>`_ to extract debugging information and
+generate Breakpad symbol files.
+
+You can upload your symbols ZIP file to Tecken using the upload API.
+
+
+Symbols ZIP file structure
+--------------------------
+
+ZIP files must consist of Breakpad symbol files in this structure::
+
+    <module>/<debug_id>/<file>
+
+For example, here's the contents of a symbols ZIP file from a Firefox build::
+
+    certutil/1AFC71D5AB0BEBD3C38BE53162EFA29A0/certutil.sym
+    crashreporter/509BEAD7F29FDF02EC309704A35C48960/crashreporter.sym
+    firefox-bin/4B736D100CA6655C9D41A138408EF4480/firefox-bin.sym
+    firefox/F18AA48D06849232EE436621609EB9030/firefox.sym
+    js/05817021DC072736D84A3D6F6800C09F0/js.sym
+    libclearkey.so/6F805460FA945EDAC1FEB2229E7E5D310/libclearkey.so.sym
+    libfakeopenh264.so/4E4B3E441ACA34CEC07655B61DBDCF880/libfakeopenh264.so.sym
+    libfake.so/F50D7C64975965FD70357FF58DD0615C0/libfake.so.sym
+    libfreebl3.so/D23A341A8B2614640D094F0CC429A8A80/libfreebl3.so.sym
+    libfreeblpriv3.so/3D7CE9A569ED46B0C77DBD3A4B1EA0470/libfreeblpriv3.so.sym
+    libipcclientcerts.so/8C9A9FCF80F9CE0797E7746FF900765F0/libipcclientcerts.so.sym
+    liblgpllibs.so/80AE7BD11E2532CFFC217154968DA6A00/liblgpllibs.so.sym
+    libmozavcodec.so/555BF9F90CE583DF21FB525B7E6243FF0/libmozavcodec.so.sym
+    libmozavutil.so/57AC5DFA71D0C5880517CF195A69A1860/libmozavutil.so.sym
+    libmozgtk.so/21FB2BB8FD80120D6C131AFE2EC88A080/libmozgtk.so.sym
+    libmozsandbox.so/CBBC8F7B7794A777E2F7BCAD64EE03780/libmozsandbox.so.sym
+    libmozsqlite3.so/F913FF352E918F683FAF4FAD5C0182BD0/libmozsqlite3.so.sym
+    libmozwayland.so/2226E0AEA0C87E748BA72A6BF258F3550/libmozwayland.so.sym
+    libnspr4.so/13530EC7CAB3F71EE091E41721F13CC30/libnspr4.so.sym
+    libnss3.so/9D8322087BEBED332EAEED0F5D6975870/libnss3.so.sym
+    libnssckbi.so/163C00046AA9E6198B61A6045C38E3650/libnssckbi.so.sym
+    libnssutil3.so/6A9E332D4559D83FFF6C725DCB7A98870/libnssutil3.so.sym
+    libplc4.so/BCD4DD0CF3614CB57D4AD189633B820F0/libplc4.so.sym
+    libplds4.so/58120BEB46A8D9B05C89DF8124D753400/libplds4.so.sym
+    libsmime3.so/E0897F4BD6626CE490F4974A5494B7000/libsmime3.so.sym
+    libsoftokn3.so/C01F5710501A0528AC50D472C754254E0/libsoftokn3.so.sym
+    libssl3.so/84283CDA8EBD0F78E6118BC869E6DE150/libssl3.so.sym
+    libxul.so/5C63DDEA1326BB8DADFCC7D606633D1E0/libxul.so.sym
+    logalloc-replay/DA0BFC167FB27B4A50763355964523DE0/logalloc-replay.sym
+    minidump-analyzer/9F3842DFF1F104156D658A5E4493539F0/minidump-analyzer.sym
+    modutil/847194C9942BB8D079E43A1D8FD077280/modutil.sym
+    pingsender/6129FD5C877F2C22EAC832C26678E8A40/pingsender.sym
+    pk12util/C119F9093FCBD813277074CBCD35154B0/pk12util.sym
+    plugin-container/45A20FE024EAD3B49CDF292851C2DD4B0/plugin-container.sym
+    shlibsign/835151A0E5F29FF71AD93C37F0C1E30A0/shlibsign.sym
+    signmar/53F4637B906F2E00353A8B451A754B7A0/signmar.sym
+    updater/3D7533ED47669F8A207B93E4512C35870/updater.sym
+    xpcshell/B95F899A59E247055C0ED7883D0235A40/xpcshell.sym
 
 
 Permissions and auth token
@@ -273,9 +325,18 @@ To override this amend the ``DJANGO_DISALLOWED_SYMBOLS_SNIPPETS`` environment
 variable as a comma separated list. But be aware to include the existing
 defaults which can be seen in ``settings.py``.
 
-The final check is that each file path in the ZIP file matches the pattern
-``<module>/<hex>/<file>`` or ``<name>-symbols.txt``. All other file paths are
-ignored.
+The final check is to make sure that each file in the ZIP file is either:
+
+1. ``<module>/<debug_id>/<file>`` for symbols files.
+
+   Example::
+
+       firefox/F18AA48D06849232EE436621609EB9030/firefox.sym
+
+2. ``<name>-symbols.txt`` for file listings relative to the root of the zip
+   file.
+
+   While these files can exist in your ZIP file, they're silently ignored.
 
 
 Gzip
