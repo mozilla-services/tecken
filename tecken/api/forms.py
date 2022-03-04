@@ -145,14 +145,23 @@ class BaseFilteringForm(forms.Form):
         return cleaned
 
 
+SIZE_RE = re.compile(
+    r"^(?P<operator><=|>=|<|>|=)?"
+    r"\s*"
+    r"(?P<num>[0-9\.]+)"
+    r"\s*"
+    r"(?P<multiplier>gb|g|mb|m|kb|k|b)?",
+    re.I,
+)
+
+
 class CleanSizeMixin:
     def clean_size(self):
         values = self.cleaned_data["size"]
         if not values:
             return []
         sizes = []
-        operators = re.compile("<=|>=|<|>|=")
-        multipliers = re.compile("gb|mb|kb|g|m|k|b", re.I)
+
         multiplier_aliases = {
             "gb": 1024 * 1024 * 1024,
             "g": 1024 * 1024 * 1024,
@@ -163,22 +172,21 @@ class CleanSizeMixin:
             "b": 1,
         }
         for block in [x.strip() for x in values.split(",") if x.strip()]:
-            if operators.findall(block):
-                (operator,) = operators.findall(block)
+            match = SIZE_RE.match(block)
+            if match:
+                operator = match.group("operator") or "="
+                multiplier = match.group("multiplier") or "b"
+
+                try:
+                    num = match.group("num")
+                    num = float(num)
+                except ValueError:
+                    raise forms.ValidationError(f"{block!r} is not a valid size")
+
+                value = multiplier_aliases[multiplier.lower()] * num
+                sizes.append((operator, value))
             else:
-                operator = "="
-            rest = operators.sub("", block)
-            if multipliers.findall(rest):
-                (multiplier,) = multipliers.findall(rest)
-            else:
-                multiplier = "b"
-            rest = multipliers.sub("", rest)
-            try:
-                rest = float(rest)
-            except ValueError:
-                raise forms.ValidationError(f"{rest!r} is not numeric")
-            rest = multiplier_aliases[multiplier.lower()] * rest
-            sizes.append((operator, rest))
+                raise forms.ValidationError(f"{block!r} is not a valid size")
         return sizes
 
 

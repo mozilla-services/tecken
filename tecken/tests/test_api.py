@@ -495,6 +495,11 @@ def test_uploads(client):
     assert response.status_code == 400
     assert response.json()["errors"]["size"]
 
+    # Filter incorrectly
+    response = client.get(url, {"size": "mozilla.com"})
+    assert response.status_code == 400
+    assert response.json()["errors"]["size"]
+
     # Let's filter on size
     response = client.get(url, {"size": ">= 10KB"})
     assert response.status_code == 200
