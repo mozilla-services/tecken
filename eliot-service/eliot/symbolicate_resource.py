@@ -587,6 +587,9 @@ class SymbolicateV5(SymbolicateBase):
         with debug_stats.timer("time"):
             results = []
             for i, job in enumerate(jobs):
+                if not isinstance(job, dict):
+                    raise falcon.HTTPBadRequest(title=f"job {i} is invalid")
+
                 stacks = job.get("stacks", [])
                 modules = job.get("memoryMap", [])
 
