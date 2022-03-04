@@ -150,7 +150,8 @@ SIZE_RE = re.compile(
     r"\s*"
     r"(?P<num>[0-9\.]+)"
     r"\s*"
-    r"(?P<multiplier>gb|g|mb|m|kb|k|b)?",
+    r"(?P<multiplier>gb|g|mb|m|kb|k|b)?"
+    r"$",
     re.I,
 )
 
@@ -279,6 +280,11 @@ class FileUploadsForm(UploadsForm):
         return cleaned
 
 
+COUNT_RE = re.compile(
+    r"^(?P<operator><=|>=|<|>|=)?" r"\s*" r"(?P<num>\d+)" r"$",
+)
+
+
 class DownloadsMissingForm(BaseFilteringForm):
     symbol = forms.CharField(required=False)
     debugid = forms.CharField(required=False)
@@ -295,17 +301,18 @@ class DownloadsMissingForm(BaseFilteringForm):
         values = self.cleaned_data["count"]
         if not values:
             return []
-        operators = re.compile("<=|>=|<|>|=")
+
         counts = []
         for block in [x.strip() for x in values.split(",") if x.strip()]:
-            if operators.findall(values):
-                (operator,) = operators.findall(block)
+            match = COUNT_RE.match(block)
+            if match:
+                operator = match.group("operator") or "="
+                try:
+                    num = match.group("num")
+                    num = int(num)
+                except ValueError:
+                    raise forms.ValidationError(f"{block!r} is not a valid count")
             else:
-                operator = "="
-            rest = operators.sub("", block)
-            try:
-                rest = int(rest)
-            except ValueError:
-                raise forms.ValidationError(f"{rest!r} is not a number")
-            counts.append((operator, rest))
+                raise forms.ValidationError(f"{block!r} is not a valid count")
+            counts.append((operator, num))
         return counts
