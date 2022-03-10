@@ -100,6 +100,28 @@ jobs:
             docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
             docker-compose run --rm --no-deps frontend-ci lint
 
+  testeliot:
+    docker: *docker
+    steps:
+      - checkout
+
+      - *setup_remote_docker
+
+      - attach_workspace:
+          at: workspace
+
+      - run:
+          name: Load from workspace
+          command: |
+            docker load -i workspace/tecken_app.tar.gz
+
+      - run:
+          name: Run tests
+          command: |
+            make .env
+            docker-compose up -d db redis-cache minio statsd oidcprovider
+            docker-compose run --rm test-ci bash ./bin/run_test.sh eliot
+
   testtecken:
     docker: *docker
     steps:
@@ -120,7 +142,7 @@ jobs:
           command: |
             make .env
             docker-compose up -d db redis-cache minio statsd oidcprovider
-            docker-compose run --rm test-ci bash ./bin/run_test.sh
+            docker-compose run --rm test-ci bash ./bin/run_test.sh tecken
 
   testdocs:
     docker: *docker
@@ -177,6 +199,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - testeliot:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
       - testtecken:
           requires:
             - build
@@ -193,6 +221,7 @@ workflows:
           requires:
             - build
             - lint
+            - testeliot
             - testtecken
             - testdocs
           filters:

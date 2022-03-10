@@ -13,14 +13,23 @@ set -eo pipefail
 export DEVELOPMENT=1
 export DJANGO_CONFIGURATION=Test
 
-if [ "$1" = "--shell" ]; then
+if [ "$1" = "--shell" ]
+then
     bash
-else
+fi
+
+TESTSUITE="${1:-}"
+
+if [[ "$TESTSUITE" == "" ]] || [[ "$TESTSUITE" == "tecken" ]]
+then
     # Run tecken tests
     pushd tecken
     pytest
     popd
+fi
 
+if [[ "$TESTSUITE" == "" ]] || [[ "$TESTSUITE" == "eliot" ]]
+then
     # Run eliot-service tests
     pushd eliot-service
     pytest
