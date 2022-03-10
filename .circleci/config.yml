@@ -14,10 +14,6 @@ jobs:
           password: $DOCKER_PASS
 
     steps:
-      - run:
-          name: Host info
-          command: uname -v
-
       - checkout
 
       - setup_remote_docker:
@@ -25,46 +21,59 @@ jobs:
           version: 20.10.11
 
       - run:
+          name: Get info
+          command: |
+            uname -v
+            docker info
+            docker-compose --version
+
+      - run:
           name: Login to Dockerhub
+          # yamllint disable rule:line-length
           command: |
             if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
               echo "Skipping Login to Dockerhub, credentials not available."
             else
               echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
             fi
+          # yamllint enable rule:line-length
 
       - run:
           name: Create version.json
+          # yamllint disable rule:line-length
           command: |
-            # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+            # create a version.json per
+            # https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
             printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
             "$CIRCLE_SHA1" \
             "$CIRCLE_TAG" \
             "$CIRCLE_PROJECT_USERNAME" \
             "$CIRCLE_PROJECT_REPONAME" \
             "$CIRCLE_BUILD_URL" > version.json
+          # yamllint enable rule:line-length
 
       - run:
           name: Build Docker images
           command: |
-            docker info
             # build tecken containers
             make build
 
       - run:
           name: Verify requirements.txt contains correct dependencies
+          # yamllint disable rule:line-length
           command: |
             docker-compose run --rm --no-deps test-ci bash ./bin/run_verify_reqs.sh
-
-      - run:
-          name: Run tests
-          command: |
-            make testci
+          # yamllint enable rule:line-length
 
       - run:
           name: Run lint check
           command: |
             make lintci
+
+      - run:
+          name: Run tests
+          command: |
+            make testci
 
       - run:
           name: Build docs
@@ -73,6 +82,7 @@ jobs:
 
       - run:
           name: Push to Dockerhub
+          # yamllint disable rule:line-length
           command: |
             function retry {
                 set +e
@@ -111,6 +121,7 @@ jobs:
                 retry docker push "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
               fi
             fi
+          # yamllint enable rule:line-length
 
 workflows:
   version: 2
