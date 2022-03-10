@@ -6,8 +6,8 @@
 # DOCKER_PASS
 version: 2.1
 jobs:
-  build_test_publish:
-    docker:
+  build:
+    docker: &docker
       - image: cimg/base:2022.02
         auth:
           username: $DOCKER_USER
@@ -16,7 +16,8 @@ jobs:
     steps:
       - checkout
 
-      - setup_remote_docker:
+      - &setup_remote_docker
+        setup_remote_docker:
           docker_layer_caching: true
           version: 20.10.11
 
@@ -66,19 +67,96 @@ jobs:
           # yamllint enable rule:line-length
 
       - run:
+          name: Save image
+          command: |
+            mkdir -p workspace
+            docker save -o workspace/tecken_app.tar tecken:build
+            gzip --fast workspace/tecken_app.tar
+
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - tecken_app.tar.gz
+
+  lint:
+    docker: *docker
+    steps:
+      - checkout
+
+      - *setup_remote_docker
+
+      - attach_workspace:
+          at: workspace
+
+      - run:
+          name: Load from workspace
+          command: |
+            docker load -i workspace/tecken_app.tar.gz
+
+      - run:
           name: Run lint check
           command: |
-            make lintci
+            make .env
+            docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
+            docker-compose run --rm --no-deps frontend-ci lint
+
+  testtecken:
+    docker: *docker
+    steps:
+      - checkout
+
+      - *setup_remote_docker
+
+      - attach_workspace:
+          at: workspace
+
+      - run:
+          name: Load from workspace
+          command: |
+            docker load -i workspace/tecken_app.tar.gz
 
       - run:
           name: Run tests
           command: |
-            make testci
+            make .env
+            docker-compose up -d db redis-cache minio statsd oidcprovider
+            docker-compose run --rm test-ci bash ./bin/run_test.sh
+
+  testdocs:
+    docker: *docker
+    steps:
+      - checkout
+
+      - *setup_remote_docker
+
+      - attach_workspace:
+          at: workspace
+
+      - run:
+          name: Load from workspace
+          command: |
+            docker load -i workspace/tecken_app.tar.gz
 
       - run:
           name: Build docs
           command: |
-            make docsci
+            make .env
+            docker-compose run --rm --no-deps test-ci bash make -C docs/ html
+
+  push:
+    docker: *docker
+    steps:
+      - checkout
+
+      - *setup_remote_docker
+
+      - attach_workspace:
+          at: workspace
+
+      - run:
+          name: Load from workspace
+          command: |
+            docker load -i workspace/tecken_app.tar.gz
 
       - run:
           name: Push to Dockerhub
@@ -125,9 +203,36 @@ jobs:
 
 workflows:
   version: 2
-  main:
+  build-test-push:
     jobs:
-      - build_test_publish:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - lint:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - testtecken:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - testdocs:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - push:
+          requires:
+            - build
+            - lint
+            - testtecken
+            - testdocs
           filters:
             tags:
               only: /.*/
