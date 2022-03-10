@@ -79,11 +79,6 @@ test: .env .docker-build  ## | Run Python unit test suite.
 	docker-compose up -d db redis-cache minio statsd oidcprovider
 	docker-compose run --rm test bash ./bin/run_test.sh
 
-.PHONY: testci
-testci: .env .docker-build  ## | Run Python unit test suite in test-ci container.
-	docker-compose up -d db redis-cache minio statsd oidcprovider
-	docker-compose run --rm test-ci bash ./bin/run_test.sh
-
 .PHONY: testshell
 testshell: .env .docker-build  ## | Open shell in test environment.
 	docker-compose up -d db redis-cache minio statsd oidcprovider
@@ -94,19 +89,10 @@ docs: .env .docker-build  ## | Build docs.
 	docker-compose run --rm --user ${USE_UID} --no-deps test bash make -C docs/ clean
 	docker-compose run --rm --user ${USE_UID} --no-deps test bash make -C docs/ html
 
-.PHONY: docs
-docsci: .env .docker-build  ## | Build docs in test-ci container
-	docker-compose run --rm --user ${USE_UID} --no-deps test-ci bash make -C docs/ html
-
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.
 	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh
 	docker-compose run --rm frontend lint
-
-.PHONY: lintci
-lintci: .env .docker-build  ## | Lint code in test-ci container.
-	docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
-	docker-compose run --rm frontend-ci lint
 
 .PHONY: lintfix
 lintfix: .env .docker-build  ## | Reformat code.
