@@ -73,16 +73,15 @@ The Symbols Service covers uploading and downloading symbols.
        DJANGO_ALLOWED_HOSTS=symbols.mozilla.org
 
 
-.. envvar:: SENTRY_DSN, SENTRY_PUBLIC_DSN
+.. envvar:: SENTRY_DSN
 
-   This sets the Sentry DSN for the Python code and the JS code.
+   This sets the Sentry DSN for the Python code.
 
    For example:
 
    .. code-block:: shell
 
       SENTRY_DSN=https://bb4e266xxx:d1c1eyyy@sentry.prod.mozaws.net/001
-      SENTRY_PUBLIC_DSN=https://bb4e266xxx@sentry.prod.mozaws.net/001
 
 
 .. envvar:: DJANGO_SYMBOL_URLS
