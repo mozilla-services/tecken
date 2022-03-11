@@ -4,11 +4,6 @@
 # https://github.com/docker/for-mac/issues/5831
 FROM node:16.10.0-slim@sha256:9bec98898848c3e3a1346bc74ab04c2072da9d0149d8be1ea0485dbf39fd658f as frontend
 
-# these build args are turned into env vars
-# and used in bin/build_frontend.sh
-ARG FRONTEND_SENTRY_PUBLIC_DSN=UNSET_DSN
-ENV FRONTEND_SENTRY_PUBLIC_DSN=${FRONTEND_SENTRY_PUBLIC_DSN}
-
 COPY . /app
 WORKDIR /app
 RUN bin/build_frontend.sh
