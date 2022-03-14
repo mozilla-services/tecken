@@ -138,6 +138,25 @@ The code is in ``tecken/``.
 
 You can override Symbols Service webapp configuration in your ``.env`` file.
 
+To log in, do this:
+
+1. Load http://localhost:3000
+2. Click "Sign In" to start an OpenID Connect session on ``oidcprovider``
+3. Click "Sign up" to create an ``oidcprovider`` account:
+
+  * Username: A non-email username, like ``username``
+  * Email: Your email address
+  * Password: Any password, like ``password``
+
+4. Click "Authorize" to authorize Tecken to use your ``oidcprovider`` account
+5. You are returned to http://localhost:3000. If needed, a parallel Tecken User
+   will be created, with default permissions and identified by email address.
+
+You'll remain logged in to ``oidcprovider``, and the account will persist until
+the ``oidcprovider`` container is stopped.
+You can visit http://oidc.127.0.0.1.nip.io:8081/account/logout to manually log
+out.
+
 
 .. _dev-symbols-tests:
 

@@ -3,10 +3,12 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 import logging
-import os
 
 import markus
 from django_redis import get_redis_connection
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import ignore_logger
 
 from django.conf import settings
 from django.apps import AppConfig
@@ -22,32 +24,34 @@ class TeckenAppConfig(AppConfig):
         # Import our admin site code so it creates the admin site.
         from tecken.base import admin_site  # noqa
 
-        if os.environ.get("DJANGO_CONFIGURATION") == "Tools":
-            return
-
-        # The app is now ready.
-
-        self._fix_settings_conn_max_age()
-
         self._configure_markus()
-
         self._fix_default_redis_connection()
 
-        self._check_mandatory_settings()
-
-        self._check_upload_url_is_download_url()
-
     @staticmethod
-    def _fix_settings_conn_max_age():
-        """Because shortcomings in django-configurations, we can't set
-        DATABASES with CONN_MAX_AGE. So let's fix it here.
-        """
-        if settings.CONN_MAX_AGE:
-            settings.DATABASES["default"]["CONN_MAX_AGE"] = settings.CONN_MAX_AGE
+    def _configure_sentry():
+        if settings.SENTRY_DSN:
+            version = ""
+            if settings.VERSION_FILE:
+                version = settings.VERSION_FILE.get("version", "")
+                version = version or settings.VERSION_FILE.get("commit", "")
+            version = version or "unknown"
+
+            sentry_sdk.init(
+                dsn=settings.SENTRY_DSN,
+                release=version,
+                send_default_pii=False,
+                integrations=[DjangoIntegration()],
+            )
+            # Dockerflow logs all unhandled exceptions to request.summary so then Sentry
+            # reports it twice
+            ignore_logger("request.summary")
+            # This warning is unhelpful, so ignore it
+            ignore_logger("django.security.DisallowedHost")
+        else:
+            logger.warning("SENTRY_DSN is not defined. SENTRY is not being set up.")
 
     @staticmethod
     def _configure_markus():
-        """Must be done once and only once."""
         markus.configure(settings.MARKUS_BACKENDS)
 
     @staticmethod
@@ -65,27 +69,3 @@ class TeckenAppConfig(AppConfig):
         if "LocMemCache" not in settings.CACHES["default"]["BACKEND"]:
             connection = get_redis_connection("default")
             connection.info()
-
-    @staticmethod
-    def _check_mandatory_settings():
-        """You *have* have set the following settings..."""
-        mandatory = ("SYMBOL_URLS", "UPLOAD_DEFAULT_URL", "UPLOAD_TRY_SYMBOLS_URL")
-        for key in mandatory:
-            if not getattr(settings, key):
-                raise ValueError(
-                    f"You have to set settings.{key} "
-                    f"(environment variable DJANGO_{key})"
-                )
-
-    @staticmethod
-    def _check_upload_url_is_download_url():
-        """If UPLOAD_DEFAULT_URL is not in SYMBOL_URLS it's just too
-        weird. It means we'd upload to a S3 bucket we'd never read
-        from and thus it'd be impossible to know the upload worked.
-        """
-        if settings.UPLOAD_DEFAULT_URL not in settings.SYMBOL_URLS:
-            raise ValueError(
-                f"The settings.UPLOAD_DEFAULT_URL "
-                f"({settings.UPLOAD_DEFAULT_URL!r}) has to be one of the URLs "
-                f"in settings.SYMBOL_URLS ({settings.SYMBOL_URLS!r})"
-            )

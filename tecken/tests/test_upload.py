@@ -20,7 +20,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from tecken.base.symboldownloader import SymbolDownloader
-from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -111,8 +110,10 @@ def test_upload_archive_custom_bucket_name(
     settings,
 ):
     """Pretend that the user specifies a particular custom bucket name."""
+    private_bucket = "http://minio:9000/privatebucket/"
+    settings.UPLOAD_URL_EXCEPTIONS = {"*example.org": private_bucket}
 
-    bucket_name = "peterbe-com"
+    bucket_name = "privatebucket"
     assert [
         url for url in settings.UPLOAD_URL_EXCEPTIONS.values() if bucket_name in url
     ], list(settings.UPLOAD_URL_EXCEPTIONS.values())
@@ -148,6 +149,7 @@ def test_upload_archive_custom_bucket_name(
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
+    token.save()
     url = reverse("upload:upload_archive")
 
     with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
@@ -177,36 +179,33 @@ def test_upload_archive_with_ignorable_files(
     fakeuser,
     settings,
 ):
-    # The default upload URL setting uses Google Cloud Storage.
-    assert StorageBucket(settings.UPLOAD_DEFAULT_URL).backend == "test-s3"
-
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
     def mock_api_call(self, operation_name, api_params):
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             # wrong size for this fixture file, need to upload new
             return {"ContentLength": 100}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # file doesn't exist
             parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
             raise ClientError(parsed_response, operation_name)
 
         if operation_name == "PutObject" and api_params["Key"] in (
-            "prefix/v0/flag/deadbeef/flag.jpeg",
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+            "v0/flag/deadbeef/flag.jpeg",
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         ):
             # pretend we actually uploaded it
             return {}
@@ -242,27 +241,27 @@ def test_upload_archive_happy_path(
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             # Pretend that we have this in S3 and its previous
             # size was 1000.
             return {"ContentLength": 1000}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Pretend we don't have this in S3 at all
             parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
             raise ClientError(parsed_response, operation_name)
 
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             assert "ContentEncoding" not in api_params
             assert "ContentType" not in api_params
@@ -275,7 +274,7 @@ def test_upload_archive_happy_path(
                 # Should there be anything here?
             }
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Because .sym is in settings.COMPRESS_EXTENSIONS
             assert api_params["ContentEncoding"] == "gzip"
@@ -309,17 +308,17 @@ def test_upload_archive_happy_path(
         # This is predictable and shouldn't change unless the fixture
         # file used changes.
         assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
-        assert upload.bucket_name == "private"
+        assert upload.bucket_name == "publicbucket"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "https://s3.example.com"
+        assert upload.bucket_endpoint_url == "http://minio:9000"
         assert upload.skipped_keys is None
         assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name="private",
-        key="prefix/v0/flag/deadbeef/flag.jpeg",
+        bucket_name="publicbucket",
+        key="v0/flag/deadbeef/flag.jpeg",
         compressed=False,
         update=True,
         size=69183,  # based on `unzip -l tests/sample.zip` knowledge
@@ -328,8 +327,8 @@ def test_upload_archive_happy_path(
 
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name="private",
-        key="prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        bucket_name="publicbucket",
+        key="v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -370,7 +369,10 @@ def test_upload_try_symbols_happy_path(
     client,
     botomock,
     fakeuser,
+    settings,
 ):
+    settings.UPLOAD_TRY_SYMBOLS_URL = "http://minio:9000/try/prefix/"
+
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_try_symbols")
     token.permissions.add(permission)
@@ -448,7 +450,7 @@ def test_upload_try_symbols_happy_path(
         assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
         assert upload.bucket_name == "try"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "https://s3.example.com"
+        assert upload.bucket_endpoint_url == "http://minio:9000"
         assert upload.skipped_keys is None
         assert upload.ignored_keys == ["build-symbols.txt"]
         assert upload.try_symbols
@@ -492,27 +494,27 @@ def test_upload_archive_one_uploaded_one_skipped(
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
 
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             # file exists with same size
             return {"ContentLength": 69183}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Not found at all
             parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
             raise ClientError(parsed_response, operation_name)
 
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Successfully uploaded
             return {}
@@ -531,17 +533,17 @@ def test_upload_archive_one_uploaded_one_skipped(
         assert upload.completed_at
         # based on `ls -l tests/sample.zip` knowledge
         assert upload.size == 70398
-        assert upload.bucket_name == "private"
+        assert upload.bucket_name == "publicbucket"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "https://s3.example.com"
-        assert upload.skipped_keys == ["prefix/v0/flag/deadbeef/flag.jpeg"]
+        assert upload.bucket_endpoint_url == "http://minio:9000"
+        assert upload.skipped_keys == ["v0/flag/deadbeef/flag.jpeg"]
         assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
         upload=upload,
-        bucket_name="private",
-        key="prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        bucket_name="publicbucket",
+        key="v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -645,18 +647,18 @@ def test_upload_archive_key_lookup_cached(
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             return {"ContentLength": 69183}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Saying the size is 100 will cause the code to think the
             # symbol file *is different* so it'll proceed to upload it.
@@ -671,7 +673,7 @@ def test_upload_archive_key_lookup_cached(
             return result
 
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             metadata_cache[api_params["Key"]] = api_params["Metadata"]
             # ...pretend to actually upload it.
@@ -729,18 +731,18 @@ def test_upload_archive_key_lookup_cached_without_metadata(
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             return {"ContentLength": 69183}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Saying the size is 100 will cause the code to think the
             # symbol file *is different* so it'll proceed to upload it.
@@ -755,7 +757,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
             return result
 
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # ...pretend to actually upload it.
             return {}
@@ -808,18 +810,18 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             return {"ContentLength": 69183}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             return {
                 "ContentLength": 501,  # Right!
@@ -830,7 +832,7 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
             }
 
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # ...pretend to actually upload it.
             put_metadatas.append(api_params["Metadata"])
@@ -870,25 +872,25 @@ def test_upload_archive_one_uploaded_one_errored(client, botomock, fakeuser):
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             return {"ContentLength": 69183}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Not found at all
             parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
             raise ClientError(parsed_response, operation_name)
 
         if operation_name == "PutObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             raise AnyUnrecognizedError("stop!")
 
@@ -904,7 +906,7 @@ def test_upload_archive_one_uploaded_one_errored(client, botomock, fakeuser):
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
-        upload=upload, key="prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        upload=upload, key="v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
     )
 
 
@@ -1004,18 +1006,18 @@ def test_upload_archive_both_skipped(client, botomock, fakeuser):
     def mock_api_call(self, operation_name, api_params):
         # This comes for the setting UPLOAD_DEFAULT_URL specifically
         # for tests.
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             return {"ContentLength": 69183}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             return {"ContentLength": 501}
 
@@ -1031,13 +1033,13 @@ def test_upload_archive_both_skipped(client, botomock, fakeuser):
         assert upload.completed_at
         # based on `ls -l tests/sample.zip` knowledge
         assert upload.size == 70398
-        assert upload.bucket_name == "private"
+        assert upload.bucket_name == "publicbucket"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "https://s3.example.com"
+        assert upload.bucket_endpoint_url == "http://minio:9000"
         # Order isn't predictable so compare using sets.
         assert set(upload.skipped_keys) == {
-            "prefix/v0/flag/deadbeef/flag.jpeg",
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+            "v0/flag/deadbeef/flag.jpeg",
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         }
         assert upload.ignored_keys == ["build-symbols.txt"]
 
@@ -1076,28 +1078,28 @@ def test_upload_archive_by_url(
     url = reverse("upload:upload_archive")
 
     def mock_api_call(self, operation_name, api_params):
-        assert api_params["Bucket"] == "private"
+        assert api_params["Bucket"] == "publicbucket"
 
         if operation_name == "HeadBucket":
             # yep, bucket exists
             return {}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/flag/deadbeef/flag.jpeg"
+            "v0/flag/deadbeef/flag.jpeg"
         ):
             # file exists but wrong size, needs upload
             return {"ContentLength": 1000}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
         ):
             # Not found at all
             parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
             raise ClientError(parsed_response, operation_name)
 
         if operation_name == "PutObject" and api_params["Key"] in (
-            "prefix/v0/flag/deadbeef/flag.jpeg",
-            "prefix/v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+            "v0/flag/deadbeef/flag.jpeg",
+            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         ):
             return {}
 
@@ -1119,7 +1121,7 @@ def test_upload_archive_by_url(
         )
         assert response.status_code == 400
         assert response.json()["error"] == (
-            "Not an allowed domain ('notallowed.example.com') to " "download from."
+            "Not an allowed domain ('notallowed.example.com') to download from."
         )
 
         # Lastly, the happy path
@@ -1391,7 +1393,6 @@ def test_get_bucket_info_preferred_bucket_name(settings):
 
 
 def test_get_possible_bucket_urls(settings):
-
     settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/buck"
     settings.UPLOAD_URL_EXCEPTIONS = {
         "peterbe@example.com": "https://s3.amazonaws.com/differenting",
@@ -1402,10 +1403,6 @@ def test_get_possible_bucket_urls(settings):
     ((url, private_or_public),) = urls
     assert private_or_public == "private"
     assert url == "https://s3.amazonaws.com/differenting"
-
-    user = FakeUser("Ted@example.com", is_superuser=True)
-    urls = get_possible_bucket_urls(user)
-    assert len(urls) == 3
 
 
 def test_UploadByDownloadForm_happy_path(requestsmock, settings):

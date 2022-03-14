@@ -135,15 +135,22 @@ def test_auth_debug(client):
 
 
 @pytest.mark.django_db
-def test_heartbeat_no_warnings(client, botomock):
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "HeadBucket"
-        return {}
+def test_heartbeat_no_warnings(client, settings):
+    def debug_function():
+        from django.core import checks
 
-    with botomock(mock_api_call):
-        response = client.get("/__heartbeat__")
-        assert response.status_code == 200
-        assert response.json()["status"] == "ok"
+        all_checks = checks.registry.registry.get_checks(include_deployment_checks=True)
+        for check in all_checks:
+            errors = check(app_configs=None)
+            print(errors)
+
+    # NOTE(willkg): If this test ever fails, it's probably from a deployment check and
+    # dockerflow is silently not telling you about it. Uncomment this debug function.
+    # debug_functions()
+
+    response = client.get("/__heartbeat__")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
 
 
 def test_broken(client):

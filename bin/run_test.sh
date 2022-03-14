@@ -11,7 +11,6 @@ set -eo pipefail
 
 # default variables
 export DEVELOPMENT=1
-export DJANGO_CONFIGURATION=Test
 
 if [ "$1" = "--shell" ]
 then

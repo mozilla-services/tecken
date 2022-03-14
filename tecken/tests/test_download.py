@@ -231,7 +231,7 @@ def test_client_with_debug(client, botomock):
         assert float(response["debug-time"]) > 0
 
 
-def test_client_with_ignorable_file_extensions(client, botomock):
+def test_client_with_ignorable_file_extensions(client, botomock, settings):
     def mock_api_call(self, operation_name, api_params):
         assert False, "This mock function shouldn't be called"
 

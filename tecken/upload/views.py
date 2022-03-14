@@ -150,8 +150,16 @@ def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
 
 
 def get_possible_bucket_urls(user):
-    """return a list of tuples. Each tuple is the URL and a string to
-    denote whether it's "private" or "public".
+    """Return list of possible buckets this user can upload to.
+
+    If the user is specified in UPLOAD_URL_EXCEPTIONS, then the user can only upload
+    into that bucket.
+
+    If the user is not specified, then the user can upload to the public bucket.
+
+    :param user: a django user
+
+    :return: list of tuples of (url, "private"/"public")
     """
     urls = []
     exceptions = settings.UPLOAD_URL_EXCEPTIONS
@@ -163,8 +171,13 @@ def get_possible_bucket_urls(user):
             or user.is_superuser
         ):
             urls.append((exceptions[email_pattern], "private"))
-    if not urls or user.is_superuser:
+
+    # We use UPLOAD_URL_EXCEPTIONS to specify buckets people can upload into. If a
+    # person is specified in UPLOAD_URL_EXCEPTIONS, then they can only upload to that
+    # bucket. If they are not specified, then they can upload to the public bucket.
+    if not urls:
         urls.append((settings.UPLOAD_DEFAULT_URL, "public"))
+
     return urls
 
 

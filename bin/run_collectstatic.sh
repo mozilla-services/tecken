@@ -5,4 +5,4 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # This runs collectstatic using the Build configuration environment
-DJANGO_CONFIGURATION=Tools ./manage.py collectstatic --noinput
+TOOL_ENV=true ./manage.py collectstatic --noinput
