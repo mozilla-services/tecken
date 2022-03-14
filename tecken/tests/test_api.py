@@ -1227,27 +1227,31 @@ def test_file_upload_try_upload(client):
 
 @pytest.mark.django_db
 def test_possible_upload_urls(client, settings):
+    # Set an exception to match the user we're creating
+    public_bucket = "http://minio:9000/public/?access=public"
+    private_bucket = "http://minio:9000/private/"
+
+    settings.SYMBOL_URLS = [public_bucket]
+    settings.UPLOAD_URL_EXCEPTIONS = {"*example.com": private_bucket}
+    settings.UPLOAD_DEFAULT_URL = public_bucket
+
     url = reverse("api:possible_upload_urls")
     response = client.get(url)
     assert response.status_code == 403
 
-    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user = User.objects.create(username="adminuser", email="adminuser@example.com")
     user.set_password("secret")
     user.save()
-    assert client.login(username="peterbe", password="secret")
+    assert client.login(username="adminuser", password="secret")
 
     response = client.get(url)
     assert response.status_code == 200
     urls = response.json()["urls"]
-    assert len(urls) == 1
-    assert urls[0]["url"] == settings.UPLOAD_DEFAULT_URL
-
-    user.is_superuser = True
-    user.save()
-
-    response = client.get(url)
-    assert response.status_code == 200
-    urls = response.json()["urls"]
-    assert len(urls) == 2
-    # Public one first
-    assert urls[0]["url"] == settings.UPLOAD_DEFAULT_URL
+    assert urls == [
+        {
+            "bucket_name": "private",
+            "default": False,
+            "private": True,
+            "url": private_bucket,
+        }
+    ]

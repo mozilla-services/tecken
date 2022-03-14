@@ -47,11 +47,11 @@ INIT_CASES = {
         "private": True,
         "region": None,
     },
-    "http://minio:9000/testbucket": {
+    "http://minio:9000/publicbucket": {
         "backend": "emulated-s3",
-        "base_url": "http://minio:9000/testbucket",
+        "base_url": "http://minio:9000/publicbucket",
         "endpoint_url": "http://minio:9000",
-        "name": "testbucket",
+        "name": "publicbucket",
         "prefix": "",
         "private": True,
         "region": None,

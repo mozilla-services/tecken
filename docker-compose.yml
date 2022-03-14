@@ -9,8 +9,6 @@ services:
       dockerfile: docker/Dockerfile
     platform: linux/amd64
     image: tecken:build
-    environment:
-      - DJANGO_CONFIGURATION
     env_file:
       - docker/config/local_dev.env
       - .env

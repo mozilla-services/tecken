@@ -89,7 +89,7 @@ def main():
         "-b",
         "--bucket",
         help="S3 bucket in Minio",
-        default="testbucket",
+        default="publicbucket",
     )
     parser.add_argument(
         "--endpoint_url",
