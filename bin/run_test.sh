@@ -23,9 +23,7 @@ TESTSUITE="${1:-}"
 if [[ "$TESTSUITE" == "" ]] || [[ "$TESTSUITE" == "tecken" ]]
 then
     # Run tecken tests
-    pushd tecken
     pytest
-    popd
 fi
 
 if [[ "$TESTSUITE" == "" ]] || [[ "$TESTSUITE" == "eliot" ]]
