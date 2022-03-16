@@ -60,9 +60,13 @@ if TOOL_ENV:
         ("SECRET_KEY", "fakekey"),
         ("OIDC_RP_CLIENT_ID", "1"),
         ("OIDC_RP_CLIENT_SECRET", "abcdef"),
+        ("OIDC_OP_AUTHORIZATION_ENDPOINT", "http://example.com/"),
+        ("OIDC_OP_TOKEN_ENDPOINT", "http://example.com/"),
+        ("OIDC_OP_USER_ENDPOINT", "http://example.com/"),
         ("DATABASE_URL", "postgresql://postgres:postgres@db/tecken"),
         ("SYMBOL_URLS", "https://example.com/"),
         ("UPLOAD_DEFAULT_URL", "https://example.com/"),
+        ("UPLOAD_TRY_SYMBOLS_URL", "https://example.com/try/"),
     ]
     for key, val in fake_values:
         os.environ[key] = val
@@ -356,18 +360,6 @@ NOT_BLOCKED_IN_AUTH0_INTERVAL_SECONDS = _config(
     ),
 )
 
-SESSION_COOKIE_AGE = _config(
-    "SESSION_COOKIE_AGE",
-    default=str(60 * 60 * 24 * 365),
-    parser=int,
-    doc=(
-        "Age in seconds for cookies. Keep it quite short because we don't have a "
-        "practical way to do OIDC ID token renewal for this AJAX and curl heavy app."
-    ),
-)
-
-SESSION_COOKIE_SECURE = True
-
 # Where users get redirected after successfully signing in
 LOGIN_REDIRECT_URL = "/?signedin=true"
 LOGIN_REDIRECT_URL_FAILURE = "/?signin=failed"
@@ -604,8 +596,33 @@ CONN_MAX_AGE = _config(
 )
 DATABASES["default"]["CONN_MAX_AGE"] = CONN_MAX_AGE
 
+if not LOCAL_DEV_ENV and not TEST_ENV:
+    DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
+
+
 CSRF_FAILURE_VIEW = "tecken.views.csrf_failure"
 CSRF_USE_SESSIONS = True
+
+SESSION_COOKIE_AGE = _config(
+    "SESSION_COOKIE_AGE",
+    default=str(60 * 60 * 24 * 365),
+    parser=int,
+    doc=(
+        "Age in seconds for cookies. Keep it quite short because we don't have a "
+        "practical way to do OIDC ID token renewal for this AJAX and curl heavy app."
+    ),
+)
+
+if not LOCAL_DEV_ENV:
+    # Don't enable SSL related things in the local dev environment
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+    SECURE_SSL_REDIRECT = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Needed to get a CSRF token in /admin
+ANON_ALWAYS = True
 
 DOCKERFLOW_CHECKS = [
     "dockerflow.django.checks.check_database_connected",

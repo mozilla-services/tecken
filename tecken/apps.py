@@ -25,6 +25,7 @@ class TeckenAppConfig(AppConfig):
         from tecken.base import admin_site  # noqa
 
         self._configure_markus()
+        self._configure_sentry()
         self._fix_default_redis_connection()
 
     @staticmethod

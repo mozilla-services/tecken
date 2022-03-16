@@ -146,7 +146,7 @@ def test_heartbeat_no_warnings(client, settings):
 
     # NOTE(willkg): If this test ever fails, it's probably from a deployment check and
     # dockerflow is silently not telling you about it. Uncomment this debug function.
-    # debug_functions()
+    # debug_function()
 
     response = client.get("/__heartbeat__")
     assert response.status_code == 200

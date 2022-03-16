@@ -149,7 +149,6 @@ def test_upload_archive_custom_bucket_name(
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    token.save()
     url = reverse("upload:upload_archive")
 
     with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
