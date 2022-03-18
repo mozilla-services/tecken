@@ -314,7 +314,7 @@ SILENCED_SYSTEM_CHECKS = [
 ]
 
 # OIDC setup
-OIDC_RP_CLIENT_ID = _config("OIDC_RP_CLIENT_ID", parser=int, doc="OIDC RP client id.")
+OIDC_RP_CLIENT_ID = _config("OIDC_RP_CLIENT_ID", doc="OIDC RP client id.")
 OIDC_RP_CLIENT_SECRET = _config("OIDC_RP_CLIENT_SECRET", doc="OIDC RP client secret.")
 
 OIDC_OP_AUTHORIZATION_ENDPOINT = _config(
