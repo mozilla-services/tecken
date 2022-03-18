@@ -6,7 +6,7 @@
 Django settings for tecken project.
 """
 
-import json
+import ast
 import logging
 import os
 
@@ -15,11 +15,15 @@ from dockerflow.version import get_version
 from everett.manager import ConfigManager, ListOf
 
 
-def json_parser(val):
+def dict_parser(val):
     try:
-        return json.loads(val)
-    except json.JsonDecodeError:
-        raise ValueError("not a valid JSON object")
+        dict_val = ast.literal_eval(val)
+    except SyntaxError as syntax_exc:
+        raise ValueError("not a valid Python dict") from syntax_exc
+
+    if not isinstance(dict_val, dict):
+        raise ValueError(f"not a valid Python dict: {type(dict_val)}")
+    return dict_val
 
 
 _config = ConfigManager.basic_config()
@@ -679,7 +683,7 @@ if UPLOAD_DEFAULT_URL not in SYMBOL_URLS:
 UPLOAD_URL_EXCEPTIONS = _config(
     "UPLOAD_URL_EXCEPTIONS",
     default="{}",
-    parser=json_parser,
+    parser=dict_parser,
     doc=(
         "This is a config that, typed as a Python dictionary, specifies "
         "specific email addresses or patterns to custom URLs.\n\n"
@@ -714,7 +718,7 @@ COMPRESS_EXTENSIONS = _config(
 MIME_OVERRIDES = _config(
     "MIME_OVERRIDES",
     default='{"sym":"text/plain"}',
-    parser=json_parser,
+    parser=dict_parser,
     doc=(
         "For specific file uploads, override the mimetype.\n\n"
         "For .sym files, for example, if S3 knows them as 'text/plain' "
