@@ -1,4 +1,4 @@
-FROM mozilla/oidc-testprovider:oidc_testprovider-v0.9.3@sha256:0d275fcbbf27bd901cd739a4ad6753161f78be8fce3b51eb1fe2d75f9f352773
+FROM mozilla/oidc-testprovider:oidc_testprovider-v0.10.1@sha256:5799e811ce48a00660d5c1401135d0d967111e7fec2e829756be8b292f4d70ab
 
 # Modify redirect_urls specified in "fixtures.json" to fit our needs.
 COPY fixtures.json /code/fixtures.json
