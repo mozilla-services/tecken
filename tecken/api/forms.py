@@ -257,6 +257,7 @@ class FileUploadsForm(UploadsForm):
     update = forms.BooleanField(required=False)
     compressed = forms.BooleanField(required=False)
     bucket_name = forms.CharField(required=False)
+    selector = forms.MultipleChoiceField(required=False, choices=(('aggregates','aggregates'),('files','files')))
 
     def clean_key(self):
         values = self.cleaned_data["key"]
@@ -278,6 +279,12 @@ class FileUploadsForm(UploadsForm):
                     operator = "="
                 cleaned.append((operator, value))
         return cleaned
+
+    def clean_selector(self):
+        values = self.cleaned_data["selector"]
+        if not values:
+            return {'files', 'aggregates'}
+        return values
 
 
 COUNT_RE = re.compile(

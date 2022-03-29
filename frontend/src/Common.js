@@ -106,6 +106,7 @@ export const Pagination = ({
   batchSize,
   currentPage,
   updateFilter,
+  hasNext,
 }) => {
   if (!currentPage) {
     currentPage = 1;
@@ -126,7 +127,11 @@ export const Pagination = ({
 
   const isOverflow = (page) => {
     // return true if doesn't make sense to go to this page
-    return page < 1 || (page - 1) * batchSize >= total;
+    if (hasNext !== undefined) {
+      return page < 1 || !hasNext
+    } else {
+      return page < 1 || (page - 1) * batchSize >= total;
+    }
   };
 
   return (
@@ -151,18 +156,27 @@ export const Pagination = ({
   );
 };
 
-export const TableSubTitle = ({ total, page, batchSize }) => {
-  if (total === null) {
+export const TableSubTitle = ({
+  total,
+  page,
+  batchSize,
+  calculating = false,
+}) => {
+  if (total === null && !calculating) {
     return null;
   }
   page = page || 1;
   const totalPages = Math.ceil(total / batchSize);
-  return (
-    <h2 className="subtitle">
-      {thousandFormat(total)} Found (Page {thousandFormat(page)} of{" "}
-      {thousandFormat(totalPages)})
-    </h2>
-  );
+  if (calculating) {
+    return <h2 className="subtitle">Calculating ...</h2>;
+  } else {
+    return (
+      <h2 className="subtitle">
+        {thousandFormat(total)} Found (Page {thousandFormat(page)} of{" "}
+        {thousandFormat(totalPages)})
+      </h2>
+    );
+  }
 };
 
 export const pluralize = (number, singular, plural) => {

@@ -562,15 +562,9 @@ def uploads_created_backfilled(request):
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
-    pagination_form = PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-    page = pagination_form.cleaned_data["page"]
-
     form = forms.FileUploadsForm(request.GET)
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
-
     qs = FileUpload.objects.all()
     for operator, value in form.cleaned_data["size"]:
         orm_operator = "size__{}".format(ORM_OPERATORS[operator])
@@ -590,11 +584,25 @@ def upload_files(request):
     if include_bucket_names:
         qs = qs.filter(bucket_name__in=include_bucket_names)
 
-    files = []
-    batch_size = settings.API_FILES_BATCH_SIZE
-    start = (page - 1) * batch_size
-    end = start + batch_size
+    selector = form.cleaned_data["selector"]
 
+    context = {}
+    if "files" in selector:
+        pagination_form = PaginationForm(request.GET)
+        if not pagination_form.is_valid():
+            return http.JsonResponse({"errors": pagination_form.errors}, status=400)
+        page = pagination_form.cleaned_data["page"]
+        context = _upload_files_content(page, qs)
+
+    if "aggregates" in selector:
+        aggregates = _upload_files_aggregates(qs)
+        context["aggregates"] = aggregates
+        context["total"] = aggregates["files"]["count"]
+
+    return http.JsonResponse(context)
+
+
+def _upload_files_aggregates(qs):
     aggregates_numbers = qs.aggregate(
         count=Count("id"), size_avg=Avg("size"), size_sum=Sum("size")
     )
@@ -614,9 +622,21 @@ def upload_files(request):
             "time": {"average": time_avg},
         }
     }
+    return aggregates
+
+
+def _upload_files_content(page, qs):
+    files = []
+    batch_size = settings.API_FILES_BATCH_SIZE
+    start = (page - 1) * batch_size
+    end = start + batch_size + 1
+    has_next = False
 
     upload_ids = set()
-    for file_upload in qs.order_by("-created_at")[start:end]:
+    file_uploads = qs.order_by("-created_at")[start:end]
+    if len(file_uploads) == batch_size + 1:
+        has_next = True
+    for file_upload in file_uploads[:batch_size]:
         files.append(
             {
                 "id": file_upload.id,
@@ -654,16 +674,13 @@ def upload_files(request):
     for file_upload in files:
         file_upload["upload"] = hydrate_upload(file_upload["upload"])
 
-    total = aggregates["files"]["count"]
-
-    context = {
+    content = {
         "files": files,
-        "aggregates": aggregates,
-        "total": total,
+        "has_next": has_next,
         "batch_size": batch_size,
     }
 
-    return http.JsonResponse(context)
+    return content
 
 
 @metrics.timer_decorator("api", tags=["endpoint:upload_file"])
