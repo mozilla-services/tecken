@@ -868,28 +868,20 @@ def test_upload_files(client, settings):
     assert aggregates["files"]["incomplete"] == 2
     assert aggregates["files"]["size"]["sum"] == 1234 + 100
 
-    # When filtering by different selectors, must return data for that selector only
-    response = client.get(
-        url,
-        {
-            "selector": "files",
-        },
-    )
+    url_content = reverse("api:upload_files_content")
+    # Must return only "content" data
+    response = client.get(url_content)
     assert response.status_code == 200
     data = response.json()
     assert data["files"]
     assert data["batch_size"] == settings.API_FILES_BATCH_SIZE
-    assert data["has_next"] == False
+    assert data["has_next"] is False
     assert "aggregates" not in data
     assert "total" not in data
 
-
-    response = client.get(
-        url,
-        {
-            "selector": "aggregates",
-        },
-    )
+    url_aggregates = reverse("api:upload_files_aggregates")
+    # Must return only "aggregates" data
+    response = client.get(url_aggregates)
     assert response.status_code == 200
     data = response.json()
     assert data["aggregates"]
@@ -899,7 +891,6 @@ def test_upload_files(client, settings):
     assert aggregates["files"]["count"] == 2
     assert aggregates["files"]["incomplete"] == 2
     assert aggregates["files"]["size"]["sum"] == 1234 + 100
-
 
     # Filter by created_at and completed_at
     response = client.get(

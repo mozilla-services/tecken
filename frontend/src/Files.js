@@ -59,13 +59,11 @@ class Files extends React.PureComponent {
     }
   }
 
-  _fetch = (selector, callback, updateHistory = true) => {
+  _fetch = (url, callback, updateHistory = true) => {
     const qs = filterToQueryString(this.state.filter);
-    const qSelector = selector ? "selector=" + selector : "";
 
-    var url = "/api/uploads/files?" + qSelector;
     if (qs) {
-      url += "&" + qs;
+      url += "?" + qs;
     }
     this.props.history.push({ search: qs });
 
@@ -106,7 +104,7 @@ class Files extends React.PureComponent {
       this.setState({ loadingFiles: false });
     };
     this.setState({ loadingFiles: true });
-    this._fetch("files", callback, updateHistory);
+    this._fetch("/api/uploads/files/content", callback, updateHistory);
   };
 
   _fetchAggregates = () => {
@@ -118,7 +116,7 @@ class Files extends React.PureComponent {
       this.setState({ loadingAggregates: false });
     };
     this.setState({ loadingAggregates: true });
-    this._fetch("aggregates", callback);
+    this._fetch("/api/uploads/files/aggregates", callback);
   };
 
   filterOnAll = (event) => {
@@ -188,11 +186,11 @@ class Files extends React.PureComponent {
         )}
 
         {!this.state.loadingAggregates && (
-            <DisplayFilesAggregates
-              aggregates={this.state.aggregates}
-              total={this.state.total}
-            />
-          )}
+          <DisplayFilesAggregates
+            aggregates={this.state.aggregates}
+            total={this.state.total}
+          />
+        )}
       </div>
     );
   }

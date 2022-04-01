@@ -128,7 +128,7 @@ export const Pagination = ({
   const isOverflow = (page) => {
     // return true if doesn't make sense to go to this page
     if (hasNext !== undefined) {
-      return page < 1 || !hasNext
+      return page < 1 || !hasNext;
     } else {
       return page < 1 || (page - 1) * batchSize >= total;
     }
