@@ -37,10 +37,12 @@ urlpatterns = [
     ),
     path("uploads/files/", views.upload_files, name="upload_files"),
     path(
-        "uploads/files/content", views.upload_files_content, name="upload_files_content"
+        "uploads/files/content/",
+        views.upload_files_content,
+        name="upload_files_content",
     ),
     path(
-        "uploads/files/aggregates",
+        "uploads/files/aggregates/",
         views.upload_files_aggregates,
         name="upload_files_aggregates",
     ),

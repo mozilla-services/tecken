@@ -59,7 +59,7 @@ class Files extends React.PureComponent {
     }
   }
 
-  _fetch = (url, callback, updateHistory = true) => {
+  _fetch = (url, callback, errorCallback, updateHistory = true) => {
     const qs = filterToQueryString(this.state.filter);
 
     if (qs) {
@@ -85,6 +85,9 @@ class Files extends React.PureComponent {
         return r.json().then((response) => callback(response));
       } else {
         store.fetchError = r;
+        if (errorCallback) {
+          errorCallback();
+        }
       }
     });
   };
@@ -103,8 +106,16 @@ class Files extends React.PureComponent {
       });
       this.setState({ loadingFiles: false });
     };
+    var errorCallback = () => {
+      this.setState({ loadingFiles: false });
+    };
     this.setState({ loadingFiles: true });
-    this._fetch("/api/uploads/files/content", callback, updateHistory);
+    this._fetch(
+      "/api/uploads/files/content",
+      callback,
+      errorCallback,
+      updateHistory
+    );
   };
 
   _fetchAggregates = () => {
@@ -115,8 +126,11 @@ class Files extends React.PureComponent {
       });
       this.setState({ loadingAggregates: false });
     };
+    var errorCallback = () => {
+      this.setState({ loadingAggregates: false });
+    };
     this.setState({ loadingAggregates: true });
-    this._fetch("/api/uploads/files/aggregates", callback);
+    this._fetch("/api/uploads/files/aggregates", callback, errorCallback);
   };
 
   filterOnAll = (event) => {
@@ -161,12 +175,14 @@ class Files extends React.PureComponent {
         {this.state.loadingFiles ? (
           <Loading />
         ) : (
-          <TableSubTitle
-            total={this.state.total}
-            page={this.state.filter.page}
-            batchSize={this.state.batchSize}
-            calculating={this.state.loadingAggregates}
-          />
+          this.state.files && (
+            <TableSubTitle
+              total={this.state.total}
+              page={this.state.filter.page}
+              batchSize={this.state.batchSize}
+              calculating={this.state.loadingAggregates}
+            />
+          )
         )}
 
         {!this.state.loadingFiles && this.state.files && (
@@ -185,7 +201,7 @@ class Files extends React.PureComponent {
           <Loading />
         )}
 
-        {!this.state.loadingAggregates && (
+        {!this.state.loadingAggregates && this.state.files && (
           <DisplayFilesAggregates
             aggregates={this.state.aggregates}
             total={this.state.total}

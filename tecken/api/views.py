@@ -586,7 +586,7 @@ def _upload_files_build_qs(request):
 def _upload_files_content(request, qs):
     pagination_form = PaginationForm(request.GET)
     if not pagination_form.is_valid():
-        raise BadRequest(pagination_form.errors)
+        raise BadRequest("formerrors", pagination_form.errors)
     page = pagination_form.cleaned_data["page"]
 
     files = []
@@ -680,7 +680,7 @@ def upload_files(request):
     try:
         context = _upload_files_content(request, qs)
     except BadRequest as e:
-        return http.JsonResponse({"errors": str(e)}, status=400)
+        return http.JsonResponse({"errors": e.args[1]}, status=400)
     aggregates = _upload_files_aggregates(qs)
     context.update(aggregates)
     context["total"] = aggregates["aggregates"]["files"]["count"]
@@ -696,7 +696,7 @@ def upload_files_content(request):
     try:
         content = _upload_files_content(request, qs)
     except BadRequest as e:
-        return http.JsonResponse({"errors": str(e)}, status=400)
+        return http.JsonResponse({"errors": e.args[1]}, status=400)
     return http.JsonResponse(content)
 
 

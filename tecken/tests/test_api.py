@@ -822,8 +822,10 @@ def test_upload_files(client, settings):
     assert data["files"] == []
 
     # Don't mess with the 'page' key
+    error_body = {"errors": {"page": ["Not a number 'notanumber'"]}}
     response = client.get(url, {"page": "notanumber"})
     assert response.status_code == 400
+    assert response.json() == error_body
 
     # Let's pretend there's an upload belonging to someone else
     upload = Upload.objects.create(
