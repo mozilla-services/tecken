@@ -111,7 +111,7 @@ class Files extends React.PureComponent {
     };
     this.setState({ loadingFiles: true });
     this._fetch(
-      "/api/uploads/files/content",
+      "/api/uploads/files/content/",
       callback,
       errorCallback,
       updateHistory
@@ -130,7 +130,7 @@ class Files extends React.PureComponent {
       this.setState({ loadingAggregates: false });
     };
     this.setState({ loadingAggregates: true });
-    this._fetch("/api/uploads/files/aggregates", callback, errorCallback);
+    this._fetch("/api/uploads/files/aggregates/", callback, errorCallback);
   };
 
   filterOnAll = (event) => {
