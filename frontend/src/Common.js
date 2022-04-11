@@ -106,6 +106,7 @@ export const Pagination = ({
   batchSize,
   currentPage,
   updateFilter,
+  hasNext,
 }) => {
   if (!currentPage) {
     currentPage = 1;
@@ -124,9 +125,21 @@ export const Pagination = ({
     updateFilter({ page });
   };
 
-  const isOverflow = (page) => {
-    // return true if doesn't make sense to go to this page
-    return page < 1 || (page - 1) * batchSize >= total;
+  const hasPrevPage = (currPage) => {
+    // in /uploads/files 'total' is loaded async so there's no guarantee it'll be present
+    if (total !== undefined) {
+      return currPage - 1 >= 1 && (currPage - 2) * batchSize < total;
+    } else {
+      return currPage - 1 >= 1;
+    }
+  };
+
+  const hasNextPage = (currPage) => {
+    if (hasNext !== undefined) {
+      return hasNext;
+    } else {
+      return currPage + 1 >= 1 && currPage * batchSize < total;
+    }
   };
 
   return (
@@ -134,16 +147,16 @@ export const Pagination = ({
       <Link
         className="pagination-previous"
         to={nextPageUrl(currentPage - 1)}
-        onClick={(e) => goTo(e, currentPage - 1)}
-        disabled={isOverflow(currentPage - 1)}
+        onClick={(e) => hasPrevPage(currentPage) && goTo(e, currentPage - 1)}
+        disabled={!hasPrevPage(currentPage)}
       >
         Previous
       </Link>
       <Link
         to={nextPageUrl(currentPage + 1)}
         className="pagination-next"
-        onClick={(e) => goTo(e, currentPage + 1)}
-        disabled={isOverflow(currentPage + 1)}
+        onClick={(e) => hasNextPage(currentPage) && goTo(e, currentPage + 1)}
+        disabled={!hasNextPage(currentPage)}
       >
         Next page
       </Link>
@@ -151,18 +164,27 @@ export const Pagination = ({
   );
 };
 
-export const TableSubTitle = ({ total, page, batchSize }) => {
-  if (total === null) {
+export const TableSubTitle = ({
+  total,
+  page,
+  batchSize,
+  calculating = false,
+}) => {
+  if (total === null && !calculating) {
     return null;
   }
   page = page || 1;
   const totalPages = Math.ceil(total / batchSize);
-  return (
-    <h2 className="subtitle">
-      {thousandFormat(total)} Found (Page {thousandFormat(page)} of{" "}
-      {thousandFormat(totalPages)})
-    </h2>
-  );
+  if (calculating) {
+    return <h2 className="subtitle">Calculating ...</h2>;
+  } else {
+    return (
+      <h2 className="subtitle">
+        {thousandFormat(total)} Found (Page {thousandFormat(page)} of{" "}
+        {thousandFormat(totalPages)})
+      </h2>
+    );
+  }
 };
 
 export const pluralize = (number, singular, plural) => {

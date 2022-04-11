@@ -14,7 +14,7 @@ from django.contrib.auth.models import Permission, User
 from django.db.models import Aggregate, Count, Q, Sum, Avg, F, Min
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, BadRequest
 from django.core.cache import cache
 
 from tecken.api import forms
@@ -558,19 +558,10 @@ def uploads_created_backfilled(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api", tags=["endpoint:upload_files"])
-@api_login_required
-@api_permission_required("upload.view_all_uploads")
-def upload_files(request):
-    pagination_form = PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-    page = pagination_form.cleaned_data["page"]
-
+def _upload_files_build_qs(request):
     form = forms.FileUploadsForm(request.GET)
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
-
     qs = FileUpload.objects.all()
     for operator, value in form.cleaned_data["size"]:
         orm_operator = "size__{}".format(ORM_OPERATORS[operator])
@@ -589,34 +580,28 @@ def upload_files(request):
             include_bucket_names.append(bucket_name)
     if include_bucket_names:
         qs = qs.filter(bucket_name__in=include_bucket_names)
+    return qs
+
+
+def _upload_files_content(request, qs):
+    pagination_form = PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        raise BadRequest("formerrors", pagination_form.errors)
+    page = pagination_form.cleaned_data["page"]
 
     files = []
     batch_size = settings.API_FILES_BATCH_SIZE
     start = (page - 1) * batch_size
-    end = start + batch_size
-
-    aggregates_numbers = qs.aggregate(
-        count=Count("id"), size_avg=Avg("size"), size_sum=Sum("size")
-    )
-    time_avg = qs.filter(completed_at__isnull=False).aggregate(
-        time_avg=Avg(F("completed_at") - F("created_at"))
-    )["time_avg"]
-    if time_avg is not None:
-        time_avg = time_avg.total_seconds()
-    aggregates = {
-        "files": {
-            "count": aggregates_numbers["count"],
-            "incomplete": qs.filter(completed_at__isnull=True).count(),
-            "size": {
-                "average": aggregates_numbers["size_avg"],
-                "sum": aggregates_numbers["size_sum"],
-            },
-            "time": {"average": time_avg},
-        }
-    }
+    end = start + batch_size + 1
+    has_next = False
 
     upload_ids = set()
-    for file_upload in qs.order_by("-created_at")[start:end]:
+    file_uploads = qs.order_by("-created_at")[start:end]
+    for i, file_upload in enumerate(file_uploads):
+        if i == batch_size:
+            has_next = True
+            continue
+
         files.append(
             {
                 "id": file_upload.id,
@@ -654,16 +639,74 @@ def upload_files(request):
     for file_upload in files:
         file_upload["upload"] = hydrate_upload(file_upload["upload"])
 
-    total = aggregates["files"]["count"]
-
-    context = {
+    content = {
         "files": files,
-        "aggregates": aggregates,
-        "total": total,
+        "has_next": has_next,
         "batch_size": batch_size,
     }
 
+    return content
+
+
+def _upload_files_aggregates(qs):
+    aggregates_numbers = qs.aggregate(
+        count=Count("id"), size_avg=Avg("size"), size_sum=Sum("size")
+    )
+    time_avg = qs.filter(completed_at__isnull=False).aggregate(
+        time_avg=Avg(F("completed_at") - F("created_at"))
+    )["time_avg"]
+    if time_avg is not None:
+        time_avg = time_avg.total_seconds()
+    aggregates = {
+        "files": {
+            "count": aggregates_numbers["count"],
+            "incomplete": qs.filter(completed_at__isnull=True).count(),
+            "size": {
+                "average": aggregates_numbers["size_avg"],
+                "sum": aggregates_numbers["size_sum"],
+            },
+            "time": {"average": time_avg},
+        }
+    }
+
+    return {"aggregates": aggregates, "total": aggregates["files"]["count"]}
+
+
+@metrics.timer_decorator("api", tags=["endpoint:upload_files"])
+@api_login_required
+@api_permission_required("upload.view_all_uploads")
+def upload_files(request):
+    qs = _upload_files_build_qs(request)
+    try:
+        context = _upload_files_content(request, qs)
+    except BadRequest as e:
+        return http.JsonResponse({"errors": e.args[1]}, status=400)
+    aggregates = _upload_files_aggregates(qs)
+    context.update(aggregates)
+    context["total"] = aggregates["aggregates"]["files"]["count"]
+
     return http.JsonResponse(context)
+
+
+@metrics.timer_decorator("api", tags=["endpoint:upload_files_content"])
+@api_login_required
+@api_permission_required("upload.view_all_uploads")
+def upload_files_content(request):
+    qs = _upload_files_build_qs(request)
+    try:
+        content = _upload_files_content(request, qs)
+    except BadRequest as e:
+        return http.JsonResponse({"errors": e.args[1]}, status=400)
+    return http.JsonResponse(content)
+
+
+@metrics.timer_decorator("api", tags=["endpoint:upload_files_content_aggregates"])
+@api_login_required
+@api_permission_required("upload.view_all_uploads")
+def upload_files_aggregates(request):
+    qs = _upload_files_build_qs(request)
+    aggregates = _upload_files_aggregates(qs)
+    return http.JsonResponse(aggregates)
 
 
 @metrics.timer_decorator("api", tags=["endpoint:upload_file"])

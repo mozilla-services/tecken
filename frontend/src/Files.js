@@ -30,8 +30,10 @@ class Files extends React.PureComponent {
     super(props);
     this.pageTitle = "All Files";
     this.state = {
-      loading: true, // undone by componentDidMount
+      loadingFiles: true, // undone by componentDidMount
+      loadingAggregates: true,
       files: null,
+      hasNextPage: false,
       total: null,
       batchSize: null,
       apiUrl: null,
@@ -49,21 +51,17 @@ class Files extends React.PureComponent {
       this.setState(
         { filter: parseQueryString(this.props.location.search) },
         () => {
-          this._fetchFiles(false);
+          this._fetchFilesAndAggregatesAsync(false);
         }
       );
     } else {
-      this._fetchFiles(false);
+      this._fetchFilesAndAggregatesAsync(false);
     }
   }
 
-  _fetchFiles = (updateHistory = true) => {
-    // delay the loading animation in case it loads really fast
-    this.setLoadingTimer = window.setTimeout(() => {
-      this.setState({ loading: true });
-    }, 500);
-    let url = "/api/uploads/files/";
+  _fetch = (url, callback, errorCallback, updateHistory = true) => {
     const qs = filterToQueryString(this.state.filter);
+
     if (qs) {
       url += "?" + qs;
     }
@@ -80,23 +78,59 @@ class Files extends React.PureComponent {
         );
         return;
       }
-      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then((response) => {
-          this.setState({
-            files: response.files,
-            aggregates: response.aggregates,
-            total: response.total,
-            batchSize: response.batch_size,
-          });
-        });
+        return r.json().then((response) => callback(response));
       } else {
         store.fetchError = r;
+        if (errorCallback) {
+          errorCallback();
+        }
       }
     });
+  };
+
+  _fetchFilesAndAggregatesAsync = (updateHistory = true) => {
+    this._fetchFiles(updateHistory);
+    this._fetchAggregates();
+  };
+
+  _fetchFiles = (updateHistory = true) => {
+    var callback = (response) => {
+      this.setState({
+        files: response.files,
+        hasNextPage: response.has_next,
+        batchSize: response.batch_size,
+      });
+      this.setState({ loadingFiles: false });
+    };
+    var errorCallback = () => {
+      this.setState({ loadingFiles: false });
+    };
+    this.setState({ loadingFiles: true });
+    this._fetch(
+      "/api/uploads/files/content/",
+      callback,
+      errorCallback,
+      updateHistory
+    );
+  };
+
+  _fetchAggregates = () => {
+    var callback = (response) => {
+      this.setState({
+        aggregates: response.aggregates,
+        total: response.total,
+      });
+      this.setState({ loadingAggregates: false });
+    };
+    var errorCallback = () => {
+      this.setState({ loadingAggregates: false });
+    };
+    this.setState({ loadingAggregates: true });
+    this._fetch("/api/uploads/files/aggregates/", callback, errorCallback);
   };
 
   filterOnAll = (event) => {
@@ -107,7 +141,7 @@ class Files extends React.PureComponent {
     filter.page = 1;
     filter.key = "";
     filter.size = "";
-    this.setState({ filter: filter }, this._fetchFiles);
+    this.setState({ filter: filter }, this._fetchFilesAndAggregatesAsync);
   };
 
   updateFilter = (newFilters) => {
@@ -115,7 +149,7 @@ class Files extends React.PureComponent {
       {
         filter: Object.assign({}, this.state.filter, newFilters),
       },
-      this._fetchFiles
+      this._fetchFilesAndAggregatesAsync
     );
   };
 
@@ -138,26 +172,39 @@ class Files extends React.PureComponent {
         ) : null}
         <h1 className="title">{this.pageTitle}</h1>
 
-        {this.state.loading ? (
+        {this.state.loadingFiles ? (
           <Loading />
         ) : (
-          <TableSubTitle
-            total={this.state.total}
-            page={this.state.filter.page}
-            batchSize={this.state.batchSize}
-          />
+          this.state.files && (
+            <TableSubTitle
+              total={this.state.total}
+              page={this.state.filter.page}
+              batchSize={this.state.batchSize}
+              calculating={this.state.loadingAggregates}
+            />
+          )
         )}
 
-        {this.state.files && (
+        {!this.state.loadingFiles && this.state.files && (
           <DisplayFiles
-            loading={this.state.loading}
+            loading={this.state.loadingFiles}
             files={this.state.files}
-            aggregates={this.state.aggregates}
-            total={this.state.total}
             batchSize={this.state.batchSize}
             location={this.props.location}
             filter={this.state.filter}
             updateFilter={this.updateFilter}
+            hasNextPage={this.state.hasNextPage}
+          />
+        )}
+
+        {this.state.loadingAggregates && !this.state.loadingFiles && (
+          <Loading />
+        )}
+
+        {!this.state.loadingAggregates && this.state.files && (
+          <DisplayFilesAggregates
+            aggregates={this.state.aggregates}
+            total={this.state.total}
           />
         )}
       </div>
@@ -200,7 +247,7 @@ class DisplayFiles extends React.PureComponent {
     this.submitForm(event);
   };
   render() {
-    const { loading, files, aggregates } = this.props;
+    const { loading, files } = this.props;
 
     return (
       <form onSubmit={this.submitForm}>
@@ -332,67 +379,71 @@ class DisplayFiles extends React.PureComponent {
             batchSize={this.props.batchSize}
             updateFilter={this.props.updateFilter}
             currentPage={this.props.filter.page}
+            hasNext={this.props.hasNextPage}
           />
         )}
-
-        {!loading && <ShowAggregates aggregates={aggregates} />}
       </form>
     );
   }
 }
 
-const ShowAggregates = ({ aggregates }) => {
-  return (
-    <nav className="level" style={{ marginTop: 60 }}>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">Files</p>
-          <p className="title">
-            {aggregates.files.count
-              ? thousandFormat(aggregates.files.count)
-              : "n/a"}
-          </p>
+class DisplayFilesAggregates extends React.PureComponent {
+  render() {
+    const { aggregates } = this.props;
+    return (
+      <nav className="level" style={{ marginTop: 60 }}>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading">Files</p>
+            <p className="title">
+              {aggregates.files.count
+                ? thousandFormat(aggregates.files.count)
+                : "n/a"}
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div title="Files that got started upload but never finished for some reason">
-          <p className="heading">Incomplete Files</p>
-          <p className="title">{thousandFormat(aggregates.files.incomplete)}</p>
+        <div className="level-item has-text-centered">
+          <div title="Files that got started upload but never finished for some reason">
+            <p className="heading">Incomplete Files</p>
+            <p className="title">
+              {thousandFormat(aggregates.files.incomplete)}
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">File Sizes Sum</p>
-          <p className="title">
-            {aggregates.files.size.sum
-              ? formatFileSize(aggregates.files.size.sum)
-              : "n/a"}
-          </p>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading">File Sizes Sum</p>
+            <p className="title">
+              {aggregates.files.size.sum
+                ? formatFileSize(aggregates.files.size.sum)
+                : "n/a"}
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">File Sizes Avg</p>
-          <p className="title">
-            {aggregates.files.size.average
-              ? formatFileSize(aggregates.files.size.average)
-              : "n/a"}
-          </p>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading">File Sizes Avg</p>
+            <p className="title">
+              {aggregates.files.size.average
+                ? formatFileSize(aggregates.files.size.average)
+                : "n/a"}
+            </p>
+          </div>
         </div>
-      </div>
-      <div
-        className="level-item has-text-centered"
-        title="Average time to complete upload of completed files"
-      >
-        <div>
-          <p className="heading">Upload Time Avg</p>
-          <p className="title">
-            {aggregates.files.time.average
-              ? formatSeconds(aggregates.files.time.average)
-              : "n/a"}
-          </p>
+        <div
+          className="level-item has-text-centered"
+          title="Average time to complete upload of completed files"
+        >
+          <div>
+            <p className="heading">Upload Time Avg</p>
+            <p className="title">
+              {aggregates.files.time.average
+                ? formatSeconds(aggregates.files.time.average)
+                : "n/a"}
+            </p>
+          </div>
         </div>
-      </div>
-    </nav>
-  );
-};
+      </nav>
+    );
+  }
+}

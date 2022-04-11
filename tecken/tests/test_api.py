@@ -822,8 +822,10 @@ def test_upload_files(client, settings):
     assert data["files"] == []
 
     # Don't mess with the 'page' key
+    error_body = {"errors": {"page": ["Not a number 'notanumber'"]}}
     response = client.get(url, {"page": "notanumber"})
     assert response.status_code == 400
+    assert response.json() == error_body
 
     # Let's pretend there's an upload belonging to someone else
     upload = Upload.objects.create(
@@ -864,6 +866,30 @@ def test_upload_files(client, settings):
             assert file_upload["upload"] is None
     # Check that there are some aggregates
     aggregates = data["aggregates"]
+    assert aggregates["files"]["count"] == 2
+    assert aggregates["files"]["incomplete"] == 2
+    assert aggregates["files"]["size"]["sum"] == 1234 + 100
+
+    url_content = reverse("api:upload_files_content")
+    # Must return only "content" data
+    response = client.get(url_content)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["files"]
+    assert data["batch_size"] == settings.API_FILES_BATCH_SIZE
+    assert data["has_next"] is False
+    assert "aggregates" not in data
+    assert "total" not in data
+
+    url_aggregates = reverse("api:upload_files_aggregates")
+    # Must return only "aggregates" data
+    response = client.get(url_aggregates)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["aggregates"]
+    assert "files" not in data
+    aggregates = data["aggregates"]
+    assert data["total"] == 2
     assert aggregates["files"]["count"] == 2
     assert aggregates["files"]["incomplete"] == 2
     assert aggregates["files"]["size"]["sum"] == 1234 + 100
