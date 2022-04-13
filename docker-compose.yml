@@ -72,16 +72,6 @@ services:
       - fakesentry
       - redis-cache
 
-  docs:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    platform: linux/amd64
-    env_file:
-      - .env
-    volumes:
-      - $PWD:/app
-
   # Web container is a prod-like fully-functioning container.
   gunicorn:
     extends:
