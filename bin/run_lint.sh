@@ -25,4 +25,7 @@ else
 
     echo ">>> black"
     black --check "${BLACKARGS[@]}"
+
+    echo ">>> license check"
+    python bin/license_check.py
 fi
