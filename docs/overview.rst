@@ -99,3 +99,16 @@ symbolication service::
    service.
 
    .. [#eliotname] Tecken Symoblication -> TS Eliot.
+
+
+The Logo
+========
+
+|logo|
+
+The `logo <https://www.iconfinder.com/icons/118754/ampersand_icon>`_
+comes from `P.J. Onori <http://www.somerandomdude.com/>`_ and is
+licensed under `Attribution-Non-Commercial 3.0
+Netherlands <http://creativecommons.org/licenses/by-nc/3.0/nl/deed.en_GB>`_.
+
+.. |logo| image:: docs/logo.png
