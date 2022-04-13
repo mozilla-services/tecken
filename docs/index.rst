@@ -14,8 +14,8 @@
    :caption: Developers/Admin of Tecken
    :maxdepth: 1
 
-   contributing
    dev
+   contributing
    configuration
    frontend
    redis
