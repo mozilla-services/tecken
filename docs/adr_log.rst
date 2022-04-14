@@ -1,6 +1,6 @@
-=======
-ADR Log
-=======
+=================================
+Architecture Decision Records Log
+=================================
 
 This is a log of Architecture Decision Records for critical architecture
 decisions in Tecken.
