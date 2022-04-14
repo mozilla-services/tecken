@@ -76,16 +76,21 @@ def has_license_header(path: pathlib.Path):
 
 def main(args):
     parser = argparse.ArgumentParser(
-        description=("Checks files in specified directory for license headers.")
+        description=(
+            "Checks files in specified directory for license headers. "
+            "If you don't specify a target, it'll check all files in \"git ls-files\"."
+        )
     )
-    parser.add_argument("target", help="File or directory tree to check.", nargs="?")
+    parser.add_argument("-l", "--file-only", action="store_true", help="print files only")
+    parser.add_argument("target", help="file or directory tree to check", nargs="?")
 
     parsed = parser.parse_args(args)
 
     if parsed.target:
         target = pathlib.Path(parsed.target)
         if not target.exists():
-            print(f"Not a valid file or directory: {target}")
+            if not parsed.file_only:
+                print(f"Not a valid file or directory: {target}")
             return 1
 
         if target.is_file():
@@ -106,12 +111,18 @@ def main(args):
     for path in targets:
         if is_code_file(path) and not has_license_header(path):
             missing_headers += 1
-            print(f"File {path} does not have license header.")
+            if parsed.file_only:
+                print(str(path))
+            else:
+                print(f"File {path} does not have license header.")
 
     if missing_headers > 0:
-        print(f"Files with missing headers: {missing_headers}")
-        print("")
-        print("\n".join(MPLV2))
+        if not parsed.file_only:
+            print(f"Files with missing headers: {missing_headers}")
+            print("")
+            print("Add this:")
+            print("")
+            print("\n".join(MPLV2))
         return 1
 
     print(f"Unknown target: {target}")
