@@ -81,7 +81,9 @@ def main(args):
             "If you don't specify a target, it'll check all files in \"git ls-files\"."
         )
     )
-    parser.add_argument("-l", "--file-only", action="store_true", help="print files only")
+    parser.add_argument(
+        "-l", "--file-only", action="store_true", help="print files only"
+    )
     parser.add_argument("target", help="file or directory tree to check", nargs="?")
 
     parsed = parser.parse_args(args)
