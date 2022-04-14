@@ -8,7 +8,7 @@ version: 2.1
 jobs:
   build:
     docker: &docker
-      - image: cimg/base:2022.02
+      - image: cimg/python:3.9.12
         auth:
           username: $DOCKER_USER
           password: $DOCKER_PASS
@@ -77,6 +77,16 @@ jobs:
           root: workspace
           paths:
             - tecken_app.tar.gz
+
+  licensecheck:
+    docker: *docker
+    steps:
+      - checkout
+
+      - run:
+          name: License check
+          command: |
+            python ./bin/license_check.py
 
   lint:
     docker: *docker
@@ -190,6 +200,12 @@ workflows:
   build-test-push:
     jobs:
       - build:
+          filters:
+            tags:
+              only: /.*/
+      - licensecheck:
+          requires:
+            - build
           filters:
             tags:
               only: /.*/

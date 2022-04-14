@@ -93,6 +93,7 @@ docs: .env .docker-build  ## | Build docs.
 lint: .env .docker-build  ## | Lint code.
 	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh
 	docker-compose run --rm frontend lint
+	docker-compose run --rm --no-deps test bash python bin/license_check.py
 
 .PHONY: lintfix
 lintfix: .env .docker-build  ## | Reformat code.
