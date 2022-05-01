@@ -35,7 +35,7 @@ sentry-sdk==1.5.8
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-httpdomain==1.8.0
 symbolic==8.7.0
-ujson==5.1.0
+ujson==5.2.0
 urllib3==1.26.8
 urlwait==1.0
 whitenoise==5.3.0
