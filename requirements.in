@@ -38,7 +38,7 @@ symbolic==8.7.0
 ujson==5.1.0
 urllib3==1.26.8
 urlwait==1.0
-whitenoise==5.3.0
+whitenoise==6.0.0
 
 # NOTE(willkg): Need to keep redis at this version because after this, the Python
 # library doesn't work with the version of Redis we're using in production
