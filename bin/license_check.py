@@ -131,8 +131,10 @@ def main(args):
             print("\n".join(MPLV2))
         return 1
 
-    print(f"Unknown target: {target}")
-    return 1
+    if not parsed.file_only:
+        print("No files missing headers.")
+
+    return 0
 
 
 if __name__ == "__main__":
