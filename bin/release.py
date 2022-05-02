@@ -2,7 +2,7 @@
 
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, you can obtain one at http://mozilla.org/MPL/2.0/.
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 """
 This script handles releases for this project.
@@ -13,7 +13,7 @@ both.
 This requires Python 3 to run.
 
 repo: https://github.com/willkg/socorro-release/
-sha: a3c6e973dd90ecd8a805747c5a5346bf45cb88d4
+sha: 3c700df4f8ab3e49b748879e383159677b387879
 
 """
 
