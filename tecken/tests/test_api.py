@@ -541,6 +541,41 @@ def test_uploads(client):
 
 
 @pytest.mark.django_db
+def test_uploads_separate_endpoints(client):
+    user = User.objects.create(username="efilho", email="efilho@example.com")
+    user.set_password("secret")
+    user.save()
+    permission = Permission.objects.get(codename="view_all_uploads")
+    user.user_permissions.add(permission)
+    assert client.login(username="efilho", password="secret")
+
+    # Content endpoint
+    url = reverse("api:uploads_content")
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert "uploads" in data
+    assert "batch_size" in data
+    assert "order_by" in data
+    assert "can_view_all" in data
+    assert "has_next" in data
+    assert "aggregates" not in data
+    assert "total" not in data
+
+    url = reverse("api:uploads_aggregates")
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert "total" in data
+    assert "aggregates" in data
+    assert "uploads" not in data
+    assert "batch_size" not in data
+    assert "order_by" not in data
+    assert "can_view_all" not in data
+    assert "has_next" not in data
+
+
+@pytest.mark.django_db
 def test_uploads_second_increment(client):
     """If you query uploads with '?created_at=>SOMEDATE' that date
     gets an extra second added to it. That's because the datetime objects

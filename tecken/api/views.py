@@ -226,75 +226,14 @@ def extend_token(request, id):
     return http.JsonResponse({"ok": True, "days": days})
 
 
-@metrics.timer_decorator("api", tags=["endpoint:uploads"])
-@api_login_required
-def uploads(request):
-    context = {
-        "uploads": [],
-        "can_view_all": request.user.has_perm("upload.view_all_uploads"),
-    }
-
-    form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
-    if not form.is_valid():
-        return http.JsonResponse({"errors": form.errors}, status=400)
-
-    pagination_form = PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-
-    qs = Upload.objects.all()
-    qs = filter_uploads(qs, context["can_view_all"], request.user, form)
-
+def _uploads_content(form, pagination_form, qs, can_view_all):
+    content = {"can_view_all": can_view_all}
     batch_size = settings.API_UPLOADS_BATCH_SIZE
 
     page = pagination_form.cleaned_data["page"]
     start = (page - 1) * batch_size
-    end = start + batch_size
-
-    if context["can_view_all"] and not any(form.cleaned_data.values()):
-        # If you can view ALL uploads and there's no filtering, we can use
-        # UploadsCreated instead which is much more efficient.
-        aggregates_numbers = UploadsCreated.objects.aggregate(
-            count=Sum("count"),
-            size_sum=Sum("size"),
-            skipped_sum=Sum("skipped"),
-            files=Sum("files"),
-        )
-        context["aggregates"] = {
-            "uploads": {
-                "count": aggregates_numbers["count"],
-                "size": {"sum": aggregates_numbers["size_sum"]},
-                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
-            },
-            "files": {"count": aggregates_numbers["files"]},
-        }
-        # Do this later to avoid ZeroDivisionError
-        if aggregates_numbers["count"]:
-            context["aggregates"]["uploads"]["size"]["average"] = (
-                aggregates_numbers["size_sum"] / aggregates_numbers["count"]
-            )
-        else:
-            context["aggregates"]["uploads"]["size"]["average"] = None
-
-    else:
-        aggregates_numbers = qs.aggregate(
-            count=Count("id"),
-            size_avg=Avg("size"),
-            size_sum=Sum("size"),
-            skipped_sum=SumCardinality("skipped_keys"),
-        )
-        context["aggregates"] = {
-            "uploads": {
-                "count": aggregates_numbers["count"],
-                "size": {
-                    "average": aggregates_numbers["size_avg"],
-                    "sum": aggregates_numbers["size_sum"],
-                },
-                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
-            }
-        }
-        file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
-        context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
+    end = start + batch_size + 1
+    has_next = False
 
     if form.cleaned_data.get("order_by"):
         order_by = form.cleaned_data["order_by"]
@@ -303,7 +242,12 @@ def uploads(request):
 
     rows = []
     order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
-    for upload in qs.select_related("user").order_by(order_by_string)[start:end]:
+    uploads = qs.select_related("user").order_by(order_by_string)[start:end]
+    for i, upload in enumerate(uploads):
+        if i == batch_size:
+            has_next = True
+            continue
+
         rows.append(
             {
                 "id": upload.id,
@@ -349,11 +293,106 @@ def uploads(request):
             upload["id"], 0
         )
 
-    context["uploads"] = rows
-    context["total"] = context["aggregates"]["uploads"]["count"]
-    context["batch_size"] = batch_size
-    context["order_by"] = order_by
+    content["uploads"] = rows
+    content["batch_size"] = batch_size
+    content["order_by"] = order_by
+    content["has_next"] = has_next
+    return content
 
+def _uploads_aggregates(form, qs, can_view_all):
+    context = {}
+    if can_view_all and not any(form.cleaned_data.values()):
+        # If you can view ALL uploads and there's no filtering, we can use
+        # UploadsCreated instead which is much more efficient.
+        aggregates_numbers = UploadsCreated.objects.aggregate(
+            count=Sum("count"),
+            size_sum=Sum("size"),
+            skipped_sum=Sum("skipped"),
+            files=Sum("files"),
+        )
+        context["aggregates"] = {
+            "uploads": {
+                "count": aggregates_numbers["count"],
+                "size": {"sum": aggregates_numbers["size_sum"]},
+                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
+            },
+            "files": {"count": aggregates_numbers["files"]},
+        }
+        # Do this later to avoid ZeroDivisionError
+        if aggregates_numbers["count"]:
+            context["aggregates"]["uploads"]["size"]["average"] = (
+                aggregates_numbers["size_sum"] / aggregates_numbers["count"]
+            )
+        else:
+            context["aggregates"]["uploads"]["size"]["average"] = None
+
+    else:
+        aggregates_numbers = qs.aggregate(
+            count=Count("id"),
+            size_avg=Avg("size"),
+            size_sum=Sum("size"),
+            skipped_sum=SumCardinality("skipped_keys"),
+        )
+        context["aggregates"] = {
+            "uploads": {
+                "count": aggregates_numbers["count"],
+                "size": {
+                    "average": aggregates_numbers["size_avg"],
+                    "sum": aggregates_numbers["size_sum"],
+                },
+                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
+            }
+        }
+        file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
+        context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
+    context["total"] = context["aggregates"]["uploads"]["count"]
+    return context
+
+
+@metrics.timer_decorator("api", tags=["endpoint:uploads_content"])
+@api_login_required
+def uploads_content(request):
+    form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+    pagination_form = PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
+    can_view_all = request.user.has_perm("upload.view_all_uploads")
+    qs = filter_uploads(Upload.objects.all(), can_view_all, request.user, form)
+    context = _uploads_content(form, pagination_form, qs, can_view_all)
+    return http.JsonResponse(context)
+
+
+@metrics.timer_decorator("api", tags=["endpoint:uploads_aggregates"])
+@api_login_required
+def uploads_aggregates(request):
+    form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+    can_view_all = request.user.has_perm("upload.view_all_uploads")
+    qs = filter_uploads(Upload.objects.all(), can_view_all, request.user, form)
+    aggregates = _uploads_aggregates(form, qs, can_view_all)
+    return http.JsonResponse(aggregates)
+
+
+@metrics.timer_decorator("api", tags=["endpoint:uploads"])
+@api_login_required
+def uploads(request):
+    form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
+    if not form.is_valid():
+        return http.JsonResponse({"errors": form.errors}, status=400)
+
+    pagination_form = PaginationForm(request.GET)
+    if not pagination_form.is_valid():
+        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
+
+    can_view_all = request.user.has_perm("upload.view_all_uploads")
+    qs = Upload.objects.all()
+    qs = filter_uploads(qs, can_view_all, request.user, form)
+
+    context = _uploads_content(form, pagination_form, qs, can_view_all)
+    context.update(_uploads_aggregates(form, qs, can_view_all))
     return http.JsonResponse(context)
 
 
