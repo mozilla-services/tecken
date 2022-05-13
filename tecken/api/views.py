@@ -246,7 +246,7 @@ def _uploads_content(form, pagination_form, qs, can_view_all):
     for i, upload in enumerate(uploads):
         if i == batch_size:
             has_next = True
-            continue
+            break
 
         rows.append(
             {
@@ -640,7 +640,7 @@ def _upload_files_content(request, qs):
     for i, file_upload in enumerate(file_uploads):
         if i == batch_size:
             has_next = True
-            continue
+            break
 
         files.append(
             {
