@@ -43,6 +43,7 @@ class Uploads extends React.PureComponent {
       latestUpload: null,
       newUploadsCount: 0,
       orderBy: null,
+      hasNextPage: false,
     };
 
     this.newCountLoopInterval = 5 * 1000;
@@ -65,12 +66,12 @@ class Uploads extends React.PureComponent {
           // If you load the page with some filtering, the "latestUpload"
           // might not be the unfiltered latest upload.
           this._fetchAbsoluteLatestUpload().then(() => {
-            this._fetchUploads();
+            this._fetchUploadsAndAggregatesAsync();
           });
         }
       );
     } else {
-      this._fetchUploads();
+      this._fetchUploadsAndAggregatesAsync();
     }
 
     window.setTimeout(() => {
@@ -78,21 +79,83 @@ class Uploads extends React.PureComponent {
     }, this.newCountLoopInterval);
   }
 
-  _fetchUploads = () => {
-    // delay the loading animation in case it loads really fast
-    this.setLoadingTimer = window.setTimeout(() => {
-      if (!this.dismounted) {
-        this.setState({ loading: true });
+  _fetchUploadsAndAggregatesAsync = () => {
+    this._fetchUploads();
+    this._fetchAggregates();
+  };
+
+  _fetchAggregates = () => {
+    var callback = (response) => {
+      return response.json().then((response) => {
+        this.setState({
+          loadingAggregates: false,
+          aggregates: response.aggregates,
+          total: response.total,
+          validationErrors: null,
+        });
+      });
+    };
+    var errorCallback = (response) => {
+      if (r.status === 400) {
+        return r.json().then((data) => {
+          this.setState({
+            loadingAggregates: false,
+            refreshing: false,
+            validationErrors: data.errors,
+          });
+        });
       }
-    }, 1000);
-    let url = "/api/uploads/";
+    };
+    this.setState({ loadingAggregates: true });
+    this._fetch("/api/uploads/aggregates/", callback, errorCallback);
+  };
+
+  _fetchUploads = () => {
+    var callback = (response) => {
+      return response.json().then((response) => {
+        this.setState(
+          {
+            loadingUploads: false,
+            uploads: response.uploads,
+            canViewAll: response.can_view_all,
+            batchSize: response.batch_size,
+            orderBy: response.order_by,
+            validationErrors: null,
+            latestUpload: this._getLatestUpload(response.uploads),
+            hasNextPage: response.has_next,
+          },
+          () => {
+            if (this.state.newUploadsCount) {
+              document.title = this.state.pageTitle;
+              this.setState({ newUploadsCount: 0 });
+            }
+          }
+        );
+      });
+    };
+    var errorCallback = (response) => {
+      if (r.status === 400) {
+        return r.json().then((data) => {
+          this.setState({
+            loadingUploads: false,
+            refreshing: false,
+            validationErrors: data.errors,
+          });
+        });
+      }
+    };
+    this.setState({ loadingUploads: true });
+    this._fetch("/api/uploads/content/", callback, errorCallback);
+  };
+
+  _fetch = (endpoint, callback, errorCallback) => {
     const qs = filterToQueryString(this.state.filter, this.state.orderBy);
     if (qs) {
-      url += "?" + qs;
+      endpoint += "?" + qs;
     }
     this.props.history.push({ search: qs });
 
-    return Fetch(url).then((r) => {
+    return Fetch(endpoint).then((r) => {
       if (this.setLoadingTimer) {
         window.clearTimeout(this.setLoadingTimer);
       }
@@ -109,34 +172,9 @@ class Uploads extends React.PureComponent {
         if (store.fetchError) {
           store.fetchError = null;
         }
-        return r.json().then((response) => {
-          this.setState(
-            {
-              uploads: response.uploads,
-              canViewAll: response.can_view_all,
-              aggregates: response.aggregates,
-              total: response.total,
-              batchSize: response.batch_size,
-              orderBy: response.order_by,
-              validationErrors: null,
-              latestUpload: this._getLatestUpload(response.uploads),
-            },
-            () => {
-              if (this.state.newUploadsCount) {
-                document.title = this.state.pageTitle;
-                this.setState({ newUploadsCount: 0 });
-              }
-            }
-          );
-        });
+        return callback(r);
       } else if (r.status === 400) {
-        return r.json().then((data) => {
-          this.setState({
-            loading: false,
-            refreshing: false,
-            validationErrors: data.errors,
-          });
-        });
+        return errorCallback(r);
       } else {
         store.fetchError = r;
         // Always return a promise
@@ -146,7 +184,7 @@ class Uploads extends React.PureComponent {
   };
 
   _fetchAbsoluteLatestUpload = () => {
-    const url = "/api/uploads/";
+    const url = "/api/uploads/content/";
     return fetch(url).then((r) => {
       if (r.status === 200) {
         return r.json().then((response) => {
@@ -160,7 +198,7 @@ class Uploads extends React.PureComponent {
 
   _refreshUploads = () => {
     this.setState({ refreshing: true });
-    this._fetchUploads();
+    this._fetchUploadsAndAggregatesAsync();
   };
 
   // This is called every time _fetchUploads() finishes successfully.
@@ -214,14 +252,14 @@ class Uploads extends React.PureComponent {
     event.preventDefault();
     const filter = this.state.filter;
     delete filter.user;
-    this.setState({ filter: filter }, this._fetchUploads);
+    this.setState({ filter: filter }, this._fetchUploadsAndAggregatesAsync);
   };
 
   filterOnYours = (event) => {
     event.preventDefault();
     const filter = this.state.filter;
     filter.user = store.currentUser.email;
-    this.setState({ filter: filter }, this._fetchUploads);
+    this.setState({ filter: filter }, this._fetchUploadsAndAggregatesAsync);
   };
 
   updateFilter = (newFilters) => {
@@ -229,14 +267,14 @@ class Uploads extends React.PureComponent {
       {
         filter: Object.assign({}, this.state.filter, newFilters),
       },
-      this._fetchUploads
+      this._fetchUploadsAndAggregatesAsync
     );
   };
 
   resetAndReload = (event) => {
     event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
-      this._fetchUploads();
+      this._fetchUploadsAndAggregatesAsync();
     });
   };
 
@@ -249,11 +287,13 @@ class Uploads extends React.PureComponent {
 
   changeOrderBy = (orderBy) => {
     this.setState({ orderBy: orderBy }, () => {
-      this._fetchUploads();
+      this._fetchUploadsAndAggregatesAsync();
     });
   };
 
   render() {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayFullStr = format(new Date(), "yyyy-MM-ddTHH:MM.SSS'Z'");
     return (
       <div>
         {store.hasPermission("upload.view_all_uploads") ? (
@@ -298,14 +338,17 @@ class Uploads extends React.PureComponent {
           refresh={this._refreshUploads}
         />
         <h1 className="title">{this.state.pageTitle}</h1>
-        {this.state.loading ? (
+        {this.state.loadingUploads ? (
           <Loading />
         ) : (
-          <TableSubTitle
-            total={this.state.total}
-            page={this.state.filter.page}
-            batchSize={this.state.batchSize}
-          />
+          this.state.uploads && (
+            <TableSubTitle
+              total={this.state.total}
+              page={this.state.filter.page}
+              batchSize={this.state.batchSize}
+              calculating={this.state.loadingUploads}
+            />
+          )
         )}
         {this.state.validationErrors && (
           <ShowValidationErrors
@@ -313,13 +356,11 @@ class Uploads extends React.PureComponent {
             resetAndReload={this.resetAndReload}
           />
         )}
-        {this.state.uploads && (
+        {!this.state.loadingUploads && this.state.uploads && (
           <DisplayUploads
-            loading={this.state.loading}
+            loading={this.state.loadingUploads}
             uploads={this.state.uploads}
             canViewAll={this.state.canViewAll}
-            aggregates={this.state.aggregates}
-            total={this.state.total}
             batchSize={this.state.batchSize}
             location={this.props.location}
             filter={this.state.filter}
@@ -328,8 +369,22 @@ class Uploads extends React.PureComponent {
             previousLatestUpload={this.previousLatestUpload}
             changeOrderBy={this.changeOrderBy}
             orderBy={this.state.orderBy}
+            hasNextPage={this.state.hasNextPage}
           />
         )}
+
+        {this.state.loadingAggregates && !this.state.loadingUploads && (
+          <Loading />
+        )}
+
+        {!this.state.loadingAggregates && this.state.uploads && (
+          <DisplayUploadsAggregates
+            aggregates={this.state.aggregates}
+            total={this.state.total}
+          />
+        )}
+
+        <ExamplesOfFiltering todayStr={todayStr} todayFullStr={todayFullStr} />
       </div>
     );
   }
@@ -430,10 +485,8 @@ class DisplayUploads extends React.PureComponent {
   };
 
   render() {
-    const { loading, uploads, aggregates } = this.props;
+    const { loading, uploads } = this.props;
 
-    const todayStr = format(new Date(), "yyyy-MM-dd");
-    const todayFullStr = format(new Date(), "yyyy-MM-ddTHH:MM.SSS'Z'");
     return (
       <form onSubmit={this.submitForm}>
         <table className="table is-fullwidth">
@@ -568,13 +621,77 @@ class DisplayUploads extends React.PureComponent {
             batchSize={this.props.batchSize}
             updateFilter={this.props.updateFilter}
             currentPage={this.props.filter.page}
+            hasNext={this.props.hasNextPage}
           />
         )}
-
-        {!loading && <ShowAggregates aggregates={aggregates} />}
-
-        <ExamplesOfFiltering todayStr={todayStr} todayFullStr={todayFullStr} />
       </form>
+    );
+  }
+}
+
+class DisplayUploadsAggregates extends React.PureComponent {
+  render() {
+    const { aggregates } = this.props;
+    return (
+      <nav className="level" style={{ marginTop: 60 }}>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading">Uploads</p>
+            <p className="title">
+              {aggregates.uploads.count
+                ? thousandFormat(aggregates.uploads.count)
+                : "n/a"}
+            </p>
+          </div>
+        </div>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading">Upload Sizes Sum</p>
+            <p className="title">
+              {aggregates.uploads.size.sum
+                ? formatFileSize(aggregates.uploads.size.sum)
+                : "n/a"}
+            </p>
+          </div>
+        </div>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading">Upload Sizes Avg</p>
+            <p className="title">
+              {aggregates.uploads.size.average
+                ? formatFileSize(aggregates.uploads.size.average)
+                : "n/a"}
+            </p>
+          </div>
+        </div>
+        <div className="level-item has-text-centered">
+          <div>
+            <p
+              className="heading"
+              title="Files with the uploads we know we can skip"
+            >
+              Sum Skipped Files
+            </p>
+            <p className="title">
+              {aggregates.uploads.skipped.sum
+                ? thousandFormat(aggregates.uploads.skipped.sum)
+                : "n/a"}
+            </p>
+          </div>
+        </div>
+        <div className="level-item has-text-centered">
+          <div>
+            <p className="heading" title="Files we definitely uploaded">
+              Sum Uploaded Files
+            </p>
+            <p className="title">
+              {aggregates.files.count
+                ? thousandFormat(aggregates.files.count)
+                : "n/a"}
+            </p>
+          </div>
+        </div>
+      </nav>
     );
   }
 }
@@ -624,67 +741,3 @@ const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
     </div>
   </article>
 );
-
-const ShowAggregates = ({ aggregates }) => {
-  return (
-    <nav className="level" style={{ marginTop: 60 }}>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">Uploads</p>
-          <p className="title">
-            {aggregates.uploads.count
-              ? thousandFormat(aggregates.uploads.count)
-              : "n/a"}
-          </p>
-        </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">Upload Sizes Sum</p>
-          <p className="title">
-            {aggregates.uploads.size.sum
-              ? formatFileSize(aggregates.uploads.size.sum)
-              : "n/a"}
-          </p>
-        </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading">Upload Sizes Avg</p>
-          <p className="title">
-            {aggregates.uploads.size.average
-              ? formatFileSize(aggregates.uploads.size.average)
-              : "n/a"}
-          </p>
-        </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p
-            className="heading"
-            title="Files with the uploads we know we can skip"
-          >
-            Sum Skipped Files
-          </p>
-          <p className="title">
-            {aggregates.uploads.skipped.sum
-              ? thousandFormat(aggregates.uploads.skipped.sum)
-              : "n/a"}
-          </p>
-        </div>
-      </div>
-      <div className="level-item has-text-centered">
-        <div>
-          <p className="heading" title="Files we definitely uploaded">
-            Sum Uploaded Files
-          </p>
-          <p className="title">
-            {aggregates.files.count
-              ? thousandFormat(aggregates.files.count)
-              : "n/a"}
-          </p>
-        </div>
-      </div>
-    </nav>
-  );
-};
