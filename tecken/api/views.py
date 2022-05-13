@@ -299,6 +299,7 @@ def _uploads_content(form, pagination_form, qs, can_view_all):
     content["has_next"] = has_next
     return content
 
+
 def _uploads_aggregates(form, qs, can_view_all):
     context = {}
     if can_view_all and not any(form.cleaned_data.values()):

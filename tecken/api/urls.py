@@ -31,7 +31,6 @@ urlpatterns = [
     path("uploads/", views.uploads, name="uploads"),
     path("uploads/content/", views.uploads_content, name="uploads_content"),
     path("uploads/aggregates/", views.uploads_aggregates, name="uploads_aggregates"),
-
     path("uploads/created/", views.uploads_created, name="uploads_created"),
     path(
         "uploads/created/backfilled/",
