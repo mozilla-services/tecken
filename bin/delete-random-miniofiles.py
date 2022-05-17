@@ -21,7 +21,7 @@ import boto3
 
 
 def fmtsize(b):
-    if b > 1024 ** 2:
+    if b > 1024**2:
         return "{:.1f}MB".format(b / 1024 / 1024)
     else:
         return "{:.1f}KB".format(b / 1024)
