@@ -438,9 +438,9 @@ pep517==0.12.0 \
     --hash=sha256:931378d93d11b298cf511dd634cf5ea4cb249a28ef84160b3247ee9afb4e8ab0 \
     --hash=sha256:dd884c326898e2c6e11f9e0b64940606a93eb10ea022a2e067959f3a110cf161
     # via pip-tools
-pip-tools==6.5.0 \
-    --hash=sha256:9cf69a020e3c208a7a1bcc78cbfd436dab323efc187919df6182eca98efbe3f2 \
-    --hash=sha256:d14ea4fc2c118db2a6af65a4345a8b9b355e792aedad6bf64dd3eb97c5fc5fee
+pip-tools==6.6.1 \
+    --hash=sha256:48a26382c8477adf2cca8b9128093f4778fdadaade74bfaab0832d53d9cb256a \
+    --hash=sha256:634e3e8d4707257c004313d16a9d6c14c1ce94d3c0fa1f93c38d264401f2e4f2
     # via -r requirements.in
 platformdirs==2.4.1 \
     --hash=sha256:1d7385c7db91728b83efd0ca99a5afb296cab9d0ed8313a45ed8ba17967ecfca \
