@@ -7,8 +7,8 @@
 set -eo pipefail
 
 # Set up S3
-python bin/s3.py delete "http://minio:9000/publicbucket"
-python bin/s3.py create "http://minio:9000/publicbucket"
+python bin/s3_cli.py delete "${UPLOAD_DEFAULT_URL}"
+python bin/s3_cli.py create "${UPLOAD_DEFAULT_URL}"
 
 # Set up db
 python bin/db.py drop || true
