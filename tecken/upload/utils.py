@@ -25,7 +25,9 @@ from tecken.base.symboldownloader import SymbolDownloader
 logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
 
-downloader = SymbolDownloader(settings.SYMBOL_URLS)
+# FIXME(willkg): This downloader needs to point to all the things that can be downloaded
+# from so it can correctly invalidate the cache
+downloader = SymbolDownloader(settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL])
 
 
 class UnrecognizedArchiveFileExtension(ValueError):

@@ -68,6 +68,7 @@ if TOOL_ENV:
         ("OIDC_OP_TOKEN_ENDPOINT", "http://example.com/"),
         ("OIDC_OP_USER_ENDPOINT", "http://example.com/"),
         ("DATABASE_URL", "postgresql://postgres:postgres@db/tecken"),
+        ("REDIS_URL", "redis://redis-cache:6379/0"),
         ("SYMBOL_URLS", "https://example.com/"),
         ("UPLOAD_DEFAULT_URL", "https://example.com/"),
         ("UPLOAD_TRY_SYMBOLS_URL", "https://example.com/try/"),
@@ -383,9 +384,7 @@ TOKENS_DEFAULT_EXPIRATION_DAYS = _config(
     doc="Default expiration in days for tokens.",
 )
 
-REDIS_URL = _config(
-    "REDIS_URL", default="redis://redis-cache:6379/0", doc="URL for Redis."
-)
+REDIS_URL = _config("REDIS_URL", doc="URL for Redis.")
 
 REDIS_SOCKET_CONNECT_TIMEOUT = _config(
     "REDIS_SOCKET_CONNECT_TIMEOUT",
