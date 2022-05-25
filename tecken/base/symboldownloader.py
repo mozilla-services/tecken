@@ -108,7 +108,10 @@ def exists_in_source(source, key):
 @metrics.timer_decorator("symboldownloader_public_exists")
 def check_url_head(url):
     session = session_with_retries()
-    return session.head(url).status_code == 200
+    resp = session.head(url)
+    if resp.status_code not in (200, 404):
+        logger.error(f"check_url_head: {url} status code is {resp.status_code}")
+    return resp.status_code == 200
 
 
 class SymbolDownloader:
