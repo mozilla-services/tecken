@@ -30,14 +30,34 @@ def get_client(endpoint_url):
     return client
 
 
-def parse_endpoint_url_and_bucket(url):
-    parsed = urlparse(url)
-    endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
-    path_parts = [part.strip() for part in parsed.path.split("/") if part.strip()]
-    if path_parts:
-        bucket = path_parts[0]
+def parse_endpoint_url_and_bucket(bucket_or_url):
+    """Parse endpoint url and bucket from a string
+
+    This defaults the endpoint_url to AWS_ENDPOINT_URL in the environment if a
+    url is not otherwise specified.
+
+    This pulls the bucket name from the url path or assumes the bucket_or_url is
+    itself the bucket name.
+
+    :param str bucket_or_url: the string to extract endpoint_url and bucket name from
+
+    :returns: dict with "endpoint_url" and "bucket" keys
+
+    """
+    if bucket_or_url.startswith("http"):
+        # The bucket value is a url, so we pull it apart into a client endpoint url
+        # and a bucket name
+        parsed = urlparse(bucket_or_url)
+        endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
+        path_parts = [part.strip() for part in parsed.path.split("/") if part.strip()]
+        if path_parts:
+            bucket = path_parts[0]
+        else:
+            bucket = ""
+
     else:
-        bucket = ""
+        endpoint_url = os.environ.get("AWS_ENDPOINT_URL", "unknown")
+        bucket = bucket_or_url
 
     return {
         "endpoint_url": endpoint_url,
@@ -59,14 +79,12 @@ def create_bucket(ctx, bucket):
     Specify "bucket" as a name or url.
 
     """
-    if bucket.startswith("http"):
-        # The bucket value is a url, so we pull it apart into a client endpoint url
-        # and a bucket name
-        ret = parse_endpoint_url_and_bucket(bucket)
-        endpoint_url = ret["endpoint_url"]
-        bucket = ret["bucket"]
-    else:
-        endpoint_url = os.environ.get("AWS_ENDPOINT_URL", "unknown")
+    ret = parse_endpoint_url_and_bucket(bucket)
+    endpoint_url = ret["endpoint_url"]
+    bucket = ret["bucket"]
+
+    if not bucket:
+        raise click.UsageError("No bucket specified.")
 
     client = get_client(endpoint_url)
 
@@ -87,14 +105,12 @@ def delete_bucket(ctx, bucket):
     Specify "bucket" as a name or url.
 
     """
-    if bucket.startswith("http"):
-        # The bucket value is a url, so we pull it apart into a client endpoint url
-        # and a bucket name
-        ret = parse_endpoint_url_and_bucket(bucket)
-        endpoint_url = ret["endpoint_url"]
-        bucket = ret["bucket"]
-    else:
-        endpoint_url = os.environ.get("AWS_ENDPOINT_URL", "unknown")
+    ret = parse_endpoint_url_and_bucket(bucket)
+    endpoint_url = ret["endpoint_url"]
+    bucket = ret["bucket"]
+
+    if not bucket:
+        raise click.UsageError("No bucket specified.")
 
     client = get_client(endpoint_url)
 
@@ -126,10 +142,7 @@ def list_buckets(ctx, url, details):
     url can be specified as an endpoint url or a bucket url.
 
     """
-    if not url:
-        url = os.environ.get("AWS_ENDPOINT_URL", "unknown")
-
-    ret = parse_endpoint_url_and_bucket(url)
+    ret = parse_endpoint_url_and_bucket(url or "")
     endpoint_url = ret["endpoint_url"]
 
     client = get_client(endpoint_url)
@@ -148,14 +161,12 @@ def list_buckets(ctx, url, details):
 @click.pass_context
 def list_objects(ctx, bucket, details):
     """List contents of a bucket"""
-    if bucket.startswith("http"):
-        # The bucket value is a url, so we pull it apart into a client endpoint url
-        # and a bucket name
-        ret = parse_endpoint_url_and_bucket(bucket)
-        endpoint_url = ret["endpoint_url"]
-        bucket = ret["bucket"]
-    else:
-        endpoint_url = os.environ.get("AWS_ENDPOINT_URL", "unknown")
+    ret = parse_endpoint_url_and_bucket(bucket)
+    endpoint_url = ret["endpoint_url"]
+    bucket = ret["bucket"]
+
+    if not bucket:
+        raise click.UsageError("No bucket specified.")
 
     client = get_client(endpoint_url)
 
