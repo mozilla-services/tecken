@@ -67,7 +67,7 @@ Setup quickstart
 
    That will build the app Docker image required for development.
 
-5. Initialize Postgres and S3 (Minio).
+5. Initialize Postgres and S3 (localstack).
 
    Run:
 
@@ -523,18 +523,16 @@ The file ``all-metrics-keys.json`` can be deleted any time and it will be
 recreated again.
 
 
-Minio (S3 mock server)
-----------------------
+Localstack (S3 mock server)
+---------------------------
 
 When doing local development we, by default, mock AWS S3 and instead use
-`minio`_. It's API compatible so it should reflect how AWS S3 works but
-with the advantage that you don't need an Internet connection and real
-S3 credentials just to test symbol uploads for example.
+`localstack`_. It's an S3 emulator.
 
-When started with docker, it starts a web server on ``:9000`` that you can
-use to browse uploaded files. Go to ``http://localhost:9000``.
+When started with docker, it starts a web server on ``:4566`` that you can
+use to browse uploaded files. Go to ``http://localhost:4566``.
 
-.. _`minio`: https://minio.io/
+.. _localstack: https://github.com/localstack/localstack
 
 
 How to do local Upload by Download URL

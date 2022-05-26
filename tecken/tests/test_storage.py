@@ -47,10 +47,10 @@ INIT_CASES = {
         "private": True,
         "region": None,
     },
-    "http://minio:9000/publicbucket": {
+    "http://localstack:4566/publicbucket": {
         "backend": "emulated-s3",
-        "base_url": "http://minio:9000/publicbucket",
-        "endpoint_url": "http://minio:9000",
+        "base_url": "http://localstack:4566/publicbucket",
+        "endpoint_url": "http://localstack:4566",
         "name": "publicbucket",
         "prefix": "",
         "private": True,

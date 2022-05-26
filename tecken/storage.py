@@ -56,8 +56,8 @@ class StorageBucket:
     _URL_FINGERPRINT = {
         # AWS S3, like bucket-name.s3.amazonaws.com
         "s3": ".amazonaws.com",
-        # Minio S3 Emulator
-        "emulated-s3": "minio",
+        # Localstack S3 Emulator
+        "emulated-s3": "localstack",
         # S3 test domain
         "test-s3": "s3.example.com",
     }
@@ -174,7 +174,7 @@ def get_storage_client(endpoint_url=None, region_name=None, **config_params):
         # By default, if you don't specify an endpoint_url
         # boto3 will automatically assume AWS's S3.
         # For local development we are running a local S3
-        # fake service with minio. Then we need to
+        # fake service with localstack. Then we need to
         # specify the endpoint_url.
         options["endpoint_url"] = endpoint_url
     if region_name:

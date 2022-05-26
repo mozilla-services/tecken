@@ -112,19 +112,18 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             symbol, debugid, filename, refresh_cache=refresh_cache
         )
         if url:
-            # If doing local development, with Docker, you're most likely
-            # running minio as a fake S3 client. It runs on its own
-            # hostname that is only available from other Docker containers.
-            # But to make it really convenient, for testing symbol download
-            # we'll rewrite the URL to one that is possible to reach
-            # from the host.
+            # If doing local development, with Docker, you're most likely running
+            # localstack as a fake S3. It runs on its own hostname that is only
+            # available from other Docker containers. But to make it really convenient,
+            # for testing symbol download we'll rewrite the URL to one that is possible
+            # to reach from the host.
             if (
                 settings.DEBUG
                 and StorageBucket(url).backend == "emulated-s3"
-                and "http://minio:9000" in url
+                and "http://localstack:4566" in url
                 and request.get_host() == "localhost:8000"
             ):  # pragma: no cover
-                url = url.replace("minio:9000", "localhost:9000")
+                url = url.replace("localstack:4566", "localhost:4566")
             response = http.HttpResponseRedirect(url)
             if request._request_debug:
                 response["Debug-Time"] = downloader.time_took
