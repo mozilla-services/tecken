@@ -76,12 +76,12 @@ psql: .env .docker-build  ## | Open psql cli.
 
 .PHONY: test
 test: .env .docker-build  ## | Run Python unit test suite.
-	docker-compose up -d db redis-cache minio statsd oidcprovider
+	docker-compose up -d db redis-cache localstack statsd oidcprovider
 	docker-compose run --rm test bash ./bin/run_test.sh
 
 .PHONY: testshell
 testshell: .env .docker-build  ## | Open shell in test environment.
-	docker-compose up -d db redis-cache minio statsd oidcprovider
+	docker-compose up -d db redis-cache localstack statsd oidcprovider
 	docker-compose run --rm test bash ./bin/run_test.sh --shell
 
 .PHONY: docs

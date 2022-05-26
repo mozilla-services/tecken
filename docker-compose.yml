@@ -26,7 +26,7 @@ services:
       - db
       - fakesentry
       - redis-cache
-      - minio
+      - localstack
       - oidcprovider
       - statsd
     volumes:
@@ -114,18 +114,17 @@ services:
   redis-cache:
     image: redis:3.2
 
-  # https://hub.docker.com/r/minio/minio
-  minio:
-    image: minio/minio:latest
+  # https://hub.docker.com/r/localstack/localstack/
+  # localstack running a fake AWS S3 and SQS
+  localstack:
+    image: localstack/localstack:0.14.0
     environment:
-      - MINIO_ACCESS_KEY=minio
-      - MINIO_SECRET_KEY=miniostorage
+      - SERVICES=s3
+      - DEFAULT_REGION=us-east-1
+      - HOSTNAME=localstack
+      - HOSTNAME_EXTERNAL=localstack
     ports:
-      - "9000:9000"
-    # NOTE(willkg): uncomment these if you need to see minio data
-    # volumes:
-    #   - $PWD/miniodata:/export
-    command: server /export
+      - "4566:4566"
 
   # https://github.com/willkg/kent
   fakesentry:

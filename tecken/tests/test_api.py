@@ -1289,8 +1289,8 @@ def test_file_upload_try_upload(client):
 @pytest.mark.django_db
 def test_possible_upload_urls(client, settings):
     # Set an exception to match the user we're creating
-    public_bucket = "http://minio:9000/public/?access=public"
-    private_bucket = "http://minio:9000/private/"
+    public_bucket = "http://localstack:4566/public/?access=public"
+    private_bucket = "http://localstack:4566/private/"
 
     settings.SYMBOL_URLS = [public_bucket]
     settings.UPLOAD_URL_EXCEPTIONS = {"*example.com": private_bucket}

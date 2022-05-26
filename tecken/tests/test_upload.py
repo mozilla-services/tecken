@@ -110,7 +110,7 @@ def test_upload_archive_custom_bucket_name(
     settings,
 ):
     """Pretend that the user specifies a particular custom bucket name."""
-    private_bucket = "http://minio:9000/privatebucket/"
+    private_bucket = "http://localstack:4566/privatebucket/"
     settings.UPLOAD_URL_EXCEPTIONS = {"*example.org": private_bucket}
 
     bucket_name = "privatebucket"
@@ -309,7 +309,7 @@ def test_upload_archive_happy_path(
         assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
         assert upload.bucket_name == "publicbucket"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "http://minio:9000"
+        assert upload.bucket_endpoint_url == "http://localstack:4566"
         assert upload.skipped_keys is None
         assert upload.ignored_keys == ["build-symbols.txt"]
 
@@ -370,7 +370,7 @@ def test_upload_try_symbols_happy_path(
     fakeuser,
     settings,
 ):
-    settings.UPLOAD_TRY_SYMBOLS_URL = "http://minio:9000/try/prefix/"
+    settings.UPLOAD_TRY_SYMBOLS_URL = "http://localstack:4566/try/prefix/"
 
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_try_symbols")
@@ -449,7 +449,7 @@ def test_upload_try_symbols_happy_path(
         assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
         assert upload.bucket_name == "try"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "http://minio:9000"
+        assert upload.bucket_endpoint_url == "http://localstack:4566"
         assert upload.skipped_keys is None
         assert upload.ignored_keys == ["build-symbols.txt"]
         assert upload.try_symbols
@@ -534,7 +534,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         assert upload.size == 70398
         assert upload.bucket_name == "publicbucket"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "http://minio:9000"
+        assert upload.bucket_endpoint_url == "http://localstack:4566"
         assert upload.skipped_keys == ["v0/flag/deadbeef/flag.jpeg"]
         assert upload.ignored_keys == ["build-symbols.txt"]
 
@@ -1034,7 +1034,7 @@ def test_upload_archive_both_skipped(client, botomock, fakeuser):
         assert upload.size == 70398
         assert upload.bucket_name == "publicbucket"
         assert upload.bucket_region is None
-        assert upload.bucket_endpoint_url == "http://minio:9000"
+        assert upload.bucket_endpoint_url == "http://localstack:4566"
         # Order isn't predictable so compare using sets.
         assert set(upload.skipped_keys) == {
             "v0/flag/deadbeef/flag.jpeg",

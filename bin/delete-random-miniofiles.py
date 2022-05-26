@@ -5,13 +5,12 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 """
-This script makes it possible to delete *some* files that have beem
-uploaded into Minio. That's useful when you want there to be "holes".
+This script makes it possible to delete *some* files that have beem uploaded into
+Localstack. That's useful when you want there to be "holes".
 
-Usually, when you do a load test or sample upload of a zip file, *all*
-files it either *don't* exist or all files already *exists*.
-By deleting only some, you can get a nice scenario where in a given .zip
-upload only some of the files already exists.
+Usually, when you do a load test or sample upload of a zip file, *all* files it either
+*don't* exist or all files already *exists*. By deleting only some, you can get a nice
+scenario where in a given .zip upload only some of the files already exists.
 """
 
 
@@ -30,7 +29,7 @@ def fmtsize(b):
 def run(count, directory, bucket, endpoint_url, search=""):
     all = []
     for root, dirs, files in os.walk(os.path.join(directory, bucket)):
-        # if '.minio.sys' in root:
+        # if '.localstack.sys' in root:
         #     continue
         for name in files:
             fn = os.path.join(root, name)
@@ -45,8 +44,8 @@ def run(count, directory, bucket, endpoint_url, search=""):
     print(len(all), "Possible files found")
     s3 = boto3.client(
         "s3",
-        aws_access_key_id="minio",
-        aws_secret_access_key="miniostorage",
+        aws_access_key_id="foo",
+        aws_secret_access_key="foo",
         endpoint_url=endpoint_url,
     )
     sizes = []
@@ -84,18 +83,18 @@ def main():
         "-d",
         "--directory",
         help="Where are the files we're going to random delete from",
-        default="miniodata",
+        default="localstackdata",
     )
     parser.add_argument(
         "-b",
         "--bucket",
-        help="S3 bucket in Minio",
+        help="S3 bucket in Localstack",
         default="publicbucket",
     )
     parser.add_argument(
         "--endpoint_url",
-        help="Endpoint URL for Minio (default http://localhost:9000)",
-        default="http://localhost:9000",
+        help="Endpoint URL for Localstack (default http://localhost:4566)",
+        default="http://localhost:4566",
     )
     parser.add_argument(
         "-s",
