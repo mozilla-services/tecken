@@ -1,3 +1,5 @@
 .git
 .bash_history
 frontend/node_modules/
+# Systemtests contain things that we only need in a local dev environment
+systemtests/
