@@ -129,7 +129,7 @@ jobs:
           name: Run tests
           command: |
             make .env
-            docker-compose up -d db redis-cache minio statsd oidcprovider
+            docker-compose up -d db redis-cache localstack statsd oidcprovider
             docker-compose run --rm test-ci bash ./bin/run_test.sh eliot
 
   testtecken:
@@ -151,7 +151,7 @@ jobs:
           name: Run tests
           command: |
             make .env
-            docker-compose up -d db redis-cache minio statsd oidcprovider
+            docker-compose up -d db redis-cache localstack statsd oidcprovider
             docker-compose run --rm test-ci bash ./bin/run_test.sh tecken
 
   testdocs:
