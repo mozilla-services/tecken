@@ -42,6 +42,11 @@ class TeckenAppConfig(AppConfig):
                 release=version,
                 send_default_pii=False,
                 integrations=[DjangoIntegration()],
+                # This prevents Sentry from trying to enable all the auto-enabling
+                # integrations. We only want the ones we explicitly set up. This
+                # provents sentry from loading the Falcon integration (which fails) in a
+                # Django context.
+                auto_enabling_integrations=False,
             )
             # Dockerflow logs all unhandled exceptions to request.summary so then Sentry
             # reports it twice
