@@ -6,8 +6,8 @@
 # DOCKER_PASS
 version: 2.1
 jobs:
-  build:
-    docker: &docker
+  main:
+    docker:
       - image: cimg/python:3.9.12
         auth:
           username: $DOCKER_USER
@@ -16,8 +16,7 @@ jobs:
     steps:
       - checkout
 
-      - &setup_remote_docker
-        setup_remote_docker:
+      - setup_remote_docker:
           docker_layer_caching: true
           version: 20.10.11
 
@@ -67,41 +66,9 @@ jobs:
           # yamllint enable rule:line-length
 
       - run:
-          name: Save image
-          command: |
-            mkdir -p workspace
-            docker save -o workspace/tecken_app.tar tecken:build
-            gzip --fast workspace/tecken_app.tar
-
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - tecken_app.tar.gz
-
-  licensecheck:
-    docker: *docker
-    steps:
-      - checkout
-
-      - run:
           name: License check
           command: |
             python ./bin/license_check.py
-
-  lint:
-    docker: *docker
-    steps:
-      - checkout
-
-      - *setup_remote_docker
-
-      - attach_workspace:
-          at: workspace
-
-      - run:
-          name: Load from workspace
-          command: |
-            docker load -i workspace/tecken_app.tar.gz
 
       - run:
           name: Run lint check
@@ -110,85 +77,25 @@ jobs:
             docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
             docker-compose run --rm --no-deps frontend-ci lint
 
-  testeliot:
-    docker: *docker
-    steps:
-      - checkout
-
-      - *setup_remote_docker
-
-      - attach_workspace:
-          at: workspace
-
       - run:
-          name: Load from workspace
-          command: |
-            docker load -i workspace/tecken_app.tar.gz
-
-      - run:
-          name: Run tests
+          name: Run Eliot tests
           command: |
             make .env
             docker-compose up -d db redis-cache localstack statsd oidcprovider
             docker-compose run --rm test-ci bash ./bin/run_test.sh eliot
 
-  testtecken:
-    docker: *docker
-    steps:
-      - checkout
-
-      - *setup_remote_docker
-
-      - attach_workspace:
-          at: workspace
-
       - run:
-          name: Load from workspace
-          command: |
-            docker load -i workspace/tecken_app.tar.gz
-
-      - run:
-          name: Run tests
+          name: Run Tecken tests
           command: |
             make .env
             docker-compose up -d db redis-cache localstack statsd oidcprovider
             docker-compose run --rm test-ci bash ./bin/run_test.sh tecken
-
-  testdocs:
-    docker: *docker
-    steps:
-      - checkout
-
-      - *setup_remote_docker
-
-      - attach_workspace:
-          at: workspace
-
-      - run:
-          name: Load from workspace
-          command: |
-            docker load -i workspace/tecken_app.tar.gz
 
       - run:
           name: Build docs
           command: |
             make .env
             docker-compose run --rm --no-deps test-ci bash make -C docs/ html
-
-  push:
-    docker: *docker
-    steps:
-      - checkout
-
-      - *setup_remote_docker
-
-      - attach_workspace:
-          at: workspace
-
-      - run:
-          name: Load from workspace
-          command: |
-            docker load -i workspace/tecken_app.tar.gz
 
       - run:
           name: Push to Dockerhub
@@ -199,47 +106,7 @@ workflows:
   version: 2
   build-test-push:
     jobs:
-      - build:
-          filters:
-            tags:
-              only: /.*/
-      - licensecheck:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - lint:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - testeliot:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - testtecken:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - testdocs:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - push:
-          requires:
-            - build
-            - lint
-            - testeliot
-            - testtecken
-            - testdocs
+      - main:
           filters:
             tags:
               only: /.*/
