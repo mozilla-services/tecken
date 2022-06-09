@@ -6,15 +6,41 @@ import logging
 
 import markus
 from django_redis import get_redis_connection
-import sentry_sdk
+from sentry_sdk.integrations.boto3 import Boto3Integration
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.logging import ignore_logger
 
 from django.conf import settings
 from django.apps import AppConfig
 
+from tecken.libdockerflow import get_release_name
+from tecken.libsentry import (
+    build_scrub_query_string,
+    scrub,
+    Scrubber,
+    SCRUB_KEYS_DEFAULT,
+    set_up_sentry,
+)
+
 
 logger = logging.getLogger("django")
+
+
+SCRUB_KEYS_TECKEN = [
+    # HTTP request bits
+    (
+        "request.headers",
+        ("Auth-Token", "Cookie", "X-Forwarded-For", "X-Real-Ip"),
+        scrub,
+    ),
+    ("request.data", ("csrfmiddlewaretoken", "client_secret"), scrub),
+    ("request", ("query_string",), build_scrub_query_string(params=["code", "state"])),
+    ("request", ("cookies",), scrub),
+    # "request" shows up in exceptions as a repr which in Django includes the
+    # query_string, so best to scrub it
+    ("exception.values.[].stacktrace.frames.[].vars", ("request",), scrub),
+]
 
 
 class TeckenAppConfig(AppConfig):
@@ -31,23 +57,22 @@ class TeckenAppConfig(AppConfig):
     @staticmethod
     def _configure_sentry():
         if settings.SENTRY_DSN:
-            version = ""
-            if settings.VERSION_FILE:
-                version = settings.VERSION_FILE.get("version", "")
-                version = version or settings.VERSION_FILE.get("commit", "")
-            version = version or "unknown"
+            release = get_release_name(basedir=settings.BASE_DIR)
+            host_id = settings.HOST_ID
+            scrubber = Scrubber(scrub_keys=SCRUB_KEYS_DEFAULT + SCRUB_KEYS_TECKEN)
 
-            sentry_sdk.init(
-                dsn=settings.SENTRY_DSN,
-                release=version,
-                send_default_pii=False,
-                integrations=[DjangoIntegration()],
-                # This prevents Sentry from trying to enable all the auto-enabling
-                # integrations. We only want the ones we explicitly set up. This
-                # provents sentry from loading the Falcon integration (which fails) in a
-                # Django context.
-                auto_enabling_integrations=False,
+            set_up_sentry(
+                release=release,
+                host_id=host_id,
+                sentry_dsn=settings.SENTRY_DSN,
+                integrations=[
+                    DjangoIntegration(),
+                    Boto3Integration(),
+                    RedisIntegration(),
+                ],
+                before_send=scrubber,
             )
+
             # Dockerflow logs all unhandled exceptions to request.summary so then Sentry
             # reports it twice
             ignore_logger("request.summary")

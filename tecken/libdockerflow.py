@@ -2,8 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import json
+from pathlib import Path
+
 from django.core import checks
 from django.conf import settings
+
 from tecken.storage import StorageBucket, StorageError
 
 
@@ -43,3 +47,32 @@ def check_storage_urls(app_configs, **kwargs):
         check_url(url, "UPLOAD_URL_EXCEPTIONS")
 
     return errors
+
+
+def get_version_info(basedir):
+    """Returns version.json data from deploys"""
+    path = Path(basedir) / "version.json"
+    if not path.exists():
+        return {}
+
+    try:
+        data = path.read_text()
+        return json.loads(data)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def get_release_name(basedir):
+    """Return a friendly name for the release that is running
+
+    This pulls version data and then returns the best version-y thing available: the
+    version, the commit, or "unknown" if there's no version data.
+
+    :returns: string
+
+    """
+    version_info = get_version_info(basedir)
+    version = version_info.get("version", "none")
+    commit = version_info.get("commit")
+    commit = commit[:8] if commit else "unknown"
+    return f"{version}:{commit}"
