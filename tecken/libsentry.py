@@ -2,9 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import dataclasses
+import importlib
 import logging
 from urllib.parse import urlparse, parse_qsl, urlencode
 import sys
+from typing import Any, Callable, Generator, Optional, Union
 
 import markus
 import sentry_sdk
@@ -16,17 +19,19 @@ metrics = markus.get_metrics(SENTRY_MODULE_NAME)
 logger = logging.getLogger(SENTRY_MODULE_NAME)
 
 
-MASK_TEXT = "[Scrubbed]"
+MASK_TEXT: str = "[Scrubbed]"
 
 
-ALL_COOKIE_KEYS = object()
-ALL_QUERY_STRING_KEYS = object()
+ALL_COOKIE_KEYS: Any = object()
+ALL_QUERY_STRING_KEYS: Any = object()
 
 
-def get_sentry_base_url(sentry_dsn):
+def get_sentry_base_url(sentry_dsn: str) -> str:
     """Given a sentry_dsn, returns the base url
 
     This is helpful for tests that need the url to the fakesentry api.
+
+    :arg sentry_dsn: the sentry base url
 
     """
     if not sentry_dsn:
@@ -40,12 +45,12 @@ def get_sentry_base_url(sentry_dsn):
     return f"{parsed_dsn.scheme}://{netloc}/"
 
 
-def scrub(value):
+def scrub(value: str) -> str:
     """Scrub a value"""
     return MASK_TEXT
 
 
-def build_scrub_cookies(params):
+def build_scrub_cookies(params: list[str]) -> Callable:
     """Scrub specified keys in HTTP request cookies
 
     Sentry says the cookies can be:
@@ -62,7 +67,7 @@ def build_scrub_cookies(params):
 
     """
 
-    def _scrub_cookies(value):
+    def _scrub_cookies(value: Union[str, dict, list]) -> Union[str, dict, list]:
         to_scrub = params
 
         if not value:
@@ -109,7 +114,7 @@ def build_scrub_cookies(params):
     return _scrub_cookies
 
 
-def build_scrub_query_string(params):
+def build_scrub_query_string(params: list[str]) -> Callable:
     """Scrub specified keys in an HTTP request query_string
 
     Sentry says the query_string can be:
@@ -136,7 +141,7 @@ def build_scrub_query_string(params):
 
     """
 
-    def _scrub_query_string(value):
+    def _scrub_query_string(value: Union[str, list, dict]) -> Union[str, list, dict]:
         to_scrub = params
         if not value:
             return value
@@ -178,21 +183,86 @@ def build_scrub_query_string(params):
     return _scrub_query_string
 
 
-SCRUB_KEYS_DEFAULT = [
+@dataclasses.dataclass
+class ScrubRule:
+    """
+
+    ``key_path`` is a Python dotted path of key names with ``[]`` to denote
+    arrays to traverse pointing to a dict with values to scrub.
+
+    ``keys`` is a list of keys to scrub values of
+
+    ``scrub_function`` is a callable that takes a value and returns a scrubbed value.
+    For example::
+
+        def hide_letter_a(value):
+            return "".join([letter if letter != "a" else "*" for letter in value])
+
+
+    ScrubRule example::
+
+        ScrubRule(
+            key_path="request.data",
+            keys=["csrfmiddlewaretoken"],
+            scrub_function=scrub
+        )
+
+    """
+
+    key_path: str
+    keys: list[str]
+    scrub_function: Union[str, Callable]
+
+    def __post_init__(self):
+        self._key_path_list = self.key_path.split(".")
+
+        fn = self.scrub_function
+        if not callable(fn):
+            if fn in globals():
+                # If it's global in this module, then pull that
+                fn = globals()[fn]
+            elif "." in fn:
+                module_name, class_name = fn.rsplit(".", 1)
+                module = importlib.import_module(module_name)
+                fn = getattr(module, class_name)
+        self._scrub = fn
+
+
+SCRUB_RULES_DEFAULT: list[ScrubRule] = [
     # Hide stacktrace variables
-    ("exception.values.[].stacktrace.frames.[].vars", ("username", "password"), scrub),
+    ScrubRule(
+        key_path="exception.values.[].stacktrace.frames.[].vars",
+        keys=["username", "password"],
+        scrub_function=scrub,
+    ),
 ]
 
 
-def get_target_dicts(event, key_path):
+def get_target_dicts(event: dict, key_path: list[str]) -> Generator[dict, None, None]:
     """Given a key_path, yields the target dicts.
 
-    Uses a dotted path of keys. To traverse arrays, use `[]`.
+    Keys should be dict keys. To traverse all the items in an array value, use ``[]``.
 
-    Examples::
+    With this event::
 
-        request
-        exception.stacktrace.frames.[].vars
+        {
+            "request": { ... },
+            "exception": {
+                "stacktrace": {
+                    "frames": [
+                        {"name": "frame1", "vars": { ... }},
+                        {"name": "frame2", "vars": { ... }},
+                        {"name": "frame3", "vars": { ... }},
+                        {"name": "frame4", "vars": { ... }},
+                    ]
+                }
+            }
+        }
+
+    Example key_path values::
+
+        ["request"]
+        ["exception", "stacktrace", "frames", "[]", "vars"]
 
     """
     parent = event
@@ -216,35 +286,14 @@ class Scrubber:
 
     """
 
-    def __init__(self, scrub_keys=SCRUB_KEYS_DEFAULT):
+    def __init__(self, scrub_rules: list[ScrubRule] = SCRUB_RULES_DEFAULT):
         """
-        :arg scrub_keys: list of ``(key_path, keys, scrub function)`` tuples
-
-            ``key_path`` is a Python dotted path of key names with ``[]`` to denote
-            arrays to traverse pointing to a dict with values to scrub.
-
-            ``keys`` is a list of keys to scrub values of
-
-            A scrub function takes a value and returns a scrubbed value. For
-            example::
-
-                def hide_letter_a(value):
-                    return "".join([letter if letter != "a" else "*" for letter in value])
-
-            Example of ``scrub_keys``::
-
-                ("request.data", ("csrfmiddlewaretoken",), scrub()),
-
-                ("exception.stacktrace.frames.[].vars", ("code_id",), scrub()),
+        :arg scrub_keys: list of ScrubRule instances
 
         """
-        # Split key_path into parts and verify that scrub_keys has the right shape
-        self.scrub_keys = [
-            (key_path.split("."), keys, scrub_function)
-            for key_path, keys, scrub_function in scrub_keys
-        ]
+        self.scrub_rules = scrub_rules
 
-    def __call__(self, event, hint):
+    def __call__(self, event: dict, hint: Any) -> dict:
         """Implements before_send function interface and scrubs Sentry event
 
         This tries really hard to be very defensive such that even if there are bugs in
@@ -263,22 +312,22 @@ class Scrubber:
 
         """
 
-        for key_path, keys, scrub_fun in self.scrub_keys:
+        for rule in self.scrub_rules:
             try:
-                for parent in get_target_dicts(event, key_path):
+                for parent in get_target_dicts(event, rule._key_path_list):
                     if not parent:
                         continue
 
-                    for key in keys:
+                    for key in rule.keys:
                         if key not in parent:
                             continue
 
                         val = parent[key]
 
                         try:
-                            filtered_val = scrub_fun(val)
+                            filtered_val = rule._scrub(val)
                         except Exception:
-                            logger.exception(f"LIBSENTRYERROR: Error in {scrub_fun}")
+                            logger.exception(f"LIBSENTRYERROR: Error in {rule._scrub}")
                             metrics.incr("scrub_fun_error")
                             filtered_val = "ERROR WHEN SCRUBBING"
 
@@ -291,7 +340,12 @@ class Scrubber:
 
 
 def set_up_sentry(
-    release, host_id, sentry_dsn, integrations=None, before_send=None, **kwargs
+    release: str,
+    host_id: str,
+    sentry_dsn: str,
+    integrations: list[Any] = None,
+    before_send: Callable = None,
+    **kwargs,
 ):
     """Set up Sentry
 
@@ -307,7 +361,7 @@ def set_up_sentry(
 
         For scrubbing, do something like this::
 
-            scrubber = Scrubbing(scrub_keys=SCRUB_KEYS_DEFAULT + my_scrub_keys)
+            scrubber = Scrubbing(scrub_keys=SCRUB_RULES_DEFAULT + my_scrub_rules)
 
         and then pass that as the ``before_send`` value.
 
@@ -336,7 +390,7 @@ def set_up_sentry(
     ignore_logger(SENTRY_MODULE_NAME)
 
 
-def is_enabled():
+def is_enabled() -> bool:
     """Return True if sentry was initialized with a DSN"""
     return (
         sentry_sdk.Hub.current.client
@@ -344,7 +398,7 @@ def is_enabled():
     )
 
 
-def get_hub():
+def get_hub() -> sentry_sdk.Hub:
     """Get the initialized Sentry hub.
 
     With a previous SDK (raven), this was called get_client, and initialized
@@ -355,7 +409,11 @@ def get_hub():
     return sentry_sdk.Hub.current
 
 
-def capture_error(use_logger=None, exc_info=None, extra=None):
+def capture_error(
+    use_logger: Optional[logging.Logger] = None,
+    exc_info: Optional[Any] = None,
+    extra: dict[str, Any] = None,
+):
     """Capture an error to send to Sentry
 
     If Sentry is configured, this will send it using capture_exception().

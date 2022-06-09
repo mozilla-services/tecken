@@ -17,9 +17,9 @@ from django.apps import AppConfig
 from tecken.libdockerflow import get_release_name
 from tecken.libsentry import (
     build_scrub_query_string,
-    scrub,
     Scrubber,
-    SCRUB_KEYS_DEFAULT,
+    SCRUB_RULES_DEFAULT,
+    ScrubRule,
     set_up_sentry,
 )
 
@@ -27,19 +27,31 @@ from tecken.libsentry import (
 logger = logging.getLogger("django")
 
 
-SCRUB_KEYS_TECKEN = [
+SCRUB_RULES_TECKEN = [
     # HTTP request bits
-    (
-        "request.headers",
-        ("Auth-Token", "Cookie", "X-Forwarded-For", "X-Real-Ip"),
-        scrub,
+    ScrubRule(
+        key_path="request.headers",
+        keys=["Auth-Token", "Cookie", "X-Forwarded-For", "X-Real-Ip"],
+        scrub_function="scrub",
     ),
-    ("request.data", ("csrfmiddlewaretoken", "client_secret"), scrub),
-    ("request", ("query_string",), build_scrub_query_string(params=["code", "state"])),
-    ("request", ("cookies",), scrub),
+    ScrubRule(
+        key_path="request.data",
+        keys=["csrfmiddlewaretoken", "client_secret"],
+        scrub_function="scrub",
+    ),
+    ScrubRule(
+        key_path="request",
+        keys=["query_string"],
+        scrub_function=build_scrub_query_string(params=["code", "state"]),
+    ),
+    ScrubRule(key_path="request", keys=["cookies"], scrub_function="scrub"),
     # "request" shows up in exceptions as a repr which in Django includes the
     # query_string, so best to scrub it
-    ("exception.values.[].stacktrace.frames.[].vars", ("request",), scrub),
+    ScrubRule(
+        key_path="exception.values.[].stacktrace.frames.[].vars",
+        keys=["request"],
+        scrub_function="scrub",
+    ),
 ]
 
 
@@ -59,7 +71,7 @@ class TeckenAppConfig(AppConfig):
         if settings.SENTRY_DSN:
             release = get_release_name(basedir=settings.BASE_DIR)
             host_id = settings.HOST_ID
-            scrubber = Scrubber(scrub_keys=SCRUB_KEYS_DEFAULT + SCRUB_KEYS_TECKEN)
+            scrubber = Scrubber(scrub_rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_TECKEN)
 
             set_up_sentry(
                 release=release,
