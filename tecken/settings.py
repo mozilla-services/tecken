@@ -9,6 +9,7 @@ Django settings for tecken project.
 import ast
 import logging
 import os
+import socket
 
 import dj_database_url
 from dockerflow.version import get_version
@@ -80,6 +81,8 @@ if TOOL_ENV:
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 SENTRY_DSN = _config("SENTRY_DSN", default="", doc="Sentry DSN or empty string")
+
+HOST_ID = socket.gethostname()
 
 LOGGING_DEFAULT_LEVEL = _config(
     "LOGGING_DEFAULT_LEVEL",

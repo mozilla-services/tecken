@@ -19,6 +19,9 @@ from everett.manager import (
 )
 import falcon
 from falcon.errors import HTTPInternalServerError
+from fillmore.libsentry import set_up_sentry
+from fillmore.scrubber import Scrubber, Rule, SCRUB_RULES_DEFAULT
+from sentry_sdk.integrations.falcon import FalconIntegration
 
 from eliot.cache import DiskCache
 from eliot.downloader import SymbolFileDownloader
@@ -28,15 +31,24 @@ from eliot.health_resource import (
     LBHeartbeatResource,
     VersionResource,
 )
+from eliot.libdockerflow import get_release_name
 from eliot.liblogging import setup_logging, log_config
 from eliot.libmarkus import setup_metrics
-from eliot.libsentry import setup_sentry
 from eliot.symbolicate_resource import SymbolicateV4, SymbolicateV5
 
 
 LOGGER = logging.getLogger(__name__)
 REPOROOT_DIR = str(Path(__file__).parent.parent.parent)
 STATICROOT_DIR = str(Path(__file__).parent / "static")
+
+
+SCRUB_RULES_ELIOT = [
+    Rule(
+        path="request.headers",
+        keys=["X-Forwarded-For", "X-Real-Ip"],
+        scrub="scrub",
+    ),
+]
 
 
 def build_config_manager():
@@ -254,10 +266,13 @@ def get_app(config_manager=None):
         host_id=app_config("host_id"),
         processname="webapp",
     )
-    setup_sentry(
-        basedir=str(REPOROOT_DIR),
-        host_id=app_config("host_id"),
+
+    set_up_sentry(
         sentry_dsn=app_config("secret_sentry_dsn"),
+        release=get_release_name(REPOROOT_DIR),
+        host_id=app_config("host_id"),
+        integrations=[FalconIntegration()],
+        before_send=Scrubber(rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_ELIOT),
     )
 
     # Create the app and verify configuration
