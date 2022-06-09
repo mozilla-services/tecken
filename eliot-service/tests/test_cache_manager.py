@@ -2,7 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import json
 import pathlib
+from unittest.mock import ANY
 
 from everett.manager import ConfigManager, ConfigDictEnv, ConfigOSEnv
 import pytest
@@ -403,3 +405,157 @@ def test_nested_directories(cm_client, tmpdir):
 
     cm.run_once()
     assert cm.lru == {str(file2): 4, str(file3): 2}
+
+
+# NOTE(willkg): If this changes, we should update it and look for new things that should
+# be scrubbed. Use ANY for things that change between tests.
+BROKEN_EVENT = {
+    "level": "error",
+    "exception": {
+        "values": [
+            {
+                "module": None,
+                "type": "Exception",
+                "value": "intentional exception",
+                "mechanism": {
+                    "type": "logging",
+                    "handled": True,
+                },
+                "stacktrace": {
+                    "frames": [
+                        {
+                            "filename": "eliot/cache_manager.py",
+                            "abs_path": "/app/eliot-service/eliot/cache_manager.py",
+                            "function": "_event_generator",
+                            "module": "eliot.cache_manager",
+                            "lineno": 293,
+                            "pre_context": ANY,
+                            "context_line": ANY,
+                            "post_context": ANY,
+                            "vars": {
+                                "self": ANY,
+                                "nonblocking": "True",
+                                "timeout": "0",
+                                "processed_events": "True",
+                                "num_unhandled_errors": "0",
+                                "event": ["1", "256", "0", "'xul__4byte.symc'"],
+                                "event_flags": ["<flags.CREATE: 256>"],
+                                "flags_list": "'flags.CREATE'",
+                                "dir_path": ANY,
+                                "path": ANY,
+                            },
+                            "in_app": True,
+                        },
+                        {
+                            "filename": "tests/test_cache_manager.py",
+                            "abs_path": "/app/eliot-service/tests/test_cache_manager.py",
+                            "function": "mock_make_room",
+                            "module": "tests.test_cache_manager",
+                            "lineno": ANY,
+                            "pre_context": ANY,
+                            "context_line": ANY,
+                            "post_context": ANY,
+                            "vars": {"args": ["4"], "kwargs": {}},
+                            "in_app": True,
+                        },
+                    ]
+                },
+            }
+        ]
+    },
+    "logger": "eliot.cache_manager",
+    "logentry": {"message": "Exception thrown while handling events.", "params": []},
+    "extra": {
+        "host_id": "testcode",
+        "processname": "tests",
+        "asctime": ANY,
+        "sys.argv": ANY,
+    },
+    "event_id": ANY,
+    "timestamp": ANY,
+    "breadcrumbs": ANY,
+    "contexts": {
+        "runtime": {
+            "name": "CPython",
+            "version": ANY,
+            "build": ANY,
+        }
+    },
+    "modules": ANY,
+    "release": "none:unknown",
+    "environment": "production",
+    "server_name": "testnode",
+    "sdk": {
+        "name": "sentry.python",
+        "version": "1.5.12",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.5.12"}],
+        "integrations": [
+            "argv",
+            "atexit",
+            "dedupe",
+            "excepthook",
+            "logging",
+            "modules",
+            "stdlib",
+            "threading",
+        ],
+    },
+    "platform": "python",
+}
+
+
+def test_sentry_scrubbing(sentry_helper, cm_client, monkeypatch, tmpdir):
+    """Test sentry scrubbing configuration
+
+    This verifies that the scrubbing configuration is working by using the /__broken__
+    view to trigger an exception that causes Sentry to emit an event for.
+
+    This also helps us know when something has changed when upgrading sentry_sdk that
+    would want us to update our scrubbing code or sentry init options.
+
+    This test will fail whenever we:
+
+    * update sentry_sdk to a new version
+    * update configuration which will changing the logging breadcrumbs
+
+    In those cases, we should copy the new event, read through it for new problems, and
+    redact the parts that will change using ANY so it passes tests.
+
+    """
+    cachedir = pathlib.Path(tmpdir)
+
+    # Rebuild with the tmpdir we're using
+    cm_client.rebuild(
+        {
+            "ELIOT_SYMBOLS_CACHE_DIR": str(cachedir),
+            "ELIOT_SYMBOLS_CACHE_MAX_SIZE": 10,
+        }
+    )
+    cm = cm_client.cache_manager
+
+    with sentry_helper.reuse() as sentry_client:
+        # Mock out "make_room" so we can force the cache manager to raise an exception in
+        # the area it might raise a real exception
+        def mock_make_room(*args, **kwargs):
+            raise Exception("intentional exception")
+
+        monkeypatch.setattr(cm, "make_room", mock_make_room)
+
+        # Add some files to trigger the make_room call
+        file1 = cachedir / "cache" / "xul__5byte.symc"
+        file1.write_bytes(b"abcde")
+        cm.run_once()
+        file2 = cachedir / "cache" / "xul__4byte.symc"
+        file2.write_bytes(b"abcd")
+        cm.run_once()
+
+        (event,) = sentry_client.events
+
+        # Drop the "_meta" bit because we don't want to compare that.
+        del event["_meta"]
+
+        # If this test fails, this will print out the new event that you can copy and
+        # paste and then edit above
+        print(json.dumps(event, indent=4))
+
+        assert event == BROKEN_EVENT

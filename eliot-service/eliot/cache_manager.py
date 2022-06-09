@@ -29,12 +29,14 @@ import traceback
 from boltons.dictutils import OneToOne
 import click
 from everett.manager import get_config_for_class, Option
+from fillmore.libsentry import set_up_sentry
+from fillmore.scrubber import Scrubber, SCRUB_RULES_DEFAULT
 from inotify_simple import INotify, flags
 
 from eliot.app import build_config_manager
+from eliot.libdockerflow import get_release_name
 from eliot.liblogging import setup_logging, log_config
 from eliot.libmarkus import setup_metrics, METRICS
-from eliot.libsentry import setup_sentry_logging
 
 
 if __name__ == "__main__":
@@ -162,10 +164,11 @@ class DiskCacheManager:
             debug=self.config("local_dev_env"),
         )
 
-        setup_sentry_logging(
-            basedir=str(REPOROOT_DIR),
-            host_id=self.config("host_id"),
+        set_up_sentry(
             sentry_dsn=self.config("secret_sentry_dsn"),
+            release=get_release_name(REPOROOT_DIR),
+            host_id=self.config("host_id"),
+            before_send=Scrubber(rules=SCRUB_RULES_DEFAULT),
         )
 
         log_config(LOGGER, self.config, self)
