@@ -1,4 +1,4 @@
-FROM python:3.10.1-alpine3.15@sha256:affe0faa14e7553fc570beec3864e74b5e36f8c19b2bb49ae8ba79c0e9e7236e
+FROM python:3.10.5-alpine3.16@sha256:52ce18e9d7a2556a3632d093f8f77700307735b7e7049dce3339c9bf9221ae7f
 
 ARG groupid=5000
 ARG userid=5000
@@ -13,7 +13,7 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
 RUN pip install -U 'pip>=20' && \
-    pip install --no-cache-dir 'kent==0.4.1'
+    pip install --no-cache-dir 'kent==0.5.0'
 
 USER app
 
