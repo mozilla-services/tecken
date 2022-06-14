@@ -13,9 +13,9 @@ Uploading symbols
 Basics
 ======
 
-Tecken lets you upload symbols. It stores these symbols files allowing others
-to use the download API to access them for symbolicating stacks, profiling,
-debugging, etc.
+Tecken lets you upload symbol files. It stores these symbol files allowing
+others to use the download API to access them for symbolicating stacks,
+profiling, debugging, etc.
 
 When building software, you can run `dump_syms
 <https://github.com/mozilla/dump_syms/>`_ to extract debugging information and
@@ -27,7 +27,8 @@ You can upload your symbols ZIP file to Tecken using the upload API.
 Symbols ZIP file structure
 --------------------------
 
-ZIP files must consist of Breakpad symbol files in this structure::
+To upload symbol files, you must first put them in a ZIP file. The ZIP file
+must consist of Breakpad symbol files in this structure::
 
     <module>/<debug_id>/<file>
 
@@ -71,17 +72,6 @@ For example, here's the contents of a symbols ZIP file from a Firefox build::
     signmar/53F4637B906F2E00353A8B451A754B7A0/signmar.sym
     updater/3D7533ED47669F8A207B93E4512C35870/updater.sym
     xpcshell/B95F899A59E247055C0ED7883D0235A40/xpcshell.sym
-
-
-Permissions and auth token
---------------------------
-
-Uploading requires two things:
-
-1. an account with upload permissions
-2. an auth token for that account with upload permissions
-
-The auth token is used in the HTTP POST to authenticate the upload.
 
 
 Try symbols
@@ -203,27 +193,73 @@ An example with ``Python`` and the ``requests`` library:
 Permissions and auth tokens
 ===========================
 
+:production:     https://symbols.mozilla.org/
+:create a bug:   https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General
+:create a token: https://symbols.mozilla.org/tokens
+
 Uploading symbols to Tecken requires special permission. The process for
 requesting access to upload symbols is roughly the following:
 
-1. `Create a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General>`_
+1. Log into `Mozilla Symbols Server <https://symbols.mozilla.org/>`__. When you
+   log in, an account will be created automatically.
+
+2. `Create a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General>`_
    requesting access to upload symbols.
 
-2. A Tecken admin will process the request.
+3. A Tecken admin will process the request.
 
    If you are a Mozilla employee, your manager will be needinfo'd to verify you need
    upload access.
 
    If you are not a Mozilla employee, we'll need to find someone to vouch for you.
 
-3. After that's been worked out, the Tecken admin will give you permission to upload
+4. After that's been worked out, the Tecken admin will give you permission to upload
    symbols.
-
 
 Once you have permission to upload symbols, you will additionally need an auth
 token. Once you log in, you can `create an API token
-<https://symbols.mozilla.org/tokens>`_.  It needs to have the "Upload Symbols"
-permission.
+<https://symbols.mozilla.org/tokens>`__.  It needs to have the "Upload Symbols"
+or "Upload Try Symbols" permission.
+
+The auth token is sent as an ``Auth-Token`` HTTP header in the HTTP POST.
+
+
+Testing symbol uploads with our stage environment
+=================================================
+
+:stage:          https://symbols.stage.mozaws.net/
+:create a token: https://symbols.stage.mozaws.net/tokens
+
+If you're testing symbol uploads out, testing something that uses symbol files,
+testing a symbol upload script, or something like that, you might want to use
+our *staging* server. Then the tests you're doing won't affect production and
+potentially everyone using production.
+
+To get access to our stage server:
+
+1. Log into `Mozilla Symbols Server (stage)
+   <https://symbols.stage.mozaws.net/>`__. When you log in, an account will be
+   created automatically.
+
+2. Ask a Tecken admin (currently willkg) to grant you upload permissions.
+
+   We hang out in `#crashreporting matrix channel
+   <https://chat.mozilla.org/#/room/#crashreporting:mozilla.org>`_.
+
+   You can also find us on Slack or send us an email--whatever works best for
+   you.
+
+Once you have permission to upload symbols, you will additionally need an auth
+token. Once you log in, you can `create an API token
+<https://symbols.stage.mozaws.net/tokens>`__.  It needs to have the "Upload
+Symbols" or "Upload Try Symbols" permission.
+
+The auth token is sent as an ``Auth-Token`` HTTP header in the HTTP POST.
+
+.. Note::
+
+   Auth tokens created in production won't work on stage and auth tokens
+   created on stage won't work in production.
 
 
 Upload: /upload/
