@@ -482,7 +482,7 @@ BROKEN_EVENT = {
         }
     },
     "modules": ANY,
-    "release": "none:unknown",
+    "release": ANY,
     "environment": "production",
     "server_name": "testnode",
     "sdk": {

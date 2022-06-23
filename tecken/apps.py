@@ -44,7 +44,6 @@ SCRUB_RULES_TECKEN = [
         keys=["query_string"],
         scrub=build_scrub_query_string(params=["code", "state"]),
     ),
-    Rule(path="request", keys=["cookies"], scrub="scrub"),
     # "request" shows up in exceptions as a repr which in Django includes the
     # query_string, so best to scrub it
     Rule(
