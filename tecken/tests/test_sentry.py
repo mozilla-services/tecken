@@ -136,7 +136,7 @@ BROKEN_EVENT = {
     "level": "error",
     "modules": ANY,
     "platform": "python",
-    "release": "none:unknown",
+    "release": ANY,
     "request": {
         "data": "",
         "env": {"SERVER_NAME": "localhost", "SERVER_PORT": "80"},
