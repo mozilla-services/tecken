@@ -5,10 +5,12 @@
 import json
 from unittest.mock import ANY
 
+from markus.testing import MetricsMock
 from werkzeug.test import Client
 
 from django.contrib.auth.models import User
 
+from tecken.apps import count_sentry_scrub_error
 from tecken.tokens.models import Token
 from tecken.wsgi import application
 
@@ -227,3 +229,10 @@ def test_sentry_scrubbing(sentry_helper, transactional_db):
         print(json.dumps(event, indent=4))
 
         assert event == BROKEN_EVENT
+
+
+def test_count_sentry_scrub_error():
+    with MetricsMock() as metricsmock:
+        metricsmock.clear_records()
+        count_sentry_scrub_error("foo")
+        metricsmock.assert_incr("tecken.sentry_scrub_error", value=1)

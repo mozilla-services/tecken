@@ -4,7 +4,6 @@
 
 import logging
 
-import markus
 from django_redis import get_redis_connection
 from fillmore.libsentry import set_up_sentry
 from fillmore.scrubber import (
@@ -13,6 +12,7 @@ from fillmore.scrubber import (
     build_scrub_query_string,
     SCRUB_RULES_DEFAULT,
 )
+import markus
 from sentry_sdk.integrations.boto3 import Boto3Integration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -25,6 +25,7 @@ from tecken.libdockerflow import get_release_name
 
 
 logger = logging.getLogger("django")
+metrics = markus.get_metrics("tecken")
 
 
 SCRUB_RULES_TECKEN = [
@@ -54,6 +55,10 @@ SCRUB_RULES_TECKEN = [
 ]
 
 
+def count_sentry_scrub_error(msg):
+    metrics.incr("sentry_scrub_error", 1)
+
+
 class TeckenAppConfig(AppConfig):
     name = "tecken"
 
@@ -70,7 +75,10 @@ class TeckenAppConfig(AppConfig):
         if settings.SENTRY_DSN:
             release = get_release_name(basedir=settings.BASE_DIR)
             host_id = settings.HOST_ID
-            scrubber = Scrubber(rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_TECKEN)
+            scrubber = Scrubber(
+                rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_TECKEN,
+                error_handler=count_sentry_scrub_error,
+            )
 
             set_up_sentry(
                 sentry_dsn=settings.SENTRY_DSN,
