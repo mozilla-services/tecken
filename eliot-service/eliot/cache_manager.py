@@ -50,6 +50,10 @@ REPOROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
 MAX_ERRORS = 10
 
 
+def count_sentry_scrub_error(msg):
+    METRICS.incr("eliot.sentry_scrub_error", value=1, tags=["service:cachemanager"])
+
+
 class LastUpdatedOrderedDict(OrderedDict):
     """Store items in the order the keys were last added or updated"""
 
@@ -164,11 +168,15 @@ class DiskCacheManager:
             debug=self.config("local_dev_env"),
         )
 
+        scrubber = Scrubber(
+            rules=SCRUB_RULES_DEFAULT,
+            error_handler=count_sentry_scrub_error,
+        )
         set_up_sentry(
             sentry_dsn=self.config("secret_sentry_dsn"),
             release=get_release_name(REPOROOT_DIR),
             host_id=self.config("host_id"),
-            before_send=Scrubber(rules=SCRUB_RULES_DEFAULT),
+            before_send=scrubber,
         )
 
         log_config(LOGGER, self.config, self)

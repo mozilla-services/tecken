@@ -33,7 +33,7 @@ from eliot.health_resource import (
 )
 from eliot.libdockerflow import get_release_name
 from eliot.liblogging import setup_logging, log_config
-from eliot.libmarkus import setup_metrics
+from eliot.libmarkus import setup_metrics, METRICS
 from eliot.symbolicate_resource import SymbolicateV4, SymbolicateV5
 
 
@@ -49,6 +49,10 @@ SCRUB_RULES_ELIOT = [
         scrub="scrub",
     ),
 ]
+
+
+def count_sentry_scrub_error(msg):
+    METRICS.incr("eliot.sentry_scrub_error", value=1, tags=["service:webapp"])
 
 
 def build_config_manager():
@@ -267,12 +271,16 @@ def get_app(config_manager=None):
         processname="webapp",
     )
 
+    scrubber = Scrubber(
+        rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_ELIOT,
+        error_handler=count_sentry_scrub_error,
+    )
     set_up_sentry(
         sentry_dsn=app_config("secret_sentry_dsn"),
         release=get_release_name(REPOROOT_DIR),
         host_id=app_config("host_id"),
         integrations=[FalconIntegration()],
-        before_send=Scrubber(rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_ELIOT),
+        before_send=scrubber,
     )
 
     # Create the app and verify configuration

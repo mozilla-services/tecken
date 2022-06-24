@@ -166,6 +166,13 @@ ELIOT_METRICS = {
     "eliot.diskcache.usage": Metric(
         stat_type="gauge", description="Gauge for how much of the cache is in use."
     ),
+    "eliot.sentry_scrub_error": Metric(
+        stat_type="incr",
+        description="""\
+        Emitted when there are errors scrubbing Sentry events. Monitor these because
+        it means we're missing Sentry event data.
+        """,
+    ),
 }
 
 

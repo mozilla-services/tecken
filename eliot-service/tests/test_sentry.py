@@ -5,9 +5,10 @@
 import json
 from unittest.mock import ANY
 
+from markus.testing import MetricsMock
 from werkzeug.test import Client
 
-from eliot.app import get_app
+from eliot.app import get_app, count_sentry_scrub_error
 
 
 # NOTE(willkg): If this changes, we should update it and look for new things that should
@@ -151,3 +152,12 @@ def test_sentry_scrubbing(sentry_helper):
         print(json.dumps(event, indent=4))
 
         assert event == BROKEN_EVENT
+
+
+def test_count_sentry_scrub_error():
+    with MetricsMock() as metricsmock:
+        metricsmock.clear_records()
+        count_sentry_scrub_error("foo")
+        metricsmock.assert_incr(
+            "eliot.sentry_scrub_error", value=1, tags=["service:webapp"]
+        )

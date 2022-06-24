@@ -7,9 +7,14 @@ import pathlib
 from unittest.mock import ANY
 
 from everett.manager import ConfigManager, ConfigDictEnv, ConfigOSEnv
+from markus.testing import MetricsMock
 import pytest
 
-from eliot.cache_manager import get_cache_manager, LastUpdatedOrderedDict
+from eliot.cache_manager import (
+    count_sentry_scrub_error,
+    get_cache_manager,
+    LastUpdatedOrderedDict,
+)
 
 
 class TestLastUpdatedOrderedDict:
@@ -428,7 +433,7 @@ BROKEN_EVENT = {
                             "abs_path": "/app/eliot-service/eliot/cache_manager.py",
                             "function": "_event_generator",
                             "module": "eliot.cache_manager",
-                            "lineno": 293,
+                            "lineno": ANY,
                             "pre_context": ANY,
                             "context_line": ANY,
                             "post_context": ANY,
@@ -559,3 +564,12 @@ def test_sentry_scrubbing(sentry_helper, cm_client, monkeypatch, tmpdir):
         print(json.dumps(event, indent=4))
 
         assert event == BROKEN_EVENT
+
+
+def test_count_sentry_scrub_error():
+    with MetricsMock() as metricsmock:
+        metricsmock.clear_records()
+        count_sentry_scrub_error("foo")
+        metricsmock.assert_incr(
+            "eliot.sentry_scrub_error", value=1, tags=["service:cachemanager"]
+        )
