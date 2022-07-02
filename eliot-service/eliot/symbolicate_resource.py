@@ -432,30 +432,47 @@ class SymbolicateBase:
                         self.get_symcache(module_info, debug_stats)
 
                     if module_info.symcache is not None:
-                        lineinfo = module_info.symcache.lookup(module_offset)
-                        if lineinfo:
-                            # NOTE(willkg): Grab the first in the list. At some point,
-                            # we might want to look at the other lines it returns
-                            # (inlined functions), but with SYM files, there's only one.
-                            lineinfo = lineinfo[0]
+                        sourceloc_list = module_info.symcache.lookup(module_offset)
+                        if sourceloc_list:
+                            # sourceloc_list can have multiple entries: It starts with the innermost
+                            # inline stack frame, and then advances to its caller, and then its
+                            # caller, and so on, until it gets to the outer function.
+                            # We process the outer function first, and then add inline stack frames
+                            # afterwards. The outer function is the last item in sourceloc_list.
+                            sourceloc = sourceloc_list[-1]
 
-                            # FIXME(willkg): do we want symbol or function_name--the
-                            # latter is demangled
-                            data["function"] = lineinfo.symbol
+                            data["function"] = sourceloc.symbol
                             data["function_offset"] = hex(
-                                module_offset - lineinfo.sym_addr
+                                module_offset - sourceloc.sym_addr
                             )
-                            if lineinfo.base_dir and lineinfo.filename:
-                                data["file"] = "/".join(
-                                    [lineinfo.base_dir, lineinfo.filename]
-                                )
-                            elif lineinfo.filename:
-                                data["file"] = lineinfo.filename
+                            if sourceloc.full_path:
+                                data["file"] = sourceloc.full_path
 
-                            # Only add a "line" if there's a file--otherwise the line
-                            # doesn't mean anything
-                            if data.get("file"):
-                                data["line"] = lineinfo.line
+                            # Only add a "line" if it's non-zero and not None, and if there's a
+                            # file--otherwise the line doesn't mean anything
+                            if sourceloc.line and data.get("file"):
+                                data["line"] = sourceloc.line
+
+                            if len(sourceloc_list) > 1:
+                                # We have inline information. Add an "inlines" property with a list
+                                # of { function, file, line } entries.
+                                inlines = []
+                                for inline_sourceloc in sourceloc_list[:-1]:
+                                    inline_data = {
+                                        "function": inline_sourceloc.symbol,
+                                    }
+
+                                    if inline_sourceloc.full_path:
+                                        inline_data["file"] = inline_sourceloc.full_path
+
+                                    if inline_sourceloc.line and inline_data.get(
+                                        "file"
+                                    ):
+                                        inline_data["line"] = inline_sourceloc.line
+
+                                    inlines.append(inline_data)
+
+                                data["inlines"] = inlines
 
                     data["module"] = module_info.filename
 
