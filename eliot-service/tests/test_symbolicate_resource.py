@@ -32,6 +32,37 @@ FUNC 5380 44 0 testproj::main
 53bf 5 3 0
 """
 
+# $ cargo new testproj
+# $ cd testproj
+# $ echo $'\n[profile.release]\ndebug = true\n' >> Cargo.toml
+# $ echo $'mod helper;\n\nfn main() {\n    helper::middle();\n}\n' > src/main.rs
+# $ echo $'pub fn middle() {\n    inner();\n    println!("world!");\n}\n\nfn inner() {\n    print!("Hello, ");\n}\n' > src/helper.rs
+# $ cargo build --release
+# $ dump_syms --inlines target/release/testproj > testproj.sym
+# and then remove everything that's not necessary
+TESTPROJ_WITH_INLINES_SYM = """\
+MODULE Linux x86_64 0905AE80CEE75A33E3CAB61C274274DE0 testproj
+INFO CODE_ID 80AE0509E7CE335AE3CAB61C274274DE96049B64
+FILE 0 /home/willkg/projects/testproj/src/main.rs
+FILE 1 /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/core/src/fmt/mod.rs
+FILE 2 /home/willkg/projects/testproj/src/helper.rs
+INLINE_ORIGIN 0 testproj::helper::middle
+INLINE_ORIGIN 1 testproj::helper::inner
+INLINE_ORIGIN 2 core::fmt::Arguments::new_v1
+FUNC 7a40 85 0 testproj::main
+INLINE 0 4 0 0 7a40 7d
+INLINE 1 2 2 1 7a40 49
+INLINE 2 7 2 2 7a40 3a
+INLINE 1 3 2 2 7a89 31
+7a40 7 3 0
+7a47 33 392 1
+7a7a f 7 2
+7a89 31 392 1
+7aba 3 3 2
+7abd 8 5 0
+7a82 5 5 2
+"""
+
 
 NTDLL_SYM = """\
 MODULE windows x86_64 F86EB934B42FBB79B2595AA25907695C1 ntdll.pdb
@@ -428,7 +459,7 @@ class TestSymbolicateBase:
         symfile = (
             "MODULE windows x86_64 0185139C8F04FFC94C4C44205044422E1 xul.pdb\n"
             "INFO CODE_ID 60533C886EFD000 xul.dll\n"
-            "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd//etc\n"
+            "FILE 0 hg:hg.mozilla.org/releases/mozilla-release:media/libjpeg/simd/etc\n"
             "FUNC 5380 44 0 somefunc\n"
             "5380 9 1 0\n"
             "5389 36 2 0\n"
@@ -457,7 +488,7 @@ class TestSymbolicateBase:
                     {
                         "file": (
                             "hg:hg.mozilla.org/releases/mozilla-release"
-                            ":media/libjpeg/simd//etc"
+                            ":media/libjpeg/simd/etc"
                         ),
                         "frame": 0,
                         "function": "somefunc",
@@ -581,6 +612,30 @@ class TestSymbolicateV4:
             json={
                 "stacks": [[[0, int("5380", 16)]]],
                 "memoryMap": [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]],
+                "version": 4,
+            },
+        )
+        assert result.status_code == 200
+        assert result.headers["Content-Type"].startswith("application/json")
+        assert result.json == {
+            # This sym file exists
+            "knownModules": [True],
+            "symbolicatedStacks": [["testproj::main (in testproj)"]],
+        }
+
+    def test_symbolication_module_200_with_inlines(self, requestsmock, client):
+        """Test symbolication when module with inline data returns 200 and is used for symbolication"""
+        requestsmock.get(
+            "http://symbols.example.com/testproj/0905AE80CEE75A33E3CAB61C274274DE0/testproj.sym",
+            status_code=200,
+            text=TESTPROJ_WITH_INLINES_SYM,
+        )
+
+        result = client.simulate_post(
+            self.PATH,
+            json={
+                "stacks": [[[0, int("7a40", 16)]]],
+                "memoryMap": [["testproj", "0905AE80CEE75A33E3CAB61C274274DE0"]],
                 "version": 4,
             },
         )
@@ -826,6 +881,66 @@ class TestSymbolicateV5:
                                 "line": 1,
                                 "module": "testproj",
                                 "module_offset": "0x5380",
+                            },
+                        ]
+                    ],
+                }
+            ],
+        }
+
+    def test_symbolication_with_inlines(self, requestsmock, client):
+        """Test symbolication when module returns 200 and is used for symbolication"""
+        requestsmock.get(
+            "http://symbols.example.com/testproj/0905AE80CEE75A33E3CAB61C274274DE0/testproj.sym",
+            status_code=200,
+            text=TESTPROJ_WITH_INLINES_SYM,
+        )
+
+        result = client.simulate_post(
+            self.PATH,
+            json={
+                "jobs": [
+                    # job 0
+                    {
+                        "stacks": [[[0, int("7a7a", 16)]]],
+                        "memoryMap": [
+                            ["testproj", "0905AE80CEE75A33E3CAB61C274274DE0"]
+                        ],
+                    },
+                ]
+            },
+        )
+        assert result.status_code == 200
+        assert result.headers["Content-Type"].startswith("application/json")
+        assert result.json == {
+            "results": [
+                {
+                    # This sym file exists
+                    "found_modules": {
+                        "testproj/0905AE80CEE75A33E3CAB61C274274DE0": True
+                    },
+                    "stacks": [
+                        [
+                            {
+                                "inlines": [
+                                    {
+                                        "function": "testproj::helper::inner",
+                                        "file": "/home/willkg/projects/testproj/src/helper.rs",
+                                        "line": 7,
+                                    },
+                                    {
+                                        "function": "testproj::helper::middle",
+                                        "file": "/home/willkg/projects/testproj/src/helper.rs",
+                                        "line": 2,
+                                    },
+                                ],
+                                "file": "/home/willkg/projects/testproj/src/main.rs",
+                                "frame": 0,
+                                "function": "testproj::main",
+                                "function_offset": "0x3a",
+                                "line": 4,
+                                "module": "testproj",
+                                "module_offset": "0x7a7a",
                             },
                         ]
                     ],

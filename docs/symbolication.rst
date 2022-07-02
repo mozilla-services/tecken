@@ -250,6 +250,7 @@ Symbolication: /symbolicate/v5
            :function_offset (str): (optional) the function offset in hex
            :file (str): (optional) the source file
            :line (int): (optional) the line number in the source file
+           :inlines (array): (optional) an array of inline frames, each of which has optional "function", "file" and "line" properties, ordered from deepest call to most shallow
 
        :[].found_modules: json object indicating which modules we had symbols
            for and which ones we didn't
