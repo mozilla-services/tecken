@@ -169,12 +169,13 @@ BROKEN_EVENT = {
             "threading",
         ],
         "name": "sentry.python",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.5.12"}],
-        "version": "1.5.12",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.7.2"}],
+        "version": "1.7.2",
     },
     "server_name": ANY,
     "timestamp": ANY,
     "transaction": "/__broken__",
+    "transaction_info": {"source": "route"},
 }
 
 
