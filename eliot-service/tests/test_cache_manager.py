@@ -479,6 +479,7 @@ BROKEN_EVENT = {
     "event_id": ANY,
     "timestamp": ANY,
     "breadcrumbs": ANY,
+    "transaction_info": {},
     "contexts": {
         "runtime": {
             "name": "CPython",
@@ -492,8 +493,8 @@ BROKEN_EVENT = {
     "server_name": "testnode",
     "sdk": {
         "name": "sentry.python",
-        "version": "1.5.12",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.5.12"}],
+        "version": "1.7.2",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.7.2"}],
         "integrations": [
             "argv",
             "atexit",
