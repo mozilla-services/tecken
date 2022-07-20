@@ -45,7 +45,7 @@ BROKEN_EVENT = {
     "exception": {
         "values": [
             {
-                "mechanism": {"handled": True, "type": "logging"},
+                "mechanism": None,
                 "module": None,
                 "stacktrace": {
                     "frames": [
@@ -62,7 +62,7 @@ BROKEN_EVENT = {
                             "vars": {
                                 "__builtins__": "<module 'builtins' (built-in)>",
                                 "__doc__": "'Falcon App class.'",
-                                "__file__": "'/usr/local/lib/python3.9/site-packages/falcon/app.cpython-39-x86_64-linux-gnu.so'",
+                                "__file__": ANY,
                                 "__loader__": ANY,
                                 "__name__": "'falcon.app'",
                                 "__package__": "'falcon'",
@@ -95,15 +95,8 @@ BROKEN_EVENT = {
             }
         ]
     },
-    "extra": {
-        "asctime": ANY,
-        "host_id": "testcode",
-        "processname": "tests",
-        "sys.argv": ANY,
-    },
+    "extra": {"sys.argv": ANY},
     "level": "error",
-    "logentry": {"message": "Unhandled exception", "params": []},
-    "logger": "eliot.app",
     "modules": ANY,
     "platform": "python",
     "release": ANY,
