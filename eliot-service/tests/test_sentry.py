@@ -14,100 +14,129 @@ from eliot.app import get_app, count_sentry_scrub_error
 # NOTE(willkg): If this changes, we should update it and look for new things that should
 # be scrubbed. Use ANY for things that change between tests.
 BROKEN_EVENT = {
-    "level": "error",
-    "exception": {
+    "breadcrumbs": {
         "values": [
             {
-                "module": None,
-                "type": "Exception",
-                "value": "intentional exception",
-                "mechanism": {"type": "logging", "handled": True},
-                "stacktrace": {
-                    "frames": [
-                        {
-                            "filename": "falcon/app.py",
-                            "abs_path": "/app/eliot-service/falcon/app.py",
-                            "function": "falcon.app.App.__call__",
-                            "module": "falcon.app",
-                            "lineno": ANY,
-                            "pre_context": [],
-                            "context_line": None,
-                            "post_context": [],
-                            "vars": {
-                                "__name__": "'falcon.app'",
-                                "__doc__": "'Falcon App class.'",
-                                "__package__": "'falcon'",
-                                "__loader__": ANY,
-                                "__spec__": ANY,
-                                "__file__": ANY,
-                                "__builtins__": "<module 'builtins' (built-in)>",
-                                "wraps": ANY,
-                                "iscoroutinefunction": ANY,
-                                "re": ANY,
-                            },
-                            "in_app": True,
-                        },
-                        {
-                            "filename": "eliot/health_resource.py",
-                            "abs_path": "/app/eliot-service/eliot/health_resource.py",
-                            "function": "on_get",
-                            "module": "eliot.health_resource",
-                            "lineno": ANY,
-                            "pre_context": ANY,
-                            "context_line": ANY,
-                            "post_context": ANY,
-                            "vars": {
-                                "self": ANY,
-                                "req": "<Request: GET 'http://localhost/__broken__'>",
-                                "resp": "<Response: 200 OK>",
-                            },
-                            "in_app": True,
-                        },
-                    ]
-                },
+                "category": "markus",
+                "data": {"asctime": ANY, "host_id": "testcode", "processname": "tests"},
+                "level": "info",
+                "message": ANY,
+                "timestamp": ANY,
+                "type": "log",
             }
         ]
     },
-    "logger": "eliot.app",
-    "logentry": {"message": "Unhandled exception", "params": []},
-    "extra": {
-        "host_id": "testcode",
-        "processname": "tests",
-        "asctime": ANY,
-        "sys.argv": ANY,
-    },
-    "event_id": ANY,
-    "timestamp": ANY,
-    "breadcrumbs": ANY,
     "contexts": {
         "runtime": {
+            "build": ANY,
             "name": "CPython",
             "version": ANY,
-            "build": ANY,
-        }
+        },
+        "trace": {
+            "description": None,
+            "op": "http.server",
+            "parent_span_id": None,
+            "span_id": ANY,
+            "trace_id": ANY,
+        },
     },
-    "transaction_info": {},
-    "modules": ANY,
-    "release": ANY,
     "environment": "production",
-    "server_name": "testnode",
+    "event_id": ANY,
+    "exception": {
+        "values": [
+            {
+                "mechanism": {"handled": True, "type": "logging"},
+                "module": None,
+                "stacktrace": {
+                    "frames": [
+                        {
+                            "abs_path": "/app/eliot-service/falcon/app.py",
+                            "context_line": ANY,
+                            "filename": "falcon/app.py",
+                            "function": "falcon.app.App.__call__",
+                            "in_app": True,
+                            "lineno": ANY,
+                            "module": "falcon.app",
+                            "post_context": ANY,
+                            "pre_context": ANY,
+                            "vars": {
+                                "__builtins__": "<module 'builtins' (built-in)>",
+                                "__doc__": "'Falcon App class.'",
+                                "__file__": "'/usr/local/lib/python3.9/site-packages/falcon/app.cpython-39-x86_64-linux-gnu.so'",
+                                "__loader__": ANY,
+                                "__name__": "'falcon.app'",
+                                "__package__": "'falcon'",
+                                "__spec__": ANY,
+                                "iscoroutinefunction": ANY,
+                                "re": "<module 're' from '/usr/local/lib/python3.9/re.py'>",
+                                "wraps": ANY,
+                            },
+                        },
+                        {
+                            "abs_path": "/app/eliot-service/eliot/health_resource.py",
+                            "context_line": ANY,
+                            "filename": "eliot/health_resource.py",
+                            "function": "on_get",
+                            "in_app": True,
+                            "lineno": ANY,
+                            "module": "eliot.health_resource",
+                            "post_context": ANY,
+                            "pre_context": ANY,
+                            "vars": {
+                                "req": "<Request: GET 'http://localhost/__broken__'>",
+                                "resp": "<Response: 200 OK>",
+                                "self": ANY,
+                            },
+                        },
+                    ]
+                },
+                "type": "Exception",
+                "value": "intentional exception",
+            }
+        ]
+    },
+    "extra": {
+        "asctime": ANY,
+        "host_id": "testcode",
+        "processname": "tests",
+        "sys.argv": ANY,
+    },
+    "level": "error",
+    "logentry": {"message": "Unhandled exception", "params": []},
+    "logger": "eliot.app",
+    "modules": ANY,
+    "platform": "python",
+    "release": ANY,
+    "request": {
+        "env": {"SERVER_NAME": "localhost", "SERVER_PORT": "80"},
+        "headers": {
+            "Host": "localhost",
+            "X-Forwarded-For": "[Scrubbed]",
+            "X-Real-Ip": "[Scrubbed]",
+        },
+        "method": "GET",
+        "query_string": "",
+        "url": "http://localhost/__broken__",
+    },
     "sdk": {
-        "name": "sentry.python",
-        "version": "1.7.2",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.7.2"}],
         "integrations": [
             "argv",
             "atexit",
             "dedupe",
             "excepthook",
-            "falcon",
             "logging",
             "modules",
             "stdlib",
             "threading",
         ],
+        "name": "sentry.python",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.7.2"}],
+        "version": "1.7.2",
     },
-    "platform": "python",
+    "server_name": "testnode",
+    "timestamp": ANY,
+    "transaction": "generic WSGI request",
+    "transaction_info": {},
 }
 
 
@@ -150,7 +179,7 @@ def test_sentry_scrubbing(sentry_helper):
 
         # If this test fails, this will print out the new event that you can copy and
         # paste and then edit above
-        print(json.dumps(event, indent=4))
+        print(json.dumps(event, indent=4, sort_keys=True))
 
         assert event == BROKEN_EVENT
 

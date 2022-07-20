@@ -21,7 +21,7 @@ import falcon
 from falcon.errors import HTTPInternalServerError
 from fillmore.libsentry import set_up_sentry
 from fillmore.scrubber import Scrubber, Rule, SCRUB_RULES_DEFAULT
-from sentry_sdk.integrations.falcon import FalconIntegration
+from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
 from eliot.cache import DiskCache
 from eliot.downloader import SymbolFileDownloader
@@ -279,7 +279,6 @@ def get_app(config_manager=None):
         sentry_dsn=app_config("secret_sentry_dsn"),
         release=get_release_name(REPOROOT_DIR),
         host_id=app_config("host_id"),
-        integrations=[FalconIntegration()],
         before_send=scrubber,
     )
 
@@ -291,5 +290,9 @@ def get_app(config_manager=None):
 
     if app.config("local_dev_env"):
         LOGGER.info("Eliot is running! http://localhost:8050")
+
+    # Wrap app in Sentry WSGI middleware which builds the request section in the
+    # Sentry event
+    app = SentryWsgiMiddleware(app)
 
     return app
