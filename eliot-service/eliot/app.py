@@ -23,7 +23,9 @@ from falcon.errors import HTTPInternalServerError
 from fillmore.libsentry import set_up_sentry
 from fillmore.scrubber import Scrubber, Rule, SCRUB_RULES_DEFAULT
 import sentry_sdk
+from sentry_sdk.hub import Hub
 from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
+from sentry_sdk.utils import event_from_exception
 
 from eliot.cache import DiskCache
 from eliot.downloader import SymbolFileDownloader
@@ -235,7 +237,24 @@ class EliotApp(falcon.App):
         code for the HTTP response.
 
         """
-        sentry_sdk.capture_exception(ex)
+        # NOTE(willkg): we might be able to get rid of the sentry event capture if the
+        # FalconIntegration in sentry-sdk gets fixed
+        with sentry_sdk.configure_scope() as scope:
+            # The SentryWsgiMiddleware tacks on an unhelpful transaction value which
+            # makes things hard to find in the Sentry interface, so we stomp on that
+            # with the req.path
+            scope.transaction.name = req.path
+            hub = Hub.current
+
+            event, hint = event_from_exception(
+                ex,
+                client_options=hub.client.options,
+                mechanism={"type": "eliot", "handled": True},
+            )
+
+            event["transaction"] = req.path
+            hub.capture_event(event, hint=hint)
+
         LOGGER.error("Unhandled exception", exc_info=sys.exc_info())
         self._compose_error_response(req, resp, HTTPInternalServerError())
 
