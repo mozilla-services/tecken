@@ -227,7 +227,7 @@ def test_sentry_scrubbing(sentry_helper, transactional_db):
 
         # If this test fails, this will print out the new event that you can copy and
         # paste and then edit above
-        print(json.dumps(event, indent=4))
+        print(json.dumps(event, indent=4, sort_keys=True))
 
         assert event == BROKEN_EVENT
 
