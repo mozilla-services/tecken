@@ -45,7 +45,7 @@ BROKEN_EVENT = {
     "exception": {
         "values": [
             {
-                "mechanism": None,
+                "mechanism": {"handled": True, "type": "eliot"},
                 "module": None,
                 "stacktrace": {
                     "frames": [
@@ -128,7 +128,7 @@ BROKEN_EVENT = {
     },
     "server_name": "testnode",
     "timestamp": ANY,
-    "transaction": "generic WSGI request",
+    "transaction": "/__broken__",
     "transaction_info": {},
 }
 
