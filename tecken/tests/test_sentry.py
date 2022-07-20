@@ -140,7 +140,7 @@ BROKEN_EVENT = {
     "platform": "python",
     "release": ANY,
     "request": {
-        "data": "",
+        "data": "[Scrubbed]",
         "env": {"SERVER_NAME": "localhost", "SERVER_PORT": "80"},
         "headers": {
             "Auth-Token": "[Scrubbed]",

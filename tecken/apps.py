@@ -29,17 +29,19 @@ metrics = markus.get_metrics("tecken")
 
 
 SCRUB_RULES_TECKEN = [
-    # HTTP request bits
+    # Scrub HTTP headers that include user / account data
     Rule(
         path="request.headers",
         keys=["Auth-Token", "Cookie", "X-Forwarded-For", "X-Real-Ip"],
         scrub="scrub",
     ),
+    # Scrub cookies and data values entirely if they exist
     Rule(
-        path="request.data",
-        keys=["csrfmiddlewaretoken", "client_secret"],
+        path="request",
+        keys=["cookies", "data"],
         scrub="scrub",
     ),
+    # Scrub "code" and "state" which are OIDC values in query string
     Rule(
         path="request",
         keys=["query_string"],
