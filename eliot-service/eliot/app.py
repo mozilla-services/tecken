@@ -9,6 +9,7 @@ Holds the EliotApp code. EliotApp is a WSGI app implemented using Falcon.
 import logging
 import logging.config
 from pathlib import Path
+import sys
 
 from everett.manager import (
     ConfigManager,
@@ -21,6 +22,7 @@ import falcon
 from falcon.errors import HTTPInternalServerError
 from fillmore.libsentry import set_up_sentry
 from fillmore.scrubber import Scrubber, Rule, SCRUB_RULES_DEFAULT
+import sentry_sdk
 from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
 from eliot.cache import DiskCache
@@ -233,8 +235,8 @@ class EliotApp(falcon.App):
         code for the HTTP response.
 
         """
-        # We're still in an exception context, so sys.exc_info() still has the details.
-        LOGGER.exception("Unhandled exception")
+        sentry_sdk.capture_exception(ex)
+        LOGGER.error("Unhandled exception", exc_info=sys.exc_info())
         self._compose_error_response(req, resp, HTTPInternalServerError())
 
     def verify(self):
