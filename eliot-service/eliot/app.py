@@ -46,6 +46,8 @@ REPOROOT_DIR = str(Path(__file__).parent.parent.parent)
 STATICROOT_DIR = str(Path(__file__).parent / "static")
 
 
+# Set up Sentry to scrub infrastructure secrets and the user's IP address.
+
 SCRUB_RULES_ELIOT = [
     Rule(
         path="request.headers",
@@ -57,6 +59,19 @@ SCRUB_RULES_ELIOT = [
 
 def count_sentry_scrub_error(msg):
     METRICS.incr("eliot.sentry_scrub_error", value=1, tags=["service:webapp"])
+
+
+def configure_sentry(app_config):
+    scrubber = Scrubber(
+        rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_ELIOT,
+        error_handler=count_sentry_scrub_error,
+    )
+    set_up_sentry(
+        sentry_dsn=app_config("secret_sentry_dsn"),
+        release=get_release_name(REPOROOT_DIR),
+        host_id=app_config("host_id"),
+        before_send=scrubber,
+    )
 
 
 def build_config_manager():
@@ -249,7 +264,7 @@ class EliotApp(falcon.App):
             event, hint = event_from_exception(
                 ex,
                 client_options=hub.client.options,
-                mechanism={"type": "eliot", "handled": True},
+                mechanism={"type": "eliot", "handled": False},
             )
 
             event["transaction"] = req.path
@@ -292,16 +307,7 @@ def get_app(config_manager=None):
         processname="webapp",
     )
 
-    scrubber = Scrubber(
-        rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_ELIOT,
-        error_handler=count_sentry_scrub_error,
-    )
-    set_up_sentry(
-        sentry_dsn=app_config("secret_sentry_dsn"),
-        release=get_release_name(REPOROOT_DIR),
-        host_id=app_config("host_id"),
-        before_send=scrubber,
-    )
+    configure_sentry(app_config)
 
     # Create the app and verify configuration
     app = EliotApp(config_manager)

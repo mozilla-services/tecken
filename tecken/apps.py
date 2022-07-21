@@ -28,6 +28,8 @@ logger = logging.getLogger("django")
 metrics = markus.get_metrics("tecken")
 
 
+# Set up Sentry to scrub infrastructure secrets, user credentials, and auth state
+
 SCRUB_RULES_TECKEN = [
     # Scrub HTTP headers that include user / account data
     Rule(
@@ -61,6 +63,36 @@ def count_sentry_scrub_error(msg):
     metrics.incr("sentry_scrub_error", 1)
 
 
+def configure_sentry():
+    if settings.SENTRY_DSN:
+        release = get_release_name(basedir=settings.BASE_DIR)
+        host_id = settings.HOST_ID
+        scrubber = Scrubber(
+            rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_TECKEN,
+            error_handler=count_sentry_scrub_error,
+        )
+
+        set_up_sentry(
+            sentry_dsn=settings.SENTRY_DSN,
+            release=release,
+            host_id=host_id,
+            integrations=[
+                DjangoIntegration(),
+                Boto3Integration(),
+                RedisIntegration(),
+            ],
+            before_send=scrubber,
+        )
+
+        # Dockerflow logs all unhandled exceptions to request.summary so then Sentry
+        # reports it twice
+        ignore_logger("request.summary")
+        # This warning is unhelpful, so ignore it
+        ignore_logger("django.security.DisallowedHost")
+    else:
+        logger.warning("SENTRY_DSN is not defined. SENTRY is not being set up.")
+
+
 class TeckenAppConfig(AppConfig):
     name = "tecken"
 
@@ -69,38 +101,8 @@ class TeckenAppConfig(AppConfig):
         from tecken.base import admin_site  # noqa
 
         self._configure_markus()
-        self._configure_sentry()
+        configure_sentry()
         self._fix_default_redis_connection()
-
-    @staticmethod
-    def _configure_sentry():
-        if settings.SENTRY_DSN:
-            release = get_release_name(basedir=settings.BASE_DIR)
-            host_id = settings.HOST_ID
-            scrubber = Scrubber(
-                rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_TECKEN,
-                error_handler=count_sentry_scrub_error,
-            )
-
-            set_up_sentry(
-                sentry_dsn=settings.SENTRY_DSN,
-                release=release,
-                host_id=host_id,
-                integrations=[
-                    DjangoIntegration(),
-                    Boto3Integration(),
-                    RedisIntegration(),
-                ],
-                before_send=scrubber,
-            )
-
-            # Dockerflow logs all unhandled exceptions to request.summary so then Sentry
-            # reports it twice
-            ignore_logger("request.summary")
-            # This warning is unhelpful, so ignore it
-            ignore_logger("django.security.DisallowedHost")
-        else:
-            logger.warning("SENTRY_DSN is not defined. SENTRY is not being set up.")
 
     @staticmethod
     def _configure_markus():

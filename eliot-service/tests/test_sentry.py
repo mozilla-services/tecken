@@ -45,7 +45,7 @@ BROKEN_EVENT = {
     "exception": {
         "values": [
             {
-                "mechanism": {"handled": True, "type": "eliot"},
+                "mechanism": {"handled": False, "type": "eliot"},
                 "module": None,
                 "stacktrace": {
                     "frames": [
