@@ -109,52 +109,57 @@ LOGGING = {
     },
     "root": {"level": "INFO", "handlers": ["console"]},
     "loggers": {
+        "celery.task": {
+            "level": logging.DEBUG,
+            "handlers": ["console"],
+            "propagate": False,
+        },
         "django": {
-            "level": "INFO",
+            "level": logging.INFO,
             "handlers": ["console"],
             "propagate": False,
         },
         "django.db.backends": {
-            "level": "ERROR",
+            "level": logging.ERROR,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "django_redis.cache": {
+            "level": logging.INFO,
             "handlers": ["console"],
             "propagate": False,
         },
         "django.request": {
-            "level": "INFO",
+            "level": logging.INFO,
             "handlers": ["console"],
-            "propagate": False,
-        },
-        "tecken": {
-            "level": "DEBUG",
-            "handlers": ["console"],
-            "propagate": False,
-        },
-        "mozilla_django_oidc": {
-            "level": "DEBUG",
-            "handlers": ["console"],
-            "propagate": False,
-        },
-        "celery.task": {
-            "level": "DEBUG",
-            "handlers": ["console"],
-            "propagate": False,
-        },
-        "markus": {
-            "level": "INFO",
-            "handlers": ["console"],
-            "propagate": False,
-        },
-        "request.summary": {
-            "handlers": ["console"],
-            "level": "INFO",
             "propagate": False,
         },
         "django.security.DisallowedHost": {
             "handlers": ["null"],
             "propagate": False,
         },
-        "django_redis.cache": {
-            "level": "INFO",
+        "fillmore": {
+            "level": logging.ERROR,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "markus": {
+            "level": logging.INFO,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "mozilla_django_oidc": {
+            "level": logging.DEBUG,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "request.summary": {
+            "handlers": ["console"],
+            "level": logging.INFO,
+            "propagate": False,
+        },
+        "tecken": {
+            "level": logging.DEBUG,
             "handlers": ["console"],
             "propagate": False,
         },

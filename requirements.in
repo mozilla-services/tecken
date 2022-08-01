@@ -14,7 +14,7 @@ dockerflow==2022.7.0
 encore==0.7.0
 everett==3.0.0
 falcon==3.1.0
-fillmore==0.1.1
+fillmore==0.1.2
 flake8==4.0.1
 gunicorn==20.1.0
 honcho==1.1.0

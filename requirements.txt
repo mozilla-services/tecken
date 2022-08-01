@@ -270,9 +270,9 @@ falcon==3.1.0 \
     --hash=sha256:f2760bd18c16393a6fb5e55f371f67921edb72febe693a82b3c5e82195d087b7 \
     --hash=sha256:ff65ffefa629bc72dc868cdca9dfa3ca5d1e5f01b02560b7094df2a0c5b890d1
     # via -r requirements.in
-fillmore==0.1.1 \
-    --hash=sha256:0326e4a5e020f9945834e549cf2de5b04261b64398f1f67ea92dc38c04d3a743 \
-    --hash=sha256:334ab67b971782550c93b73de8cdb195cb42950a30343c4cf35de1ab70d9bb1e
+fillmore==0.1.2 \
+    --hash=sha256:5b81f1defb5db2af703ca0a1759d228232511742232de4bbfb8173ce580719ab \
+    --hash=sha256:8f6b79dc97b391c1e0526e7b2b46a22215542e58f46fabef0b71da10e9bfd54d
     # via -r requirements.in
 flake8==4.0.1 \
     --hash=sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d \
