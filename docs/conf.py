@@ -18,6 +18,8 @@ import os
 import sys
 from pathlib import Path
 
+import sphinx_rtd_theme
+
 
 # Set TOOL_ENV to true to pick up fake settings so configuration doesn't fail.
 os.environ["TOOL_ENV"] = "true"
@@ -40,8 +42,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 
 # -- Custom configuration -------------------------------------------------
-
-import sphinx_rtd_theme
 
 extlinks = {
     "base_url": ("https://symbols.mozilla.org/%s", "https://symbols.mozilla.org")
