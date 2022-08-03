@@ -2,12 +2,12 @@ Sphinx==5.1.1
 backoff==2.1.2
 black==22.6.0
 boltons==21.0.0
-boto3==1.24.31
-botocore==1.27.43
+boto3==1.24.44
+botocore==1.27.44
 celery==5.2.7
 click==8.1.3
 datadog==0.44.0
-dj-database-url==0.5.0
+dj-database-url==1.0.0
 django-cache-memoize==0.1.10
 django-redis==5.2.0
 dockerflow==2022.7.0
@@ -15,11 +15,11 @@ encore==0.7.0
 everett==3.0.0
 falcon==3.1.0
 fillmore==0.1.2
-flake8==4.0.1
+flake8==5.0.3
 gunicorn==20.1.0
 honcho==1.1.0
 inotify_simple==1.3.5
-jsonschema==4.7.2
+jsonschema==4.9.1
 markus[datadog]==4.0.1
 mock==4.0.3
 mozilla-django-oidc==2.0.0
@@ -32,19 +32,19 @@ pytest-mock==3.8.2
 python-dateutil==2.8.2
 requests-mock==1.9.3
 requests==2.28.1
-sentry-sdk==1.7.2
+sentry-sdk==1.9.0
 sphinx-rtd-theme==1.0.0
 sphinxcontrib-httpdomain==1.8.0
 symbolic==8.7.3
 ujson==5.4.0
 urllib3==1.26.11
 urlwait==1.0
-werkzeug==2.1.2
-whitenoise==6.1.0
+werkzeug==2.2.1
+whitenoise==6.2.0
 
 # NOTE(willkg): Need to keep redis at this version because after this, the Python
 # library doesn't work with the version of Redis we're using in production
 redis==3.4.1
 
 # NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
-Django==3.2.14
+Django==3.2.15
