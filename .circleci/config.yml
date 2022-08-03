@@ -66,11 +66,6 @@ jobs:
           # yamllint enable rule:line-length
 
       - run:
-          name: License check
-          command: |
-            python ./bin/license_check.py
-
-      - run:
           name: Run lint check
           command: |
             make .env

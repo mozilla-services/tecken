@@ -23,6 +23,19 @@ else
     cd /app
     flake8
 
-    echo ">>> black"
+    echo ">>> black (python)"
     black --check "${BLACKARGS[@]}"
+
+    echo ">>> license check (python)"
+    if [[ -d ".git" ]]; then
+        # If the .git directory exists, we can let license_check.py do
+        # git ls-files.
+        python bin/license_check.py
+    else
+        # The .git directory doesn't exist, so run it on all the Python
+        # files in the tree.
+        python bin/license_check.py .
+    fi
+
+    # NOTE(willkg): linting frontend files is done in another script
 fi
