@@ -48,7 +48,7 @@ class NoPossibleBucketName(Exception):
     matched to one you can use."""
 
 
-_not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
+_not_uuid_characters = re.compile(r"[^a-f0-9\-]", re.I)
 
 # This list of filenames is used to validate a zip and also when iterating
 # over the extracted zip.
@@ -67,10 +67,12 @@ def check_symbols_archive_file_listing(file_listings):
                     f"'{snippet}' which is not allowed"
                 )
         # Now check that the filename is matching according to these rules:
-        # 1. Either /<name1>/hex/<name2>,
+        # 1. Either /<name1>/<uuid>/<name2>,
         # 2. Or, /<name>-symbols.txt
         # Anything else should be considered and unrecognized file pattern
         # and thus rejected.
+        # For <uuid>, we accept both pure-hex IDs as well as UUIDs with dashes,
+        # such as 05E23BCB-EFB0-330B-809B-1EEAC8884B86.
         split = file_listing.name.split("/")
         if split[-1] in _ignorable_filenames:
             continue
@@ -80,8 +82,8 @@ def check_symbols_archive_file_listing(file_listings):
             # when it'd become a key.
             if invalid_key_name_characters(split[0] + split[2]):
                 return f"Invalid character in filename {file_listing.name!r}"
-            # Check that the middle part is only hex characters.
-            if not _not_hex_characters.findall(split[1]):
+            # Check that the middle part is only uuid characters, i.e. hex and dashes.
+            if not _not_uuid_characters.findall(split[1]):
                 continue
         elif len(split) == 1:
             if file_listing.name.lower().endswith("-symbols.txt"):
