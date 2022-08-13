@@ -807,7 +807,7 @@ ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = _config(
 
 DOWNLOAD_FILE_EXTENSIONS_ALLOWED = _config(
     "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
-    default=".sym,.dl_,.ex_,.pd_,.dbg.gz,.tar.bz2",
+    default=".sym,.dl_,.ex_,.pd_,.dbg.gz,.tar.bz2,executable,debuginfo",
     parser=ListOf(str),
     doc=(
         "A list of file extensions that if a file is NOT one of these extensions "
