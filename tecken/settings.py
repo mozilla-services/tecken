@@ -714,11 +714,12 @@ SYMBOL_FILE_PREFIX = _config(
 
 COMPRESS_EXTENSIONS = _config(
     "COMPRESS_EXTENSIONS",
-    default="sym",
+    default=".sym,debuginfo,executable",
     parser=ListOf(str),
     doc=(
-        "During upload, for each file in the archive, if the extension "
-        "matches this list, the file gets gzip compressed before uploading."
+        "During upload, for each file in the archive, if the lowercased file "
+        "name ends with a string from this list, the file gets gzip "
+        "compressed before uploading."
     ),
 )
 

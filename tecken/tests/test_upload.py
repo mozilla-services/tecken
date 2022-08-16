@@ -89,7 +89,7 @@ def test_dump_and_extract_duplicate_name_same_size(tmpdir):
 
 
 def test_should_compressed_key(settings):
-    settings.COMPRESS_EXTENSIONS = ["bar"]
+    settings.COMPRESS_EXTENSIONS = [".bar"]
     assert should_compressed_key("foo.bar")
     assert should_compressed_key("foo.BAR")
     assert not should_compressed_key("foo.exe")
