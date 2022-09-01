@@ -275,9 +275,9 @@ fillmore==0.1.2 \
     --hash=sha256:5b81f1defb5db2af703ca0a1759d228232511742232de4bbfb8173ce580719ab \
     --hash=sha256:8f6b79dc97b391c1e0526e7b2b46a22215542e58f46fabef0b71da10e9bfd54d
     # via -r requirements.in
-flake8==5.0.3 \
-    --hash=sha256:93aa565ae2f0316b95bb57a354f2b2d55ee8508e1fe1cb13b77b9c195b4a2537 \
-    --hash=sha256:b27fd7faa8d90aaae763664a489012292990388e5d3604f383b290caefbbc922
+flake8==5.0.4 \
+    --hash=sha256:6fbe320aad8d6b95cec8b8e47bc933004678dc63095be98528b7bdd2a9f510db \
+    --hash=sha256:7a1cf6b73744f5806ab95e526f6f0d8c01c66d7bbe349562d22dfca20610b248
     # via -r requirements.in
 gunicorn==20.1.0 \
     --hash=sha256:9dcc4547dbb1cb284accfb15ab5667a0e5d1881cc443e0677b4882a4067a807e \
