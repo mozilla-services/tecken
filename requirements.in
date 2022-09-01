@@ -10,7 +10,7 @@ datadog==0.44.0
 dj-database-url==1.0.0
 django-cache-memoize==0.1.10
 django-redis==5.2.0
-dockerflow==2022.7.0
+dockerflow==2022.8.0
 encore==0.7.0
 everett==3.0.0
 falcon==3.1.0
