@@ -7,7 +7,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    platform: linux/amd64
     image: tecken:build
     env_file:
       - docker/config/local_dev.env
