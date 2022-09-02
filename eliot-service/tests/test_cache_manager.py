@@ -493,8 +493,8 @@ BROKEN_EVENT = {
     "server_name": "testnode",
     "sdk": {
         "name": "sentry.python",
-        "version": "1.9.5",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.9.5"}],
+        "version": "1.9.7",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.9.7"}],
         "integrations": [
             "argv",
             "atexit",
