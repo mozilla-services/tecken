@@ -2,12 +2,12 @@
 
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# default variables
+# Default variables
 : "${PORT:=8000}"
 : "${GUNICORN_WORKERS:=4}"
-: "${GUNICORN_TIMEOUT:=300}"
+: "${GUNICORN_TIMEOUT:=600}"
 
 if [ "$1" == "--dev" ]; then
     python manage.py migrate --noinput
