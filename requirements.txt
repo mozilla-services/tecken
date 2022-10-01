@@ -68,9 +68,9 @@ boto3==1.24.65 \
     --hash=sha256:6bfa24a48ad49ee5f89b7a0572106d8009f892ef927556bdc663230bfa11d05f \
     --hash=sha256:e32ce034ac1acaff3607dd31766b4096036cdc5539d76cad41370d6d2a29a881
     # via -r requirements.in
-botocore==1.27.65 \
-    --hash=sha256:17bde907b09a3a869ec2281e35dd3dbaa702a34c19aa81c19d0a142127d57be7 \
-    --hash=sha256:2ba1494bc74e2e0e0915ee68e178f8511264daa30b96abb4240a17d47eeea894
+botocore==1.27.84 \
+    --hash=sha256:11f05d2acdf9a5f722856704b7b951b180647fb4340e1b5048b27273dc323909 \
+    --hash=sha256:da15026329706caf83323d84996f5ff5c527837347633fca9b3b1be0efa60841
     # via
     #   -r requirements.in
     #   boto3
