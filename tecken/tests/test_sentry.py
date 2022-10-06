@@ -23,34 +23,26 @@ BROKEN_EVENT = {
             {
                 "category": "query",
                 "data": {},
-                "message": 'SELECT "tokens_token"."id", '
-                '"tokens_token"."user_id", '
-                '"tokens_token"."key", '
-                '"tokens_token"."expires_at", '
-                '"tokens_token"."notes", '
-                '"tokens_token"."created_at", '
-                '"auth_user"."id", '
-                '"auth_user"."password", '
-                '"auth_user"."last_login", '
-                '"auth_user"."is_superuser", '
-                '"auth_user"."username", '
-                '"auth_user"."first_name", '
-                '"auth_user"."last_name", '
-                '"auth_user"."email", '
-                '"auth_user"."is_staff", '
-                '"auth_user"."is_active", '
-                '"auth_user"."date_joined" FROM '
-                '"tokens_token" INNER JOIN "auth_user" '
-                'ON ("tokens_token"."user_id" = '
-                '"auth_user...',
+                "message": (
+                    'SELECT "tokens_token"."id", "tokens_token"."user_id", '
+                    + '"tokens_token"."key", "tokens_token"."expires_at", '
+                    + '"tokens_token"."notes", "tokens_token"."created_at", '
+                    + '"auth_user"."id", "auth_user"."password", '
+                    + '"auth_user"."last_login", "auth_user"."is_superuser", '
+                    + '"auth_user"."username", "auth_user"."first_name", '
+                    + '"auth_user"."last_name", "auth_user"."email", '
+                    + '"auth_user"."is_staff", "auth_user"."is_active", '
+                    + '"auth_user"."date_joined" FROM "tokens_token" INNER JOIN '
+                    + '"auth_user" ON ("tokens_token"."user_id" = "auth_user"."id") '
+                    + 'WHERE "tokens_token"."key" = %s LIMIT 21'
+                ),
                 "timestamp": ANY,
                 "type": "default",
             },
             {
                 "category": "query",
                 "data": {},
-                "message": 'UPDATE "auth_user" SET "last_login" = '
-                '%s WHERE "auth_user"."id" = %s',
+                "message": 'UPDATE "auth_user" SET "last_login" = %s WHERE "auth_user"."id" = %s',
                 "timestamp": ANY,
                 "type": "default",
             },
@@ -63,8 +55,8 @@ BROKEN_EVENT = {
             "version": ANY,
         },
         "trace": {
-            "description": "django.contrib.messages.middleware.MessageMiddleware.__call__",
-            "op": "django.middleware",
+            "description": "sentry_sdk.integrations.django._got_request_exception",
+            "op": "django.signals",
             "parent_span_id": ANY,
             "span_id": ANY,
             "trace_id": ANY,
@@ -123,7 +115,7 @@ BROKEN_EVENT = {
                             "in_app": True,
                             "lineno": ANY,
                             "module": "tecken.views",
-                            "post_context": [],
+                            "post_context": ANY,
                             "pre_context": ANY,
                             "vars": {"request": "[Scrubbed]"},
                         },
@@ -169,8 +161,8 @@ BROKEN_EVENT = {
             "threading",
         ],
         "name": "sentry.python",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.9.7"}],
-        "version": "1.9.7",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.9.10"}],
+        "version": "1.9.10",
     },
     "server_name": ANY,
     "timestamp": ANY,
