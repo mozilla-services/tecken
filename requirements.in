@@ -47,4 +47,4 @@ whitenoise==6.2.0
 redis==3.4.1
 
 # NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
-Django==3.2.15
+Django==3.2.16
