@@ -164,7 +164,8 @@ ELIOT_METRICS = {
         description="Counter for disk cache evictions.",
     ),
     "eliot.diskcache.usage": Metric(
-        stat_type="gauge", description="Gauge for how much of the cache is in use."
+        stat_type="gauge",
+        description="Gauge for how much of the cache is in use.",
     ),
     "eliot.sentry_scrub_error": Metric(
         stat_type="incr",

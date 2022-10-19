@@ -60,9 +60,9 @@ def build_stack(data):
 
     modules = []
     modules_list = []
-    for module in json_dump.get("modules", []):
-        debug_file = module.get("debug_file", "")
-        debug_id = module.get("debug_id", "")
+    for module in json_dump.get("modules") or []:
+        debug_file = module.get("debug_file") or ""
+        debug_id = module.get("debug_id") or ""
 
         # Add the module information to the map
         modules.append((debug_file, debug_id))
@@ -70,8 +70,8 @@ def build_stack(data):
         modules_list.append(module["filename"])
 
     stack = []
-    for frame in crashing_thread.get("frames", []):
-        if "module" in frame:
+    for frame in crashing_thread.get("frames") or []:
+        if frame.get("module"):
             module_index = modules_list.index(frame["module"])
         else:
             # -1 indicates the module is unknown

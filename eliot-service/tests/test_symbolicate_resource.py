@@ -418,7 +418,10 @@ class TestSymbolicateBase:
         modules = [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]]
         debug_stats = DebugStats()
 
-        assert base.symbolicate(stacks, modules, debug_stats) == {
+        jobs = [{"stacks": stacks, "memoryMap": modules}]
+        result = base.symbolicate(jobs, debug_stats)[0]
+
+        assert result == {
             "found_modules": {"testproj/D48F191186D67E69DF025AD71FB91E1F0": True},
             "stacks": [
                 [
@@ -481,7 +484,10 @@ class TestSymbolicateBase:
         modules = [["xul.pdb", "0185139C8F04FFC94C4C44205044422E1"]]
         debug_stats = DebugStats()
 
-        assert base.symbolicate(stacks, modules, debug_stats) == {
+        jobs = [{"stacks": stacks, "memoryMap": modules}]
+        result = base.symbolicate(jobs, debug_stats)[0]
+
+        assert result == {
             "found_modules": {"xul.pdb/0185139C8F04FFC94C4C44205044422E1": True},
             "stacks": [
                 [
@@ -560,7 +566,7 @@ class TestSymbolicateV4:
         assert result.headers["Content-Type"].startswith("application/json")
         assert (
             result.content
-            == b'{"title": "job has invalid stacks: no stacks specified"}'
+            == b'{"title": "job 0 has invalid stacks: no stacks specified"}'
         )
 
         # No stacks specified
@@ -571,7 +577,7 @@ class TestSymbolicateV4:
         assert result.headers["Content-Type"].startswith("application/json")
         assert (
             result.content
-            == b'{"title": "job has invalid stacks: no stacks specified"}'
+            == b'{"title": "job 0 has invalid stacks: no stacks specified"}'
         )
 
     def test_symbolication_module_missing_and_not_checked(self, requestsmock, client):

@@ -380,137 +380,143 @@ class SymbolicateBase:
 
         module_info.has_symcache = module_info.symcache is not None
 
-    def symbolicate(self, stacks, modules, debug_stats):
-        """Takes stacks and modules and returns symbolicated stacks.
+    def symbolicate(self, jobs, debug_stats):
+        """Takes jobs and returns symbolicated results.
 
-        :arg stacks: list of stacks each of which is a list of
-            (module index, module offset)
-        :arg modules: list of (debug_filename, debug_id)
+        :arg jobs: list of jobs containing stack and module information
         :arg debug_stats: DebugStats instance for keeping track of timings and other
             useful things
 
-        :returns: dict with "stacks" and "found_modules" keys per the symbolication v5
-            response
+        :returns: list of result dicts with "stacks" and "found_modules" keys per the
+            symbolication v5 response
 
         """
-        # Build list of Module instances so we can keep track of what we've used/seen
-        module_records = [
-            ModuleInfo(
-                filename=debug_filename,
-                debug_filename=debug_filename,
-                debug_id=debug_id,
-                has_symcache=None,
-                symcache=None,
+
+        results = []
+        for i, job in enumerate(jobs):
+            stacks = job.get("stacks", [])
+            modules = job.get("memoryMap", [])
+
+            # Build list of Module instances so we can keep track of what we've
+            # used/seen
+            module_records = [
+                ModuleInfo(
+                    filename=debug_filename,
+                    debug_filename=debug_filename,
+                    debug_id=debug_id,
+                    has_symcache=None,
+                    symcache=None,
+                )
+                for debug_filename, debug_id in modules
+            ]
+
+            symbolicated_stacks = []
+            for stack_index, stack in enumerate(stacks):
+                METRICS.histogram("eliot.symbolicate.frames_count", value=len(stack))
+                symbolicated_stack = []
+                for frame_index, frame in enumerate(stack):
+                    module_index, module_offset = frame
+                    module_info = None
+                    data = {
+                        "frame": frame_index,
+                        "module": "<unknown>",
+                        "module_offset": hex(module_offset),
+                    }
+
+                    if module_index >= 0:
+                        module_info = module_records[module_index]
+
+                        if module_offset < 0 or module_info.has_symcache is False:
+                            # This isn't an offset in this module or there's no symcache
+                            # available, so don't do anything
+                            pass
+
+                        elif module_info.symcache is None:
+                            LOGGER.debug(f"get_symcache for {module_info!r}")
+                            # NOTE(willkg): This mutates module
+                            self.get_symcache(module_info, debug_stats)
+
+                        if module_info.symcache is not None:
+                            sourceloc_list = module_info.symcache.lookup(module_offset)
+                            if sourceloc_list:
+                                # sourceloc_list can have multiple entries: It starts with the innermost
+                                # inline stack frame, and then advances to its caller, and then its
+                                # caller, and so on, until it gets to the outer function.
+                                # We process the outer function first, and then add inline stack frames
+                                # afterwards. The outer function is the last item in sourceloc_list.
+                                sourceloc = sourceloc_list[-1]
+
+                                data["function"] = sourceloc.symbol
+                                data["function_offset"] = hex(
+                                    module_offset - sourceloc.sym_addr
+                                )
+                                if sourceloc.full_path:
+                                    data["file"] = sourceloc.full_path
+
+                                # Only add a "line" if it's non-zero and not None, and if there's a
+                                # file--otherwise the line doesn't mean anything
+                                if sourceloc.line and data.get("file"):
+                                    data["line"] = sourceloc.line
+
+                                if len(sourceloc_list) > 1:
+                                    # We have inline information. Add an "inlines" property with a list
+                                    # of { function, file, line } entries.
+                                    inlines = []
+                                    for inline_sourceloc in sourceloc_list[:-1]:
+                                        inline_data = {
+                                            "function": inline_sourceloc.symbol,
+                                        }
+
+                                        if inline_sourceloc.full_path:
+                                            inline_data[
+                                                "file"
+                                            ] = inline_sourceloc.full_path
+
+                                        if inline_sourceloc.line and inline_data.get(
+                                            "file"
+                                        ):
+                                            inline_data["line"] = inline_sourceloc.line
+
+                                        inlines.append(inline_data)
+
+                                    data["inlines"] = inlines
+
+                        data["module"] = module_info.filename
+
+                    symbolicated_stack.append(data)
+
+                symbolicated_stacks.append(symbolicated_stack)
+
+            # Convert modules to a map of debug_filename/debug_id -> True/False/None
+            # on whether we found the sym file (True), didn't find it (False), or never
+            # looked for it (None)
+            found_modules = {
+                f"{module_info.debug_filename}/{module_info.debug_id}": module_info.has_symcache
+                for module_info in module_records
+            }
+
+            # Return metadata and symbolication results
+            results.append(
+                {"stacks": symbolicated_stacks, "found_modules": found_modules}
             )
-            for debug_filename, debug_id in modules
-        ]
-
-        symbolicated_stacks = []
-        for stack_index, stack in enumerate(stacks):
-            METRICS.histogram("eliot.symbolicate.frames_count", value=len(stack))
-            symbolicated_stack = []
-            for frame_index, frame in enumerate(stack):
-                module_index, module_offset = frame
-                module_info = None
-                data = {
-                    "frame": frame_index,
-                    "module": "<unknown>",
-                    "module_offset": hex(module_offset),
-                }
-
-                if module_index >= 0:
-                    module_info = module_records[module_index]
-
-                    if module_offset < 0 or module_info.has_symcache is False:
-                        # This isn't an offset in this module or there's no symcache
-                        # available, so don't do anything
-                        pass
-
-                    elif module_info.symcache is None:
-                        LOGGER.debug(f"get_symcache for {module_info!r}")
-                        # NOTE(willkg): This mutates module
-                        self.get_symcache(module_info, debug_stats)
-
-                    if module_info.symcache is not None:
-                        sourceloc_list = module_info.symcache.lookup(module_offset)
-                        if sourceloc_list:
-                            # sourceloc_list can have multiple entries: It starts with the innermost
-                            # inline stack frame, and then advances to its caller, and then its
-                            # caller, and so on, until it gets to the outer function.
-                            # We process the outer function first, and then add inline stack frames
-                            # afterwards. The outer function is the last item in sourceloc_list.
-                            sourceloc = sourceloc_list[-1]
-
-                            data["function"] = sourceloc.symbol
-                            data["function_offset"] = hex(
-                                module_offset - sourceloc.sym_addr
-                            )
-                            if sourceloc.full_path:
-                                data["file"] = sourceloc.full_path
-
-                            # Only add a "line" if it's non-zero and not None, and if there's a
-                            # file--otherwise the line doesn't mean anything
-                            if sourceloc.line and data.get("file"):
-                                data["line"] = sourceloc.line
-
-                            if len(sourceloc_list) > 1:
-                                # We have inline information. Add an "inlines" property with a list
-                                # of { function, file, line } entries.
-                                inlines = []
-                                for inline_sourceloc in sourceloc_list[:-1]:
-                                    inline_data = {
-                                        "function": inline_sourceloc.symbol,
-                                    }
-
-                                    if inline_sourceloc.full_path:
-                                        inline_data["file"] = inline_sourceloc.full_path
-
-                                    if inline_sourceloc.line and inline_data.get(
-                                        "file"
-                                    ):
-                                        inline_data["line"] = inline_sourceloc.line
-
-                                    inlines.append(inline_data)
-
-                                data["inlines"] = inlines
-
-                    data["module"] = module_info.filename
-
-                symbolicated_stack.append(data)
-
-            symbolicated_stacks.append(symbolicated_stack)
-
-        # Convert modules to a map of debug_filename/debug_id -> True/False/None
-        # on whether we found the sym file (True), didn't find it (False), or never
-        # looked for it (None)
-        found_modules = {
-            f"{module_info.debug_filename}/{module_info.debug_id}": module_info.has_symcache
-            for module_info in module_records
-        }
-
-        # Return metadata and symbolication results
-        return {"stacks": symbolicated_stacks, "found_modules": found_modules}
+        return results
 
 
-# NOTE(Willkg): This API endpoint version is deprecated. We shouldn't add new features
-# or fix bugs with it.
-class SymbolicateV4(SymbolicateBase):
-    @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v4"])
-    def on_post(self, req, resp):
-        self.check_proxied(req)
+def _load_payload(req):
+    try:
+        return json.load(req.bounded_stream)
+    except json.JSONDecodeError:
+        METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
+        raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
 
-        try:
-            payload = json.load(req.bounded_stream)
-        except json.JSONDecodeError:
-            METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
-            raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
 
-        stacks = payload.get("stacks", [])
-        modules = payload.get("memoryMap", [])
+def _validate_and_measure_jobs(jobs, api_version):
+    for i, job in enumerate(jobs):
+        if not isinstance(job, dict):
+            raise falcon.HTTPBadRequest(title=f"job {i} is invalid")
 
-        # NOTE(willkg): we define this and pass it around, but don't return it in the
-        # results because this API is deprecated
-        debug_stats = DebugStats()
+        stacks = job.get("stacks", [])
+        modules = job.get("memoryMap", [])
 
         try:
             validate_modules(modules)
@@ -521,7 +527,7 @@ class SymbolicateV4(SymbolicateBase):
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
-            raise falcon.HTTPBadRequest(title=f"job has invalid modules: {exc}")
+            raise falcon.HTTPBadRequest(title=f"job {i} has invalid modules: {exc}")
 
         try:
             validate_stacks(stacks, modules)
@@ -532,13 +538,33 @@ class SymbolicateV4(SymbolicateBase):
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
-            raise falcon.HTTPBadRequest(title=f"job has invalid stacks: {exc}")
+            raise falcon.HTTPBadRequest(title=f"job {i} has invalid stacks: {exc}")
 
         METRICS.histogram(
-            "eliot.symbolicate.stacks_count", value=len(stacks), tags=["version:v4"]
+            "eliot.symbolicate.stacks_count",
+            value=len(stacks),
+            tags=[f"version:{api_version}"],
         )
 
-        symdata = self.symbolicate(stacks, modules, debug_stats)
+
+# NOTE(Willkg): This API endpoint version is deprecated. We shouldn't add new features
+# or fix bugs with it.
+class SymbolicateV4(SymbolicateBase):
+    @METRICS.timer_decorator("eliot.symbolicate.api", tags=["version:v4"])
+    def on_post(self, req, resp):
+        self.check_proxied(req)
+
+        # NOTE(willkg): we define this and pass it around, but don't return it in the
+        # results because this API is deprecated
+        debug_stats = DebugStats()
+
+        payload = _load_payload(req)
+
+        # Convert to a list of jobs, validate and measure the jobs, symbolicate and then
+        # unwrap that to a single symdata result
+        jobs = [payload]
+        _validate_and_measure_jobs(jobs, api_version="v4")
+        symdata = self.symbolicate(jobs, debug_stats)[0]
 
         # Convert the symbolicate output to symbolicate/v4 output
         def frame_to_function(frame):
@@ -558,7 +584,7 @@ class SymbolicateV4(SymbolicateBase):
         ]
         known_modules = [
             symdata["found_modules"].get("%s/%s" % (debug_filename, debug_id), None)
-            for debug_filename, debug_id in modules
+            for debug_filename, debug_id in payload["memoryMap"]
         ]
 
         results = {
@@ -573,11 +599,7 @@ class SymbolicateV5(SymbolicateBase):
     def on_post(self, req, resp):
         self.check_proxied(req)
 
-        try:
-            payload = json.load(req.bounded_stream)
-        except json.JSONDecodeError:
-            METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
-            raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
+        payload = _load_payload(req)
 
         is_debug = req.get_header("Debug", default=False)
 
@@ -601,53 +623,10 @@ class SymbolicateV5(SymbolicateBase):
 
         debug_stats = DebugStats()
 
+        # Validate, measure, and symbolicate jobs
         with debug_stats.timer("time"):
-            results = []
-            for i, job in enumerate(jobs):
-                if not isinstance(job, dict):
-                    raise falcon.HTTPBadRequest(title=f"job {i} is invalid")
-
-                stacks = job.get("stacks", [])
-                modules = job.get("memoryMap", [])
-
-                try:
-                    validate_modules(modules)
-                except InvalidModules as exc:
-                    METRICS.incr(
-                        "eliot.symbolicate.request_error",
-                        tags=["reason:invalid_modules"],
-                    )
-                    # NOTE(willkg): the str of an exception is the message; we need to
-                    # control the message carefully so we're not spitting unsanitized data
-                    # back to the user in the error
-                    raise falcon.HTTPBadRequest(
-                        title=f"job {i} has invalid modules: {exc}"
-                    )
-
-                try:
-                    validate_stacks(stacks, modules)
-                except InvalidStacks as exc:
-                    METRICS.incr(
-                        "eliot.symbolicate.request_error",
-                        tags=["reason:invalid_stacks"],
-                    )
-                    # NOTE(willkg): the str of an exception is the message; we need to
-                    # control the message carefully so we're not spitting unsanitized data
-                    # back to the user in the error
-                    raise falcon.HTTPBadRequest(
-                        title=f"job {i} has invalid stacks: {exc}"
-                    )
-
-                METRICS.histogram(
-                    "eliot.symbolicate.stacks_count",
-                    value=len(stacks),
-                    tags=["version:v5"],
-                )
-                debug_stats.incr("stacks.count", len(stacks))
-
-                results.append(self.symbolicate(stacks, modules, debug_stats))
-
-        # Peel off the symbolication v5 results from the returns
+            _validate_and_measure_jobs(jobs, api_version="v5")
+            results = self.symbolicate(jobs, debug_stats)
         response = {"results": results}
 
         # Add debug information if requested
@@ -677,29 +656,4 @@ class SymbolicateV5(SymbolicateBase):
 
             response["debug"] = debug_stats.data
 
-            """
-                "time": 0,
-                "stacks": {
-                    "count": total_stacks,
-                },
-                "modules": {
-                    # FIXME: Calculate modules_lookup count of set of modules we looked
-                    # up (true or false)
-                    # "count": len(modules_lookups),
-
-                    # FIXME: Calculate stacks_per_module; map of (filename, debug_id) ->
-                    # count
-                    # "stacks_per_module": stacks_per_module,
-                },
-                "cache_lookups": {
-                    # "count": len(cache_lookup_times),
-                    # "time": float(sum(cache_lookup_times)),
-                },
-                "downloads": {
-                    # "count": len(download_times),
-                    # "time": float(sum(download_times)),
-                    # "size": float(sum(download_sizes)),
-                },
-            }
-            """
         resp.text = json.dumps(response)

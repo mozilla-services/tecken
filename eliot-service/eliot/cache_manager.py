@@ -66,7 +66,7 @@ class LastUpdatedOrderedDict(OrderedDict):
         """Update last-updated for key"""
         self.move_to_end(key, last=True)
 
-    def popoldest(self):
+    def pop_oldest(self):
         """Pop the oldest item"""
         return self.popitem(last=False)
 
@@ -236,7 +236,7 @@ class DiskCacheManager:
         removed = 0
 
         while self.lru and total_size > self.max_size:
-            rm_path, rm_size = self.lru.popoldest()
+            rm_path, rm_size = self.lru.pop_oldest()
             total_size -= rm_size
             removed += rm_size
             os.remove(rm_path)
