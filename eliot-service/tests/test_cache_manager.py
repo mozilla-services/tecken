@@ -43,7 +43,7 @@ class TestLastUpdatedOrderedDict:
         lru["key1"] = 1
         lru["key2"] = 2
 
-        oldest = lru.popoldest()
+        oldest = lru.pop_oldest()
         assert oldest == ("key1", 1)
         assert list(lru.items()) == [("key2", 2)]
 
