@@ -45,7 +45,7 @@ class Upload(models.Model):
     # When the upload has been extracted and all individual files
     # have been successfully uploaded, this is complete.
     completed_at = models.DateTimeField(null=True)
-    size = models.PositiveIntegerField()
+    size = models.PositiveBigIntegerField()
     content_hash = models.CharField(null=True, max_length=32)
     # If the upload was by a download URL
     download_url = models.URLField(max_length=500, null=True)
