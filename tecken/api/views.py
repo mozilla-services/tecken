@@ -36,6 +36,11 @@ logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
 
 
+# Arbitrary big number for paging so we don't do a count on the full table; this
+# needs to match the big number used in the frontend
+BIG_NUMBER = 1_000_000
+
+
 class SumCardinality(Aggregate):
     template = "SUM(CARDINALITY(%(expressions)s))"
 
@@ -297,84 +302,17 @@ def _uploads_content(form, pagination_form, qs, can_view_all):
     content["batch_size"] = batch_size
     content["order_by"] = order_by
     content["has_next"] = has_next
-    return content
 
-
-def _uploads_aggregates(form, qs, can_view_all):
-    context = {}
-    if can_view_all and not any(form.cleaned_data.values()):
-        # If you can view ALL uploads and there's no filtering, we can use
-        # UploadsCreated instead which is much more efficient.
-        aggregates_numbers = UploadsCreated.objects.aggregate(
-            count=Sum("count"),
-            size_sum=Sum("size"),
-            skipped_sum=Sum("skipped"),
-            files=Sum("files"),
-        )
-        context["aggregates"] = {
-            "uploads": {
-                "count": aggregates_numbers["count"],
-                "size": {"sum": aggregates_numbers["size_sum"]},
-                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
-            },
-            "files": {"count": aggregates_numbers["files"]},
-        }
-        # Do this later to avoid ZeroDivisionError
-        if aggregates_numbers["count"]:
-            context["aggregates"]["uploads"]["size"]["average"] = (
-                aggregates_numbers["size_sum"] / aggregates_numbers["count"]
-            )
-        else:
-            context["aggregates"]["uploads"]["size"]["average"] = None
-
+    # NOTE(willkg): This is the only way I could figure out to determine whether a
+    # queryset had filters applied to it. We check that and if there are filters, we do
+    # the count and if there are not filters, then we use BIG_NUMBER so we don't have to
+    # do a row count in the postgres table of the entire table.
+    if qs._has_filters().__dict__["children"]:
+        content["total"] = qs.count()
     else:
-        aggregates_numbers = qs.aggregate(
-            count=Count("id"),
-            size_avg=Avg("size"),
-            size_sum=Sum("size"),
-            skipped_sum=SumCardinality("skipped_keys"),
-        )
-        context["aggregates"] = {
-            "uploads": {
-                "count": aggregates_numbers["count"],
-                "size": {
-                    "average": aggregates_numbers["size_avg"],
-                    "sum": aggregates_numbers["size_sum"],
-                },
-                "skipped": {"sum": aggregates_numbers["skipped_sum"]},
-            }
-        }
-        file_uploads_qs = FileUpload.objects.filter(upload__in=qs)
-        context["aggregates"]["files"] = {"count": file_uploads_qs.count()}
-    context["total"] = context["aggregates"]["uploads"]["count"]
-    return context
+        content["total"] = BIG_NUMBER
 
-
-@metrics.timer_decorator("api", tags=["endpoint:uploads_content"])
-@api_login_required
-def uploads_content(request):
-    form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
-    if not form.is_valid():
-        return http.JsonResponse({"errors": form.errors}, status=400)
-    pagination_form = PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-    can_view_all = request.user.has_perm("upload.view_all_uploads")
-    qs = filter_uploads(Upload.objects.all(), can_view_all, request.user, form)
-    context = _uploads_content(form, pagination_form, qs, can_view_all)
-    return http.JsonResponse(context)
-
-
-@metrics.timer_decorator("api", tags=["endpoint:uploads_aggregates"])
-@api_login_required
-def uploads_aggregates(request):
-    form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
-    if not form.is_valid():
-        return http.JsonResponse({"errors": form.errors}, status=400)
-    can_view_all = request.user.has_perm("upload.view_all_uploads")
-    qs = filter_uploads(Upload.objects.all(), can_view_all, request.user, form)
-    aggregates = _uploads_aggregates(form, qs, can_view_all)
-    return http.JsonResponse(aggregates)
+    return content
 
 
 @metrics.timer_decorator("api", tags=["endpoint:uploads"])
@@ -393,7 +331,6 @@ def uploads(request):
     qs = filter_uploads(qs, can_view_all, request.user, form)
 
     context = _uploads_content(form, pagination_form, qs, can_view_all)
-    context.update(_uploads_aggregates(form, qs, can_view_all))
     return http.JsonResponse(context)
 
 

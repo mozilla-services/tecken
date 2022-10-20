@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import datetime
+from unittest.mock import ANY
 
 import pytest
 
@@ -541,38 +542,75 @@ def test_uploads(client):
 
 
 @pytest.mark.django_db
-def test_uploads_separate_endpoints(client):
-    user = User.objects.create(username="efilho", email="efilho@example.com")
+def test_uploads_count(client):
+    url = reverse("api:uploads")
+    user = User.objects.create(username="user1", email="user1@example.com")
     user.set_password("secret")
     user.save()
     permission = Permission.objects.get(codename="view_all_uploads")
     user.user_permissions.add(permission)
-    assert client.login(username="efilho", password="secret")
+    assert client.login(username="user1", password="secret")
 
-    # Content endpoint
-    url = reverse("api:uploads_content")
+    # Create upload
+    upload = Upload.objects.create(
+        user=User.objects.create(email="user2@example.com"), size=123_456
+    )
+    FileUpload.objects.create(upload=upload, size=1234, key="foo.sym")
+
+    # Fetch uploads with no filters
     response = client.get(url)
     assert response.status_code == 200
     data = response.json()
-    assert "uploads" in data
-    assert "batch_size" in data
-    assert "order_by" in data
-    assert "can_view_all" in data
-    assert "has_next" in data
-    assert "aggregates" not in data
-    assert "total" not in data
+    assert data["uploads"] == [
+        {
+            "bucket_endpoint_url": None,
+            "bucket_name": "",
+            "bucket_region": None,
+            "completed_at": None,
+            "created_at": ANY,
+            "download_url": None,
+            "filename": "",
+            "files_count": 0,
+            "files_incomplete_count": 1,
+            "id": 2,
+            "ignored_keys": [],
+            "redirect_urls": [],
+            "size": 123456,
+            "skipped_keys": [],
+            "try_symbols": False,
+            "user": {"email": "user2@example.com"},
+        },
+    ]
 
-    url = reverse("api:uploads_aggregates")
-    response = client.get(url)
+    # No filters results in total being magic big "I didn't count this" number of
+    # 1,000,000
+    assert data["total"] == 1000000
+
+    # Fetch uploads with size
+    response = client.get(url, {"size": ">= 10KB"})
     assert response.status_code == 200
     data = response.json()
-    assert "total" in data
-    assert "aggregates" in data
-    assert "uploads" not in data
-    assert "batch_size" not in data
-    assert "order_by" not in data
-    assert "can_view_all" not in data
-    assert "has_next" not in data
+    assert data["uploads"] == [
+        {
+            "bucket_endpoint_url": None,
+            "bucket_name": "",
+            "bucket_region": None,
+            "completed_at": None,
+            "created_at": ANY,
+            "download_url": None,
+            "filename": "",
+            "files_count": 0,
+            "files_incomplete_count": 1,
+            "id": 2,
+            "ignored_keys": [],
+            "redirect_urls": [],
+            "size": 123456,
+            "skipped_keys": [],
+            "try_symbols": False,
+            "user": {"email": "user2@example.com"},
+        },
+    ]
+    assert data["total"] == 1
 
 
 @pytest.mark.django_db
@@ -601,7 +639,8 @@ def test_uploads_second_increment(client):
     response = client.get(url)
     assert response.status_code == 200
     data = response.json()
-    assert data["total"] == 1
+    # NOTE(willkg): This is the magic big number
+    assert data["total"] == 1000000
 
     last_created_at = data["uploads"][0]["created_at"]
     response = client.get(url, {"created_at": f">{last_created_at}"})

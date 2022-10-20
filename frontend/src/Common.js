@@ -18,6 +18,10 @@ import {
 } from "date-fns";
 import parseISO from "date-fns/parseISO";
 
+// Big number signifying we don't know what the count is. This needs to match
+// the BIG_NUMBER API total value.
+const BIG_NUMBER = 1000000;
+
 export function parseISODate(input) {
   return toDate(parseISO(input));
 }
@@ -152,7 +156,7 @@ export const Pagination = ({
       >
         Previous
       </Link>
-      <ul class="pagination-list">
+      <ul className="pagination-list">
         <li>Page {currentPage}</li>
       </ul>
       <Link
@@ -177,14 +181,21 @@ export const TableSubTitle = ({
     return null;
   }
   page = page || 1;
-  const totalPages = Math.ceil(total / batchSize);
+  var totalText = "";
+  var totalPagesText = "";
+  if (total === BIG_NUMBER) {
+    totalText = "Lots";
+    totalPagesText = "many";
+  } else {
+    totalText = thousandFormat(total);
+    totalPagesText = thousandFormat(Math.ceil(total / batchSize));
+  }
   if (calculating) {
     return <h2 className="subtitle">Calculating ...</h2>;
   } else {
     return (
       <h2 className="subtitle">
-        {thousandFormat(total)} Found (Page {thousandFormat(page)} of{" "}
-        {thousandFormat(totalPages)})
+        {totalText} Found (Page {thousandFormat(page)} of {totalPagesText})
       </h2>
     );
   }
