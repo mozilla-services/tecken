@@ -180,7 +180,9 @@ class Files extends React.PureComponent {
               total={this.state.total}
               page={this.state.filter.page}
               batchSize={this.state.batchSize}
-              calculating={this.state.loadingAggregates}
+              calculating={
+                this.state.loadingFiles || this.state.loadingAggregates
+              }
             />
           )
         )}
