@@ -177,7 +177,7 @@ export const TableSubTitle = ({
   batchSize,
   calculating = false,
 }) => {
-  if (total === null && !calculating) {
+  if (total === null || calculating) {
     return null;
   }
   page = page || 1;
