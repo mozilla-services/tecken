@@ -143,12 +143,12 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
     zip_filename = datetime.datetime.now().strftime("symbols_%Y%m%d_%H%M%S.zip")
     zip_path = os.path.join(outputdir, zip_filename)
 
-    click.echo("Generating ZIP file %s ..." % zip_path)
+    click.echo(f"Generating ZIP file {zip_path} ...")
     with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
         sym_dir = os.path.join(tmpdirname, "syms")
         tmp_zip_path = os.path.join(tmpdirname, zip_filename)
 
-        sym_files_url = urljoin(SYMBOLS_URL, "/api/uploads/files/")
+        sym_files_url = urljoin(SYMBOLS_URL, "/api/uploads/files/content/")
         sym_files_generator = get_sym_files(auth_token, sym_files_url, start_page)
         for sym_filename, sym_size in sym_files_generator:
             if sym_filename.endswith(".0"):
@@ -160,7 +160,7 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
             if os.path.exists(tmp_zip_path):
                 # See if the new zip file is too big; if it is, we're done!
                 zip_size = os.stat(tmp_zip_path).st_size
-                click.echo("size: %s, max_size: %s" % (zip_size, max_size))
+                click.echo(f"size: {zip_size:,}, max_size: {max_size:,}")
                 if zip_size > max_size:
                     # Handle weird case where the first zip file we built was
                     # too big--just use that.
@@ -172,9 +172,7 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
                 shutil.copy(tmp_zip_path, zip_path)
 
             click.echo(
-                click.style(
-                    "Adding %s (%s) ..." % (sym_filename, sym_size), fg="yellow"
-                )
+                click.style(f"Adding {sym_filename} ({sym_size:,}) ...", fg="yellow")
             )
 
             # Download SYM file into temporary directory
@@ -195,7 +193,7 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
             build_zip_file(tmp_zip_path, sym_dir)
 
     zip_size = os.stat(zip_path).st_size
-    click.echo("Completed %s (%s)!" % (zip_path, zip_size))
+    click.echo(f"Completed {zip_path} ({zip_size:,})!")
 
 
 if __name__ == "__main__":
