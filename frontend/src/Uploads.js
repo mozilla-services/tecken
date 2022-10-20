@@ -84,7 +84,8 @@ class Uploads extends React.PureComponent {
       return response.json().then((response) => {
         this.setState(
           {
-            loadingUploads: false,
+            loading: false,
+            total: response.total,
             uploads: response.uploads,
             canViewAll: response.can_view_all,
             batchSize: response.batch_size,
@@ -106,15 +107,15 @@ class Uploads extends React.PureComponent {
       if (r.status === 400) {
         return r.json().then((data) => {
           this.setState({
-            loadingUploads: false,
+            loading: false,
             refreshing: false,
             validationErrors: data.errors,
           });
         });
       }
     };
-    this.setState({ loadingUploads: true });
-    this._fetch("/api/uploads/content/", callback, errorCallback);
+    this.setState({ loading: true });
+    this._fetch("/api/uploads/", callback, errorCallback);
   };
 
   _fetch = (endpoint, callback, errorCallback) => {
@@ -153,7 +154,7 @@ class Uploads extends React.PureComponent {
   };
 
   _fetchAbsoluteLatestUpload = () => {
-    const url = "/api/uploads/content/";
+    const url = "/api/uploads/";
     return fetch(url).then((r) => {
       if (r.status === 200) {
         return r.json().then((response) => {
@@ -307,7 +308,7 @@ class Uploads extends React.PureComponent {
           refresh={this._refreshUploads}
         />
         <h1 className="title">{this.state.pageTitle}</h1>
-        {this.state.loadingUploads ? (
+        {this.state.loading ? (
           <Loading />
         ) : (
           this.state.uploads && (
@@ -315,7 +316,7 @@ class Uploads extends React.PureComponent {
               total={this.state.total}
               page={this.state.filter.page}
               batchSize={this.state.batchSize}
-              calculating={this.state.loadingUploads}
+              calculating={this.state.loading}
             />
           )
         )}
@@ -325,9 +326,9 @@ class Uploads extends React.PureComponent {
             resetAndReload={this.resetAndReload}
           />
         )}
-        {!this.state.loadingUploads && this.state.uploads && (
+        {!this.state.loading && this.state.uploads && (
           <DisplayUploads
-            loading={this.state.loadingUploads}
+            loading={this.state.loading}
             uploads={this.state.uploads}
             canViewAll={this.state.canViewAll}
             batchSize={this.state.batchSize}
@@ -512,7 +513,7 @@ class DisplayUploads extends React.PureComponent {
               </td>
             </tr>
             <tr>
-              <td colspan="4"></td>
+              <td colSpan="4"></td>
               <td className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter Uploads
