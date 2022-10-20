@@ -33,7 +33,6 @@ class Uploads extends React.PureComponent {
     this.state = {
       pageTitle: "Uploads",
       loading: true,
-      refreshing: false,
       uploads: null,
       total: null,
       batchSize: null,
@@ -41,12 +40,9 @@ class Uploads extends React.PureComponent {
       filter: {},
       validationErrors: null,
       latestUpload: null,
-      newUploadsCount: 0,
       orderBy: null,
       hasNextPage: false,
     };
-
-    this.newCountLoopInterval = 5 * 1000;
   }
 
   componentWillMount() {
@@ -73,34 +69,22 @@ class Uploads extends React.PureComponent {
     } else {
       this._fetchUploads();
     }
-
-    window.setTimeout(() => {
-      this._fetchUploadsNewCountLoop();
-    }, this.newCountLoopInterval);
   }
 
   _fetchUploads = () => {
     var callback = (response) => {
       return response.json().then((response) => {
-        this.setState(
-          {
-            loading: false,
-            total: response.total,
-            uploads: response.uploads,
-            canViewAll: response.can_view_all,
-            batchSize: response.batch_size,
-            orderBy: response.order_by,
-            validationErrors: null,
-            latestUpload: this._getLatestUpload(response.uploads),
-            hasNextPage: response.has_next,
-          },
-          () => {
-            if (this.state.newUploadsCount) {
-              document.title = this.state.pageTitle;
-              this.setState({ newUploadsCount: 0 });
-            }
-          }
-        );
+        this.setState({
+          loading: false,
+          total: response.total,
+          uploads: response.uploads,
+          canViewAll: response.can_view_all,
+          batchSize: response.batch_size,
+          orderBy: response.order_by,
+          validationErrors: null,
+          latestUpload: this._getLatestUpload(response.uploads),
+          hasNextPage: response.has_next,
+        });
       });
     };
     var errorCallback = (response) => {
@@ -108,7 +92,6 @@ class Uploads extends React.PureComponent {
         return r.json().then((data) => {
           this.setState({
             loading: false,
-            refreshing: false,
             validationErrors: data.errors,
           });
         });
@@ -137,7 +120,7 @@ class Uploads extends React.PureComponent {
         // Even though we exit early, always return a promise
         return Promise.resolve();
       }
-      this.setState({ loading: false, refreshing: false });
+      this.setState({ loading: false });
       if (r.status === 200) {
         if (store.fetchError) {
           store.fetchError = null;
@@ -166,11 +149,6 @@ class Uploads extends React.PureComponent {
     });
   };
 
-  _refreshUploads = () => {
-    this.setState({ refreshing: true });
-    this._fetchUploads();
-  };
-
   // This is called every time _fetchUploads() finishes successfully.
   _getLatestUpload = (uploads) => {
     // Of all 'uploads', look for the one with the highest
@@ -183,39 +161,6 @@ class Uploads extends React.PureComponent {
       }
     });
     return latestUpload;
-  };
-
-  _fetchUploadsNewCountLoop = () => {
-    if (!this.dismounted) {
-      let url = "/api/uploads/";
-      const qs = filterToQueryString(this.state.filter, {
-        created_at: `>${this.state.latestUpload}`,
-      });
-      url += "?" + qs;
-      if (this.previousLatestUpload) {
-        // assert that this time it's >= the previous one
-        if (this.state.latestUpload < this.previousLatestUpload) {
-          throw new Error("Bad state! Previous latestUpload has regressed");
-        }
-      }
-      this.previousLatestUpload = this.state.latestUpload;
-      // Not going to obsess over fetch errors
-      Fetch(url).then((r) => {
-        if (r.status === 200) {
-          r.json().then((response) => {
-            if (response.total) {
-              document.title = `(${response.total} new) ${this.state.pageTitle}`;
-              this.setState({ newUploadsCount: response.total });
-            }
-            window.setTimeout(() => {
-              this._fetchUploadsNewCountLoop();
-            }, this.newCountLoopInterval);
-          });
-        } else {
-          console.warn(`Unable to continue loop because of status ${r.status}`);
-        }
-      });
-    }
   };
 
   filterOnAll = (event) => {
@@ -302,11 +247,6 @@ class Uploads extends React.PureComponent {
             </ul>
           </div>
         )}
-        <ShowNewUploadsCount
-          count={this.state.newUploadsCount}
-          refreshing={this.state.refreshing}
-          refresh={this._refreshUploads}
-        />
         <h1 className="title">{this.state.pageTitle}</h1>
         {this.state.loading ? (
           <Loading />
@@ -350,45 +290,6 @@ class Uploads extends React.PureComponent {
 }
 
 export default Uploads;
-
-class ShowNewUploadsCount extends React.PureComponent {
-  refresh = (event) => {
-    event.preventDefault();
-    this.props.refresh();
-  };
-  render() {
-    if (!this.props.count) {
-      return null;
-    }
-    return (
-      <p className="is-pulled-right">
-        <Link
-          to="/uploads"
-          className="button is-small is-info"
-          disabled={this.props.refreshing}
-          onClick={this.refresh}
-        >
-          <span className="icon">
-            <i
-              className={
-                this.props.refreshing
-                  ? "fa fa-refresh fa-spin fa-3x fa-fw"
-                  : "fa fa-refresh"
-              }
-            />
-          </span>{" "}
-          <span>
-            {pluralize(
-              this.props.count,
-              "new upload available",
-              "new uploads available"
-            )}
-          </span>
-        </Link>
-      </p>
-    );
-  }
-}
 
 class DisplayUploads extends React.PureComponent {
   componentDidMount() {
