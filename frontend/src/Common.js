@@ -143,7 +143,7 @@ export const Pagination = ({
   };
 
   return (
-    <nav className="pagination is-right">
+    <nav className="pagination is-centered">
       <Link
         className="pagination-previous"
         to={nextPageUrl(currentPage - 1)}
@@ -152,6 +152,9 @@ export const Pagination = ({
       >
         Previous
       </Link>
+      <ul class="pagination-list">
+        <li>Page {currentPage}</li>
+      </ul>
       <Link
         to={nextPageUrl(currentPage + 1)}
         className="pagination-next"

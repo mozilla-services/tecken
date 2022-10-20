@@ -66,49 +66,18 @@ class Uploads extends React.PureComponent {
           // If you load the page with some filtering, the "latestUpload"
           // might not be the unfiltered latest upload.
           this._fetchAbsoluteLatestUpload().then(() => {
-            this._fetchUploadsAndAggregatesAsync();
+            this._fetchUploads();
           });
         }
       );
     } else {
-      this._fetchUploadsAndAggregatesAsync();
+      this._fetchUploads();
     }
 
     window.setTimeout(() => {
       this._fetchUploadsNewCountLoop();
     }, this.newCountLoopInterval);
   }
-
-  _fetchUploadsAndAggregatesAsync = () => {
-    this._fetchUploads();
-    this._fetchAggregates();
-  };
-
-  _fetchAggregates = () => {
-    var callback = (response) => {
-      return response.json().then((response) => {
-        this.setState({
-          loadingAggregates: false,
-          aggregates: response.aggregates,
-          total: response.total,
-          validationErrors: null,
-        });
-      });
-    };
-    var errorCallback = (response) => {
-      if (r.status === 400) {
-        return r.json().then((data) => {
-          this.setState({
-            loadingAggregates: false,
-            refreshing: false,
-            validationErrors: data.errors,
-          });
-        });
-      }
-    };
-    this.setState({ loadingAggregates: true });
-    this._fetch("/api/uploads/aggregates/", callback, errorCallback);
-  };
 
   _fetchUploads = () => {
     var callback = (response) => {
@@ -198,7 +167,7 @@ class Uploads extends React.PureComponent {
 
   _refreshUploads = () => {
     this.setState({ refreshing: true });
-    this._fetchUploadsAndAggregatesAsync();
+    this._fetchUploads();
   };
 
   // This is called every time _fetchUploads() finishes successfully.
@@ -252,14 +221,14 @@ class Uploads extends React.PureComponent {
     event.preventDefault();
     const filter = this.state.filter;
     delete filter.user;
-    this.setState({ filter: filter }, this._fetchUploadsAndAggregatesAsync);
+    this.setState({ filter: filter }, this._fetchUploads);
   };
 
   filterOnYours = (event) => {
     event.preventDefault();
     const filter = this.state.filter;
     filter.user = store.currentUser.email;
-    this.setState({ filter: filter }, this._fetchUploadsAndAggregatesAsync);
+    this.setState({ filter: filter }, this._fetchUploads);
   };
 
   updateFilter = (newFilters) => {
@@ -267,14 +236,14 @@ class Uploads extends React.PureComponent {
       {
         filter: Object.assign({}, this.state.filter, newFilters),
       },
-      this._fetchUploadsAndAggregatesAsync
+      this._fetchUploads
     );
   };
 
   resetAndReload = (event) => {
     event.preventDefault();
     this.setState({ filter: {}, validationErrors: null }, () => {
-      this._fetchUploadsAndAggregatesAsync();
+      this._fetchUploads();
     });
   };
 
@@ -287,7 +256,7 @@ class Uploads extends React.PureComponent {
 
   changeOrderBy = (orderBy) => {
     this.setState({ orderBy: orderBy }, () => {
-      this._fetchUploadsAndAggregatesAsync();
+      this._fetchUploads();
     });
   };
 
@@ -370,17 +339,6 @@ class Uploads extends React.PureComponent {
             changeOrderBy={this.changeOrderBy}
             orderBy={this.state.orderBy}
             hasNextPage={this.state.hasNextPage}
-          />
-        )}
-
-        {this.state.loadingAggregates && !this.state.loadingUploads && (
-          <Loading />
-        )}
-
-        {!this.state.loadingAggregates && this.state.uploads && (
-          <DisplayUploadsAggregates
-            aggregates={this.state.aggregates}
-            total={this.state.total}
           />
         )}
 
@@ -516,6 +474,45 @@ class DisplayUploads extends React.PureComponent {
           </thead>
           <tfoot>
             <tr>
+              <td></td>
+              <td>
+                {this.props.canViewAll && (
+                  <input
+                    type="text"
+                    className="input"
+                    ref="user"
+                    placeholder="Filter user ..."
+                  />
+                )}
+              </td>
+              <td>
+                <input
+                  type="text"
+                  className="input"
+                  ref="size"
+                  placeholder="Filter size ..."
+                  style={{ width: 140 }}
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  className="input"
+                  ref="created_at"
+                  placeholder="Filter uploaded ..."
+                />
+              </td>
+              <td>
+                <input
+                  type="text"
+                  className="input"
+                  ref="completed_at"
+                  placeholder="Filter completed ..."
+                />
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4"></td>
               <td className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter Uploads
@@ -525,43 +522,8 @@ class DisplayUploads extends React.PureComponent {
                   onClick={this.resetFilter}
                   className="button"
                 >
-                  Reset Filter
+                  Reset Filters
                 </button>
-              </td>
-              <td>
-                {this.props.canViewAll && (
-                  <input
-                    type="text"
-                    className="input"
-                    ref="user"
-                    placeholder="filter..."
-                  />
-                )}
-              </td>
-              <td>
-                <input
-                  type="text"
-                  className="input"
-                  ref="size"
-                  placeholder="filter..."
-                  style={{ width: 140 }}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  className="input"
-                  ref="created_at"
-                  placeholder="filter..."
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  className="input"
-                  ref="completed_at"
-                  placeholder="filter..."
-                />
               </td>
             </tr>
           </tfoot>
@@ -625,73 +587,6 @@ class DisplayUploads extends React.PureComponent {
           />
         )}
       </form>
-    );
-  }
-}
-
-class DisplayUploadsAggregates extends React.PureComponent {
-  render() {
-    const { aggregates } = this.props;
-    return (
-      <nav className="level" style={{ marginTop: 60 }}>
-        <div className="level-item has-text-centered">
-          <div>
-            <p className="heading">Uploads</p>
-            <p className="title">
-              {aggregates.uploads.count
-                ? thousandFormat(aggregates.uploads.count)
-                : "n/a"}
-            </p>
-          </div>
-        </div>
-        <div className="level-item has-text-centered">
-          <div>
-            <p className="heading">Upload Sizes Sum</p>
-            <p className="title">
-              {aggregates.uploads.size.sum
-                ? formatFileSize(aggregates.uploads.size.sum)
-                : "n/a"}
-            </p>
-          </div>
-        </div>
-        <div className="level-item has-text-centered">
-          <div>
-            <p className="heading">Upload Sizes Avg</p>
-            <p className="title">
-              {aggregates.uploads.size.average
-                ? formatFileSize(aggregates.uploads.size.average)
-                : "n/a"}
-            </p>
-          </div>
-        </div>
-        <div className="level-item has-text-centered">
-          <div>
-            <p
-              className="heading"
-              title="Files with the uploads we know we can skip"
-            >
-              Sum Skipped Files
-            </p>
-            <p className="title">
-              {aggregates.uploads.skipped.sum
-                ? thousandFormat(aggregates.uploads.skipped.sum)
-                : "n/a"}
-            </p>
-          </div>
-        </div>
-        <div className="level-item has-text-centered">
-          <div>
-            <p className="heading" title="Files we definitely uploaded">
-              Sum Uploaded Files
-            </p>
-            <p className="title">
-              {aggregates.files.count
-                ? thousandFormat(aggregates.files.count)
-                : "n/a"}
-            </p>
-          </div>
-        </div>
-      </nav>
     );
   }
 }
