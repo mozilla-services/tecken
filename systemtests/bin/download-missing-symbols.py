@@ -23,17 +23,15 @@ import requests
 @click.pass_context
 def download_missing_symbols(ctx, base_url):
     csv_url = urljoin(base_url, "/missingsymbols.csv")
-    click.echo("Using: %s" % csv_url)
+    click.echo(f"Using: {csv_url}")
     headers = {"User-Agent": "tecken-systemtests"}
     resp = requests.get(csv_url, headers=headers)
     if resp.status_code != 200:
-        click.echo(
-            click.style("Error: %s %s" % (resp.status_code, resp.content), fg="red")
-        )
+        click.echo(click.style(f"Error: {resp.status_code} {resp.content}", fg="red"))
 
     else:
         lines = [line.strip() for line in resp.content.splitlines()]
-        click.echo(click.style("Success: Number of lines: %d" % len(lines), fg="green"))
+        click.echo(click.style(f"Success: Number of lines: {len(lines)}", fg="green"))
 
 
 if __name__ == "__main__":

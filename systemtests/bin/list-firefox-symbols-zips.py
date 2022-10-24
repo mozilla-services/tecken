@@ -102,7 +102,7 @@ def run(number, max_size):
         if 1_000 > size > max_size:
             continue
 
-        print("%s" % url)
+        click.echo(url)
         number -= 1
 
 

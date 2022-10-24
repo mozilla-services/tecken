@@ -32,7 +32,7 @@ SLEEP_TIMEOUT = 10
 class StdoutMetrics(BackendBase):
     def emit(self, record):
         click.echo(
-            "Elapsed time: %s %s %s" % (record.stat_type, record.key, record.value)
+            f"Elapsed time: {record.stat_type} {record.key} {record.value/1000:,.2f}s"
         )
 
 
@@ -70,7 +70,7 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
     for i in range(MAX_ATTEMPTS):
         click.echo(
             click.style(
-                "Uploading %s to %s (%s/%s) ..." % (url, api_url, i + 1, MAX_ATTEMPTS),
+                f"Uploading {url} to {api_url} ({i+1}/{MAX_ATTEMPTS}) ...",
                 fg="yellow",
             )
         )
@@ -85,7 +85,7 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
 
                 click.echo(
                     click.style(
-                        "Response: %s %r" % (resp.status_code, resp.content),
+                        f"Response: {resp.status_code} {resp.content!r}",
                         fg="yellow",
                     )
                 )
@@ -93,14 +93,14 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
                 if resp.status_code == 403:
                     # 403 means the auth token is bad which is not a retryable error
                     if resp.status_code == expect_code:
-                        click.echo(click.style("Success! %r" % resp.json(), fg="green"))
+                        click.echo(click.style(f"Success! {resp.json()!r}", fg="green"))
                         return
                     else:
                         ctx.exit(1)
                 elif resp.status_code == 429:
                     # 429 means we've been rate-limited, so wait and retry
                     click.echo(
-                        click.style("429--sleeping for %s" % SLEEP_TIMEOUT, fg="yellow")
+                        click.style(f"429--sleeping for {SLEEP_TIMEOUT}", fg="yellow")
                     )
                     time.sleep(SLEEP_TIMEOUT)
                 else:
@@ -111,12 +111,12 @@ def upload_symbols_by_download(ctx, base_url, auth_token, url, expect_code):
 
                     click.echo(
                         click.style(
-                            "Error: %s %s" % (resp.status_code, resp.content), fg="red"
+                            f"Error: {resp.status_code} {resp.content}", fg="red"
                         )
                     )
                     continue
         except Exception as exc:
-            click.echo(click.style("Unexpected error: %s" % exc, fg="red"))
+            click.echo(click.style(f"Unexpected error: {exc!r}", fg="red"))
 
     # We've retried multiple times and never hit the expected status code, so
     # this is a fail
