@@ -11,7 +11,7 @@ from django import http
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
-from django.db.models import Aggregate, Count, Q, Sum, Avg, F, Min
+from django.db.models import Aggregate, Count, Q, Sum, Avg, Min
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied, BadRequest
@@ -622,31 +622,16 @@ def _upload_files_content(request, qs):
         "batch_size": batch_size,
     }
 
+    # NOTE(willkg): This is the only way I could figure out to determine whether a
+    # queryset had filters applied to it. We check that and if there are filters, we do
+    # the count and if there are not filters, then we use BIG_NUMBER so we don't have to
+    # do a row count in the postgres table of the entire table.
+    if qs._has_filters().__dict__["children"]:
+        content["total"] = qs.count()
+    else:
+        content["total"] = BIG_NUMBER
+
     return content
-
-
-def _upload_files_aggregates(qs):
-    aggregates_numbers = qs.aggregate(
-        count=Count("id"), size_avg=Avg("size"), size_sum=Sum("size")
-    )
-    time_avg = qs.filter(completed_at__isnull=False).aggregate(
-        time_avg=Avg(F("completed_at") - F("created_at"))
-    )["time_avg"]
-    if time_avg is not None:
-        time_avg = time_avg.total_seconds()
-    aggregates = {
-        "files": {
-            "count": aggregates_numbers["count"],
-            "incomplete": qs.filter(completed_at__isnull=True).count(),
-            "size": {
-                "average": aggregates_numbers["size_avg"],
-                "sum": aggregates_numbers["size_sum"],
-            },
-            "time": {"average": time_avg},
-        }
-    }
-
-    return {"aggregates": aggregates, "total": aggregates["files"]["count"]}
 
 
 @metrics.timer_decorator("api", tags=["endpoint:upload_files"])
@@ -658,32 +643,8 @@ def upload_files(request):
         context = _upload_files_content(request, qs)
     except BadRequest as e:
         return http.JsonResponse({"errors": e.args[1]}, status=400)
-    aggregates = _upload_files_aggregates(qs)
-    context.update(aggregates)
-    context["total"] = aggregates["aggregates"]["files"]["count"]
 
     return http.JsonResponse(context)
-
-
-@metrics.timer_decorator("api", tags=["endpoint:upload_files_content"])
-@api_login_required
-@api_permission_required("upload.view_all_uploads")
-def upload_files_content(request):
-    qs = _upload_files_build_qs(request)
-    try:
-        content = _upload_files_content(request, qs)
-    except BadRequest as e:
-        return http.JsonResponse({"errors": e.args[1]}, status=400)
-    return http.JsonResponse(content)
-
-
-@metrics.timer_decorator("api", tags=["endpoint:upload_files_content_aggregates"])
-@api_login_required
-@api_permission_required("upload.view_all_uploads")
-def upload_files_aggregates(request):
-    qs = _upload_files_build_qs(request)
-    aggregates = _upload_files_aggregates(qs)
-    return http.JsonResponse(aggregates)
 
 
 @metrics.timer_decorator("api", tags=["endpoint:upload_file"])

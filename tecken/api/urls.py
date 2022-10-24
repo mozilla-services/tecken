@@ -9,12 +9,9 @@ from . import views
 
 app_name = "api"
 
-"""
-Note!
-The endpoints that start with a '_' are basically only relevant
-for the sake of the frontend. Meaning, it doesn't make sense to use
-them in your curl script, for example.
-"""
+# NOTE(peterbe): The endpoints that start with a '_' are basically only relevant for the
+# sake of the frontend. Meaning, it doesn't make sense to use them in your curl script,
+# for example.
 
 urlpatterns = [
     path("_auth/", views.auth, name="auth"),
@@ -36,16 +33,6 @@ urlpatterns = [
         name="uploads_created_backfilled",
     ),
     path("uploads/files/", views.upload_files, name="upload_files"),
-    path(
-        "uploads/files/content/",
-        views.upload_files_content,
-        name="upload_files_content",
-    ),
-    path(
-        "uploads/files/aggregates/",
-        views.upload_files_aggregates,
-        name="upload_files_aggregates",
-    ),
     path("uploads/files/file/<int:id>", views.upload_file, name="upload_file"),
     path("uploads/upload/<int:id>", views.upload, name="upload"),
     path("downloads/missing/", views.downloads_missing, name="downloads_missing"),
