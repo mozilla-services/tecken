@@ -94,22 +94,18 @@ class Files extends React.PureComponent {
   _fetchFiles = (updateHistory = true) => {
     var callback = (response) => {
       this.setState({
+        loadingFiles: false,
+        total: response.total,
         files: response.files,
         hasNextPage: response.has_next,
         batchSize: response.batch_size,
       });
-      this.setState({ loadingFiles: false });
     };
     var errorCallback = () => {
       this.setState({ loadingFiles: false });
     };
     this.setState({ loadingFiles: true });
-    this._fetch(
-      "/api/uploads/files/content/",
-      callback,
-      errorCallback,
-      updateHistory
-    );
+    this._fetch("/api/uploads/files/", callback, errorCallback, updateHistory);
   };
 
   filterOnAll = (event) => {

@@ -880,10 +880,10 @@ def test_upload_files(client, settings):
     response = client.get(url)
     assert response.status_code == 403
 
-    user = User.objects.create(username="peterbe", email="peterbe@example.com")
+    user = User.objects.create(username="user1", email="user1@example.com")
     user.set_password("secret")
     user.save()
-    assert client.login(username="peterbe", password="secret")
+    assert client.login(username="user1", password="secret")
 
     response = client.get(url)
     assert response.status_code == 403
@@ -903,7 +903,7 @@ def test_upload_files(client, settings):
 
     # Let's pretend there's an upload belonging to someone else
     upload = Upload.objects.create(
-        user=User.objects.create(email="her@example.com"), size=123_456
+        user=User.objects.create(email="user2@example.com"), size=123_456
     )
     # Confidence check
     assert upload.created_at
@@ -929,7 +929,8 @@ def test_upload_files(client, settings):
     all_ids = {file_upload1.id, file_upload2.id}
     assert {x["id"] for x in data["files"]} == all_ids
     assert data["batch_size"] == settings.API_FILES_BATCH_SIZE
-    assert data["total"] == 2
+    # No filters yields BIG_NUMBER total
+    assert data["total"] == 1000000
     # Check the 'upload' which should either be None or a dict
     for file_upload in data["files"]:
         if file_upload["id"] == file_upload1.id:
@@ -938,35 +939,6 @@ def test_upload_files(client, settings):
             assert file_upload["upload"]["created_at"]
         else:
             assert file_upload["upload"] is None
-    # Check that there are some aggregates
-    aggregates = data["aggregates"]
-    assert aggregates["files"]["count"] == 2
-    assert aggregates["files"]["incomplete"] == 2
-    assert aggregates["files"]["size"]["sum"] == 1234 + 100
-
-    url_content = reverse("api:upload_files_content")
-    # Must return only "content" data
-    response = client.get(url_content)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["files"]
-    assert data["batch_size"] == settings.API_FILES_BATCH_SIZE
-    assert data["has_next"] is False
-    assert "aggregates" not in data
-    assert "total" not in data
-
-    url_aggregates = reverse("api:upload_files_aggregates")
-    # Must return only "aggregates" data
-    response = client.get(url_aggregates)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["aggregates"]
-    assert "files" not in data
-    aggregates = data["aggregates"]
-    assert data["total"] == 2
-    assert aggregates["files"]["count"] == 2
-    assert aggregates["files"]["incomplete"] == 2
-    assert aggregates["files"]["size"]["sum"] == 1234 + 100
 
     # Filter by created_at and completed_at
     response = client.get(
@@ -1014,6 +986,97 @@ def test_upload_files(client, settings):
     assert response.status_code == 200
     data = response.json()
     assert [x["id"] for x in data["files"]] == [file_upload2.id]
+
+
+@pytest.mark.django_db
+def test_upload_files_count(client):
+    url = reverse("api:upload_files")
+    user = User.objects.create(username="user1", email="user1@example.com")
+    user.set_password("secret")
+    user.save()
+    permission = Permission.objects.get(codename="view_all_uploads")
+    user.user_permissions.add(permission)
+    assert client.login(username="user1", password="secret")
+
+    # Create data
+    upload = Upload.objects.create(user=user, size=123_456)
+    file_upload_1 = FileUpload.objects.create(
+        upload=upload,
+        size=1234,
+        bucket_name="symbols-private",
+        key="v0/bar.dll/A4FC12EFA5/foo.sym",
+    )
+    file_upload_2 = FileUpload.objects.create(
+        size=100,
+        key="v0/foo.pdb/deadbeef/foo.sym",
+        compressed=True,
+        bucket_name="symbols-public",
+    )
+
+    # Fetch uploads with no filters
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["files"] == [
+        {
+            "id": file_upload_2.id,
+            "key": "v0/foo.pdb/deadbeef/foo.sym",
+            "update": False,
+            "compressed": True,
+            "size": 100,
+            "bucket_name": "symbols-public",
+            "completed_at": None,
+            "created_at": ANY,
+            "upload": None,
+        },
+        {
+            "id": file_upload_1.id,
+            "key": "v0/bar.dll/A4FC12EFA5/foo.sym",
+            "update": False,
+            "compressed": False,
+            "size": 1234,
+            "bucket_name": "symbols-private",
+            "completed_at": None,
+            "created_at": ANY,
+            "upload": {
+                "id": upload.id,
+                "try_symbols": False,
+                "user": {"id": user.id, "email": "user1@example.com"},
+                "created_at": ANY,
+            },
+        },
+    ]
+
+    # No filters results in total being magic big "I didn't count this" number of
+    # 1,000,000
+    assert data["total"] == 1000000
+
+    # Fetch uploads with size
+    response = client.get(url, {"size": "> 100"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["files"] == [
+        {
+            "bucket_name": "symbols-private",
+            "completed_at": None,
+            "compressed": False,
+            "created_at": ANY,
+            "id": file_upload_1.id,
+            "key": "v0/bar.dll/A4FC12EFA5/foo.sym",
+            "size": 1234,
+            "update": False,
+            "upload": {
+                "created_at": ANY,
+                "id": upload.id,
+                "try_symbols": False,
+                "user": {
+                    "email": "user1@example.com",
+                    "id": user.id,
+                },
+            },
+        },
+    ]
+    assert data["total"] == 1
 
 
 @pytest.mark.django_db
