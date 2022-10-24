@@ -138,27 +138,27 @@ def make_stacks_save(ctx, outputdir, crashids):
             param_hint="outputdir",
         )
 
-    print("Creating stacks and saving them to '%s'..." % outputdir)
+    click.echo(f"Creating stacks and saving them to {outputdir!r} ...")
     for crashid in crashids:
         crashid = crashid.strip()
         if crashid.startswith("#"):
             continue
 
-        print("%s..." % crashid)
+        print(f"{crashid} ...")
         crash_report = fetch_crash_report(crashid)
         try:
             data = build_stack(crash_report)
         except Exception as exc:
-            print(f"Exception thrown: {exc!r}")
+            click.echo(f"Exception thrown: {exc!r}")
             data = None
 
         if not data or not data["stacks"][0]:
-            print("Nothing to save.")
+            click.echo("Nothing to save.")
             continue
         with open(os.path.join(outputdir, "%s.json" % crashid), "w") as fp:
             json.dump(data, fp, indent=2)
 
-    print("Done!")
+    click.echo("Done!")
 
 
 if __name__ == "__main__":

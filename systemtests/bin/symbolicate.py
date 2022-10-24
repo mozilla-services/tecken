@@ -55,7 +55,7 @@ def request_stack(url, payload, api_version, is_debug):
         # The server returned something "bad", so print out the things that
         # would be helpful in debugging the issue.
         click.echo(
-            click.style("Error: Got status code %s" % resp.status_code, fg="yellow")
+            click.style(f"Error: Got status code {resp.status_code}", fg="yellow")
         )
         click.echo(click.style("Request payload:", fg="yellow"))
         click.echo(payload)
@@ -115,7 +115,7 @@ def print_stack(ctx, api_url, api_version, debug, stackfile):
     try:
         payload = json.loads(data)
     except json.decoder.JSONDecodeError as jde:
-        click.echo("Error: request is not valid JSON: %r\n%r" % (jde, data))
+        click.echo(f"Error: request is not valid JSON: {jde!r}\n{data!r}")
         return
 
     response_data = request_stack(api_url, payload, api_version, debug)
@@ -164,9 +164,9 @@ def verify_symbolication(ctx, api_url, api_version, stackfile):
         )
 
     if stackfile:
-        click.echo(click.style("Working on stackfile %s..." % stackfile, fg="yellow"))
+        click.echo(click.style(f"Working on stackfile {stackfile} ...", fg="yellow"))
     else:
-        click.echo(click.style("Working on stdin...", fg="yellow"))
+        click.echo(click.style("Working on stdin ...", fg="yellow"))
 
     payload = json.loads(data)
     response_data = request_stack(api_url, payload, api_version, is_debug=True)
@@ -175,11 +175,11 @@ def verify_symbolication(ctx, api_url, api_version, stackfile):
     schema = load_schema(path)
     try:
         jsonschema.validate(response_data, schema)
-        click.echo(click.style("Response is valid v%s!" % api_version, fg="green"))
+        click.echo(click.style(f"Response is valid v{api_version}!", fg="green"))
     except jsonschema.exceptions.ValidationError as exc:
         click.echo(json.dumps(response_data, indent=2))
         click.echo(
-            click.style("Response is invalid v%s! %s" % (api_version, exc), fg="red")
+            click.style(f"Response is invalid v{api_version}! {exc!r}", fg="red")
         )
         ctx.exit(1)
 

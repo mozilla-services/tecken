@@ -19,7 +19,7 @@ import requests
 class StdoutMetrics(BackendBase):
     def emit(self, record):
         click.echo(
-            "Elapsed time: %s %s %s" % (record.stat_type, record.key, record.value)
+            f"Elapsed time: {record.stat_type} {record.key} {record.value/1000:,.2f}s"
         )
 
 
@@ -69,7 +69,7 @@ def download_sym_files(base_url, csv_file):
 
             # Compute url
             url = urljoin(base_url, parts[0])
-            click.echo(click.style("Working on %s ..." % url, fg="yellow"))
+            click.echo(click.style(f"Working on {url} ...", fg="yellow"))
 
             # Download the file
             headers = {"User-Agent": "tecken-systemtests"}
@@ -79,7 +79,7 @@ def download_sym_files(base_url, csv_file):
             if resp.status_code != int(parts[1]):
                 click.echo(
                     click.style(
-                        "FAIL: Status code: %s != %s" % (resp.status_code, parts[1]),
+                        f"FAIL: Status code: {resp.status_code} != {parts[1]}",
                         fg="red",
                     )
                 )
