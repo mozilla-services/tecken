@@ -148,7 +148,7 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
         sym_dir = os.path.join(tmpdirname, "syms")
         tmp_zip_path = os.path.join(tmpdirname, zip_filename)
 
-        sym_files_url = urljoin(SYMBOLS_URL, "/api/uploads/files/content/")
+        sym_files_url = urljoin(SYMBOLS_URL, "/api/uploads/files/")
         sym_files_generator = get_sym_files(auth_token, sym_files_url, start_page)
         for sym_filename, sym_size in sym_files_generator:
             if sym_filename.endswith(".0"):
