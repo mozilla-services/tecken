@@ -5,6 +5,7 @@
  */
 import React from "react";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
 
 import {
   Loading,
@@ -129,6 +130,8 @@ class Files extends React.PureComponent {
   };
 
   render() {
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayFullStr = format(new Date(), "yyyy-MM-ddTHH:MM.SSS'Z'");
     return (
       <div>
         {store.hasPermission("upload.view_all_uploads") ? (
@@ -171,6 +174,8 @@ class Files extends React.PureComponent {
             hasNextPage={this.state.hasNextPage}
           />
         )}
+
+        <ExamplesOfFiltering todayStr={todayStr} todayFullStr={todayFullStr} />
       </div>
     );
   }
@@ -350,3 +355,45 @@ class DisplayFiles extends React.PureComponent {
     );
   }
 }
+
+const ExamplesOfFiltering = ({ todayStr, todayFullStr }) => (
+  <article className="message" style={{ marginTop: 50 }}>
+    <div className="message-header">
+      <p>Examples of Filtering</p>
+      {/* <button className="delete" aria-label="delete" /> */}
+      {/* <button className="button is-small">open</button> */}
+    </div>
+    <div className="message-body">
+      <ul>
+        <li>
+          <b>Key:</b> <code>xul.pdb</code> to filter all files with "xul.pdb" in
+          the key.
+        </li>
+        <li>
+          <b>Size:</b> <code>&gt;1mb</code> to filter all files <i>bigger</i>{" "}
+          than one megabyte.
+        </li>
+        <li>
+          <b>Bucket:</b> <code>publicbucket</code> to filter files put in the
+          public bucket.
+        </li>
+        <li>
+          <b>Uploaded:</b> <code>{todayStr}</code> to filter all files uploaded
+          any time during this day (in UTC).
+        </li>
+        <li>
+          <b>Uploaded:</b>{" "}
+          <code>
+            &gt;=
+            {todayFullStr}
+          </code>{" "}
+          to filter all files uploaded after this ISO date (in UTC).
+        </li>
+        <li>
+          <b>Uploaded:</b> <code>today</code> (or <code>yesterday</code>) to
+          filter all files uploaded after yesterday's UTC daybreak.
+        </li>
+      </ul>
+    </div>
+  </article>
+);
