@@ -50,11 +50,11 @@ def build_stack(data):
     :returns: Symbolicate API payload
 
     """
-    json_dump = data.get("json_dump", {})
+    json_dump = data.get("json_dump") or {}
     if not json_dump:
         return {}
 
-    crashing_thread = json_dump.get("crashing_thread", {})
+    crashing_thread = json_dump.get("crashing_thread") or {}
     if not crashing_thread:
         return {}
 
@@ -67,7 +67,7 @@ def build_stack(data):
         # Add the module information to the map
         modules.append((debug_file, debug_id))
         # Keep track of which modules are at which index
-        modules_list.append(module["filename"])
+        modules_list.append(module.get("filename") or "unknown")
 
     stack = []
     for frame in crashing_thread.get("frames") or []:
@@ -76,7 +76,7 @@ def build_stack(data):
         else:
             # -1 indicates the module is unknown
             module_index = -1
-        if "module_offset" in frame:
+        if frame.get("module_offset"):
             module_offset = int(frame["module_offset"], base=16)
         else:
             # -1 indicates the module_offset is unknown
