@@ -492,9 +492,6 @@ BROKEN_EVENT = {
     "environment": "production",
     "server_name": "testnode",
     "sdk": {
-        "name": "sentry.python",
-        "version": "1.9.10",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.9.10"}],
         "integrations": [
             "argv",
             "atexit",
@@ -505,6 +502,9 @@ BROKEN_EVENT = {
             "stdlib",
             "threading",
         ],
+        "name": "sentry.python",
+        "packages": [{"name": "pypi:sentry-sdk", "version": "1.10.1"}],
+        "version": "1.10.1",
     },
     "platform": "python",
 }
