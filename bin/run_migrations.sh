@@ -26,6 +26,7 @@ fi
 echo "starting run_migrations.sh: $(date)"
 
 # Run Django migrations
-${PRECMD} python manage.py migrate --no-input
+# FIXME(willkg): migrations temporarily disabled
+# ${PRECMD} python manage.py migrate --no-input
 
 echo "done migrations: $(date)"
