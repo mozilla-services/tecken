@@ -67,9 +67,9 @@ boltons==21.0.0 \
 boto3==1.24.87 \
     --hash=sha256:bcc579e801774cb2c7dda87ff985feda1ae7e10591d11ef37526363139138bd4
     # via -r requirements.in
-botocore==1.27.87 \
-    --hash=sha256:216de9751116d0d1cc3901e26d95a5c9a30ecb6973ae6147af1cf504858d845a \
-    --hash=sha256:c4cbd22056ace4c7aa99e62e8ae629865ab80cc8bbf7c6d68ccf0f768f0034b6
+botocore==1.27.96 \
+    --hash=sha256:e41a81a18511f2f9181b2a9ab302a55c0effecccbef846c55aad0c47bfdbefb9 \
+    --hash=sha256:fc0a13ef6042e890e361cf408759230f8574409bb51f81740d2e5d8ad5d1fbea
     # via
     #   -r requirements.in
     #   boto3
