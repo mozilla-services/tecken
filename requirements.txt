@@ -238,6 +238,10 @@ everett==3.0.0 \
     --hash=sha256:43c208e09ef53adb8e8739ad96999893a2c0a27753e33f89be346e916e71efb0 \
     --hash=sha256:80ce592168ce50643711eceff3ec94fdeec755f228de746f20b1bfc94ea20682
     # via -r requirements.in
+exceptiongroup==1.0.0 \
+    --hash=sha256:2ac84b496be68464a2da60da518af3785fff8b7ec0d090a581604bc870bdee41 \
+    --hash=sha256:affbabf13fb6e98988c38d9c5650e701569fe3c1de3233cfb61c5f33774690ad
+    # via pytest
 falcon==3.1.0 \
     --hash=sha256:0044bd2c161f2b5c27ca5a0068e40bbeee560eb957a6ba01f9c1bb7439f6ab19 \
     --hash=sha256:09dc5f10878565708dc9e58e62e9f2dfee5162a1ea992cb62582ffdacf543ec2 \
@@ -294,10 +298,6 @@ idna==3.3 \
 imagesize==1.3.0 \
     --hash=sha256:1db2f82529e53c3e929e8926a1fa9235aa82d0bd0c580359c67ec31b2fddaa8c \
     --hash=sha256:cd1750d452385ca327479d45b64d9c7729ecf0b3969a58148298c77092261f9d
-    # via sphinx
-importlib-metadata==5.0.0 \
-    --hash=sha256:da31db32b304314d044d3c12c79bd59e307889b287ad12ff387b3500835fc2ab \
-    --hash=sha256:ddb0e35065e8938f867ed4928d0ae5bf2a53b7773871bfe6bcc7e4fcdc7dea43
     # via sphinx
 iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
@@ -494,10 +494,6 @@ psycopg2==2.9.3 \
     --hash=sha256:cb10d44e6694d763fa1078a26f7f6137d69f555a78ec85dc2ef716c37447e4b2 \
     --hash=sha256:d3ca6421b942f60c008f81a3541e8faf6865a28d5a9b48544b0ee4f40cac7fca
     # via -r requirements.in
-py==1.11.0 \
-    --hash=sha256:51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719 \
-    --hash=sha256:607c53218732647dff4acdfcd50cb62615cedf612e72d1724fb1a0cc6405b378
-    # via pytest
 pycodestyle==2.9.0 \
     --hash=sha256:289cdc0969d589d90752582bef6dff57c5fbc6949ee8b013ad6d6449a8ae9437 \
     --hash=sha256:beaba44501f89d785be791c9462553f06958a221d166c64e1f107320f839acc2
@@ -545,9 +541,9 @@ pyrsistent==0.18.0 \
     --hash=sha256:f3ef98d7b76da5eb19c37fda834d50262ff9167c65658d1d8f974d2e4d90676b \
     --hash=sha256:f4c8cabb46ff8e5d61f56a037974228e978f26bfefce4f61a4b1ac0ba7a2ab72
     # via jsonschema
-pytest==7.1.3 \
-    --hash=sha256:1377bda3466d70b55e3f5cecfa55bb7cfcf219c7964629b967c37cf0bda818b7 \
-    --hash=sha256:4f365fec2dff9c1162f834d9f18af1ba13062db0c708bf7b946f8a5c76180c39
+pytest==7.2.0 \
+    --hash=sha256:892f933d339f068883b6fd5a459f03d85bfcb355e4981e146d2c7616c21fef71 \
+    --hash=sha256:c4014eb40e10f11f355ad4e3c2fb2c6c6d1919c73f3b5a433de4708202cade59
     # via
     #   -r requirements.in
     #   pytest-django
@@ -674,10 +670,6 @@ tomli==1.2.3 \
     #   build
     #   pep517
     #   pytest
-typing-extensions==4.3.0 \
-    --hash=sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02 \
-    --hash=sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6
-    # via black
 ujson==5.5.0 \
     --hash=sha256:0762a4fdf86e01f3f8d8b6b7158d01fdd870799ff3f402b676e358fcd879e7eb \
     --hash=sha256:10095160dbe6bba8059ad6677a01da251431f4c68041bf796dcac0956b34f8f7 \
@@ -780,10 +772,6 @@ whitenoise==6.2.0 \
     --hash=sha256:8e9c600a5c18bd17655ef668ad55b5edf6c24ce9bdca5bf607649ca4b1e8e2c2 \
     --hash=sha256:8fa943c6d4cd9e27673b70c21a07b0aa120873901e099cd46cab40f7cc96d567
     # via -r requirements.in
-zipp==3.8.1 \
-    --hash=sha256:05b45f1ee8f807d0cc928485ca40a07cb491cf092ff587c0df9cb1fd154848d2 \
-    --hash=sha256:47c40d7fe183a6f21403a199b3e4192cca5774656965b0a4988ad2f8feb5f009
-    # via importlib-metadata
 
 # WARNING: The following packages were not pinned, but pip requires them to be
 # pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
