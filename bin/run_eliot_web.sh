@@ -9,6 +9,8 @@
 : "${ELIOT_GUNICORN_WORKERS:=1}"
 : "${ELIOT_GUNICORN_TIMEOUT:=300}"
 : "${ELIOT_GUNICORN_CMD_PREFIX:=}"
+: "${ELIOT_GUNICORN_MAX_REQUESTS:=10000}"
+: "${ELIOT_GUNICORN_MAX_REQUESTS_JITTER:=1000}"
 
 (set -o posix; set) | grep ELIOT_GUNICORN
 
@@ -18,6 +20,7 @@ ${ELIOT_GUNICORN_CMD_PREFIX} gunicorn \
     --bind 0.0.0.0:"${ELIOT_GUNICORN_PORT}" \
     --timeout "${ELIOT_GUNICORN_TIMEOUT}" \
     --workers "${ELIOT_GUNICORN_WORKERS}" \
-    --preload \
+    --max-requests="${ELIOT_GUNICORN_MAX_REQUESTS}" \
+    --max-requests-jitter="${ELIOT_GUNICORN_MAX_REQUESTS_JITTER}" \
     --access-logfile - \
     eliot.wsgi:application
