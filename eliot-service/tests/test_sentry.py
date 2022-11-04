@@ -12,7 +12,9 @@ from eliot.app import get_app, count_sentry_scrub_error
 
 
 # NOTE(willkg): If this changes, we should update it and look for new things that should
-# be scrubbed. Use ANY for things that change between tests.
+# be scrubbed. Use ANY for things that change between tests like timestamps, source code
+# data (line numbers, file names, post/pre_context), event ids, build ids, versions,
+# etc.
 BROKEN_EVENT = {
     "breadcrumbs": {
         "values": [
@@ -123,8 +125,8 @@ BROKEN_EVENT = {
             "threading",
         ],
         "name": "sentry.python",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.10.1"}],
-        "version": "1.10.1",
+        "packages": [{"name": "pypi:sentry-sdk", "version": ANY}],
+        "version": ANY,
     },
     "server_name": "testnode",
     "timestamp": ANY,
