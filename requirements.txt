@@ -62,12 +62,13 @@ boltons==21.0.0 \
     --hash=sha256:65e70a79a731a7fe6e98592ecfb5ccf2115873d01dbc576079874629e5c90f13 \
     --hash=sha256:b9bb7b58b2b420bbe11a6025fdef6d3e5edc9f76a42fb467afe7ca212ef9948b
     # via -r requirements.in
-boto3==1.24.87 \
-    --hash=sha256:bcc579e801774cb2c7dda87ff985feda1ae7e10591d11ef37526363139138bd4
+boto3==1.26.2 \
+    --hash=sha256:a60b71a41b257f15662d8bec9fa32db4a9558bf9b032d1a6957e8bf9f21324c8 \
+    --hash=sha256:db37be1a765a06d2fea6ed4ca27f71d710ba1be6982574419dcd2a78020077e0
     # via -r requirements.in
-botocore==1.27.96 \
-    --hash=sha256:e41a81a18511f2f9181b2a9ab302a55c0effecccbef846c55aad0c47bfdbefb9 \
-    --hash=sha256:fc0a13ef6042e890e361cf408759230f8574409bb51f81740d2e5d8ad5d1fbea
+botocore==1.29.2 \
+    --hash=sha256:8a8c28dc22c241faae7ed09a67481e82972c4d632020b99598a8e81e8e07ae6b \
+    --hash=sha256:e170dd237b976fe9d9ae8d8bea7248dbc6d3664ed5fc142f59b41c2078e9220f
     # via
     #   -r requirements.in
     #   boto3
@@ -232,9 +233,9 @@ encore==0.8.0 \
     --hash=sha256:74fd648f8119f4745e3dba750f7d1b5676f67df3606a408da0885b4b5a4cc436 \
     --hash=sha256:adfe42680bcb40edc99501f8d4aff169d38844b02fbae465f1f363bd39403454
     # via -r requirements.in
-everett==3.0.0 \
-    --hash=sha256:43c208e09ef53adb8e8739ad96999893a2c0a27753e33f89be346e916e71efb0 \
-    --hash=sha256:80ce592168ce50643711eceff3ec94fdeec755f228de746f20b1bfc94ea20682
+everett==3.1.0 \
+    --hash=sha256:46175da5bcb06c193aa129e59714bca981344ff067c3a8bc2e625bc0b3dc01f6 \
+    --hash=sha256:db13891b849e45e54faea93ee79881d12458c5378f5b9b7f806eeff03ce1de3c
     # via -r requirements.in
 exceptiongroup==1.0.0 \
     --hash=sha256:2ac84b496be68464a2da60da518af3785fff8b7ec0d090a581604bc870bdee41 \
@@ -322,9 +323,9 @@ josepy==1.11.0 \
     --hash=sha256:40ef59f2f537ec01bafe698dad66281f6ccf4642f747411647db403ab8fa9a2d \
     --hash=sha256:8473f6674497383627621b40aacb4955afdd4e7b205dca45a68486aa989bab60
     # via mozilla-django-oidc
-jsonschema==4.16.0 \
-    --hash=sha256:165059f076eff6971bae5b742fc029a7b4ef3f9bcf04c14e4776a7605de14b23 \
-    --hash=sha256:9e74b8f9738d6a946d70705dc692b74b5429cd0960d58e79ffecfc43b2221eb9
+jsonschema==4.17.0 \
+    --hash=sha256:5bfcf2bca16a087ade17e02b282d34af7ccd749ef76241e7f9bd7c0cb8a9424d \
+    --hash=sha256:f660066c3966db7d6daeaea8a75e0b68237a48e51cf49882087757bb59916248
     # via -r requirements.in
 kombu==5.2.3 \
     --hash=sha256:81a90c1de97e08d3db37dbf163eaaf667445e1068c98bfd89f051a40e9f6dbbd \
