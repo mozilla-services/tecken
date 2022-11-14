@@ -147,6 +147,7 @@ def parse_sym_file(debug_filename, debug_id, data, tmpdir):
         except (
             symbolic.ObjectErrorUnknown,
             symbolic.ObjectErrorUnsupportedObject,
+            symbolic.SymCacheErrorBadDebugFile,
         ):
             # Invalid symcache
             LOGGER.exception(f"error with SYM file: {debug_filename} {debug_id}")
