@@ -74,8 +74,15 @@ class BadDebugIDError(Exception):
 
 
 class ParseSymFileError(Exception):
-    def __init__(self, reason_code):
-        super().__init__(reason_code)
+    """Error thrown when there are problems parsing the sym file
+
+    :arg reason_code: a string denoting a reason code for metrics purposes
+    :arg msg: the exception message
+
+    """
+
+    def __init__(self, reason_code, msg):
+        super().__init__(f"{reason_code}: {msg}")
         self.reason_code = reason_code
 
 
@@ -132,7 +139,10 @@ def parse_sym_file(debug_filename, debug_id, data, tmpdir):
             LOGGER.exception(
                 f"error looking up debug id in SYM file: {debug_filename} {debug_id}"
             )
-            raise ParseSymFileError("sym_debug_id_lookup_error")
+            raise ParseSymFileError(
+                reason_code="sym_debug_id_lookup_error",
+                msg="error looking up debug id in sym file {debug_filename} {debug_id}",
+            )
 
         except (
             symbolic.ObjectErrorUnknown,
@@ -140,14 +150,20 @@ def parse_sym_file(debug_filename, debug_id, data, tmpdir):
         ):
             # Invalid symcache
             LOGGER.exception(f"error with SYM file: {debug_filename} {debug_id}")
-            raise ParseSymFileError("sym_malformed")
+            raise ParseSymFileError(
+                reason_code="sym_malformed",
+                msg="error with sym file {debug_filename} {debug_id}",
+            )
 
         finally:
             os.unlink(temp_fp.name)
 
-    except OSError:
+    except OSError as exc:
         LOGGER.exception("error creating tmp file for SYM file")
-        raise ParseSymFileError("sym_tmp_file_error")
+        raise ParseSymFileError(
+            reason_code="sym_tmp_file_error",
+            msg=f"error creating tmp file {exc}",
+        )
 
     return symcache
 

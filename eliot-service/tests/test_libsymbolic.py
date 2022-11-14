@@ -82,7 +82,7 @@ def test_parse_sym_file_malformed(tmpdir):
     with pytest.raises(ParseSymFileError) as excinfo:
         parse_sym_file(debug_filename, debug_id, data, tmpdir)
 
-    assert str(excinfo.value) == "sym_malformed"
+    assert excinfo.value.reason_code == "sym_malformed"
 
 
 def test_parse_sym_file_lookup_error(tmpdir):
@@ -94,4 +94,4 @@ def test_parse_sym_file_lookup_error(tmpdir):
     with pytest.raises(ParseSymFileError) as excinfo:
         parse_sym_file(debug_filename, debug_id, data, tmpdir)
 
-    assert str(excinfo.value) == "sym_debug_id_lookup_error"
+    assert excinfo.value.reason_code == "sym_debug_id_lookup_error"
