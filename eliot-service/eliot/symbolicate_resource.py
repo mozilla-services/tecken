@@ -283,13 +283,13 @@ class SymbolicateBase:
         except BadDebugIDError:
             # If the debug id isn't valid, then there's nothing to parse, so
             # log something, emit a metric, and move on
-            LOGGER.error(f"debug_id parse error: {debug_id!r}")
+            LOGGER.exception(f"debug_id parse error: {debug_id!r}")
             METRICS.incr(
                 "eliot.symbolicate.parse_sym_file.error", tags=["reason:bad_debug_id"]
             )
 
         except ParseSymFileError as psfe:
-            LOGGER.error(f"sym file parse error: {debug_filename} {debug_id!r}")
+            LOGGER.exception(f"sym file parse error: {debug_filename} {debug_id!r}")
             METRICS.incr(
                 "eliot.symbolicate.parse_sym_file.error",
                 tags=[f"reason:{psfe.reason_code}"],
