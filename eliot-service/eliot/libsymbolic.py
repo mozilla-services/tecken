@@ -8,8 +8,6 @@ Utilities for using symbolic library.
 
 from io import BytesIO
 import logging
-import os
-import tempfile
 
 import symbolic
 
@@ -103,13 +101,12 @@ def convert_debug_id(debug_id):
         raise BadDebugIDError("invalid_identifier")
 
 
-def parse_sym_file(debug_filename, debug_id, data, tmpdir):
+def parse_sym_file(debug_filename, debug_id, data):
     """Convert sym file to symcache file
 
     :arg debug_filename: the debug filename
     :arg debug_id: the debug id
     :arg data: bytes
-    :arg tmpdir: the temp directory to use
 
     :returns: symcache or None
 
@@ -122,48 +119,29 @@ def parse_sym_file(debug_filename, debug_id, data, tmpdir):
     sdebug_id = convert_debug_id(debug_id)
 
     try:
-        temp_fp = tempfile.NamedTemporaryFile(
-            mode="w+b", suffix=".sym", dir=tmpdir, delete=False
+        archive = symbolic.Archive.from_bytes(data)
+        obj = archive.get_object(debug_id=sdebug_id)
+        symcache = obj.make_symcache()
+
+    except LookupError:
+        LOGGER.exception(
+            f"error looking up debug id in SYM file: {debug_filename} {debug_id}"
         )
-        try:
-            temp_fp.write(data)
-            temp_fp.close()
-            LOGGER.debug(
-                f"created temp file {debug_filename} {debug_id} {temp_fp.name}"
-            )
-            archive = symbolic.Archive.open(temp_fp.name)
-            obj = archive.get_object(debug_id=sdebug_id)
-            symcache = obj.make_symcache()
-
-        except LookupError:
-            LOGGER.exception(
-                f"error looking up debug id in SYM file: {debug_filename} {debug_id}"
-            )
-            raise ParseSymFileError(
-                reason_code="sym_debug_id_lookup_error",
-                msg="error looking up debug id in sym file {debug_filename} {debug_id}",
-            )
-
-        except (
-            symbolic.ObjectErrorUnknown,
-            symbolic.ObjectErrorUnsupportedObject,
-            symbolic.SymCacheErrorBadDebugFile,
-        ):
-            # Invalid symcache
-            LOGGER.exception(f"error with SYM file: {debug_filename} {debug_id}")
-            raise ParseSymFileError(
-                reason_code="sym_malformed",
-                msg="error with sym file {debug_filename} {debug_id}",
-            )
-
-        finally:
-            os.unlink(temp_fp.name)
-
-    except OSError as exc:
-        LOGGER.exception("error creating tmp file for SYM file")
         raise ParseSymFileError(
-            reason_code="sym_tmp_file_error",
-            msg=f"error creating tmp file {exc}",
+            reason_code="sym_debug_id_lookup_error",
+            msg="error looking up debug id in sym file {debug_filename} {debug_id}",
+        )
+
+    except (
+        symbolic.ObjectErrorUnknown,
+        symbolic.ObjectErrorUnsupportedObject,
+        symbolic.SymCacheErrorBadDebugFile,
+    ):
+        # Invalid symcache
+        LOGGER.exception(f"error with SYM file: {debug_filename} {debug_id}")
+        raise ParseSymFileError(
+            reason_code="sym_malformed",
+            msg="error with sym file {debug_filename} {debug_id}",
         )
 
     return symcache

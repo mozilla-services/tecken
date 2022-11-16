@@ -74,24 +74,24 @@ def test_convert_debug_id_bad():
         convert_debug_id("bad_id")
 
 
-def test_parse_sym_file_malformed(tmpdir):
+def test_parse_sym_file_malformed():
     debug_filename = "testproj"
     debug_id = "D48F191186D67E69DF025AD71FB91E1F0"
     data = b"this is junk"
 
     with pytest.raises(ParseSymFileError) as excinfo:
-        parse_sym_file(debug_filename, debug_id, data, tmpdir)
+        parse_sym_file(debug_filename, debug_id, data)
 
     assert excinfo.value.reason_code == "sym_malformed"
 
 
-def test_parse_sym_file_lookup_error(tmpdir):
+def test_parse_sym_file_lookup_error():
     debug_filename = "testproj"
     # This is the wrong debugid for that sym file
     debug_id = "000000000000000000000000000000000"
     data = TESTPROJ_SYM.encode("utf-8")
 
     with pytest.raises(ParseSymFileError) as excinfo:
-        parse_sym_file(debug_filename, debug_id, data, tmpdir)
+        parse_sym_file(debug_filename, debug_id, data)
 
     assert excinfo.value.reason_code == "sym_debug_id_lookup_error"
