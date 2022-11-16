@@ -12,12 +12,6 @@
 : "${ELIOT_GUNICORN_MAX_REQUESTS:=0}"
 : "${ELIOT_GUNICORN_MAX_REQUESTS_JITTER:=0}"
 
-# NOTE(willkg): overrides for memory problem situation--these are temporary
-# stopgap values. bug #1793984
-ELIOT_GUNICORN_MAX_REQUESTS=750
-ELIOT_GUNICORN_MAX_REQUESTS_JITTER=100
-ELIOT_GUNICORN_WORKERS=5
-
 (set -o posix; set) | grep ELIOT_GUNICORN
 
 cd /app/eliot-service/
