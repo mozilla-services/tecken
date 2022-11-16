@@ -13,7 +13,6 @@ from eliot.downloader import SymbolFileDownloader
 from eliot.symbolicate_resource import (
     InvalidModules,
     InvalidStacks,
-    ModuleInfo,
     DebugStats,
     SymbolicateBase,
     validate_modules,
@@ -340,22 +339,12 @@ class TestSymbolicateBase:
         cache_key = "%s/%s.symc" % (debug_filename, debug_id.upper())
         cache.set(cache_key, data)
 
-        module_info = ModuleInfo(
-            filename=debug_filename,
-            debug_filename=debug_filename,
-            debug_id=debug_id,
-            has_symcache=None,
-            symcache=None,
-        )
-
         debug_stats = DebugStats()
 
         # Get the symcache which should be in the cache and make sure it's the
         # same one we put in
-        base.get_symcache(module_info, debug_stats)
-        assert module_info.symcache is not None
-        assert module_info.symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
-
+        symcache, filename = base.get_symcache(debug_filename, debug_id, debug_stats)
+        assert symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
         assert debug_stats.data["cache_lookups"] == {"count": 1, "hits": 1, "time": ANY}
 
     def test_get_symcache_not_in_cache(self, requestsmock, tmpcachedir, tmpdir):
@@ -377,22 +366,12 @@ class TestSymbolicateBase:
             content=data,
         )
 
-        module_info = ModuleInfo(
-            filename=debug_filename,
-            debug_filename=debug_filename,
-            debug_id=debug_id,
-            has_symcache=None,
-            symcache=None,
-        )
-
         debug_stats = DebugStats()
 
         # Get the symcache which should be in the cache and make sure it's the
         # same one we put in
-        base.get_symcache(module_info, debug_stats)
-        assert module_info.symcache is not None
-        assert module_info.symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
-
+        symcache, filename = base.get_symcache(debug_filename, debug_id, debug_stats)
+        assert symcache.debug_id == "d48f1911-86d6-7e69-df02-5ad71fb91e1f"
         assert debug_stats.data["cache_lookups"] == {"count": 1, "hits": 0, "time": ANY}
 
     def test_symbolicate(self, requestsmock, tmpcachedir, tmpdir):
@@ -509,11 +488,9 @@ class TestSymbolicateBase:
 
 
 class TestSymbolicateV4:
-    PATH = "/symbolicate/v4"
-
     def test_cors(self, client):
         result = client.simulate_options(
-            self.PATH,
+            "/symbolicate/v4",
             headers={
                 "Origin": "example.com",
                 "Access-Control-Request-Method": "POST",
@@ -539,18 +516,18 @@ class TestSymbolicateV4:
 
     def test_bad_request(self, client):
         # Wrong HTTP method
-        result = client.simulate_get(self.PATH)
+        result = client.simulate_get("/symbolicate/v4")
         assert result.status_code == 405
         assert result.headers["Content-Type"].startswith("application/json")
 
         # No data raises an HTTP 400
-        result = client.simulate_post(self.PATH)
+        result = client.simulate_post("/symbolicate/v4")
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
         assert result.content == b'{"title": "Payload is not valid JSON"}'
 
         # Payload is not application/json
-        result = client.simulate_post(self.PATH, params={"data": "wrongtype"})
+        result = client.simulate_post("/symbolicate/v4", params={"data": "wrongtype"})
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
         assert result.content == b'{"title": "Payload is not valid JSON"}'
@@ -561,24 +538,18 @@ class TestSymbolicateV4:
         )
 
         # No data at all
-        result = client.simulate_post(self.PATH, json={})
+        result = client.simulate_post("/symbolicate/v4", json={})
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
-        assert (
-            result.content
-            == b'{"title": "job 0 has invalid stacks: no stacks specified"}'
-        )
+        assert result.content == b'{"title": "job 0 is invalid: no stacks specified"}'
 
         # No stacks specified
         result = client.simulate_post(
-            self.PATH, json={"modules": [["xul.so", "ABCDE"]]}
+            "/symbolicate/v4", json={"modules": [["xul.so", "ABCDE"]]}
         )
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
-        assert (
-            result.content
-            == b'{"title": "job 0 has invalid stacks: no stacks specified"}'
-        )
+        assert result.content == b'{"title": "job 0 is invalid: no stacks specified"}'
 
     def test_symbolication_module_missing_and_not_checked(self, requestsmock, client):
         """Test symbolication when one module returns 404 and one is not checked"""
@@ -588,7 +559,7 @@ class TestSymbolicateV4:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v4",
             json={
                 "stacks": [[[0, 1000], [0, 1020]]],
                 "memoryMap": [
@@ -614,7 +585,7 @@ class TestSymbolicateV4:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v4",
             json={
                 "stacks": [[[0, int("5380", 16)]]],
                 "memoryMap": [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]],
@@ -638,7 +609,7 @@ class TestSymbolicateV4:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v4",
             json={
                 "stacks": [[[0, int("7a40", 16)]]],
                 "memoryMap": [["testproj", "0905AE80CEE75A33E3CAB61C274274DE0"]],
@@ -663,7 +634,7 @@ class TestSymbolicateV4:
 
         with metricsmock as mm:
             result = client.simulate_post(
-                self.PATH,
+                "/symbolicate/v4",
                 json={
                     "stacks": [[[0, int("5380", 16)]]],
                     "memoryMap": [["testproj", "D48F191186D67E69DF025AD71FB91E1F0"]],
@@ -689,7 +660,7 @@ class TestSymbolicateV4:
 
         with metricsmock as mm:
             result = client.simulate_post(
-                self.PATH,
+                "/symbolicate/v4",
                 headers={
                     "TeckenProxied": "1",
                 },
@@ -710,11 +681,9 @@ class TestSymbolicateV4:
 
 
 class TestSymbolicateV5:
-    PATH = "/symbolicate/v5"
-
     def test_cors(self, client):
         result = client.simulate_options(
-            self.PATH,
+            "/symbolicate/v5",
             headers={
                 "Origin": "example.com",
                 "Access-Control-Request-Method": "POST",
@@ -740,18 +709,18 @@ class TestSymbolicateV5:
 
     def test_bad_request(self, client):
         # Wrong HTTP method
-        result = client.simulate_get(self.PATH)
+        result = client.simulate_get("/symbolicate/v5")
         assert result.status_code == 405
         assert result.headers["Content-Type"].startswith("application/json")
 
         # No data raises an HTTP 400
-        result = client.simulate_post(self.PATH)
+        result = client.simulate_post("/symbolicate/v5")
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
         assert result.content == b'{"title": "Payload is not valid JSON"}'
 
         # Payload is not application/json
-        result = client.simulate_post(self.PATH, params={"data": "wrongtype"})
+        result = client.simulate_post("/symbolicate/v5", params={"data": "wrongtype"})
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
         assert result.content == b'{"title": "Payload is not valid JSON"}'
@@ -762,28 +731,22 @@ class TestSymbolicateV5:
         )
 
         # No data at all
-        result = client.simulate_post(self.PATH, json={})
+        result = client.simulate_post("/symbolicate/v5", json={})
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
-        assert (
-            result.content
-            == b'{"title": "job 0 has invalid stacks: no stacks specified"}'
-        )
+        assert result.content == b'{"title": "job 0 is invalid: no stacks specified"}'
 
         # No stacks specified
         result = client.simulate_post(
-            self.PATH, json={"modules": [["xul.so", "ABCDE"]]}
+            "/symbolicate/v5", json={"modules": [["xul.so", "ABCDE"]]}
         )
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
-        assert (
-            result.content
-            == b'{"title": "job 0 has invalid stacks: no stacks specified"}'
-        )
+        assert result.content == b'{"title": "job 0 is invalid: no stacks specified"}'
 
         # No stacks specified with multiple jobs
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v5",
             json={
                 "jobs": [
                     # job 0
@@ -795,10 +758,7 @@ class TestSymbolicateV5:
         )
         assert result.status_code == 400
         assert result.headers["Content-Type"].startswith("application/json")
-        assert (
-            result.content
-            == b'{"title": "job 1 has invalid stacks: no stacks specified"}'
-        )
+        assert result.content == b'{"title": "job 1 is invalid: no stacks specified"}'
 
     def test_symbolication_module_missing_and_not_checked(self, requestsmock, client):
         """Test symbolication when one module returns 404 and one is not checked"""
@@ -808,7 +768,7 @@ class TestSymbolicateV5:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v5",
             json={
                 "stacks": [[[0, 1000], [0, 1020]]],
                 "memoryMap": [
@@ -855,7 +815,7 @@ class TestSymbolicateV5:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v5",
             json={
                 "jobs": [
                     # job 0
@@ -903,7 +863,7 @@ class TestSymbolicateV5:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v5",
             json={
                 "jobs": [
                     # job 0
@@ -963,7 +923,7 @@ class TestSymbolicateV5:
         )
 
         result = client.simulate_post(
-            self.PATH,
+            "/symbolicate/v5",
             json={
                 "jobs": [
                     # job 0
@@ -1010,7 +970,7 @@ class TestSymbolicateV5:
 
         with metricsmock as mm:
             result = client.simulate_post(
-                self.PATH,
+                "/symbolicate/v5",
                 json={
                     "jobs": [
                         # job 0
@@ -1042,7 +1002,7 @@ class TestSymbolicateV5:
 
         with metricsmock as mm:
             result = client.simulate_post(
-                self.PATH,
+                "/symbolicate/v5",
                 headers={"TeckenProxied": "1"},
                 json={
                     "jobs": [
