@@ -283,8 +283,7 @@ class SymbolicateBase:
     def get_symcache(self, debug_filename, debug_id, debug_stats):
         """Gets the symcache for a given module.
 
-        This uses the cachemanager and downloader to get the symcache. It modifies
-        the Module in place.
+        This uses the cachemanager and downloader to get the symcache.
 
         :arg debug_filename: the debug filename
         :arg debug_id: the debug id
@@ -403,7 +402,8 @@ class SymbolicateBase:
                     if 0 <= module_index < len(memorymap):
                         debug_filename, debug_id = memorymap[module_index]
                     else:
-                        debug_filename, debug_id = None, None
+                        debug_filename = ""
+                        debug_id = ""
 
                     frame_info = {
                         "frame": frame_i,
@@ -437,11 +437,11 @@ class SymbolicateBase:
         # Sort all the frames to symbolicate by module info. Then iterate
         # module-by-module through all the frames to symbolicate and lookup symbols for
         # them
-        frames.sort(key=lambda frame: str(frame[0]))
+        frames.sort(key=lambda frame: frame[0])
 
         for module_info, frames_group in groupby(frames, key=lambda frame: frame[0]):
             debug_filename, debug_id = module_info
-            if debug_filename == "None" or debug_id == "None":
+            if not debug_filename or not debug_id:
                 continue
 
             ret = self.get_symcache(debug_filename, debug_id, debug_stats)
