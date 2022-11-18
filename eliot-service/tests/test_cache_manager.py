@@ -503,8 +503,8 @@ BROKEN_EVENT = {
             "threading",
         ],
         "name": "sentry.python",
-        "packages": [{"name": "pypi:sentry-sdk", "version": "1.10.1"}],
-        "version": "1.10.1",
+        "packages": [{"name": "pypi:sentry-sdk", "version": ANY}],
+        "version": ANY,
     },
     "platform": "python",
 }
