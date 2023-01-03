@@ -13,6 +13,9 @@ export
 USE_UID ?= 10001
 USE_GID ?= 10001
 
+DOCKER := $(shell which docker)
+DC=${DOCKER} compose
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help:
@@ -36,73 +39,74 @@ help:
 
 .PHONY: build
 build: .env  ## | Build docker images.
-	docker-compose build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} base frontend
+	${DC} build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} --progress plain base frontend
+	${DC} build --progress plain db fakesentry redis-cache localstack oidcprovider statsd
 	touch .docker-build
 
 .PHONY: setup
 setup: .env  ## | Initialize services.
-	docker-compose run --rm web bash /app/bin/setup-services.sh
+	${DC} run --rm web bash /app/bin/setup-services.sh
 
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
-	docker-compose up web eliot frontend fakesentry
+	${DC} up web eliot frontend fakesentry
 
 .PHONY: stop
 stop: .env  ## | Stop docker containers.
-	docker-compose stop
+	${DC} stop
 
 .PHONY: shell
 shell: .env .docker-build  ## | Open a shell in web container.
-	docker-compose run --rm web bash
+	${DC} run --rm web bash
 
 .PHONY: clean
 clean: .env stop  ## | Stop and remove docker containers and artifacts.
-	docker-compose rm -f
+	${DC} rm -f
 	rm -fr .docker-build
 	rm -rf frontend/build/
 
 .PHONY: clear-cache
 clear-cache:  ## | Clear Redis cache.
-	docker-compose run --rm redis-cache redis-cli -h redis-cache FLUSHDB
+	${DC} run --rm redis-cache redis-cli -h redis-cache FLUSHDB
 
 .PHONY: redis-cache-cli
 redis-cache-cli: .env .docker-build  ## | Open Redis CLI to cache Redis server.
-	docker-compose run --rm redis-cache redis-cli -h redis-cache
+	${DC} run --rm redis-cache redis-cli -h redis-cache
 
 .PHONY: psql
 psql: .env .docker-build  ## | Open psql cli.
 	@echo "NOTE: Password is 'postgres'."
-	docker-compose run --rm db psql -h db -U postgres -d tecken
+	${DC} run --rm db psql -h db -U postgres -d tecken
 
 .PHONY: test
 test: .env .docker-build  ## | Run Python unit test suite.
-	docker-compose up -d db redis-cache localstack statsd oidcprovider
-	docker-compose run --rm test bash ./bin/run_test.sh
+	${DC} up -d db redis-cache localstack statsd oidcprovider
+	${DC} run --rm test bash ./bin/run_test.sh
 
 .PHONY: testshell
 testshell: .env .docker-build  ## | Open shell in test environment.
-	docker-compose up -d db redis-cache localstack statsd oidcprovider
-	docker-compose run --rm test bash ./bin/run_test.sh --shell
+	${DC} up -d db redis-cache localstack statsd oidcprovider
+	${DC} run --rm test bash ./bin/run_test.sh --shell
 
 .PHONY: docs
 docs: .env .docker-build  ## | Build docs.
-	docker-compose run --rm --user ${USE_UID} --no-deps web bash make -C docs/ clean
-	docker-compose run --rm --user ${USE_UID} --no-deps web bash make -C docs/ html
+	${DC} run --rm --user ${USE_UID} --no-deps web bash make -C docs/ clean
+	${DC} run --rm --user ${USE_UID} --no-deps web bash make -C docs/ html
 
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.
-	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh
-	docker-compose run --rm frontend lint
+	${DC} run --rm --no-deps test bash ./bin/run_lint.sh
+	${DC} run --rm frontend lint
 
 .PHONY: lintfix
 lintfix: .env .docker-build  ## | Reformat code.
-	docker-compose run --rm --no-deps test bash ./bin/run_lint.sh --fix
-	docker-compose run --rm frontend lintfix
+	${DC} run --rm --no-deps test bash ./bin/run_lint.sh --fix
+	${DC} run --rm frontend lintfix
 
 .PHONY: rebuildreqs
 rebuildreqs: .env .docker-build  ## | Rebuild requirements.txt file after requirements.in changes.
-	docker-compose run --rm --no-deps web bash pip-compile --generate-hashes
+	${DC} run --rm --no-deps web bash pip-compile --generate-hashes
 
 .PHONY: updatereqs
 updatereqs: .env .docker-build  ## | Update deps in requirements.txt file.
-	docker-compose run --rm --no-deps web bash pip-compile --generate-hashes -U
+	${DC} run --rm --no-deps web bash pip-compile --generate-hashes -U

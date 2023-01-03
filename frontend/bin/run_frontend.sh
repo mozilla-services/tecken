@@ -18,12 +18,12 @@ To fix up a file use:
 
 To run 'prettier' inside the frontend Docker container run:
 
-    docker-compose run frontend bash
+    docker compose run frontend bash
     prettier --list-different src/*.js
 
 Or, to just fix them:
 
-    docker-compose run frontend bash
+    docker compose run frontend bash
     prettier --write src/*.js
 
 The config is defined in .prettierrc

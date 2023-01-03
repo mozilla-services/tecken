@@ -32,7 +32,7 @@ class Command(BaseCommand):
              }
            ],
         }
-        $ docker-compose run web python manage.py import-uploaders < users.json
+        $ docker compose run web python manage.py import-uploaders < users.json
 
     The work of doing the migration is covered in:
     https://bugzilla.mozilla.org/show_bug.cgi?id=1395647

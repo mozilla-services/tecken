@@ -8,7 +8,7 @@ version: 2.1
 jobs:
   main:
     docker:
-      - image: cimg/python:3.9.12
+      - image: cimg/python:3.10.9
         auth:
           username: $DOCKER_USER
           password: $DOCKER_PASS
@@ -18,14 +18,13 @@ jobs:
 
       - setup_remote_docker:
           docker_layer_caching: true
-          version: 20.10.11
+          version: 20.10.18
 
       - run:
           name: Get info
           command: |
             uname -v
             docker info
-            docker-compose --version
 
       - run:
           name: Login to Dockerhub
@@ -62,35 +61,35 @@ jobs:
           name: Verify requirements.txt contains correct dependencies
           # yamllint disable rule:line-length
           command: |
-            docker-compose run --rm --no-deps test-ci bash ./bin/run_verify_reqs.sh
+            docker compose run --rm --no-deps test-ci bash ./bin/run_verify_reqs.sh
           # yamllint enable rule:line-length
 
       - run:
           name: Run lint check
           command: |
             make .env
-            docker-compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
-            docker-compose run --rm --no-deps frontend-ci lint
+            docker compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
+            docker compose run --rm --no-deps frontend-ci lint
 
       - run:
           name: Run Eliot tests
           command: |
             make .env
-            docker-compose up -d db redis-cache localstack statsd oidcprovider
-            docker-compose run --rm test-ci bash ./bin/run_test.sh eliot
+            docker compose up -d db redis-cache localstack statsd oidcprovider
+            docker compose run --rm test-ci bash ./bin/run_test.sh eliot
 
       - run:
           name: Run Tecken tests
           command: |
             make .env
-            docker-compose up -d db redis-cache localstack statsd oidcprovider
-            docker-compose run --rm test-ci bash ./bin/run_test.sh tecken
+            docker compose up -d db redis-cache localstack statsd oidcprovider
+            docker compose run --rm test-ci bash ./bin/run_test.sh tecken
 
       - run:
           name: Build docs
           command: |
             make .env
-            docker-compose run --rm --no-deps test-ci bash make -C docs/ html
+            docker compose run --rm --no-deps test-ci bash make -C docs/ html
 
       - run:
           name: Push to Dockerhub
