@@ -1,6 +1,6 @@
 # Note! If you make changes it in this file, to rebuild it use:
 #
-#   docker-compose build frontend
+#   docker compose build frontend
 #
 
 # This should match what we have in the Node section of the main Dockerfile.

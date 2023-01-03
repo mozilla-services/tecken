@@ -51,7 +51,7 @@ class StorageBucket:
     """
 
     # A substring match of the domain is used to recognize storage backends.
-    # For emulated backends, the name should be present in the docker-compose
+    # For emulated backends, the name should be present in the docker compose
     # service name.
     _URL_FINGERPRINT = {
         # AWS S3, like bucket-name.s3.amazonaws.com

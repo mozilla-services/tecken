@@ -9,7 +9,7 @@ Development
 Setup quickstart
 ================
 
-1. Install required software: Docker, docker-compose (1.10+), make, and git.
+1. Install required software: Docker, make, and git.
 
    **Linux**:
 
@@ -17,8 +17,7 @@ Setup quickstart
 
    **OSX**:
 
-       Install `Docker for Mac <https://docs.docker.com/docker-for-mac/>`_ which
-       will install Docker and docker-compose.
+       Install `Docker for Mac <https://docs.docker.com/docker-for-mac/>`_.
 
        Use `homebrew <https://brew.sh>`_ to install make and git:
 
@@ -29,9 +28,6 @@ Setup quickstart
    **Other**:
 
        Install `Docker <https://docs.docker.com/engine/installation/>`_.
-
-       Install `docker-compose <https://docs.docker.com/compose/install/>`_.
-       You need something higher than 1.10, but less than 2.0.0.
 
        Install `make <https://www.gnu.org/software/make/>`_.
 
@@ -278,7 +274,7 @@ Tecken uses `yarn <https://yarnpkg.com/>`_ for JavaScript dependencies. Use the
 
 .. code-block:: shell
 
-   $ docker-compose run frontend bash
+   $ docker compose run frontend bash
 
    # display packages that can be upgraded
    node@xxx:/app$ yarn outdated
@@ -293,7 +289,7 @@ When you're done, you have to rebuild the frontend Docker container:
 
 .. code-block:: shell
 
-   $ docker-compose build frontend
+   $ docker compose build frontend
 
 Your change should result in changes to ``frontend/package.json`` *and*
 ``frontend/yarn.lock`` which needs to both be checked in and committed.
@@ -465,18 +461,18 @@ That superuser can promote other users to superusers too.
 This action does NOT require that the user signs in at least once. If the user
 does not exist, it gets created.
 
-The easiest way to create your first superuser is to use ``docker-compose``:
+The easiest way to create your first superuser is to use ``docker compose``:
 
 .. code-block:: shell
 
-   $ docker-compose run --rm web bash python manage.py superuser yourname@example.com
+   $ docker compose run --rm web bash python manage.py superuser yourname@example.com
 
 Additionally, in a local development environment, you can create a
 corresponding user in the oidcprovider service like this:
 
 .. code-block:: shell
 
-   $ docker-compose exec oidcprovider /code/manage.py createuser yourname yourpassword yourname@example.com
+   $ docker compose exec oidcprovider /code/manage.py createuser yourname yourpassword yourname@example.com
 
 
 Giving users permission to upload symbols
@@ -651,7 +647,7 @@ development tool shortcut for what the middleware does:
 
 .. code-block:: shell
 
-   $ docker-compose run web python manage.py is-blocked-in-auth0 me@example.com
+   $ docker compose run web python manage.py is-blocked-in-auth0 me@example.com
 
 
 Symbolication Service webapp things (Eliot)

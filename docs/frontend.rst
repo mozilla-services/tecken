@@ -59,7 +59,7 @@ laptop, with Docker.
 Dev Server
 ==========
 
-For local development, when you run ``docker-compose up web worker frontend``
+For local development, when you run ``docker compose up web worker frontend``
 it starts the NodeJS dev server in the foreground, mixing its output with
 that of Django and Celery. Normally in ``create-react-app`` apps, the
 ``yarn start`` command is highly interactive, clears the screen, runs in
@@ -68,7 +68,7 @@ warnings or compilation errors. When run in docker, with non-TTY terminal,
 all output from the dev server is sent to ``stdout`` one line at a time.
 
 When you start Docker for development (again ``make run`` or
-``docker-compose up web worker frontend``) it starts the dev server on port
+``docker compose up web worker frontend``) it starts the dev server on port
 ``:3000`` and it also exposes a WebSocket on port ``:35729``.
 
 The WebSocket is there to notice if you change any of the source files, it then
@@ -139,7 +139,7 @@ container. A trick, to avoid having to rebuild everything is to just run:
 
 .. code-block:: shell
 
-    docker-compose build frontend
+    docker compose build frontend
 
 Testing
 =======
