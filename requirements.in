@@ -21,7 +21,7 @@ honcho==1.1.0
 inotify_simple==1.3.5
 jsonschema==4.17.3
 markus[datadog]==4.1.0
-mock==4.0.3
+mock==5.0.0
 mozilla-django-oidc==3.0.0
 msgpack==1.0.4
 pip-tools==6.11.0
