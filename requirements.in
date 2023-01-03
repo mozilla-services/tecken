@@ -42,6 +42,12 @@ urlwait==1.0
 werkzeug==2.2.2
 whitenoise==6.2.0
 
+# NOTE(willkg): We need this until we update to Python 3.10.
+exceptiongroup==1.1.0
+importlib-metadata==6.0.0
+typing-extensions==4.4.0
+zipp==3.11.0
+
 # NOTE(willkg): Need to keep redis at this version because after this, the Python
 # library doesn't work with the version of Redis we're using in production
 redis==3.4.1
