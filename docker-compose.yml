@@ -140,13 +140,13 @@ services:
       context: docker/images/oidcprovider
     image: local/tecken_oidcprovider
     ports:
-      - "8081:8080"
+      - "8080:8080"
 
   # https://hub.docker.com/r/hopsoft/graphite-statsd/
   statsd:
     image: hopsoft/graphite-statsd:latest
     ports:
-      - "8080:80"
+      - "8081:80"
       - "2003-2004:2003-2004"
       - "2023-2024:2023-2024"
       - "8125:8125/udp"

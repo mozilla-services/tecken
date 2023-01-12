@@ -376,8 +376,7 @@ To log in, do this:
 
 You'll remain logged in to ``oidcprovider``, and the account will persist until
 the ``oidcprovider`` container is stopped.
-You can visit http://oidc.127.0.0.1.nip.io:8081/account/logout to manually log
-out.
+You can visit http://localhost:8080/account/logout to manually log out.
 
 
 .. _dev-symbols-tests:
