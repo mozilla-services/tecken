@@ -44,10 +44,10 @@ def create_database(ctx):
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
     try:
-        cursor.execute("CREATE DATABASE %s" % db_name)
-        click.echo('Created database "%s".' % db_name)
+        cursor.execute(f"CREATE DATABASE {db_name}")
+        click.echo(f"Created database {db_name!r}")
     except psycopg2.ProgrammingError:
-        click.echo('Database "%s" already exists.' % db_name)
+        click.echo(f"Database {db_name!r} already exists.")
         ctx.exit(1)
 
 
@@ -66,10 +66,10 @@ def drop_database(ctx):
     conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     cursor = conn.cursor()
     try:
-        cursor.execute("DROP DATABASE %s" % db_name)
-        click.echo('Database "%s" dropped.' % db_name)
+        cursor.execute(f"DROP DATABASE {db_name}")
+        click.echo(f"Database {db_name!r} dropped.")
     except psycopg2.ProgrammingError:
-        click.echo('Database "%s" does not exist.' % db_name)
+        click.echo(f"Database {db_name!r} does not exist.")
         ctx.exit(1)
 
 
