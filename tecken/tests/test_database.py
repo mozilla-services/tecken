@@ -16,4 +16,4 @@ def test_for_missing_migrations():
     except SystemExit as exc:
         # The exit code will be 0 when there are no missing migrations
         assert exc.code == 1
-        pytest.fail("There are missing migrations:\n %s" % output.getvalue())
+        pytest.fail(f"There are missing migrations:\n {output.getvalue()}")

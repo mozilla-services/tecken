@@ -44,7 +44,7 @@ def tasks_by_changeset(revisions_limit):
 
 
 def list_artifacts(taskid):
-    url = QUEUE + "task/%s/artifacts" % taskid
+    url = QUEUE + f"task/{taskid}/artifacts"
     resp = requests.get(url, headers=HTTP_HEADERS)
     if resp.status_code != 200:
         return []
@@ -57,11 +57,11 @@ def get_symbols_urls():
         artifacts = list_artifacts(taskid)
         full_zip = [a for a in artifacts if a.endswith(SYMBOLS_FULL_ZIP_SUFFIX)]
         if full_zip:
-            yield QUEUE + "task/%s/artifacts/%s" % (taskid, full_zip[0])
+            yield QUEUE + f"task/{taskid}/artifacts/{full_zip[0]}"
         else:
             nonfull_zip = [a for a in artifacts if a.endswith(SYMBOLS_ZIP_SUFFIX)]
             if nonfull_zip:
-                yield QUEUE + "task/%s/artifacts/%s" % (taskid, nonfull_zip[0])
+                yield QUEUE + f"task/{taskid}/artifacts/{nonfull_zip[0]}"
 
 
 def get_content_length(url):
