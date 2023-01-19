@@ -171,7 +171,7 @@ def verify_symbolication(ctx, api_url, api_version, stackfile):
     payload = json.loads(data)
     response_data = request_stack(api_url, payload, api_version, is_debug=True)
 
-    path = os.path.abspath("../schemas/symbolicate_api_response_v%d.json" % api_version)
+    path = os.path.abspath(f"../schemas/symbolicate_api_response_v{api_version}.json")
     schema = load_schema(path)
     try:
         jsonschema.validate(response_data, schema)
