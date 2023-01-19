@@ -122,7 +122,7 @@ class HTTPSource(Source):
 
         # These status codes are retryable, so raise an exception that will
         # force backoff.on_exception to retry this entire method
-        if resp.status_code in (429, 500, 504):
+        if resp.status_code in (429, 500, 503, 504):
             raise ConnectionError(f"retryable status code {resp.status_code}")
 
         # If the status_code is 404, that's a legitimate FileNotFound. Anything else
