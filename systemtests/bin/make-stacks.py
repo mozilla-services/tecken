@@ -155,7 +155,7 @@ def make_stacks_save(ctx, outputdir, crashids):
         if not data or not data["stacks"][0]:
             click.echo("Nothing to save.")
             continue
-        with open(os.path.join(outputdir, "%s.json" % crashid), "w") as fp:
+        with open(os.path.join(outputdir, f"{crashid}.json"), "w") as fp:
             json.dump(data, fp, indent=2)
 
     click.echo("Done!")
