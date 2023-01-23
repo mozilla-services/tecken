@@ -10,6 +10,7 @@
 # Usage: debug-sym-file.py [SYMFILE]
 
 import os
+import time
 
 import click
 import symbolic
@@ -25,12 +26,14 @@ def sym_file_debug(ctx, symfile):
     click.echo(f"{symfile}")
     click.echo(f"size: {stats.st_size:,}")
 
-    # Print first line
+    # Print header
     with open(symfile, "r") as fp:
-        firstline = fp.readline().strip()
-
-    parts = firstline.split(" ")
-    click.echo(f"first line: {parts}")
+        for line in fp.readlines():
+            line = line.strip()
+            if line.startswith(("MODULE", "INFO")):
+                print(f"header: {line}")
+            else:
+                break
 
     # Parse with symbolic and create symcache
     try:
@@ -38,8 +41,11 @@ def sym_file_debug(ctx, symfile):
         archive = symbolic.Archive.open(symfile)
         click.echo("listing objects and making symcaches ...")
         for obj in archive.iter_objects():
-            click.echo(f"* {obj.debug_id}")
+            click.echo(f"* {obj.debug_id = } ", nl=False)
+            start_time = time.time()
             obj.make_symcache()
+            delta = time.time() - start_time
+            click.echo(f"{delta:.3f}ms")
     except Exception:
         click.echo("symbolic can't parse it")
         raise
