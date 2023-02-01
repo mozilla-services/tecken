@@ -9,7 +9,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("upload", "0016_upload_try_symbols"),
     ]

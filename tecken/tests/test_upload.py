@@ -484,7 +484,6 @@ def test_upload_archive_one_uploaded_one_skipped(
     botomock,
     fakeuser,
 ):
-
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
@@ -553,7 +552,6 @@ def test_upload_archive_one_uploaded_one_skipped(
 
 
 def test_key_existing_caching(botomock):
-
     user = FakeUser("peterbe@example.com")
     bucket_info = get_bucket_info(user)
 
@@ -593,7 +591,6 @@ def test_key_existing_caching(botomock):
 
 
 def test_key_existing_size_caching_not_found(botomock):
-
     user = FakeUser("peterbe@example.com")
     bucket_info = get_bucket_info(user)
 
@@ -633,7 +630,6 @@ def test_upload_archive_key_lookup_cached(
     botomock,
     fakeuser,
 ):
-
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
@@ -798,7 +794,6 @@ def test_upload_archive_key_lookup_cached_by_different_hashes(
     botomock,
     fakeuser,
 ):
-
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
@@ -978,7 +973,6 @@ def test_upload_archive_with_cache_invalidation(
         raise NotImplementedError((operation_name, api_params))
 
     with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
-
         assert not downloader.has_symbol(
             "xpcshell.dbg", "A7D6F1BB18CD4CB48", "xpcshell.sym"
         )
@@ -996,7 +990,6 @@ def test_upload_archive_with_cache_invalidation(
 
 @pytest.mark.django_db
 def test_upload_archive_both_skipped(client, botomock, fakeuser):
-
     token = Token.objects.create(user=fakeuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
@@ -1053,7 +1046,6 @@ def test_upload_archive_by_url(
     settings,
     requestsmock,
 ):
-
     requestsmock.head(
         "https://allowed.example.com/symbols.zip",
         text="Found",
@@ -1161,7 +1153,6 @@ def test_upload_archive_by_url(
 
 @pytest.mark.django_db
 def test_upload_archive_by_url_remote_error(client, fakeuser, settings, requestsmock):
-
     requestsmock.head("https://allowed.example.com/symbols.zip", exc=ConnectionError)
 
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = ["allowed.example.com"]
@@ -1182,7 +1173,6 @@ def test_upload_archive_by_url_remote_error(client, fakeuser, settings, requests
 
 @pytest.mark.django_db
 def test_upload_client_bad_request(fakeuser, client, settings):
-
     url = reverse("upload:upload_archive")
     response = client.get(url)
     assert response.status_code == 405
@@ -1303,7 +1293,6 @@ def test_upload_client_unrecognized_bucket(fakeuser, client):
 
 
 def test_get_bucket_info(settings):
-
     user = FakeUser("peterbe@example.com")
 
     settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/some-bucket"
@@ -1327,7 +1316,6 @@ def test_get_bucket_info(settings):
 
 
 def test_get_bucket_info_try_symbols(settings):
-
     user = FakeUser("peterbe@example.com", perms=("upload.upload_try_symbols",))
 
     settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/some-bucket"
@@ -1354,7 +1342,6 @@ def test_get_bucket_info_try_symbols(settings):
 
 
 def test_get_bucket_info_exceptions(settings):
-
     settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/buck"
     settings.UPLOAD_URL_EXCEPTIONS = {
         "peterbe@example.com": "https://s3.amazonaws.com/differenting",
@@ -1371,7 +1358,6 @@ def test_get_bucket_info_exceptions(settings):
 
 
 def test_get_bucket_info_preferred_bucket_name(settings):
-
     settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/buck"
     settings.UPLOAD_URL_EXCEPTIONS = {
         "peterbe@example.com": "https://s3.amazonaws.com/differenting",

@@ -20,7 +20,6 @@ from tecken.base.symboldownloader import (
 
 
 def test_exists_in_source(botomock, settings):
-
     mock_api_calls = []
 
     def mock_api_call(self, operation_name, api_params):
@@ -133,7 +132,6 @@ def test_has_private(botomock):
 
 
 def test_has_private_caching_and_invalidation(botomock):
-
     mock_calls = []
 
     def mock_api_call(self, operation_name, api_params):
@@ -170,7 +168,6 @@ def test_has_private_caching_and_invalidation(botomock):
 
 
 def test_get_url_private_caching_and_invalidation(botomock):
-
     mock_calls = []
 
     def mock_api_call(self, operation_name, api_params):
@@ -465,7 +462,6 @@ def test_get_stream_public(requestsmock):
 
 
 def test_get_stream_private(botomock):
-
     long_line = "x" * 600
 
     def mock_api_call(self, operation_name, api_params):

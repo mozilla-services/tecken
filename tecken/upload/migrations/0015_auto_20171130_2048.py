@@ -8,7 +8,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("upload", "0014_upload_redirect_urls"),
     ]
