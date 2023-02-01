@@ -46,7 +46,6 @@ def iter_lines(stream, chunk_size=ITER_CHUNK_SIZE):
     pending = None
 
     for chunk in iter(lambda: stream.read(chunk_size), b""):
-
         if pending is not None:
             chunk = pending + chunk
 
@@ -226,7 +225,6 @@ class SymbolDownloader:
         Consumers of this method can use the fact that anything truish
         was returned as an indication that the symbol actually exists."""
         for source in self.sources:
-
             prefix = source.prefix
             assert prefix
 
@@ -253,7 +251,6 @@ class SymbolDownloader:
     def _get_stream(self, symbol, debugid, filename):
         session = session_with_retries()
         for source in self.sources:
-
             prefix = source.prefix
             assert prefix
 

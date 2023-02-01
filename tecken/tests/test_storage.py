@@ -168,7 +168,6 @@ def test_storageerror_msg():
 
 
 def test_StorageBucket_client():
-
     mock_session = mock.Mock()
 
     client_kwargs_calls = []

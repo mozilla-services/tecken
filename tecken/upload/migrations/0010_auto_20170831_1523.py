@@ -22,7 +22,6 @@ def correct_uploaders_group(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("upload", "0009_upload_cancelled_at"),
     ]

@@ -31,7 +31,6 @@ def test_set_request_debug():
 
 
 def test_set_cors_headers(rf):
-
     # Happy patch
     @decorators.set_cors_headers()
     def view_function(request):
@@ -53,7 +52,6 @@ def test_set_cors_headers(rf):
 
 
 def test_make_tempdir():
-
     mutable = []
 
     @decorators.make_tempdir(prefix="PREFIX", suffix="SUFFIX")

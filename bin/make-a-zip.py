@@ -54,7 +54,6 @@ def main(symbols, out_file, remote_url):
 
 
 if __name__ == "__main__":
-
     import argparse
     import sys
 

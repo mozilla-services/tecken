@@ -11,7 +11,6 @@ import tecken.tokens.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
