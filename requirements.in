@@ -35,7 +35,7 @@ symbolic==11.0.0
 ujson==5.7.0
 urllib3==1.26.14
 urlwait==1.0
-werkzeug==2.2.2
+werkzeug==2.2.3
 whitenoise==6.3.0
 
 # NOTE(willkg): Wait to update these until we split out flake8.
