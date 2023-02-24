@@ -29,6 +29,7 @@ shift
 case ${SERVICE} in
 web)  ## Run Tecken web service
     exec /app/bin/run_web.sh $@
+    exec honcho -f /app//Procfile start
     ;;
 eliot)  ## Run Eliot service
     exec honcho -f /app/eliot-service/Procfile start
