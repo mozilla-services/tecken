@@ -30,11 +30,15 @@ RUN groupadd --gid $groupid app && \
 # install a few essentials and clean apt caches afterwards
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    apt-transport-https build-essential curl git libpq-dev \
-    gettext libffi-dev
-
-# Clean up apt
-RUN apt-get autoremove -y && \
+        apt-transport-https \
+        build-essential \
+        curl \
+        git \
+        libpq-dev \
+        gettext \
+        libffi-dev \
+        tini && \
+    apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -63,6 +67,6 @@ USER app
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.
 # https://github.com/docker/compose/issues/2301#issuecomment-154450785 has additional background.
-ENTRYPOINT ["/bin/bash", "/app/bin/entrypoint.sh"]
+ENTRYPOINT ["tini", "--", "/bin/bash", "/app/bin/entrypoint.sh"]
 
 CMD ["web"]
