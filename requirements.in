@@ -47,7 +47,7 @@ sphinxcontrib-httpdomain==1.8.1
 # NOTE(willkg): We need this until we update to Python 3.10.
 exceptiongroup==1.1.0
 importlib-metadata==6.0.0
-typing-extensions==4.4.0
+typing-extensions==4.5.0
 zipp==3.11.0
 
 # NOTE(willkg): Need to keep redis at this version because after this, the Python
