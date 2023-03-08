@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-from tempfile import TemporaryDirectory
 from functools import wraps
 
 from django import http
@@ -174,30 +173,6 @@ def set_cors_headers(origin="*", methods="GET", allow_headers=DEFAULT_ALLOW_HEAD
             response["Access-Control-Allow-Methods"] = ",".join(methods)
             response["Access-Control-Allow-Headers"] = ",".join(allow_headers)
             return response
-
-        return inner
-
-    return decorator
-
-
-def make_tempdir(prefix=None, suffix=None):
-    """Decorator that adds a last argument that is the path to a temporary
-    directory that gets deleted after the function has finished.
-
-    Usage::
-
-        @make_tempdir()
-        def some_function(arg1, arg2, tempdir, kwargs1='one'):
-            assert os.path.isdir(tempdir)
-            ...
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def inner(*args, **kwargs):
-            with TemporaryDirectory(prefix=prefix, suffix=suffix) as f:
-                args = args + (f,)
-                return func(*args, **kwargs)
 
         return inner
 
