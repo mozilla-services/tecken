@@ -2,14 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import re
-import logging
-import fnmatch
-import zipfile
-import hashlib
-import os
-import time
 import concurrent.futures
+import fnmatch
+from functools import wraps
+import hashlib
+import logging
+import os
+import re
+from tempfile import TemporaryDirectory
+import time
+import zipfile
 
 import markus
 from encore.concurrent.futures.synchronous import SynchronousExecutor
@@ -24,7 +26,6 @@ from tecken.base.decorators import (
     api_login_required,
     api_any_permission_required,
     api_require_POST,
-    make_tempdir,
 )
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -195,17 +196,49 @@ def _ignore_member_file(filename):
     return False
 
 
+def make_tempdir(tempdir_root, suffix=None):
+    """Creates a temporary directory and adds to the decorated function arguments
+
+    If the tempoarary directory root has not been created, it is created. The temporary
+    directory is deleted after the function has completed.
+
+    Usage::
+
+        @make_tempdir(tempdir_root="/tmp")
+        def some_function(arg1, arg2, tempdir, kwargs1='one'):
+            assert os.path.isdir(tempdir)
+            ...
+    """
+
+    if not tempdir_root:
+        raise ValueError("tempdir_root cannot be empty string or None")
+
+    tempdir_root = os.path.abspath(str(tempdir_root))
+    os.makedirs(tempdir_root, exist_ok=True)
+
+    def decorator(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            with TemporaryDirectory(dir=tempdir_root, suffix=suffix) as f:
+                args = args + (f,)
+                return func(*args, **kwargs)
+
+        return inner
+
+    return decorator
+
+
 @metrics.timer_decorator("upload_archive")
 @api_require_POST
 @csrf_exempt
 @api_login_required
 @api_any_permission_required("upload.upload_symbols", "upload.upload_try_symbols")
-@make_tempdir(settings.UPLOAD_TEMPDIR_PREFIX)
-def upload_archive(request, upload_dir):
+@make_tempdir(tempdir_root=settings.UPLOAD_TEMPDIR)
+def upload_archive(request, upload_workspace):
     try:
         for name in request.FILES:
             upload_ = request.FILES[name]
-            file_listing = dump_and_extract(upload_dir, upload_, name)
+            file_listing = dump_and_extract(upload_workspace, upload_, name)
             size = upload_.size
             url = None
             redirect_urls = None
@@ -224,7 +257,7 @@ def upload_archive(request, upload_dir):
                     size_fmt = filesizeformat(size)
                     logger.info(f"Download to upload {url} ({size_fmt})")
                     redirect_urls = form.cleaned_data["upload"]["redirect_urls"] or None
-                    download_name = os.path.join(upload_dir, name)
+                    download_name = os.path.join(upload_workspace, name)
                     session = session_with_retries(default_timeout=(5, 300))
                     with metrics.timer("upload_download_by_url"):
                         response_stream = session.get(url, stream=True)
@@ -259,7 +292,9 @@ def upload_archive(request, upload_dir):
                                 f"totalling {filesizeformat(total_size)} "
                                 f"({filesizeformat(download_speed)}/s)."
                             )
-                    file_listing = dump_and_extract(upload_dir, download_name, name)
+                    file_listing = dump_and_extract(
+                        upload_workspace, download_name, name
+                    )
                     os.remove(download_name)
                 else:
                     for key, errors in form.errors.as_data().items():

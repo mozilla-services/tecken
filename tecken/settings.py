@@ -537,10 +537,10 @@ ENABLE_STORE_MISSING_SYMBOLS = _config(
     ),
 )
 
-UPLOAD_TEMPDIR_PREFIX = _config(
-    "UPLOAD_TEMPDIR_PREFIX",
-    default="raw-uploads",
-    doc="The prefix used when generating directories in the temp directory.",
+UPLOAD_TEMPDIR = _config(
+    "UPLOAD_TEMPDIR",
+    default="/tmp/uploads",
+    doc="The directory to use as a workspace for handling symbol uploads.",
 )
 
 ALLOW_UPLOAD_BY_ANY_DOMAIN = _config(
