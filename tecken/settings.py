@@ -542,6 +542,15 @@ UPLOAD_TEMPDIR = _config(
     default="/tmp/uploads",
     doc="The directory to use as a workspace for handling symbol uploads.",
 )
+UPLOAD_TEMPDIR_ORPHANS_CUTOFF = _config(
+    "UPLOAD_TEMPDIR_ORPHANS_CUTOFF",
+    default="60",
+    parser=int,
+    doc=(
+        "Time in minutes before we consider a file to have been orphaned and should "
+        "be deleted."
+    ),
+)
 
 ALLOW_UPLOAD_BY_ANY_DOMAIN = _config(
     "ALLOW_UPLOAD_BY_ANY_DOMAIN",
