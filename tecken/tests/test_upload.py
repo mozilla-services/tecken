@@ -1664,3 +1664,184 @@ def test_cleanse_upload_records_dry_run():
         "try-2-1.sym",
         "try-2-2.sym",
     ]
+
+
+class Test_remove_orphaned_files:
+    @pytest.mark.django_db
+    def test_no_files(self, settings, tmp_path):
+        tempdir = str(tmp_path)
+        settings.UPLOAD_TEMPDIR = tempdir
+        settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
+
+        stdout = StringIO()
+        stderr = StringIO()
+        call_command(
+            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
+        )
+
+        # Make sure we've got the right expires value
+        assert "Expires: 5m" in stdout.getvalue()
+
+        # Make sure we're watching the correct path
+        assert f"Watchdir: {tempdir!r}" in stdout.getvalue()
+
+        # Make sure there's no stderr
+        assert stderr.getvalue() == ""
+
+    @pytest.mark.django_db
+    def test_recent_files(self, settings, tmp_path):
+        tempdir = str(tmp_path)
+        settings.UPLOAD_TEMPDIR = tempdir
+        settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
+
+        # Create a couple of directories with recent files in them
+        (tmp_path / "upload1").mkdir(parents=True)
+        (tmp_path / "upload1" / "file1.sym").write_text("abcde")
+        (tmp_path / "upload1" / "file2.sym").write_text("abcde")
+        (tmp_path / "upload1" / "file3.sym").write_text("abcde")
+        (tmp_path / "upload2").mkdir(parents=True)
+        (tmp_path / "upload2" / "file1.sym").write_text("abcde")
+        contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
+        contents.sort()
+        assert contents == [
+            "/upload1",
+            "/upload1/file1.sym",
+            "/upload1/file2.sym",
+            "/upload1/file3.sym",
+            "/upload2",
+            "/upload2/file1.sym",
+        ]
+
+        # Run the command
+        stdout = StringIO()
+        stderr = StringIO()
+        call_command(
+            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
+        )
+
+        # Asssert nothing got deleted
+        contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
+        contents.sort()
+        assert contents == [
+            "/upload1",
+            "/upload1/file1.sym",
+            "/upload1/file2.sym",
+            "/upload1/file3.sym",
+            "/upload2",
+            "/upload2/file1.sym",
+        ]
+
+    @pytest.mark.django_db
+    def test_orphaned_files(self, settings, tmp_path, metricsmock):
+        tempdir = str(tmp_path)
+        settings.UPLOAD_TEMPDIR = tempdir
+        settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
+
+        def create_file(path, delta_minutes):
+            now = datetime.datetime.now() - datetime.timedelta(minutes=delta_minutes)
+            now_epoch = now.timestamp()
+            path.write_text("abcde")
+            os.utime(path, times=(now_epoch, now_epoch))
+
+        # Create a couple of directories with recent files in them
+        (tmp_path / "upload1").mkdir(parents=True)
+        create_file(tmp_path / "upload1" / "file1.sym", delta_minutes=12)
+        create_file(tmp_path / "upload1" / "file2.sym", delta_minutes=11)
+        create_file(tmp_path / "upload1" / "file3.sym", delta_minutes=10)
+
+        (tmp_path / "upload2").mkdir(parents=True)
+        create_file(tmp_path / "upload2" / "file1.sym", delta_minutes=3)
+
+        contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
+        contents.sort()
+        assert contents == [
+            "/upload1",
+            "/upload1/file1.sym",
+            "/upload1/file2.sym",
+            "/upload1/file3.sym",
+            "/upload2",
+            "/upload2/file1.sym",
+        ]
+
+        # Run the command
+        stdout = StringIO()
+        stderr = StringIO()
+        call_command(
+            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
+        )
+
+        # Asssert files older than 5 minutes (our cutoff) are deleted
+        #
+        # NOTE(willkg): the code doesn't clean up empty directories, so those will
+        # still exist.
+        contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
+        contents.sort()
+        assert contents == [
+            "/upload1",
+            "/upload2",
+            "/upload2/file1.sym",
+        ]
+
+        # Verify that the stdout says these were deleted
+        for fn in ["file1.sym", "file2.sym", "file3.sym"]:
+            path = str(tmp_path / "upload1" / fn)
+            assert f"Deleted file: {path}, 5b" in stdout.getvalue()
+
+        # Verify there's no stderr
+        assert stderr.getvalue() == ""
+
+        # Assert metrics are emitted
+        delete_incr = metricsmock.filter_records(
+            "incr", stat="tecken.remove_orphaned_files.delete_file"
+        )
+        assert len(delete_incr) == 3
+
+    @pytest.mark.django_db
+    def test_errors(self, settings, tmp_path, monkeypatch, metricsmock):
+        tempdir = str(tmp_path)
+        settings.UPLOAD_TEMPDIR = tempdir
+        settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
+
+        # Create a directory with an old file in it
+        (tmp_path / "upload1").mkdir(parents=True)
+        path = tmp_path / "upload1" / "file1.sym"
+        now = datetime.datetime.now() - datetime.timedelta(minutes=10)
+        now_epoch = now.timestamp()
+        path.write_text("abcde")
+        os.utime(path, times=(now_epoch, now_epoch))
+
+        contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
+        contents.sort()
+        assert contents == ["/upload1", "/upload1/file1.sym"]
+
+        # Monkeypatch os.path.getmtime to get the mtime, delete the file, and return the
+        # mtime so as to simulate a race condition between getting the mtime and getting
+        # the size
+        original_getmtime = os.path.getmtime
+
+        def adjusted_getmtime(fn):
+            mtime = original_getmtime(fn)
+            os.remove(fn)
+            return mtime
+
+        monkeypatch.setattr(os.path, "getmtime", adjusted_getmtime)
+
+        # Run the command
+        stdout = StringIO()
+        stderr = StringIO()
+        call_command(
+            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
+        )
+
+        # Assert message is logged
+        msg = (
+            f"Error getting size: {str(path)} [Errno 2] No such file or directory: "
+            + f"'{str(path)}'"
+        )
+        assert msg in stderr.getvalue()
+
+        # Assert metric is emitted
+        incr_records = metricsmock.filter_records(
+            "incr", stat="tecken.remove_orphaned_files.delete_file_error"
+        )
+        assert len(incr_records) == 1
