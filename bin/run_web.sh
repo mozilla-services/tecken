@@ -9,6 +9,8 @@
 : "${GUNICORN_WORKERS:=4}"
 : "${GUNICORN_TIMEOUT:=600}"
 
+export PROCESS_NAME=webapp
+
 if [ "$1" == "--dev" ]; then
     python manage.py migrate --noinput
     python manage.py runserver 0.0.0.0:${PORT}

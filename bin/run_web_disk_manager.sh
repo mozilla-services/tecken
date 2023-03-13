@@ -12,6 +12,8 @@ set -euo pipefail
 
 cd /app/
 
+export PROCESS_NAME=disk_manager
+
 # Run disk manager in a loop so that if it dies (ignore exit value), the loop
 # pauses for 1 minute and then starts up again. This expects the disk manager
 # to send errors to Sentry. The 1 minute sleep is to reduce the likelihood

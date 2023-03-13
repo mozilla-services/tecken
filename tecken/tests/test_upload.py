@@ -4,9 +4,10 @@
 
 import datetime
 import gzip
-from pathlib import Path
-import os
 from io import BytesIO, StringIO
+import logging
+import os
+from pathlib import Path
 from unittest import mock
 
 from botocore.exceptions import ClientError
@@ -1668,25 +1669,24 @@ def test_cleanse_upload_records_dry_run():
 
 class Test_remove_orphaned_files:
     @pytest.mark.django_db
-    def test_no_files(self, settings, tmp_path):
+    def test_no_files(self, settings, tmp_path, caplog):
+        caplog.set_level(logging.INFO)
+
         tempdir = str(tmp_path)
         settings.UPLOAD_TEMPDIR = tempdir
         settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
 
-        stdout = StringIO()
-        stderr = StringIO()
-        call_command(
-            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
-        )
+        call_command("remove_orphaned_files", verbose=True)
 
         # Make sure we've got the right expires value
-        assert "Expires: 5m" in stdout.getvalue()
+        assert "expires: 5 (minutes)" in caplog.text
 
         # Make sure we're watching the correct path
-        assert f"Watchdir: {tempdir!r}" in stdout.getvalue()
+        assert f"watchdir: {tempdir!r}" in caplog.text
 
-        # Make sure there's no stderr
-        assert stderr.getvalue() == ""
+        # Make sure there's no error output
+        error_records = [rec for rec in caplog.records if rec.levelname == "ERROR"]
+        assert len(error_records) == 0
 
     @pytest.mark.django_db
     def test_recent_files(self, settings, tmp_path):
@@ -1713,11 +1713,7 @@ class Test_remove_orphaned_files:
         ]
 
         # Run the command
-        stdout = StringIO()
-        stderr = StringIO()
-        call_command(
-            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
-        )
+        call_command("remove_orphaned_files", verbose=True)
 
         # Asssert nothing got deleted
         contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
@@ -1732,7 +1728,7 @@ class Test_remove_orphaned_files:
         ]
 
     @pytest.mark.django_db
-    def test_orphaned_files(self, settings, tmp_path, metricsmock):
+    def test_orphaned_files(self, settings, tmp_path, caplog, metricsmock):
         tempdir = str(tmp_path)
         settings.UPLOAD_TEMPDIR = tempdir
         settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
@@ -1764,11 +1760,7 @@ class Test_remove_orphaned_files:
         ]
 
         # Run the command
-        stdout = StringIO()
-        stderr = StringIO()
-        call_command(
-            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
-        )
+        call_command("remove_orphaned_files", verbose=True)
 
         # Asssert files older than 5 minutes (our cutoff) are deleted
         #
@@ -1785,10 +1777,12 @@ class Test_remove_orphaned_files:
         # Verify that the stdout says these were deleted
         for fn in ["file1.sym", "file2.sym", "file3.sym"]:
             path = str(tmp_path / "upload1" / fn)
-            assert f"Deleted file: {path}, 5b" in stdout.getvalue()
+            assert f"deleted file: {path}, 5b" in caplog.text
 
-        # Verify there's no stderr
-        assert stderr.getvalue() == ""
+        # Verify there's no error output
+        error_records = [rec for rec in caplog.records if rec.levelname == "ERROR"]
+        assert len(error_records) == 0
+        assert "ERROR" not in caplog.text
 
         # Assert metrics are emitted
         delete_incr = metricsmock.filter_records(
@@ -1797,7 +1791,7 @@ class Test_remove_orphaned_files:
         assert len(delete_incr) == 3
 
     @pytest.mark.django_db
-    def test_errors(self, settings, tmp_path, monkeypatch, metricsmock):
+    def test_errors(self, settings, tmp_path, monkeypatch, caplog, metricsmock):
         tempdir = str(tmp_path)
         settings.UPLOAD_TEMPDIR = tempdir
         settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
@@ -1827,18 +1821,11 @@ class Test_remove_orphaned_files:
         monkeypatch.setattr(os.path, "getmtime", adjusted_getmtime)
 
         # Run the command
-        stdout = StringIO()
-        stderr = StringIO()
-        call_command(
-            "remove_orphaned_files", verbose=True, stdout=stdout, stderr=stderr
-        )
+        call_command("remove_orphaned_files", verbose=True)
 
         # Assert message is logged
-        msg = (
-            f"Error getting size: {str(path)} [Errno 2] No such file or directory: "
-            + f"'{str(path)}'"
-        )
-        assert msg in stderr.getvalue()
+        assert f"error getting size: {str(path)}" in caplog.text
+        assert "FileNotFound" in caplog.text
 
         # Assert metric is emitted
         incr_records = metricsmock.filter_records(
