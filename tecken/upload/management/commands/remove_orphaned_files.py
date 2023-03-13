@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import datetime
+import logging
 import os
 import time
 
@@ -11,6 +12,8 @@ from django.core.management.base import BaseCommand
 
 import markus
 
+
+logger = logging.getLogger("tecken.remove_orphaned_files")
 metrics = markus.get_metrics("tecken")
 
 
@@ -56,10 +59,8 @@ class Command(BaseCommand):
                 # Time in seconds since epoch
                 try:
                     mtime = os.path.getmtime(fn)
-                except OSError as exc:
-                    self.stderr.write(
-                        f"remove_orphaned_files: Error getting mtime: {fn} {exc}"
-                    )
+                except OSError:
+                    logger.exception("error getting mtime: %s", fn)
                     metrics.incr("remove_orphaned_files.delete_file_error")
                     # OSError means we're not going to be able to delete this file. It's
                     # either gone already or we don't have access.
@@ -68,10 +69,8 @@ class Command(BaseCommand):
                 if mtime < cutoff_epoch:
                     try:
                         size = os.path.getsize(fn)
-                    except OSError as exc:
-                        self.stderr.write(
-                            f"remove_orphaned_files: Error getting size: {fn} {exc}"
-                        )
+                    except OSError:
+                        logger.exception("error getting size: %s", fn)
                         metrics.incr("remove_orphaned_files.delete_file_error")
                         # OSError means we're not going to be able to delete this file.
                         # It's either gone already or we don't have access.
@@ -79,14 +78,10 @@ class Command(BaseCommand):
 
                     try:
                         os.remove(fn)
-                        self.stdout.write(
-                            f"remove_orphaned_files: Deleted file: {fn}, {size}b"
-                        )
+                        logger.info("deleted file: %s, %sb", fn, size)
                         metrics.incr("remove_orphaned_files.delete_file")
-                    except OSError as exc:
-                        self.stderr.write(
-                            f"remove_orphaned_files: Error deleting file: {fn} {exc}"
-                        )
+                    except OSError:
+                        logger.exception("error deleting file: %s", fn)
                         metrics.incr("remove_orphaned_files.delete_file_error")
 
     def handle(self, *args, **options):
@@ -96,20 +91,16 @@ class Command(BaseCommand):
         watchdir = settings.UPLOAD_TEMPDIR
         expires = settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF
 
-        self.stdout.write(f"remove_orphaned_files: Expires: {expires:,}m")
-        self.stdout.write(f"remove_orphaned_files: Watchdir: {watchdir!r}")
+        logger.info("expires: %s (minutes)", expires)
+        logger.info("watchdir: %r", watchdir)
         if is_daemon:
-            self.stdout.write(
-                "remove_orphaned_files: Daemon mode on: will check every 5 minutes."
-            )
+            logger.info("daemon mode on: will check every 5 minutes.")
         if is_verbose:
-            self.stdout.write("remove_orphaned_files: Verbose: on")
+            logger.info("verbose: on")
 
         watchdir = os.path.abspath(str(watchdir))
         if not os.path.exists(watchdir):
-            self.stderr.write(
-                f"remove_orphaned_files: Error: {watchdir!r} does not exist. Exiting."
-            )
+            logger.error("error: %r does not exist. Exiting.", watchdir)
             return 1
 
         while True:
@@ -118,5 +109,5 @@ class Command(BaseCommand):
                 break
 
             if is_verbose:
-                self.stderro.write("remove_orphaned_files: Sleeping {SLEEP_TIME}...")
+                logger.debug("sleeping {SLEEP_TIME}...")
             time.sleep(SLEEP_TIME)

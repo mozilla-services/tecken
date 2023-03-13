@@ -89,79 +89,83 @@ LOGGING_DEFAULT_LEVEL = _config(
     default="INFO",
     doc="Default level for logging. Should be one of INFO, DEBUG, WARNING, ERROR.",
 )
+
+
+class AddProcessName(logging.Filter):
+    process_name = os.environ.get("PROCESS_NAME", "main")
+
+    def filter(self, record):
+        record.processname = self.process_name
+        return True
+
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "add_processname": {"()": AddProcessName},
+    },
     "formatters": {
         "json": {
             "()": "dockerflow.logging.JsonLogFormatter",
             "logger_name": "tecken",
         },
-        "human": {"format": "%(levelname)s %(asctime)s %(name)s %(message)s"},
+        "human": {
+            "format": "%(levelname)s %(asctime)s - %(processname)s - %(name)s %(message)s",
+        },
     },
     "handlers": {
         "console": {
             "level": LOGGING_DEFAULT_LEVEL,
             "class": "logging.StreamHandler",
             "formatter": "json",
+            "filters": ["add_processname"],
         },
         "null": {"class": "logging.NullHandler"},
     },
-    "root": {"level": "INFO", "handlers": ["console"]},
     "loggers": {
         "celery.task": {
             "level": logging.DEBUG,
             "handlers": ["console"],
-            "propagate": False,
         },
         "django": {
             "level": logging.INFO,
             "handlers": ["console"],
-            "propagate": False,
         },
         "django.db.backends": {
             "level": logging.ERROR,
             "handlers": ["console"],
-            "propagate": False,
         },
         "django_redis.cache": {
             "level": logging.INFO,
             "handlers": ["console"],
-            "propagate": False,
         },
         "django.request": {
             "level": logging.INFO,
             "handlers": ["console"],
-            "propagate": False,
         },
         "django.security.DisallowedHost": {
             "handlers": ["null"],
-            "propagate": False,
         },
         "fillmore": {
             "level": logging.ERROR,
             "handlers": ["console"],
-            "propagate": False,
         },
         "markus": {
             "level": logging.INFO,
             "handlers": ["console"],
-            "propagate": False,
         },
         "mozilla_django_oidc": {
             "level": logging.DEBUG,
             "handlers": ["console"],
-            "propagate": False,
         },
         "request.summary": {
             "handlers": ["console"],
             "level": logging.INFO,
-            "propagate": False,
         },
         "tecken": {
             "level": logging.DEBUG,
             "handlers": ["console"],
-            "propagate": False,
         },
     },
 }
