@@ -104,8 +104,8 @@ class DiskCache:
 
             return msgpack.unpackb(data)
 
-        except (OSError, msgpack.exceptions.ExtraData):
-            raise CacheReadError(f"can't read {filepath} from cache")
+        except (OSError, msgpack.exceptions.ExtraData) as exc:
+            raise CacheReadError(f"can't read {filepath} from cache") from exc
 
     def write_to_file(self, filepath, data):
         """Write data to a file

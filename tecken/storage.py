@@ -161,9 +161,9 @@ class StorageBucket:
             if error.response["Error"]["Code"] == "404":
                 return False
             else:
-                raise StorageError(self, error)
+                raise StorageError(self, error) from error
         except BotoCoreError as error:
-            raise StorageError(self, error)
+            raise StorageError(self, error) from error
         else:
             return True
 

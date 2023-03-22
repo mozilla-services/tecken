@@ -49,8 +49,8 @@ class PaginationForm(forms.Form):
         value = self.cleaned_data["page"]
         try:
             value = int(value or 1)
-        except ValueError:
-            raise forms.ValidationError(f"Not a number {value!r}")
+        except ValueError as exc:
+            raise forms.ValidationError(f"Not a number {value!r}") from exc
         if value < 1:
             value = 1
         return value

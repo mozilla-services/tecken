@@ -233,7 +233,7 @@ def test_client_with_debug(client, botomock):
 
 def test_client_with_ignorable_file_extensions(client, botomock):
     def mock_api_call(self, operation_name, api_params):
-        assert False, "This mock function shouldn't be called"
+        raise AssertionError("This mock function shouldn't be called")
 
     url = reverse(
         "download:download_symbol",

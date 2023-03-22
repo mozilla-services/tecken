@@ -100,7 +100,7 @@ def log_config(logger, config_manager, component):
     :arg component: the component with a Config property to log the configuration of
 
     """
-    for ns, key, value, option in get_runtime_config(config_manager, component):
+    for ns, key, value, _ in get_runtime_config(config_manager, component):
         # This gets rid of NO_VALUE
         value = value or ""
 

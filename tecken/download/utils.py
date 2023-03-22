@@ -32,7 +32,7 @@ def store_missing_symbol(symbol, debugid, filename, code_file=None, code_id=None
         logger.info(f"Ignoring log missing symbol (code_file ${len(code_id)} chars)")
         return
     hash_ = MissingSymbol.make_md5_hash(symbol, debugid, filename, code_file, code_id)
-    for missing_symbol in MissingSymbol.objects.raw(
+    for _ in MissingSymbol.objects.raw(
         """
             INSERT INTO download_missingsymbol (
                 hash, symbol, debugid, filename, code_file, code_id,

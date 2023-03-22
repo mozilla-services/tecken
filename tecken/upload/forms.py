@@ -77,12 +77,14 @@ class UploadByDownloadForm(forms.Form):
             try:
                 response = session_with_retries().head(url)
                 status_code = response.status_code
-            except ConnectionError:
+            except ConnectionError as exc:
                 raise UploadByDownloadRemoteError(
                     f"ConnectionError trying to open {url}"
-                )
-            except RetryError:
-                raise UploadByDownloadRemoteError(f"RetryError trying to open {url}")
+                ) from exc
+            except RetryError as exc:
+                raise UploadByDownloadRemoteError(
+                    f"RetryError trying to open {url}"
+                ) from exc
             if status_code >= 500:
                 raise UploadByDownloadRemoteError(f"{url} errored ({status_code})")
             if status_code >= 400:

@@ -386,7 +386,7 @@ class SymbolicateBase:
 
         # Go through jobs, stacks, and frames and build a list of all the things to
         # symbolicate
-        for job_i, job in enumerate(jobs):
+        for job in jobs:
             # List of stacks
             stacks = job["stacks"]
 
@@ -394,7 +394,7 @@ class SymbolicateBase:
             memorymap = job["memoryMap"]
 
             stacks_results = []
-            for stack_i, stack in enumerate(stacks):
+            for stack in stacks:
                 stack_results = []
                 for frame_i, frame in enumerate(stack):
                     module_index, module_offset = frame
@@ -525,7 +525,7 @@ def _load_payload(req):
         return json.load(req.bounded_stream)
     except json.JSONDecodeError:
         METRICS.incr("eliot.symbolicate.request_error", tags=["reason:bad_json"])
-        raise falcon.HTTPBadRequest(title="Payload is not valid JSON")
+        raise falcon.HTTPBadRequest(title="Payload is not valid JSON") from None
 
 
 def _validate_and_measure_jobs(jobs, api_version):
@@ -553,7 +553,9 @@ def _validate_and_measure_jobs(jobs, api_version):
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
-            raise falcon.HTTPBadRequest(title=f"job {i} has invalid modules: {exc}")
+            raise falcon.HTTPBadRequest(
+                title=f"job {i} has invalid modules: {exc}"
+            ) from None
 
         try:
             validate_stacks(stacks, modules)
@@ -564,7 +566,9 @@ def _validate_and_measure_jobs(jobs, api_version):
             # NOTE(willkg): the str of an exception is the message; we need to
             # control the message carefully so we're not spitting unsanitized data
             # back to the user in the error
-            raise falcon.HTTPBadRequest(title=f"job {i} has invalid stacks: {exc}")
+            raise falcon.HTTPBadRequest(
+                title=f"job {i} has invalid stacks: {exc}"
+            ) from None
 
         METRICS.histogram(
             "eliot.symbolicate.stacks_count",

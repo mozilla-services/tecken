@@ -21,8 +21,8 @@ class TokenForm(forms.Form):
         value = self.cleaned_data["expires"]
         try:
             return int(value)
-        except ValueError:
-            raise forms.ValidationError(f"Invalid number of days ({value!r})")
+        except ValueError as exc:
+            raise forms.ValidationError(f"Invalid number of days ({value!r})") from exc
 
     def clean_permissions(self):
         value = self.cleaned_data["permissions"]
@@ -48,8 +48,10 @@ class ExtendTokenForm(forms.Form):
         if value:
             try:
                 return int(value)
-            except ValueError:
-                raise forms.ValidationError(f"Invalid number of days ({value!r})")
+            except ValueError as exc:
+                raise forms.ValidationError(
+                    f"Invalid number of days ({value!r})"
+                ) from exc
 
 
 class TokensForm(forms.Form):
@@ -75,8 +77,8 @@ class UserEditForm(forms.ModelForm):
         for pk in [x for x in value.split(",") if x.strip()]:
             try:
                 groups.append(Group.objects.get(id=pk))
-            except ValueError:
-                raise forms.ValidationError("Invalid group ID")
+            except ValueError as exc:
+                raise forms.ValidationError("Invalid group ID") from exc
         return groups
 
 
@@ -114,8 +116,8 @@ class BaseFilteringForm(forms.Form):
             else:
                 try:
                     date_obj = dateutil.parser.parse(rest)
-                except ValueError:
-                    raise forms.ValidationError(f"Unable to parse {rest!r}")
+                except ValueError as exc:
+                    raise forms.ValidationError(f"Unable to parse {rest!r}") from exc
                 if timezone.is_naive(date_obj):
                     date_obj = timezone.make_aware(date_obj)
             if date:
@@ -181,8 +183,10 @@ class CleanSizeMixin:
                 try:
                     num = match.group("num")
                     num = float(num)
-                except ValueError:
-                    raise forms.ValidationError(f"{block!r} is not a valid size")
+                except ValueError as exc:
+                    raise forms.ValidationError(
+                        f"{block!r} is not a valid size"
+                    ) from exc
 
                 value = multiplier_aliases[multiplier.lower()] * num
                 sizes.append((operator, value))
@@ -243,8 +247,8 @@ class UploadsCreatedForm(BaseFilteringForm, CleanSizeMixin):
                 rest = int(rest)
                 if rest < 0:
                     raise forms.ValidationError(f"{rest!r} is negative")
-            except ValueError:
-                raise forms.ValidationError(f"{rest!r} is not an integer")
+            except ValueError as exc:
+                raise forms.ValidationError(f"{rest!r} is not an integer") from exc
             sizes.append((operator, rest))
         return sizes
 
@@ -310,8 +314,10 @@ class DownloadsMissingForm(BaseFilteringForm):
                 try:
                     num = match.group("num")
                     num = int(num)
-                except ValueError:
-                    raise forms.ValidationError(f"{block!r} is not a valid count")
+                except ValueError as exc:
+                    raise forms.ValidationError(
+                        f"{block!r} is not a valid count"
+                    ) from exc
             else:
                 raise forms.ValidationError(f"{block!r} is not a valid count")
             counts.append((operator, num))
