@@ -30,19 +30,17 @@ pytest-mock==3.10.0
 python-dateutil==2.8.2
 requests-mock==1.10.0
 requests==2.28.2
+ruff==0.0.257
 sentry-sdk==1.16.0
+Sphinx==5.1.1
+sphinx-rtd-theme==1.0.0
+sphinxcontrib-httpdomain==1.8.1
 symbolic==12.1.0
 ujson==5.7.0
 urllib3==1.26.14
 urlwait==1.0
 werkzeug==2.2.3
 whitenoise==6.4.0
-
-# NOTE(willkg): Wait to update these until we split out flake8.
-flake8==6.0.0
-Sphinx==5.1.1
-sphinx-rtd-theme==1.0.0
-sphinxcontrib-httpdomain==1.8.1
 
 # NOTE(willkg): We need this until we update to Python 3.10.
 exceptiongroup==1.1.0
