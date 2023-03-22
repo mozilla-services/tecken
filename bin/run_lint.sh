@@ -12,21 +12,23 @@
 
 set -e
 
-BLACKARGS=("--line-length=88" "--target-version=py36" bin tecken eliot-service systemtests)
+FILES="bin tecken eliot-service systemtests"
+
 
 if [[ $1 == "--fix" ]]; then
-    echo ">>> black fix"
-    black "${BLACKARGS[@]}"
+    echo ">>> black fix (${PYTHON_VERSION})"
+    black $FILES
 
 else
-    echo ">>> flake8 ($(python --version))"
+    PYTHON_VERSION=$(python --version)
+    echo ">>> ruff (${PYTHON_VERSION})"
     cd /app
-    flake8
+    ruff $FILES
 
-    echo ">>> black (python)"
-    black --check "${BLACKARGS[@]}"
+    echo ">>> black (${PYTHON_VERSION})"
+    black --check $FILES
 
-    echo ">>> license check (python)"
+    echo ">>> license check (${PYTHON_VERSION})"
     if [[ -d ".git" ]]; then
         # If the .git directory exists, we can let license_check.py do
         # git ls-files.
