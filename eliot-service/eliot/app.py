@@ -282,7 +282,7 @@ class EliotApp(falcon.App):
         This will raise a configuration error if something isn't right.
 
         """
-        for key, val in get_config_for_class(self.__class__).items():
+        for key in get_config_for_class(self.__class__).keys():
             self.config(key)
 
 

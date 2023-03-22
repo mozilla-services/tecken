@@ -28,7 +28,7 @@ def fmtsize(b):
 
 def run(count, directory, bucket, endpoint_url, search=""):
     all = []
-    for root, dirs, files in os.walk(os.path.join(directory, bucket)):
+    for root, _, files in os.walk(os.path.join(directory, bucket)):
         # if '.localstack.sys' in root:
         #     continue
         for name in files:

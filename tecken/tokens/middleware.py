@@ -66,9 +66,9 @@ class APITokenAuthenticationMiddleware:
             if token.is_expired:
                 self.force_full_request_body_read(request)
                 raise PermissionDenied("API Token found but expired")
-        except Token.DoesNotExist:
+        except Token.DoesNotExist as exc:
             self.force_full_request_body_read(request)
-            raise PermissionDenied("API Token not matched")
+            raise PermissionDenied("API Token not matched") from exc
 
         user = token.user
         if not user.is_active:

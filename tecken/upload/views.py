@@ -297,7 +297,7 @@ def upload_archive(request, upload_workspace):
                     )
                     os.remove(download_name)
                 else:
-                    for key, errors in form.errors.as_data().items():
+                    for errors in form.errors.as_data().values():
                         return http.JsonResponse(
                             {"error": errors[0].message}, status=400
                         )

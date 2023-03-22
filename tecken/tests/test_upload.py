@@ -1533,7 +1533,7 @@ def test_uploads_created_update():
     assert instance.count == 0
 
     user = User.objects.create(email="her@example.com")
-    for i in range(10):
+    for _ in range(10):
         upload = Upload.objects.create(
             user=user,
             # Make it a huge number to make sure it's (when x10) bigger than

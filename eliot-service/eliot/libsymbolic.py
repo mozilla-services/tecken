@@ -97,8 +97,8 @@ def convert_debug_id(debug_id):
     """
     try:
         return symbolic.normalize_debug_id(debug_id)
-    except symbolic.ParseDebugIdError:
-        raise BadDebugIDError("invalid_identifier")
+    except symbolic.ParseDebugIdError as exc:
+        raise BadDebugIDError("invalid_identifier") from exc
 
 
 def parse_sym_file(debug_filename, debug_id, data):
@@ -123,26 +123,26 @@ def parse_sym_file(debug_filename, debug_id, data):
         obj = archive.get_object(debug_id=sdebug_id)
         symcache = obj.make_symcache()
 
-    except LookupError:
+    except LookupError as exc:
         LOGGER.exception(
             f"error looking up debug id in SYM file: {debug_filename} {debug_id}"
         )
         raise ParseSymFileError(
             reason_code="sym_debug_id_lookup_error",
             msg="error looking up debug id in sym file {debug_filename} {debug_id}",
-        )
+        ) from exc
 
     except (
         symbolic.ObjectErrorUnknown,
         symbolic.ObjectErrorUnsupportedObject,
         symbolic.SymCacheErrorBadDebugFile,
-    ):
+    ) as exc:
         # Invalid symcache
         LOGGER.exception(f"error with SYM file: {debug_filename} {debug_id}")
         raise ParseSymFileError(
             reason_code="sym_malformed",
             msg="error with sym file {debug_filename} {debug_id}",
-        )
+        ) from exc
 
     return symcache
 

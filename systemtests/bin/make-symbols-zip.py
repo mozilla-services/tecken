@@ -68,7 +68,7 @@ def build_zip_file(zip_filename, sym_dir):
     """
     # Create zip file
     with zipfile.ZipFile(zip_filename, mode="w") as fp:
-        for root, dirs, files in os.walk(sym_dir):
+        for root, _, files in os.walk(sym_dir):
             if not files:
                 continue
 

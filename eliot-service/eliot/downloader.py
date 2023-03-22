@@ -158,8 +158,8 @@ class HTTPSource(Source):
 
         try:
             return self.download_file(url)
-        except RETRYABLE_EXCEPTIONS as e:
-            raise ErrorFileNotFound(f"status_code: {e}")
+        except RETRYABLE_EXCEPTIONS as exc:
+            raise ErrorFileNotFound(f"status_code: {exc}") from exc
 
 
 class SymbolFileDownloader:

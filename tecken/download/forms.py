@@ -52,8 +52,8 @@ class DownloadsMissingForm(forms.Form):
             else:
                 try:
                     date_obj = dateutil.parser.parse(rest)
-                except ValueError:
-                    raise forms.ValidationError(f"Unable to parse {rest!r}")
+                except ValueError as exc:
+                    raise forms.ValidationError(f"Unable to parse {rest!r}") from exc
                 if timezone.is_naive(date_obj):
                     date_obj = timezone.make_aware(date_obj)
             dates.append((operator, date_obj.date()))

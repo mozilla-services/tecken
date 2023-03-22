@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
         # Walk the directory looking for old files and delete them and keep track
         # of the directory
-        for root, dirs, files in os.walk(watchdir):
+        for root, _, files in os.walk(watchdir):
             for fn in files:
                 fn = os.path.join(root, fn)
                 # Time in seconds since epoch
