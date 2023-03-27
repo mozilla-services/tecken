@@ -13,6 +13,7 @@
 set -e
 
 FILES="bin tecken eliot-service systemtests"
+PYTHON_VERSION=$(python --version)
 
 
 if [[ $1 == "--fix" ]]; then
@@ -20,7 +21,6 @@ if [[ $1 == "--fix" ]]; then
     black $FILES
 
 else
-    PYTHON_VERSION=$(python --version)
     echo ">>> ruff (${PYTHON_VERSION})"
     cd /app
     ruff $FILES
