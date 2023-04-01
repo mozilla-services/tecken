@@ -237,9 +237,9 @@ encore==0.8.0 \
     --hash=sha256:74fd648f8119f4745e3dba750f7d1b5676f67df3606a408da0885b4b5a4cc436 \
     --hash=sha256:adfe42680bcb40edc99501f8d4aff169d38844b02fbae465f1f363bd39403454
     # via -r requirements.in
-everett==3.1.0 \
-    --hash=sha256:46175da5bcb06c193aa129e59714bca981344ff067c3a8bc2e625bc0b3dc01f6 \
-    --hash=sha256:db13891b849e45e54faea93ee79881d12458c5378f5b9b7f806eeff03ce1de3c
+everett==3.2.0 \
+    --hash=sha256:80517946d9746734ff8e6bda56d629f0092083389730c72157745f8d5d43d196 \
+    --hash=sha256:cdca5fc8815f402df650444eb1a2fa24c05ef524ff3ebbae3310d17edb11ea6a
     # via -r requirements.in
 exceptiongroup==1.1.0 \
     --hash=sha256:327cbda3da756e2de031a3107b81ab7b3770a602c4d16ca618298c526f4bec1e \
