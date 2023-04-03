@@ -194,10 +194,10 @@ def test_StorageBucket_client():
 
         # make a client that requires an endpoint_url
         bucket = StorageBucket("http://s3.example.com/buck/prefix")
-        bucket.client
+        assert bucket.client
         assert client_kwargs_calls[-1]["endpoint_url"] == ("http://s3.example.com")
 
         # make a client that requires a different region
         bucket = StorageBucket("https://s3-eu-west-2.amazonaws.com/some-bucket")
-        bucket.client
+        assert bucket.client
         assert client_kwargs_calls[-1]["region_name"] == ("eu-west-2")
