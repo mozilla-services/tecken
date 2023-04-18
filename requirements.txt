@@ -197,9 +197,9 @@ cryptography==36.0.1 \
     #   josepy
     #   mozilla-django-oidc
     #   pyopenssl
-datadog==0.44.0 \
-    --hash=sha256:071170f0c7ef22511dbf7f9bd76c4be500ee2d3d52072900a5c87b5495d2c733 \
-    --hash=sha256:57c4878d3a8351f652792cdba78050274789dcc44313adec096e87f9d3ca5992
+datadog==0.45.0 \
+    --hash=sha256:144fce48bda79484b102349f159c4ea4c7cd35361f9e0d031ddf931a922a38a4 \
+    --hash=sha256:6bffed67448cb4bf5dff559fb2acee1c06e7da8612b8e2a734f278b50b396603
     # via
     #   -r requirements.in
     #   markus
@@ -380,9 +380,9 @@ markupsafe==2.1.1 \
     # via
     #   jinja2
     #   werkzeug
-markus[datadog]==4.1.0 \
-    --hash=sha256:47d61c0208579a4ade63fdde5ed4e2245728f359f3f9873506c41d7d2590474e \
-    --hash=sha256:9913541cbea8fd311ce1feee406763a1bef91c611d41c57db8139d1198948b84
+markus[datadog]==4.2.0 \
+    --hash=sha256:156398b7de56db4e8ef420a80fcce1c49b6d3d41405874a3e128cb209cf4bfd8 \
+    --hash=sha256:9dd41ce53b25a3e806b0d065808fec00c4ec945e80cf5a72431bf9b61b44d7fb
     # via -r requirements.in
 milksnake==0.1.5 \
     --hash=sha256:550ca1fc4222724149ee5a933e6bb8347630c0ed023a2a97701ab94fa256f6b4 \
@@ -671,12 +671,12 @@ sqlparse==0.4.2 \
     --hash=sha256:0c00730c74263a94e5a9919ade150dfc3b19c574389985446148402998287dae \
     --hash=sha256:48719e356bb8b42991bdbb1e8b83223757b93789c00910a616a071910ca4a64d
     # via django
-symbolic==12.1.0 \
-    --hash=sha256:296f906bd90f0fa305b815a622215377e17e01c468653685c436157a7b5a46a0 \
-    --hash=sha256:738d16d89705593c9fbeb384562c3c9ba0c4427a6d03218f6f8ad790836353e3 \
-    --hash=sha256:a0c28147306c4c43294505bad8355e92a860e589f81250481f777d242fd24d39 \
-    --hash=sha256:d60f900b36ea2c2dca9ee66a7c15dd8d0751d1c5eb55320625606c70a4466f41 \
-    --hash=sha256:f01d110986bb1006935880ddd2e6b9314a6d14a34efb2bd2527070da0eaa784f
+symbolic==12.1.2 \
+    --hash=sha256:0dcb0885387b63fdc142ac4e2f2a1693c907e4f4060db175a7ebad44e3d3c033 \
+    --hash=sha256:1b9de3f43d1ec0472309f374ba059b2484e104c311634253908f63e2474d95fc \
+    --hash=sha256:1dbe816efd47f4e869b018fedadf18a3110e066d9db6859fd6d10c406d407585 \
+    --hash=sha256:47e441a5c10339fabb24d7d3e0bc5a93ba2501c4ed7c7eea14037e60a3f3d08f \
+    --hash=sha256:5fe409b96f48705f6d9fe9f7ca68c4ccba7f75005201b6ca492d0bcf962aebb0
     # via -r requirements.in
 tomli==1.2.3 \
     --hash=sha256:05b6166bff487dc068d322585c7ea4ef78deed501cc124060e0f238e89a9231f \
@@ -760,9 +760,9 @@ ujson==5.7.0 \
     --hash=sha256:f7f241488879d91a136b299e0c4ce091996c684a53775e63bb442d1a8e9ae22a \
     --hash=sha256:ff0004c3f5a9a6574689a553d1b7819d1a496b4f005a7451f339dc2d9f4cf98c
     # via -r requirements.in
-urllib3==1.26.14 \
-    --hash=sha256:076907bf8fd355cde77728471316625a4d2f7e713c125f51953bb5b3eecf4f72 \
-    --hash=sha256:75edcdc2f7d85b137124a6c3c9fc3933cdeaa12ecb9a6a959f22797a0feca7e1
+urllib3==1.26.15 \
+    --hash=sha256:8a388717b9476f934a21484e8c8e61875ab60644d29b9b39e11e4b9dc1c6b305 \
+    --hash=sha256:aa751d169e23c7479ce47a0cb0da579e3ede798f994f5816a74e4f4500dcea42
     # via
     #   -r requirements.in
     #   botocore
