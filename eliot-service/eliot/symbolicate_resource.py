@@ -79,11 +79,14 @@ class DebugStats:
             ptr = ptr[part]
         return ptr
 
+    def get(self, key, default=None):
+        return self._getvalue(self.data, key=key, default=default)
+
     def set(self, key, value):
         self._setvalue(self.data, key, value)
 
     def incr(self, key, value=1):
-        current_value = self._getvalue(self.data, key, default=0)
+        current_value = self._getvalue(self.data, key=key, default=0)
         self._setvalue(self.data, key, current_value + value)
 
     @contextlib.contextmanager
@@ -710,8 +713,8 @@ class SymbolicateV5(SymbolicateBase):
 
         # Add debug information if requested
         if is_debug:
-            all_modules = Counter()
             # Calculate modules
+            all_modules = Counter()
             for result in results:
                 all_modules.update(
                     [
@@ -726,13 +729,58 @@ class SymbolicateV5(SymbolicateBase):
             for key, count in all_modules.items():
                 debug_stats.set(["modules", "stacks_per_module", key], count)
 
+            # Calculate aggregates
+            debug_stats.set(
+                ["downloads", "size"],
+                sum(
+                    [0]
+                    + list(
+                        debug_stats.get(
+                            ["downloads", "size_per_module"], default={}
+                        ).values()
+                    )
+                ),
+            )
+            debug_stats.set(
+                ["downloads", "time"],
+                sum(
+                    [0]
+                    + list(
+                        debug_stats.get(
+                            ["downloads", "time_per_module"], default={}
+                        ).values()
+                    )
+                ),
+            )
+            debug_stats.set(
+                ["parse_sym", "time"],
+                sum(
+                    [0]
+                    + list(
+                        debug_stats.get(
+                            ["parse_sym", "time_per_module"], default={}
+                        ).values()
+                    )
+                ),
+            )
+            debug_stats.set(
+                ["save_symcache", "time"],
+                sum(
+                    [0]
+                    + list(
+                        debug_stats.get(
+                            ["save_symcache", "time_per_module"], default={}
+                        ).values()
+                    )
+                ),
+            )
+
             # Add 0 values if we need them
             debug_stats.incr("cache_lookups.count", 0)
             debug_stats.incr("cache_lookups.time", 0)
             debug_stats.incr("downloads.count", 0)
-            debug_stats.incr("downloads.time", 0)
-            debug_stats.incr("downloads.size", 0)
 
+            # Add debug stats to response
             response["debug"] = debug_stats.data
 
         resp.text = json.dumps(response)
