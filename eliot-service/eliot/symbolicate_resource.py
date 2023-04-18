@@ -777,7 +777,7 @@ class SymbolicateV5(SymbolicateBase):
 
             # Add 0 values if we need them
             debug_stats.incr("cache_lookups.count", 0)
-            debug_stats.incr("cache_lookups.time", 0)
+            debug_stats.incr("cache_lookups.time", 0.0)
             debug_stats.incr("downloads.count", 0)
 
             # Add debug stats to response
