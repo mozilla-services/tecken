@@ -427,6 +427,16 @@ class TestSymbolicateBase:
                     "testproj/D48F191186D67E69DF025AD71FB91E1F0": ANY,
                 },
             },
+            "parse_sym": {
+                "time_per_module": {
+                    "testproj/D48F191186D67E69DF025AD71FB91E1F0": ANY,
+                },
+            },
+            "save_symcache": {
+                "time_per_module": {
+                    "testproj/D48F191186D67E69DF025AD71FB91E1F0": ANY,
+                },
+            },
         }
 
     def test_symbolicate_pe_file(self, requestsmock, tmpcachedir, tmpdir):
