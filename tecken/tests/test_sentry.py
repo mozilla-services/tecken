@@ -70,7 +70,7 @@ BROKEN_EVENT = {
         "values": [
             {
                 "mechanism": {"handled": False, "type": "django"},
-                "module": None,
+                "module": "tecken.views",
                 "stacktrace": {
                     "frames": [
                         {
@@ -84,7 +84,7 @@ BROKEN_EVENT = {
                             "post_context": ANY,
                             "pre_context": ANY,
                             "vars": {
-                                "exc": "Exception('Intentional exception')",
+                                "exc": "IntentionalException()",
                                 "get_response": ANY,
                                 "request": "[Scrubbed]",
                             },
@@ -123,8 +123,8 @@ BROKEN_EVENT = {
                         },
                     ]
                 },
-                "type": "Exception",
-                "value": "Intentional exception",
+                "type": "IntentionalException",
+                "value": "",
             }
         ]
     },

@@ -10,7 +10,12 @@ import pytest
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
-from tecken.views import handler500, handler400, handler403
+from tecken.views import (
+    handler400,
+    handler403,
+    handler500,
+    IntentionalException,
+)
 
 
 def test_dashboard(client, db, settings, tmpdir):
@@ -154,5 +159,5 @@ def test_heartbeat_no_warnings(client, settings):
 
 
 def test_broken(client):
-    with pytest.raises(Exception):
+    with pytest.raises(IntentionalException):
         client.get(reverse("broken"))

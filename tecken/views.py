@@ -125,10 +125,14 @@ def auth_debug(request):
     )
 
 
+class IntentionalException(Exception):
+    pass
+
+
 def broken_view(request):
     """Raises an unhandled exception to test Sentry.
 
     Always have this behind some kind of basicauth.
 
     """
-    raise Exception("Intentional exception")
+    raise IntentionalException()
