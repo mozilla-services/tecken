@@ -53,4 +53,4 @@ zipp==3.11.0
 redis==3.4.1
 
 # NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
-Django==3.2.18
+Django==3.2.19
