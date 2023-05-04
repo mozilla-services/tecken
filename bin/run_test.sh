@@ -17,18 +17,5 @@ then
     bash
 fi
 
-TESTSUITE="${1:-}"
-
-if [[ "$TESTSUITE" == "" ]] || [[ "$TESTSUITE" == "tecken" ]]
-then
-    # Run tecken tests
-    pytest
-fi
-
-if [[ "$TESTSUITE" == "" ]] || [[ "$TESTSUITE" == "eliot" ]]
-then
-    # Run eliot-service tests
-    pushd eliot-service
-    pytest
-    popd
-fi
+# Run tecken tests
+pytest

@@ -49,7 +49,7 @@ setup: .env  ## | Initialize services.
 
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
-	${DC} up web eliot frontend fakesentry
+	${DC} up web frontend fakesentry
 
 .PHONY: stop
 stop: .env  ## | Stop docker containers.

@@ -12,7 +12,7 @@
 
 set -e
 
-FILES="bin tecken eliot-service systemtests"
+FILES="bin tecken systemtests"
 PYTHON_VERSION=$(python --version)
 
 

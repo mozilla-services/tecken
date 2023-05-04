@@ -29,9 +29,6 @@ BASEDIR = Path(__file__).parent.parent
 # Insert repo base dir which will pick up Tecken webapp things
 sys.path.insert(0, str(BASEDIR))
 
-# Insert Eliot base dir for Eliot things
-sys.path.insert(0, str(BASEDIR / "eliot-service"))
-
 # Insert this directory to pick up extensions
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -59,7 +56,6 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinxcontrib.httpdomain",
     "everett.sphinxext",
-    "exts.eliot_metrics",
     "exts.adr_log",
 ]
 

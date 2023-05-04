@@ -30,9 +30,6 @@ case ${SERVICE} in
 web)  ## Run Tecken web service
     exec honcho -f /app//Procfile --no-prefix start
     ;;
-eliot)  ## Run Eliot service
-    exec honcho -f /app/eliot-service/Procfile --no-prefix start
-    ;;
 worker)  ## Run Celery worker
     # FIXME(willkg): 1728210: remove this after we remove the celery infra
     exec ${CMD_PREFIX} celery -A tecken.celery:app worker --loglevel INFO

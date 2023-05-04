@@ -8,7 +8,6 @@
    overview
    upload
    download
-   symbolication
 
 .. toctree::
    :caption: Developers/Admin of Tecken
