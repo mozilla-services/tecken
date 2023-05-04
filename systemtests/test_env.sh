@@ -32,20 +32,17 @@ case $1 in
         export DESTRUCTIVE_TESTS=1
         export BAD_TOKEN_TEST=1
         TECKENHOST=http://web:8000/
-        ELIOTHOST=http://eliot:8000/
         export AUTH_TOKEN="${LOCAL_AUTH_TOKEN}"
         ;;
     "stage")
         export DESTRUCTIVE_TESTS=1
         export BAD_TOKEN_TEST=1
         TECKENHOST=https://symbols.stage.mozaws.net/
-        ELIOTHOST=https://symbolication.stage.mozaws.net/
         export AUTH_TOKEN="${STAGE_AUTH_TOKEN}"
         ;;
     "prod")
         echo "Running tests in prod--skipping destructive tests!"
         TECKENHOST=https://symbols.mozilla.org/
-        ELIOTHOST=https://symbolication.services.mozilla.com/
         export AUTH_TOKEN="${PROD_AUTH_TOKEN}"
         ;;
     *)
@@ -55,7 +52,6 @@ case $1 in
 esac
 
 echo "TECKENHOST: ${TECKENHOST}"
-echo "ELIOTHOST: ${ELIOTHOST}"
 echo ""
 
 # DESTRUCTIVE TESTS
@@ -84,14 +80,6 @@ if [ "${BAD_TOKEN_TEST}" == "1" ]; then
     ls -l ${FN}
     python ./bin/upload-symbols.py --expect-code=403 --auth-token="badtoken" --base-url="${TECKENHOST}" "${FN}"
 fi
-
-echo ">>> SYMBOLICATION V4 AND V5 TEST (ONLY 20 STACKS)"
-for FN in $(ls ./data/stacks/*.json | sort -u | head -n 20)
-do
-    # Verify v4 and v5 api for ELIOTHOST
-    python ./bin/symbolicate.py verify --api-url="${ELIOTHOST}symbolicate/v4" --api-version=4 "${FN}"
-    python ./bin/symbolicate.py verify --api-url="${ELIOTHOST}symbolicate/v5" --api-version=5 "${FN}"
-done
 
 echo ""
 
