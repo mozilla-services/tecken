@@ -72,18 +72,11 @@ jobs:
             docker compose run --rm --no-deps frontend-ci lint
 
       - run:
-          name: Run Eliot tests
+          name: Run tests
           command: |
             make .env
             docker compose up -d db redis-cache localstack statsd oidcprovider
-            docker compose run --rm test-ci bash ./bin/run_test.sh eliot
-
-      - run:
-          name: Run Tecken tests
-          command: |
-            make .env
-            docker compose up -d db redis-cache localstack statsd oidcprovider
-            docker compose run --rm test-ci bash ./bin/run_test.sh tecken
+            docker compose run --rm test-ci bash ./bin/run_test.sh
 
       - run:
           name: Build docs
