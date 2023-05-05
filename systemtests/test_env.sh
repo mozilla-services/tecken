@@ -6,7 +6,7 @@
 
 set -e
 
-# Runs through downloading, uploading, and symbolication tests.
+# Runs through downloading and uploading tests.
 
 # To use:
 #
