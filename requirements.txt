@@ -63,13 +63,13 @@ boltons==23.0.0 \
     --hash=sha256:8c50a71829525835ca3c849c7ed2511610c972b4dddfcd41a4a5447222beb4b0 \
     --hash=sha256:f716a1b57698a5b19062f3146cb5ce3549904028a2f267c2c0cf584eea3ad75b
     # via -r requirements.in
-boto3==1.26.125 \
-    --hash=sha256:6648aff15d19927cd26db47eb56362ccd313a1ddbd7aaa3235ef05d05d398252 \
-    --hash=sha256:fe8248b80c4f0fdaed8b8779467c4431a5e52177e02ccd137d51ec51194ebb00
+boto3==1.26.127 \
+    --hash=sha256:ded836536be41de9f9bd6a75e9feeb74d61b8c58ed7dc4ea89095082d7a616af \
+    --hash=sha256:ed31b2d35aad31418bd8093c5732c6296f785cc234333330df6b81396424d93b
     # via -r requirements.in
-botocore==1.29.125 \
-    --hash=sha256:3005a7ffee083315e69938acdf1bfeaf9e21fe1fe1643d6573ee817721f4ffcd \
-    --hash=sha256:ac87b63e9aa4231cd28941945024a0c4470c184c60334ebe5e1cae3544c785ed
+botocore==1.29.127 \
+    --hash=sha256:cf41d871b2a17d40bd579ce44dace18c875659ac13139a66680540fdf6f1c304 \
+    --hash=sha256:d2f9d00df16058cb4a3572a66bb1831e846e5aaa7c0a3033dd47f9a80e2dd58b
     # via
     #   -r requirements.in
     #   boto3
@@ -544,9 +544,9 @@ s3transfer==0.6.0 \
     --hash=sha256:06176b74f3a15f61f1b4f25a1fc29a4429040b7647133a463da8fa5bd28d5ecd \
     --hash=sha256:2ed07d3866f523cc561bf4a00fc5535827981b117dd7876f036b0c1aca42c947
     # via boto3
-sentry-sdk==1.21.1 \
-    --hash=sha256:092888f3abf7a2ea78f0bfcefc3e0465caee2b6f0efb26f538ccc60f95dca179 \
-    --hash=sha256:99c15556a23621be9f18c2955f7ce63321713bf1c0ad396b27b61399bac5f458
+sentry-sdk==1.22.1 \
+    --hash=sha256:052dff5069c6f0d836ee014323576824a9b40836fc003fb12489a1f19c60a3c9 \
+    --hash=sha256:c6c6946f8c927adb00af1c5ab6921df38775b2199b9003816d5935a1310352d5
     # via
     #   -r requirements.in
     #   fillmore
