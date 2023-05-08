@@ -61,11 +61,11 @@ Dev Server
 
 For local development, when you run ``docker compose up web worker frontend``
 it starts the NodeJS dev server in the foreground, mixing its output with
-that of Django and Celery. Normally in ``create-react-app`` apps, the
-``yarn start`` command is highly interactive, clears the screen, runs in
-full screen in the terminal, color coded and able to spit out any
-warnings or compilation errors. When run in docker, with non-TTY terminal,
-all output from the dev server is sent to ``stdout`` one line at a time.
+Django. Normally in ``create-react-app`` apps, the ``yarn start`` command is
+highly interactive, clears the screen, runs in full screen in the terminal,
+color coded and able to spit out any warnings or compilation errors. When run
+in docker, with non-TTY terminal, all output from the dev server is sent to
+``stdout`` one line at a time.
 
 When you start Docker for development (again ``make run`` or
 ``docker compose up web worker frontend``) it starts the dev server on port
