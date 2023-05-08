@@ -124,10 +124,6 @@ LOGGING = {
         "null": {"class": "logging.NullHandler"},
     },
     "loggers": {
-        "celery.task": {
-            "level": logging.DEBUG,
-            "handlers": ["console"],
-        },
         "django": {
             "level": logging.INFO,
             "handlers": ["console"],
@@ -439,19 +435,6 @@ else:
             },
         },
     }
-
-# FIXME(willkg): 1728210: remove after we remove celery infra
-
-# Add a 5 minute soft timeout to all Celery tasks.
-CELERY_TASK_SOFT_TIME_LIMIT = 60 * 5
-
-# And a 10 minute hard timeout.
-CELERY_TASK_TIME_LIMIT = CELERY_TASK_SOFT_TIME_LIMIT * 2
-
-SENTRY_CELERY_LOGLEVEL = logging.INFO
-
-CELERY_BROKER_URL = REDIS_URL
-
 
 AWS_ACCESS_KEY_ID = _config("AWS_ACCESS_KEY_ID", default="", doc="AWS access key id.")
 AWS_SECRET_ACCESS_KEY = _config(
@@ -797,10 +780,7 @@ UPLOAD_REATTEMPT_LIMIT_SECONDS = _config(
         "temporary glitch.\n\n"
         "When we do the reattempt, we need to wait sufficiently long because "
         "the upload might just be incomplete because it's in the queue, not "
-        "because it failed.\n\n"
-        "Note also, if the job is put back into a celery job, we also log "
-        "this in the cache so that it doesn't add it more than once. That "
-        "caching uses this same timeout."
+        "because it failed."
     ),
 )
 
