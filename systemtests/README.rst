@@ -26,7 +26,15 @@ That creates files in directories under ``data/``.
 Running tests
 =============
 
-To run::
+First, make sure you have a valid, unexpired API token for the environment you're testing.
+
+To set auth tokens, add these to your .env file:
+
+* `LOCAL_AUTH_TOKEN`
+* `STAGE_AUTH_TOKEN`
+* `PROD_AUTH_TOKEN`
+
+To run the systemtests, do::
 
    $ make shell
    root@f09b3cdf8570:/app# cd systemtests/

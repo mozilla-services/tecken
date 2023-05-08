@@ -25,7 +25,7 @@ MAX_ATTEMPTS = 5
 CONNECTION_TIMEOUT = 60
 
 # Number of seconds to sleep between tries to account for rate limiting
-SLEEP_TIMEOUT = 10
+SLEEP_TIMEOUT = 15
 
 
 class StdoutMetrics(BackendBase):
