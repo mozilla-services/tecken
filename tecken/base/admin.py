@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import json
+import time
 from urllib.parse import urlparse, urlunparse
 
 from dockerflow.version import get_version as dockerflow_get_version
@@ -143,18 +144,29 @@ def site_status(request):
 
     # Get some table counts
     tables = [
+        "auth_user",
+        "django_session",
         "download_missingsymbol",
-        "upload_upload",
+        "tokens_token",
         "upload_fileupload",
+        "upload_upload",
         "upload_uploadscreated",
     ]
     context["table_counts"] = []
     for table_name in tables:
+        start_time = time.time()
         with connection.cursor() as cursor:
             cursor.execute("select count(*) from %s" % table_name)
             row = cursor.fetchone()
             (value,) = row
-        context["table_counts"].append({"key": table_name, "value": value})
+        timing = time.time() - start_time
+        context["table_counts"].append(
+            {
+                "key": table_name,
+                "value": f"{value:,}",
+                "timing": f"{timing:,.2}",
+            }
+        )
 
     # Get migration status
     try:
