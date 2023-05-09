@@ -297,12 +297,7 @@ STATIC_ROOT = _config(
 STATIC_URL = "/static/"
 
 # The default Cache-Control max-age used,
-WHITENOISE_MAX_AGE = _config(
-    "WHITENOISE_MAX_AGE",
-    default=str(60 * 60),
-    parser=int,
-    doc="Maximum age for cache control for whitenoise served static files.",
-)
+WHITENOISE_MAX_AGE = 60 * 60
 WHITENOISE_ALLOW_ALL_ORIGINS = False
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
@@ -393,19 +388,8 @@ TOKENS_DEFAULT_EXPIRATION_DAYS = _config(
 )
 
 REDIS_URL = _config("REDIS_URL", doc="URL for Redis.")
-
-REDIS_SOCKET_CONNECT_TIMEOUT = _config(
-    "REDIS_SOCKET_CONNECT_TIMEOUT",
-    default="1",
-    parser=int,
-    doc="Connection timeout to use for Redis connections.",
-)
-REDIS_SOCKET_TIMEOUT = _config(
-    "REDIS_SOCKET_TIMEOUT",
-    default="2",
-    parser=int,
-    doc="Connection timeout for socket operations.",
-)
+REDIS_SOCKET_CONNECT_TIMEOUT = 2
+REDIS_SOCKET_TIMEOUT = 2
 
 # This name is hardcoded inside django-redis. It it's set to true in `settings`
 # it means that django-redis will attempt WARNING log any exceptions that
@@ -726,17 +710,6 @@ MIME_OVERRIDES = _config(
         "For specific file uploads, override the mimetype.\n\n"
         "For .sym files, for example, if S3 knows them as 'text/plain' "
         "they become really handy to open in a browser and view directly."
-    ),
-)
-
-SYMBOLS_GET_TIMEOUT = _config(
-    "SYMBOLS_GET_TIMEOUT",
-    default="5",
-    parser=int,
-    doc=(
-        "Number of seconds to wait for a symbol download. If this trips, no error "
-        "will be raised and we'll just skip using it as a known symbol file. "
-        "The value gets cached as an empty dict for one hour."
     ),
 )
 
