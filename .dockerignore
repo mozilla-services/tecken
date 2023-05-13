@@ -1,7 +1,7 @@
 .git
-.bash_history
 frontend/node_modules/
 
-# Places where I put data I'm debugging / working on
-systemtests/data/
+# Ephemeral data for local development. These will get volume mounted.
+archive/
 myanalysis/
+systemtests/data/

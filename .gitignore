@@ -2,7 +2,6 @@
 *.pyc
 .DS_Store
 docs/_build
-MANIFEST
 .coverage
 coverage.xml
 *.db
@@ -10,31 +9,18 @@ dist/
 .cache/
 revision.txt
 version.json
-htmlcov
 node_modules/
 .npm/
-.bash_history
 coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .docker-build
-.python_history
-hack.*py
 all-metrics-keys.json
-test-upload-inbox/
-upload-inbox/
-miniodata/
 .pytest_cache/
 .cache/
-docsvenv
 frontend/.eslintcache
 
 # Ephemeral systemtest data
 systemtests/data/zip-files/
 systemtests/data/stacks/
-
-# Ephemeral loadtest data
-loadtest/venv/
-loadtest/stacks/
-loadtest/.venv-build
