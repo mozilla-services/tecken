@@ -164,7 +164,7 @@ def site_status(request):
             {
                 "key": table_name,
                 "value": f"{value:,}",
-                "timing": f"{timing:,.2}",
+                "timing": f"{timing:,.2f}",
             }
         )
 
