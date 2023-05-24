@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from tecken.download.models import MissingSymbol
+from tecken.libtiming import record_timing
 
 
 # Number of days to keep records--anything with a modified older than this will
@@ -33,22 +34,28 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        self.stdout.write("cleanse_missingsymbol:")
         is_dry_run = options["dry_run"]
         today = timezone.now()
         today.replace(hour=0, minute=0, second=0, microsecond=0)
         cutoff = today - datetime.timedelta(days=RECORD_AGE_CUTOFF)
 
-        total_count = MissingSymbol.objects.all().count()
-        syms = MissingSymbol.objects.filter(modified_at__lte=cutoff)
         if is_dry_run:
-            self.stdout.write("cleanse_missingsymbol: THIS IS A DRY RUN.")
-            count = syms.count()
-        else:
-            count = syms.delete()[0]
+            self.stdout.write(">>> THIS IS A DRY RUN.")
 
-        self.stdout.write(
-            f"cleanse_missingsymbol: count before cleansing: missingsymbol={total_count}"
-        )
-        self.stdout.write(
-            f"cleanse_missingsymbol: cutoff={cutoff.date()}: deleted missingsymbol={count}"
-        )
+        with record_timing("count", self.stdout):
+            total_count = MissingSymbol.objects.all().count()
+            self.stdout.write(
+                f">>> count before cleansing: missingsymbol={total_count}"
+            )
+
+        with record_timing("delete", self.stdout):
+            syms = MissingSymbol.objects.filter(modified_at__lte=cutoff)
+            if is_dry_run:
+                count = syms.count()
+            else:
+                count = syms.delete()[0]
+
+            self.stdout.write(
+                f">>> cutoff={cutoff.date()}: deleted missingsymbol={count}"
+            )
