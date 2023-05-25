@@ -694,11 +694,12 @@ SYMBOL_FILE_PREFIX = _config(
 
 COMPRESS_EXTENSIONS = _config(
     "COMPRESS_EXTENSIONS",
-    default="sym",
+    default=".sym,debuginfo,executable",
     parser=ListOf(str),
     doc=(
-        "During upload, for each file in the archive, if the extension "
-        "matches this list, the file gets gzip compressed before uploading."
+        "During upload, for each file in the archive, if the lowercased file "
+        "name ends with a string from this list, the file gets gzip "
+        "compressed before uploading."
     ),
 )
 
@@ -773,7 +774,7 @@ ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = _config(
 
 DOWNLOAD_FILE_EXTENSIONS_ALLOWED = _config(
     "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
-    default=".sym,.dl_,.ex_,.pd_,.dbg.gz,.tar.bz2",
+    default=".sym,.dl_,.ex_,.pd_,.dbg.gz,.tar.bz2,executable,debuginfo",
     parser=ListOf(str),
     doc=(
         "A list of file extensions that if a file is NOT one of these extensions "

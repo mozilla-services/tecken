@@ -140,8 +140,7 @@ def key_existing(client, bucket, key):
 def should_compressed_key(key_name):
     """Return true if, based on this key name, the content should be
     gzip compressed."""
-    key_extension = os.path.splitext(key_name)[1].lower()[1:]
-    return key_extension in settings.COMPRESS_EXTENSIONS
+    return key_name.lower().endswith(tuple(settings.COMPRESS_EXTENSIONS))
 
 
 def get_key_content_type(key_name):

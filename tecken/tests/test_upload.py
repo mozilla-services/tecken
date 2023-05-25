@@ -66,7 +66,7 @@ def test_dump_and_extract(tmpdir):
         file_listings = dump_and_extract(str(tmpdir), f, ZIP_FILE)
     # That .zip file has multiple files in it so it's hard to rely
     # on the order.
-    assert len(file_listings) == 3
+    assert len(file_listings) == 10
     for file_listing in file_listings:
         assert file_listing.path
         assert os.path.isfile(file_listing.path)
@@ -90,7 +90,7 @@ def test_dump_and_extract_duplicate_name_same_size(tmpdir):
 
 
 def test_should_compressed_key(settings):
-    settings.COMPRESS_EXTENSIONS = ["bar"]
+    settings.COMPRESS_EXTENSIONS = [".bar"]
     assert should_compressed_key("foo.bar")
     assert should_compressed_key("foo.BAR")
     assert not should_compressed_key("foo.exe")
@@ -125,11 +125,26 @@ def test_upload_archive_custom_bucket_name(
             # yep, bucket exists
             return {}
 
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v0/flag/deadbeef/flag.jpeg"
+        # For some files, return the correct size so that they don't need to be re-uploaded.
+        # Generated with: find . -type f -exec stat -f "\"%N\": %z," {} ';'
+        # (plus some manual tweaking + removal)
+        files_with_correct_sizes = {
+            "v0/flag/deadbeef/flag.jpeg": 69183,
+            "v0/buildid/06c989e85fe320a137f27850399fc12ad889ddc9/executable": 22656,
+            "v0/buildid/06c989e85fe320a137f27850399fc12ad889ddc9/debuginfo": 162944,
+            "v0/libfakeopenh264.so/E889C906E35FA12037F27850399FC12A0/libfakeopenh264.so.sym": 12241,
+            "v0/libnssckbi.so/DFDDFE2B9D3AF892658B766CC9230B320/libnssckbi.so.sym": 161968,
+            "v0/uuid/4C862AB7-AB9A-3B6F-9CAB-3FE44CB6FB97/executable": 18724,
+            "v0/uuid/4C862AB7-AB9A-3B6F-9CAB-3FE44CB6FB97/debuginfo.dSYM.tar": 153600,
+            "v0/libfakeopenh264.dylib/4C862AB7AB9A3B6F9CAB3FE44CB6FB970/libfakeopenh264.dylib.sym": 5201,
+        }
+
+        if (
+            operation_name == "HeadObject"
+            and api_params["Key"] in files_with_correct_sizes
         ):
             # correct size, no need to upload
-            return {"ContentLength": 69183}
+            return {"ContentLength": files_with_correct_sizes[api_params["Key"]]}
 
         if operation_name == "HeadObject" and api_params["Key"] == (
             "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
