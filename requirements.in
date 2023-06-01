@@ -41,7 +41,7 @@ whitenoise==6.4.0
 exceptiongroup==1.1.0
 importlib-metadata==6.0.0
 typing-extensions==4.5.0
-zipp==3.11.0
+zipp==3.15.0
 
 # NOTE(willkg): Need to keep redis at this version because after this, the Python
 # library doesn't work with the version of Redis we're using in production
