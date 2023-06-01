@@ -543,17 +543,6 @@ SYNCHRONOUS_UPLOAD_FILE_UPLOAD = _config(
     ),
 )
 
-DOWNLOAD_LEGACY_PRODUCTS_PREFIXES = [
-    "firefox",
-    "seamonkey",
-    "sunbird",
-    "thunderbird",
-    "xulrunner",
-    "fennec",
-    "b2g",
-]
-
-
 SECRET_KEY = _config("SECRET_KEY", doc="Django's secret key for signing things.")
 
 DEBUG = _config(

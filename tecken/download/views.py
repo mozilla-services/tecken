@@ -55,13 +55,6 @@ def _ignore_symbol(symbol, debugid, filename):
     return False
 
 
-def download_symbol_legacy(request, legacyproduct, symbol, debugid, filename):
-    if legacyproduct not in settings.DOWNLOAD_LEGACY_PRODUCTS_PREFIXES:
-        raise http.Http404("Invalid legacy product prefix")
-    metrics.incr("download_legacyproduct")
-    return download_symbol(request, symbol, debugid, filename)
-
-
 def download_symbol_try(request, symbol, debugid, filename):
     return download_symbol(request, symbol, debugid, filename, try_symbols=True)
 
