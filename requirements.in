@@ -34,7 +34,7 @@ sphinxcontrib-httpdomain==1.8.1
 ujson==5.7.0
 urllib3==1.26.15
 urlwait==1.0
-werkzeug==2.3.3
+werkzeug==2.3.4
 whitenoise==6.4.0
 
 # NOTE(willkg): We need this until we update to Python 3.10.
