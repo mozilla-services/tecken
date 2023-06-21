@@ -29,7 +29,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
-from tecken.upload.models import Upload, UploadsCreated
+from tecken.upload.models import Upload
 from tecken.upload.utils import (
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
@@ -456,13 +456,6 @@ def upload_archive(request, upload_workspace):
         completed_at=timezone.now(),
     )
 
-    # Re-calculate the UploadsCreated for today.
-    # FIXME(willkg): when/if we get a scheduled task runner, we should move this
-    # to that
-    date = timezone.now().date()
-    with metrics.timer("uploads_created_update"):
-        UploadsCreated.update(date)
-    logger.info(f"UploadsCreated updated for {date!r}")
     metrics.incr(
         "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{bucket_info.name}"]
     )

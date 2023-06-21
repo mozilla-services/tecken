@@ -24,7 +24,7 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
-from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.models import Upload, FileUpload
 from tecken.upload.utils import (
     dump_and_extract,
     key_existing,
@@ -337,18 +337,9 @@ def test_upload_archive_happy_path(
         completed_at__isnull=False,
     )
 
-    uploads_created = UploadsCreated.objects.all().get()
-    assert uploads_created.date == timezone.now().date()
-    assert uploads_created.count == 1
-    assert uploads_created.files == 2
-    assert uploads_created.skipped == 0
-    assert uploads_created.ignored == 1
-    assert uploads_created.size == 70398
-    assert uploads_created.size_avg > 0
-
     # Check that markus caught timings of the individual file processing
     records = metricsmock.get_records()
-    assert len(records) == 13
+    assert len(records) == 12
     # It's impossible to predict, the order of some metrics records
     # because of the use of ThreadPoolExecutor. So we can't look at them
     # in the exact order.
@@ -360,7 +351,6 @@ def test_upload_archive_happy_path(
     assert all_keys.count("tecken.upload_file_upload_upload") == 2
     assert all_keys.count("tecken.upload_file_upload") == 2
     assert all_keys.count("tecken.upload_uploads") == 1
-    assert all_keys.count("tecken.uploads_created_update") == 1
     assert all_keys.count("tecken.upload_archive") == 1
 
 
@@ -1523,33 +1513,6 @@ def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):
     assert not form.is_valid()
     (validation_errors,) = form.errors.as_data().values()
     assert "Too many redirects" in validation_errors[0].message
-
-
-@pytest.mark.django_db
-def test_uploads_created_update():
-    today = timezone.now().date()
-    instance = UploadsCreated.update(today)
-    assert instance.date == today
-    assert instance.count == 0
-
-    user = User.objects.create(email="her@example.com")
-    for _ in range(10):
-        upload = Upload.objects.create(
-            user=user,
-            # Make it a huge number to make sure it's (when x10) bigger than
-            # the max size of a regular 'integer' in postgres.
-            size=250_000_000,
-            skipped_keys=["foo"],
-            ignored_keys=["bar"],
-        )
-        FileUpload.objects.create(upload=upload, size=123_499, key="foo.sym")
-
-    old_instance = instance
-    instance = UploadsCreated.update(today)
-    assert old_instance.id == instance.id
-    assert instance.date == today
-    assert instance.count == 10
-    assert instance.size == 2_500_000_000
 
 
 @pytest.mark.django_db

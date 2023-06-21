@@ -16,7 +16,6 @@ app_name = "api"
 urlpatterns = [
     path("_auth/", views.auth, name="auth"),
     path("stats/", views.stats, name="stats"),
-    path("stats/uploads", views.stats_uploads, name="stats_uploads"),
     path("tokens/", views.tokens, name="tokens"),
     path("tokens/token/<int:id>/extend", views.extend_token, name="extend_token"),
     path("tokens/token/<int:id>", views.delete_token, name="delete_token"),
@@ -26,12 +25,6 @@ urlpatterns = [
         name="possible_upload_urls",
     ),
     path("uploads/", views.uploads, name="uploads"),
-    path("uploads/created/", views.uploads_created, name="uploads_created"),
-    path(
-        "uploads/created/backfilled/",
-        views.uploads_created_backfilled,
-        name="uploads_created_backfilled",
-    ),
     path("uploads/files/", views.upload_files, name="upload_files"),
     path("uploads/files/file/<int:id>", views.upload_file, name="upload_file"),
     path("uploads/upload/<int:id>", views.upload, name="upload"),

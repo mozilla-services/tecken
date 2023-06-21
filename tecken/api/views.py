@@ -11,7 +11,7 @@ from django import http
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.auth.models import Permission, User
-from django.db.models import Aggregate, Count, Q, Sum, Avg, Min
+from django.db.models import Aggregate, Count, Q, Sum
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied, BadRequest
@@ -22,14 +22,12 @@ from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
     api_require_http_methods,
-    api_superuser_required,
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
-from tecken.base.utils import filesizeformat
 from tecken.download.models import MissingSymbol
 from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.models import Upload, FileUpload
 from tecken.upload.views import get_possible_bucket_urls
 
 logger = logging.getLogger("tecken")
@@ -420,121 +418,6 @@ def upload(request, id):
     return http.JsonResponse(context)
 
 
-@api_login_required
-@api_permission_required("upload.view_all_uploads")
-def uploads_created(request):
-    context = {"uploads_created": []}
-
-    form = forms.UploadsCreatedForm(request.GET, valid_sorts=("size", "date"))
-    if not form.is_valid():
-        return http.JsonResponse({"errors": form.errors}, status=400)
-
-    pagination_form = PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-
-    qs = UploadsCreated.objects.all()
-    qs = filter_uploads_created(qs, form)
-
-    batch_size = settings.API_UPLOADS_CREATED_BATCH_SIZE
-
-    page = pagination_form.cleaned_data["page"]
-    start = (page - 1) * batch_size
-    end = start + batch_size
-
-    aggregates_numbers = qs.aggregate(
-        count=Sum("count"),
-        total=Count("id"),
-        size_avg=Avg("size"),
-        size=Sum("size"),
-        files=Sum("files"),
-        skipped=Sum("skipped"),
-        ignored=Sum("ignored"),
-    )
-    context["aggregates"] = {
-        "uploads_created": {
-            "count": aggregates_numbers["count"],
-            "files": aggregates_numbers["files"],
-            "size": aggregates_numbers["size"],
-            "size_avg": aggregates_numbers["size_avg"],
-            "skipped": aggregates_numbers["skipped"],
-            "ignored": aggregates_numbers["ignored"],
-        }
-    }
-
-    if form.cleaned_data.get("order_by"):
-        order_by = form.cleaned_data["order_by"]
-    else:
-        order_by = {"sort": "date", "reverse": True}
-
-    rows = []
-    order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
-    for created in qs.order_by(order_by_string)[start:end]:
-        rows.append(
-            {
-                "id": created.id,
-                "date": created.date,
-                "count": created.count,
-                "files": created.files,
-                "skipped": created.skipped,
-                "ignored": created.ignored,
-                "size": created.size,
-                "size_avg": created.size_avg,
-                "created_at": created.created_at,
-                # "modified_at": created.modified_at,
-            }
-        )
-
-    context["uploads_created"] = rows
-    context["total"] = aggregates_numbers["total"]
-    context["batch_size"] = batch_size
-    context["order_by"] = order_by
-
-    return http.JsonResponse(context)
-
-
-def filter_uploads_created(qs, form):
-    for key in ("size", "count"):
-        for operator, value in form.cleaned_data[key]:
-            orm_operator = "{}__{}".format(key, ORM_OPERATORS[operator])
-            qs = qs.filter(**{orm_operator: value})
-    qs = filter_form_dates(qs, form, ("date",))
-    return qs
-
-
-@api_login_required
-@api_superuser_required
-def uploads_created_backfilled(request):
-    """Temporary function that serves two purposes. Ability to see if all the
-    UploadsCreated have been backfilled and actually do some backfill."""
-
-    context = {}
-    min_uploads = Upload.objects.aggregate(min=Min("created_at"))["min"]
-    days_till_today = (timezone.now() - min_uploads).days
-    uploads_created_count = UploadsCreated.objects.all().count()
-    context["uploads_created_count"] = uploads_created_count
-    context["days_till_today"] = days_till_today
-    context["backfilled"] = bool(
-        uploads_created_count and days_till_today + 1 == uploads_created_count
-    )
-
-    if request.method == "POST":
-        days = int(request.POST.get("days", 2))
-        force = request.POST.get("force", "no") not in ("no", "0", "false")
-        start = min_uploads.date()
-        today = timezone.now().date()
-        context["updated"] = []
-        while start <= today:
-            if force or not UploadsCreated.objects.filter(date=start).exists():
-                record = UploadsCreated.update(start)
-                context["updated"].append({"date": record.date, "count": record.count})
-                if len(context["updated"]) >= days:
-                    break
-            start += datetime.timedelta(days=1)
-        context["backfilled"] = True
-    return http.JsonResponse(context)
-
-
 def _upload_files_build_qs(request):
     form = forms.FileUploadsForm(request.GET)
     if not form.is_valid():
@@ -711,65 +594,33 @@ def stats(request):
     start_yesterday = start_today - datetime.timedelta(days=1)
     last_30_days = today - datetime.timedelta(days=30)
 
-    if not all_uploads:
-        with metrics.timer("api_stats", tags=["section:your_uploads"]):
-            # If it's an individual user, they can only see their own uploads and
-            # thus can't use UploadsCreated.
-            upload_qs = Upload.objects.filter(user=request.user)
-            files_qs = FileUpload.objects.filter(upload__user=request.user)
+    with metrics.timer("api_stats", tags=["section:all_uploads"]):
+        upload_qs = Upload.objects.all()
+        files_qs = FileUpload.objects.all()
 
-            def count_and_size(qs, start, end):
-                sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-                return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
+        if not all_uploads:
+            upload_qs = upload_qs.filter(user=request.user)
+            files_qs = files_qs.filter(upload__user=request.user)
 
-            def count(qs, start, end):
-                sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-                return sub_qs.aggregate(count=Count("id"))
+        def count_and_size(qs, start, end):
+            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
+            return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
 
-            numbers["uploads"] = {
-                "all_uploads": all_uploads,
-                "today": count_and_size(upload_qs, start_today, today),
-                "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
-                "last_30_days": count_and_size(upload_qs, last_30_days, today),
-            }
-            numbers["files"] = {
-                "today": count(files_qs, start_today, today),
-                "yesterday": count(files_qs, start_yesterday, start_today),
-                "last_30_days": count(files_qs, last_30_days, today),
-            }
-    else:
-        with metrics.timer("api_stats", tags=["section:all_uploads"]):
+        def count(qs, start, end):
+            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
+            return sub_qs.aggregate(count=Count("id"))
 
-            def count_and_size(start, end):
-                return UploadsCreated.objects.filter(
-                    date__gte=start.date(), date__lt=end.date()
-                ).aggregate(
-                    count=Sum("count"), total_size=Sum("size"), files=Sum("files")
-                )
-
-            _today = count_and_size(today, today + datetime.timedelta(days=1))
-            _yesterday = count_and_size(today - datetime.timedelta(days=1), today)
-            count_last_30_days = count_and_size(
-                last_30_days, today + datetime.timedelta(days=1)
-            )
-
-            numbers["uploads"] = {
-                "all_uploads": all_uploads,
-                "today": {"count": _today["count"], "total_size": _today["total_size"]},
-                "yesterday": {
-                    "count": _yesterday["count"],
-                    "total_size": _yesterday["total_size"],
-                },
-                "last_30_days": {
-                    "count": count_last_30_days["count"],
-                    "total_size": count_last_30_days["total_size"],
-                },
-            }
-            numbers["files"] = {
-                "today": {"count": _today["files"]},
-                "yesterday": {"count": _yesterday["files"]},
-                "last_30_days": {"count": count_last_30_days["files"]},
-            }
+        numbers["uploads"] = {
+            "all_uploads": all_uploads,
+            "today": count_and_size(upload_qs, start_today, today),
+            "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
+            "last_30_days": count_and_size(upload_qs, last_30_days, today),
+        }
+        numbers["files"] = {
+            "today": count(files_qs, start_today, today),
+            "yesterday": count(files_qs, start_yesterday, start_today),
+            "last_30_days": count(files_qs, last_30_days, today),
+        }
 
     with metrics.timer("api_stats", tags=["section:all_missing_downloads"]):
         # When doing aggregates on rows that don't exist you can get a None instead
@@ -833,39 +684,6 @@ def stats(request):
             }
 
     context = {"stats": numbers}
-    return http.JsonResponse(context)
-
-
-@api_login_required
-def stats_uploads(request):
-    context = {}
-
-    today = timezone.now().date()
-    yesterday = today - datetime.timedelta(days=1)
-
-    start_month = today
-    while start_month.day != 1:
-        start_month -= datetime.timedelta(days=1)
-
-    def count_uploads(date, end=None):
-        qs = UploadsCreated.objects.filter(date__gte=date)
-        if end is not None:
-            qs = qs.filter(date__lt=end)
-        aggregates = qs.aggregate(
-            count=Sum("count"), total_size=Sum("size"), files=Sum("files")
-        )
-        return {
-            "count": aggregates["count"] or 0,
-            "total_size": aggregates["total_size"] or 0,
-            "total_size_human": filesizeformat(aggregates["total_size"] or 0),
-            "files": aggregates["files"] or 0,
-        }
-
-    context["uploads"] = {
-        "today": count_uploads(today),
-        "yesterday": count_uploads(yesterday, end=today),
-        "this_month": count_uploads(start_month),
-    }
     return http.JsonResponse(context)
 
 
