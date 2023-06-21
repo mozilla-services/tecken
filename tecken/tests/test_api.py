@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from tecken.tokens.models import Token
-from tecken.upload.models import Upload, FileUpload, UploadsCreated
+from tecken.upload.models import Upload, FileUpload
 from tecken.download.models import MissingSymbol
 from tecken.api.views import filter_uploads
 from tecken.api.forms import UploadsForm, BaseFilteringForm
@@ -634,7 +634,6 @@ def test_uploads_second_increment(client):
     Upload.objects.create(
         user=User.objects.create(email="her@example.com"), size=123_456
     )
-    UploadsCreated.update(timezone.now().date())
 
     response = client.get(url)
     assert response.status_code == 200
@@ -653,141 +652,6 @@ def test_uploads_second_increment(client):
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 1
-
-
-@pytest.mark.django_db
-def test_uploads_created(client):
-    url = reverse("api:uploads_created")
-    response = client.get(url)
-    assert response.status_code == 403
-
-    user = User.objects.create(username="peterbe", email="peterbe@example.com")
-    user.set_password("secret")
-    user.save()
-    assert client.login(username="peterbe", password="secret")
-
-    response = client.get(url)
-    assert response.status_code == 403
-
-    permission = Permission.objects.get(codename="view_all_uploads")
-    user.user_permissions.add(permission)
-    response = client.get(url)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["uploads_created"] == []
-
-    # Don't mess with the 'page' key
-    response = client.get(url, {"page": "notanumber"})
-    assert response.status_code == 400
-    # If you make it 0 or less, it just sends you to page 1
-    response = client.get(url, {"page": "0"})
-    assert response.status_code == 200
-
-    now = timezone.now()
-    upload_created = UploadsCreated.objects.create(
-        date=now.date(),
-        count=12,
-        files=1000,
-        skipped=10,
-        ignored=5,
-        size=500_000_000,
-        size_avg=500_000,
-    )
-
-    response = client.get(url)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["uploads_created"][0]["id"] == upload_created.id
-    assert data["uploads_created"][0]["date"] == now.strftime("%Y-%m-%d")
-    assert data["uploads_created"][0]["count"] == 12
-    assert data["uploads_created"][0]["files"] == 1000
-    assert data["uploads_created"][0]["skipped"] == 10
-    assert data["uploads_created"][0]["ignored"] == 5
-    assert data["uploads_created"][0]["size"] == 500_000_000
-    assert data["uploads_created"][0]["size_avg"] == 500_000
-
-    # Filter incorrectly
-    response = client.get(url, {"size": ">= xxx"})
-    assert response.status_code == 400
-    assert response.json()["errors"]["size"]
-
-    # Let's filter on size
-    response = client.get(url, {"size": ">= 10KB"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["uploads_created"][0]["id"] == upload_created.id
-    assert data["total"] == 1
-
-    response = client.get(url, {"size": "< 1000"})
-    assert response.status_code == 200
-    data = response.json()
-    assert not data["uploads_created"]
-    assert data["total"] == 0
-
-    # Filter on "multiple sizes"
-    response = client.get(url, {"size": ">= 10KB, < 1g"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["uploads_created"][0]["id"] == upload_created.id
-
-    # Let's filter on dates
-    response = client.get(url, {"date": ">=" + now.strftime("%Y-%m-%d")})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["uploads_created"][0]["id"] == upload_created.id
-
-    # Filter on count (negative)
-    response = client.get(url, {"count": "-1"})
-    assert response.status_code == 400
-    data = response.json()
-    assert data["errors"]["count"]
-
-    # Filter on count (not an integer)
-    response = client.get(url, {"count": "notanumber"})
-    assert response.status_code == 400
-    data = response.json()
-    assert data["errors"]["count"]
-
-    response = client.get(url, {"count": ">1"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["uploads_created"]
-
-    response = client.get(url, {"count": ">12"})
-    assert response.status_code == 200
-    data = response.json()
-    assert not data["uploads_created"]
-
-
-@pytest.mark.django_db
-def test_uploads_created_backfilled(client):
-    url = reverse("api:uploads_created_backfilled")
-    response = client.get(url)
-    assert response.status_code == 403
-
-    user = User.objects.create(username="peterbe", email="peterbe@example.com")
-    user.set_password("secret")
-    user.save()
-    assert client.login(username="peterbe", password="secret")
-
-    # Create some fake uploads
-    Upload.objects.create(user=user, size=10_000_000)
-
-    response = client.get(url)
-    assert response.status_code == 403
-
-    user.is_superuser = True
-    user.save()
-    response = client.get(url)
-    assert response.status_code == 200
-    data = response.json()
-    assert not data["backfilled"]
-
-    response = client.post(url)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["updated"]
-    assert data["backfilled"]
 
 
 @pytest.mark.django_db
@@ -1093,10 +957,29 @@ def test_stats(client):
     response = client.get(url)
     assert response.status_code == 200
     data = response.json()
-    assert data["stats"]["uploads"]
-    assert not data["stats"]["uploads"]["all_uploads"]
-    assert "users" not in data["stats"]
-    assert data["stats"]["tokens"]
+    assert data["stats"] == {
+        "uploads": {
+            # NOTE: all_uploads == False
+            "all_uploads": False,
+            "today": {"count": 0, "total_size": 0},
+            "yesterday": {"count": 0, "total_size": 0},
+            "last_30_days": {"count": 0, "total_size": 0},
+        },
+        "files": {
+            "today": {"count": 0},
+            "yesterday": {"count": 0},
+            "last_30_days": {"count": 0},
+        },
+        "downloads": {
+            "missing": {
+                "today": {"count": 0},
+                "yesterday": {"count": 0},
+                "last_30_days": {"count": 0},
+            }
+        },
+        "tokens": {"total": 0, "expired": 0},
+        # NOTE: no "users" section
+    }
 
     user.is_superuser = True
     user.save()
@@ -1104,8 +987,29 @@ def test_stats(client):
     response = client.get(url)
     assert response.status_code == 200
     data = response.json()
-    assert data["stats"]["users"]
-    assert data["stats"]["uploads"]["all_uploads"]
+    assert data["stats"] == {
+        "uploads": {
+            # NOTE: all_uploads == True
+            "all_uploads": True,
+            "today": {"count": 0, "total_size": 0},
+            "yesterday": {"count": 0, "total_size": 0},
+            "last_30_days": {"count": 0, "total_size": 0},
+        },
+        "files": {
+            "today": {"count": 0},
+            "yesterday": {"count": 0},
+            "last_30_days": {"count": 0},
+        },
+        "downloads": {
+            "missing": {
+                "today": {"count": 0},
+                "yesterday": {"count": 0},
+                "last_30_days": {"count": 0},
+            }
+        },
+        "tokens": {"total": 0, "expired": 0},
+        "users": {"total": 1, "superusers": 1, "active": 1, "not_active": 0},
+    }
 
 
 @pytest.mark.django_db
@@ -1135,62 +1039,6 @@ def test_stats_missing_symbols_count(client):
     assert missing["today"]["count"] == 1
     assert missing["yesterday"]["count"] == 0
     assert missing["last_30_days"]["count"] == 1
-
-
-@pytest.mark.django_db
-def test_stats_uploads(client):
-    url = reverse("api:stats_uploads")
-    response = client.get(url)
-    assert response.status_code == 403
-
-    user = User.objects.create(username="peterbe", email="peterbe@example.com")
-    user.set_password("secret")
-    user.save()
-    assert client.login(username="peterbe", password="secret")
-
-    response = client.get(url)
-    assert response.status_code == 200
-    data = response.json()
-
-    assert data["uploads"]["today"]["count"] == 0
-    assert data["uploads"]["today"]["files"] == 0
-    assert data["uploads"]["today"]["total_size"] == 0
-    assert data["uploads"]["today"]["total_size_human"] == "0 bytes"
-    assert data["uploads"]["yesterday"]["count"] == 0
-    assert data["uploads"]["yesterday"]["files"] == 0
-    assert data["uploads"]["yesterday"]["total_size"] == 0
-    assert data["uploads"]["yesterday"]["total_size_human"] == "0 bytes"
-    assert data["uploads"]["this_month"]["count"] == 0
-    assert data["uploads"]["this_month"]["files"] == 0
-    assert data["uploads"]["this_month"]["total_size"] == 0
-    assert data["uploads"]["this_month"]["total_size_human"] == "0 bytes"
-
-    UploadsCreated.objects.create(
-        date=timezone.now().date(),
-        count=3,
-        size=123_456_789,
-        size_avg=500_000,
-        files=100,
-        skipped=1,
-        ignored=2,
-    )
-
-    response = client.get(url)
-    assert response.status_code == 200
-    data = response.json()
-
-    assert data["uploads"]["today"]["count"] == 3
-    assert data["uploads"]["today"]["files"] == 100
-    assert data["uploads"]["today"]["total_size"] == 123_456_789
-    assert data["uploads"]["today"]["total_size_human"] == "117.7 MB"
-    assert data["uploads"]["yesterday"]["count"] == 0
-    assert data["uploads"]["yesterday"]["files"] == 0
-    assert data["uploads"]["yesterday"]["total_size"] == 0
-    assert data["uploads"]["yesterday"]["total_size_human"] == "0 bytes"
-    assert data["uploads"]["this_month"]["count"] == 3
-    assert data["uploads"]["this_month"]["files"] == 100
-    assert data["uploads"]["this_month"]["total_size"] == 123_456_789
-    assert data["uploads"]["this_month"]["total_size_human"] == "117.7 MB"
 
 
 @pytest.mark.django_db
