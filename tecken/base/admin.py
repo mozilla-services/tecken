@@ -150,7 +150,6 @@ def site_status(request):
         "tokens_token",
         "upload_fileupload",
         "upload_upload",
-        "upload_uploadscreated",
     ]
     context["table_counts"] = []
     for table_name in tables:
