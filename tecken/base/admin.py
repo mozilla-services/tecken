@@ -20,6 +20,8 @@ from django.shortcuts import render
 from django.urls import reverse, NoReverseMatch
 from django.utils.html import format_html
 
+import redis.exceptions
+
 
 ACTION_TO_NAME = {ADDITION: "add", CHANGE: "change", DELETION: "delete"}
 
@@ -199,6 +201,9 @@ def site_status(request):
         redis_cache_info = get_redis_connection("default").info()
     except NotImplementedError:
         redis_cache_info = {"redis_version": "fakeredis"}
+    except redis.exceptions.ConnectionError as exc:
+        redis_cache_info = {"redis_version": f"connection error: {exc}"}
+
     context["versions"].append(
         {"key": "Redis Cache", "value": redis_cache_info["redis_version"]}
     )
