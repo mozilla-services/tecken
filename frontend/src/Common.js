@@ -201,6 +201,17 @@ export const TableSubTitle = ({
   }
 };
 
+export const FilterSummary = ({ filter }) => {
+  const filterParts = [];
+  for (const [key, value] of Object.entries(filter)) {
+    if (key != "page" && value != "") {
+      filterParts.push(`${key}: ${value}`);
+    }
+  }
+  const filterValue = filterParts.join(", ");
+  return <span>{filterValue}</span>;
+};
+
 export const pluralize = (number, singular, plural) => {
   if (number === 1) {
     return `1 ${singular}`;
