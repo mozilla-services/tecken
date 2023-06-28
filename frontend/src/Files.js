@@ -14,6 +14,7 @@ import {
   Pagination,
   BooleanIcon,
   TableSubTitle,
+  FilterSummary,
   thousandFormat,
   formatSeconds,
   DisplayDateDifference,
@@ -37,8 +38,17 @@ class Files extends React.PureComponent {
       total: null,
       batchSize: null,
       apiUrl: null,
-      filter: {},
+      filter: {
+        // We want the filter for created_at to default to the last 30 days
+        created_at: this.getThirtyDaysFilterValue(),
+      },
     };
+  }
+
+  getThirtyDaysFilterValue() {
+    var thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return ">=" + format(thirtyDaysAgo, "yyyy-MM-dd");
   }
 
   componentWillMount() {
@@ -162,6 +172,8 @@ class Files extends React.PureComponent {
             />
           )
         )}
+
+        <FilterSummary filter={this.state.filter} />
 
         {!this.state.loadingFiles && this.state.files && (
           <DisplayFiles

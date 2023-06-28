@@ -522,6 +522,8 @@ def _upload_files_content(request, qs):
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
     qs = _upload_files_build_qs(request)
+    if isinstance(qs, http.JsonResponse):
+        return qs
     try:
         context = _upload_files_content(request, qs)
     except BadRequest as e:

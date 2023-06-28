@@ -14,6 +14,7 @@ import {
   formatFileSize,
   Pagination,
   TableSubTitle,
+  FilterSummary,
   thousandFormat,
   pluralize,
   DisplayFilesSummary,
@@ -37,12 +38,21 @@ class Uploads extends React.PureComponent {
       total: null,
       batchSize: null,
       apiUrl: null,
-      filter: {},
+      filter: {
+        // We want the filter for created_at to default to the last 30 days
+        created_at: this.getThirtyDaysFilterValue(),
+      },
       validationErrors: null,
       latestUpload: null,
       orderBy: null,
       hasNextPage: false,
     };
+  }
+
+  getThirtyDaysFilterValue() {
+    var thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return ">=" + format(thirtyDaysAgo, "yyyy-MM-dd");
   }
 
   componentWillMount() {
@@ -260,6 +270,9 @@ class Uploads extends React.PureComponent {
             />
           )
         )}
+
+        <FilterSummary filter={this.state.filter} />
+
         {this.state.validationErrors && (
           <ShowValidationErrors
             errors={this.state.validationErrors}
