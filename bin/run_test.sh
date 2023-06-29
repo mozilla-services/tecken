@@ -15,7 +15,7 @@ export DEVELOPMENT=1
 if [ "$1" = "--shell" ]
 then
     bash
+else
+    # Run tecken tests
+    pytest
 fi
-
-# Run tecken tests
-pytest
