@@ -10,12 +10,11 @@ import markus
 from django import http
 from django.conf import settings
 from django.urls import reverse
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import Permission
 from django.db.models import Aggregate, Count, Q, Sum
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import PermissionDenied, BadRequest
-from django.core.cache import cache
 
 from tecken.api import forms
 from tecken.base.decorators import (
@@ -598,19 +597,13 @@ def stats(request):
 
     with metrics.timer("api_stats", tags=["section:all_uploads"]):
         upload_qs = Upload.objects.all()
-        files_qs = FileUpload.objects.all()
 
         if not all_uploads:
             upload_qs = upload_qs.filter(user=request.user)
-            files_qs = files_qs.filter(upload__user=request.user)
 
         def count_and_size(qs, start, end):
             sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
             return sub_qs.aggregate(count=Count("id"), total_size=Sum("size"))
-
-        def count(qs, start, end):
-            sub_qs = qs.filter(created_at__gte=start, created_at__lt=end)
-            return sub_qs.aggregate(count=Count("id"))
 
         numbers["uploads"] = {
             "all_uploads": all_uploads,
@@ -618,72 +611,17 @@ def stats(request):
             "yesterday": count_and_size(upload_qs, start_yesterday, start_today),
             "last_30_days": count_and_size(upload_qs, last_30_days, today),
         }
-        numbers["files"] = {
-            "today": count(files_qs, start_today, today),
-            "yesterday": count(files_qs, start_yesterday, start_today),
-            "last_30_days": count(files_qs, last_30_days, today),
-        }
 
-    with metrics.timer("api_stats", tags=["section:all_missing_downloads"]):
-        # When doing aggregates on rows that don't exist you can get a None instead
-        # of 0. Only really happens in cases where you have extremely little in the
-        # database.
-        def nones_to_zero(obj):
-            for key, value in obj.items():
-                if isinstance(value, dict):
-                    nones_to_zero(value)
-                elif value is None:
-                    obj[key] = 0
+    # When doing aggregates on rows that don't exist you can get a None instead of 0.
+    # Only really happens in cases where you have extremely little in the database.
+    def nones_to_zero(obj):
+        for key, value in obj.items():
+            if isinstance(value, dict):
+                nones_to_zero(value)
+            elif value is None:
+                obj[key] = 0
 
-        nones_to_zero(numbers)
-
-        missing_qs = MissingSymbol.objects.all()
-
-        def count_missing(start, end, use_cache=True):
-            count = None
-            if use_cache:
-                fmt = "%Y%m%d"
-                cache_key = f"count_missing:{start.strftime(fmt)}:{end.strftime(fmt)}"
-                count = cache.get(cache_key)
-            if count is None:
-                qs = missing_qs.filter(modified_at__gte=start, modified_at__lt=end)
-                count = qs.count()
-                if use_cache:
-                    cache.set(cache_key, count, 60 * 60 * 24)
-            return {"count": count}
-
-        numbers["downloads"] = {
-            "missing": {
-                "today": count_missing(start_today, today, use_cache=False),
-                "yesterday": count_missing(start_yesterday, start_today),
-                "last_30_days": count_missing(last_30_days, start_today),
-            },
-        }
-        # A clever trick! Instead of counting the last_30_days to include now,
-        # we count the last 29 days instead up until the start of today.
-        # Then, to make it the last 30 days we *add* the "today" count.
-        numbers["downloads"]["missing"]["last_30_days"]["count"] += numbers[
-            "downloads"
-        ]["missing"]["today"]["count"]
-
-    with metrics.timer("api_stats", tags=["section:your_tokens"]):
-        # Gather some numbers about tokens
-        tokens_qs = Token.objects.filter(user=request.user)
-        numbers["tokens"] = {
-            "total": tokens_qs.count(),
-            "expired": tokens_qs.filter(expires_at__lt=today).count(),
-        }
-
-    # Gather some numbers about users
-    if request.user.is_superuser:
-        with metrics.timer("api_stats", tags=["section:all_users"]):
-            users_qs = User.objects.all()
-            numbers["users"] = {
-                "total": users_qs.count(),
-                "superusers": users_qs.filter(is_superuser=True).count(),
-                "active": users_qs.filter(is_active=True).count(),
-                "not_active": users_qs.filter(is_active=False).count(),
-            }
+    nones_to_zero(numbers)
 
     context = {"stats": numbers}
     return http.JsonResponse(context)

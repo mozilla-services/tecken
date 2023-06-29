@@ -71,27 +71,21 @@ class SignedInTiles extends React.PureComponent {
     return (
       <div>
         <div className="tile is-ancestor">
-          <div
-            className={user.is_superuser ? "tile is-parent" : "tile is-parent"}
-          >
+          <div className="tile is-parent is-6">
             {store.hasPermission("upload.upload_symbols") ? (
               <UploadsStatsTile loading={loading} stats={stats} />
             ) : (
               <AboutUploadsPermissionTile />
             )}
           </div>
-          <div className="tile is-parent">
-            <DownloadsStatsTile loading={loading} stats={stats} />
+          <div className="tile is-parent is-6">
+            <LinksTile />
           </div>
         </div>
 
         <div className="tile is-ancestor">
-          <div className="tile is-parent is-6">
-            <YouTile user={user} />
-          </div>
-
           <div className="tile is-parent">
-            <LinksTile />
+            <YouTile user={user} />
           </div>
         </div>
       </div>
@@ -210,31 +204,14 @@ const UploadsStatsTile = ({ loading, stats }) => (
             <th>
               <Link to="/uploads">Uploads Size</Link>
             </th>
-            <th>
-              <Link
-                to="/uploads/files"
-                title="Files from .zip uploads we actually uploaded"
-              >
-                Uploaded Files
-              </Link>
-            </th>
           </tr>
         </thead>
         <tbody>
-          <UploadsRow
-            title="Today"
-            uploads={stats.uploads.today}
-            files={stats.files.today}
-          />
-          <UploadsRow
-            title="Yesterday"
-            uploads={stats.uploads.yesterday}
-            files={stats.files.yesterday}
-          />
+          <UploadsRow title="Today" uploads={stats.uploads.today} />
+          <UploadsRow title="Yesterday" uploads={stats.uploads.yesterday} />
           <UploadsRow
             title="Last 30 days"
             uploads={stats.uploads.last_30_days}
-            files={stats.files.last_30_days}
           />
         </tbody>
       </table>
@@ -242,52 +219,15 @@ const UploadsStatsTile = ({ loading, stats }) => (
   </article>
 );
 
-const UploadsRow = ({ title, uploads, files }) => {
+const UploadsRow = ({ title, uploads }) => {
   return (
     <tr>
       <th>{title}</th>
       <td>{thousandFormat(uploads.count)}</td>
       <td>{formatFileSize(uploads.total_size)}</td>
-      <td>{thousandFormat(files.count)}</td>
     </tr>
   );
 };
-
-const DownloadsStatsTile = ({ loading, stats }) => (
-  <article className="tile is-child box">
-    <p className="title">Downloads</p>
-    {loading || !stats ? (
-      <Loading />
-    ) : (
-      <table className="table is-fullwidth">
-        <thead>
-          <tr>
-            <th />
-            <th>
-              <Link to="/downloads/missing/">Recorded Missing</Link>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th>Today</th>
-            <TableCountCell count={stats.downloads.missing.today.count} />
-          </tr>
-          <tr>
-            <th>Yesterday</th>
-            <TableCountCell count={stats.downloads.missing.yesterday.count} />
-          </tr>
-          <tr>
-            <th>Last 30 days</th>
-            <TableCountCell
-              count={stats.downloads.missing.last_30_days.count}
-            />
-          </tr>
-        </tbody>
-      </table>
-    )}
-  </article>
-);
 
 const TableCountCell = ({ count }) => {
   return <td>{thousandFormat(count)}</td>;
