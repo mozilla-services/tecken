@@ -24,6 +24,7 @@ pytest==7.3.1
 pytest-django==4.5.2
 pytest-mock==3.10.0
 python-dateutil==2.8.2
+redis==4.6.0
 requests-mock==1.10.0
 requests==2.31.0
 ruff==0.0.278
@@ -42,10 +43,6 @@ exceptiongroup==1.1.1
 importlib-metadata==6.0.0
 typing-extensions==4.5.0
 zipp==3.11.0
-
-# NOTE(willkg): Need to keep redis at this version because after this, the Python
-# library doesn't work with the version of Redis we're using in production
-redis==3.4.1
 
 # NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
 Django==3.2.20
