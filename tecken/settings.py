@@ -656,21 +656,6 @@ if UPLOAD_DEFAULT_URL not in SYMBOL_URLS:
         f"in SYMBOL_URLS ({SYMBOL_URLS!r})"
     )
 
-UPLOAD_URL_EXCEPTIONS = _config(
-    "UPLOAD_URL_EXCEPTIONS",
-    default="{}",
-    parser=dict_parser,
-    doc=(
-        "This is a config that, typed as a Python dictionary, specifies "
-        "specific email addresses or patterns to custom URLs.\n\n"
-        "For example::\n\n"
-        '    UPLOAD_URL_EXCEPTIONS={"peter@example.com":"https://s3.amazonaws.com/bucket"}\n\n'
-        "    or\n\n"
-        '    UPLOAD_URL_EXCEPTIONS={"*@example.com": "https://s3.amazonaws.com/bucket"}\n\n'
-        "anybody uploading with an ``@example.com`` email address."
-    ),
-)
-
 # The default prefix for locating all symbols
 SYMBOL_FILE_PREFIX = _config(
     "SYMBOL_FILE_PREFIX",

@@ -43,8 +43,6 @@ def check_storage_urls(app_configs, **kwargs):
 
     for url in settings.SYMBOL_URLS:
         check_url(url, "SYMBOL_URLS")
-    for url in settings.UPLOAD_URL_EXCEPTIONS.values():
-        check_url(url, "UPLOAD_URL_EXCEPTIONS")
 
     return errors
 

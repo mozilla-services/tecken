@@ -330,20 +330,9 @@ Records of the upload and what files were in it are available on the website.
 Which S3 Bucket
 ===============
 
-The S3 bucket that gets used for upload is based on a "default" and a map of
-exceptions for certain users.
-
-The default is configured as ``DJANGO_UPLOAD_DEFAULT_URL``. For example:
-``https://s3-us-west-2.amazonaws.com/org-mozilla-symbols-public``.  From the
-URL the bucket name is deduced and that's the default S3 bucket used.
-
-The overriding is based on the **uploader's email address**. The default
-configuration is to make no exceptions. But you can set
-``DJANGO_UPLOAD_URL_EXCEPTIONS`` as a Python dict like this:
-
-.. code-block:: shell
-
-    $ export DJANGO_UPLOAD_URL_EXCEPTIONS={'*@adobe.com': 'https://s3.amazonaws.com/private-bucket'}
+The S3 bucket for symbols is configured by ``DJANGO_UPLOAD_DEFAULT_URL``. For
+example: ``https://s3-us-west-2.amazonaws.com/org-mozilla-symbols-public``.
+From the URL the bucket name is deduced and that's the default S3 bucket used.
 
 
 Checks and Validations
