@@ -1177,35 +1177,3 @@ def test_file_upload_try_upload(client):
     assert response.status_code == 200
     data = response.json()["file"]
     assert data["url"] == "/foo.pdb/deadbeaf123/foo.sym?try"
-
-
-@pytest.mark.django_db
-def test_possible_upload_urls(client, settings):
-    # Set an exception to match the user we're creating
-    public_bucket = "http://localstack:4566/public/?access=public"
-    private_bucket = "http://localstack:4566/private/"
-
-    settings.SYMBOL_URLS = [public_bucket]
-    settings.UPLOAD_URL_EXCEPTIONS = {"*example.com": private_bucket}
-    settings.UPLOAD_DEFAULT_URL = public_bucket
-
-    url = reverse("api:possible_upload_urls")
-    response = client.get(url)
-    assert response.status_code == 403
-
-    user = User.objects.create(username="adminuser", email="adminuser@example.com")
-    user.set_password("secret")
-    user.save()
-    assert client.login(username="adminuser", password="secret")
-
-    response = client.get(url)
-    assert response.status_code == 200
-    urls = response.json()["urls"]
-    assert urls == [
-        {
-            "bucket_name": "private",
-            "default": False,
-            "private": True,
-            "url": private_bucket,
-        }
-    ]

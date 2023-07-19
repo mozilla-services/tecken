@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import concurrent.futures
-import fnmatch
 from functools import wraps
 import hashlib
 import logging
@@ -124,7 +123,6 @@ def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
     else:
         url = settings.UPLOAD_DEFAULT_URL
 
-    exceptions = settings.UPLOAD_URL_EXCEPTIONS
     if preferred_bucket_name:
         # If the user has indicated a preferred bucket name, check that they have
         # permission to use it.
@@ -132,20 +130,6 @@ def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
             if preferred_bucket_name in url:
                 return StorageBucket(url, try_symbols=try_symbols)
         raise NoPossibleBucketName(preferred_bucket_name)
-    else:
-        if user.email.lower() in exceptions:
-            # easy
-            exception = exceptions[user.email.lower()]
-        else:
-            # match against every possible wildcard
-            exception = None  # assume no match
-            for email_or_wildcard in settings.UPLOAD_URL_EXCEPTIONS:
-                if fnmatch.fnmatch(user.email.lower(), email_or_wildcard.lower()):
-                    # a match!
-                    exception = settings.UPLOAD_URL_EXCEPTIONS[email_or_wildcard]
-                    break
-        if exception:
-            url = exception
 
     return StorageBucket(url, try_symbols=try_symbols)
 
@@ -153,31 +137,20 @@ def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
 def get_possible_bucket_urls(user):
     """Return list of possible buckets this user can upload to.
 
-    If the user is specified in UPLOAD_URL_EXCEPTIONS, then the user can only upload
-    into that bucket.
-
     If the user is not specified, then the user can upload to the public bucket.
 
     :param user: a django user
 
     :return: list of tuples of (url, "private"/"public")
     """
-    urls = []
-    exceptions = settings.UPLOAD_URL_EXCEPTIONS
-    email_lower = user.email.lower()
-    for email_pattern in exceptions:
-        if (
-            email_lower == email_pattern.lower()
-            or fnmatch.fnmatch(email_lower, email_pattern.lower())
-            or user.is_superuser
-        ):
-            urls.append((exceptions[email_pattern], "private"))
 
-    # We use UPLOAD_URL_EXCEPTIONS to specify buckets people can upload into. If a
-    # person is specified in UPLOAD_URL_EXCEPTIONS, then they can only upload to that
-    # bucket. If they are not specified, then they can upload to the public bucket.
-    if not urls:
-        urls.append((settings.UPLOAD_DEFAULT_URL, "public"))
+    # NOTE(willkg): This used to handle UPLOAD_URL_EXCEPTIONS, but we took that out. Now
+    # it does nothing interesting. We should rework the structure of all this when we
+    # rewrite the storage API.
+
+    urls = []
+
+    urls.append((settings.UPLOAD_DEFAULT_URL, "public"))
 
     return urls
 

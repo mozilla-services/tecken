@@ -134,14 +134,6 @@ def site_status(request):
             "value": json.dumps([clean_url(x) for x in settings.SYMBOL_URLS]),
         }
     )
-    context["settings"].append(
-        {
-            "key": "UPLOAD_URL_EXCEPTIONS",
-            "value": json.dumps(
-                {k: clean_url(v) for k, v in settings.UPLOAD_URL_EXCEPTIONS.items()}
-            ),
-        }
-    )
     context["settings"].sort(key=lambda x: x["key"])
 
     # Get some table counts

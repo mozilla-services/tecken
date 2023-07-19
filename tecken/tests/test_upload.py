@@ -31,11 +31,7 @@ from tecken.upload.utils import (
     should_compressed_key,
     get_key_content_type,
 )
-from tecken.upload.views import (
-    NoPossibleBucketName,
-    get_bucket_info,
-    get_possible_bucket_urls,
-)
+from tecken.upload.views import get_bucket_info
 
 
 def _join(x):
@@ -101,75 +97,6 @@ def test_get_key_content_type(settings):
     assert get_key_content_type("foo.bar") is None
     assert get_key_content_type("foo.html") == "text/html"
     assert get_key_content_type("foo.HTML") == "text/html"
-
-
-@pytest.mark.django_db
-def test_upload_archive_custom_bucket_name(
-    client,
-    botomock,
-    fakeuser,
-    settings,
-):
-    """Pretend that the user specifies a particular custom bucket name."""
-    private_bucket = "http://localstack:4566/privatebucket/"
-    settings.UPLOAD_URL_EXCEPTIONS = {"*example.org": private_bucket}
-
-    bucket_name = "privatebucket"
-    assert [
-        url for url in settings.UPLOAD_URL_EXCEPTIONS.values() if bucket_name in url
-    ], list(settings.UPLOAD_URL_EXCEPTIONS.values())
-
-    def mock_api_call(self, operation_name, api_params):
-        assert api_params["Bucket"] == bucket_name
-        if operation_name == "HeadBucket":
-            # yep, bucket exists
-            return {}
-
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v0/flag/deadbeef/flag.jpeg"
-        ):
-            # correct size, no need to upload
-            return {"ContentLength": 69183}
-
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
-        ):
-            # wrong size, code will upload it as a changed file
-            return {"ContentLength": 100}
-
-        if operation_name == "PutObject" and api_params["Key"] == (
-            "v0/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
-        ):
-            # pretend we actually uploaded it
-            return {}
-
-        raise NotImplementedError((operation_name, api_params))
-
-    fakeuser.is_superuser = False  # NOTE!
-    fakeuser.save()
-    token = Token.objects.create(user=fakeuser)
-    (permission,) = Permission.objects.filter(codename="upload_symbols")
-    token.permissions.add(permission)
-    url = reverse("upload:upload_archive")
-
-    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
-        response = client.post(
-            url, {"file.zip": f, "bucket_name": bucket_name}, HTTP_AUTH_TOKEN=token.key
-        )
-        assert response.status_code == 403
-
-    fakeuser.is_superuser = True  # NOTE!
-    fakeuser.save()
-
-    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
-        response = client.post(
-            url, {"file.zip": f, "bucket_name": bucket_name}, HTTP_AUTH_TOKEN=token.key
-        )
-        assert response.status_code == 201
-
-        (upload,) = Upload.objects.all()
-        assert upload.user == fakeuser
-        assert upload.bucket_name == bucket_name
 
 
 @pytest.mark.django_db
@@ -1330,55 +1257,6 @@ def test_get_bucket_info_try_symbols(settings):
     # assert bucket_info.name == 'buck'
     # assert bucket_info.endpoint_url == 'http://s3.example.com'
     # assert bucket_info.region is None
-
-
-def test_get_bucket_info_exceptions(settings):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/buck"
-    settings.UPLOAD_URL_EXCEPTIONS = {
-        "peterbe@example.com": "https://s3.amazonaws.com/differenting",
-        "t*@example.com": "https://s3.amazonaws.com/excepty",
-    }
-
-    user = FakeUser("Peterbe@example.com")
-    bucket_info = get_bucket_info(user)
-    assert bucket_info.name == "differenting"
-
-    user = FakeUser("Tucker@example.com")
-    bucket_info = get_bucket_info(user)
-    assert bucket_info.name == "excepty"
-
-
-def test_get_bucket_info_preferred_bucket_name(settings):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/buck"
-    settings.UPLOAD_URL_EXCEPTIONS = {
-        "peterbe@example.com": "https://s3.amazonaws.com/differenting",
-        "t*@example.com": "https://s3.amazonaws.com/excepty",
-    }
-
-    user = FakeUser("Peterbe@example.com")
-    with pytest.raises(NoPossibleBucketName):
-        get_bucket_info(user, preferred_bucket_name="neverheardof")
-
-    user = FakeUser("Tucker@example.com")
-    bucket_info = get_bucket_info(user, preferred_bucket_name="excepty")
-    assert bucket_info.name == "excepty"
-
-    user = FakeUser("Ted@example.com", is_superuser=True)
-    bucket_info = get_bucket_info(user, preferred_bucket_name="excepty")
-    assert bucket_info.name == "excepty"
-
-
-def test_get_possible_bucket_urls(settings):
-    settings.UPLOAD_DEFAULT_URL = "https://s3.amazonaws.com/buck"
-    settings.UPLOAD_URL_EXCEPTIONS = {
-        "peterbe@example.com": "https://s3.amazonaws.com/differenting",
-        "t*@example.com": "https://s3.amazonaws.com/excepty",
-    }
-    user = FakeUser("Peterbe@example.com")
-    urls = get_possible_bucket_urls(user)
-    ((url, private_or_public),) = urls
-    assert private_or_public == "private"
-    assert url == "https://s3.amazonaws.com/differenting"
 
 
 def test_UploadByDownloadForm_happy_path(requestsmock, settings):
