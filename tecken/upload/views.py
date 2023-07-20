@@ -126,7 +126,7 @@ def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
     if preferred_bucket_name:
         # If the user has indicated a preferred bucket name, check that they have
         # permission to use it.
-        for url, _ in get_possible_bucket_urls(user):
+        for url in get_upload_bucket_urls():
             if preferred_bucket_name in url:
                 return StorageBucket(url, try_symbols=try_symbols)
         raise NoPossibleBucketName(preferred_bucket_name)
@@ -134,25 +134,17 @@ def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
     return StorageBucket(url, try_symbols=try_symbols)
 
 
-def get_possible_bucket_urls(user):
-    """Return list of possible buckets this user can upload to.
+def get_upload_bucket_urls():
+    """Return list of upload bucket urls.
 
-    If the user is not specified, then the user can upload to the public bucket.
+    :return: list of urls
 
-    :param user: a django user
-
-    :return: list of tuples of (url, "private"/"public")
     """
 
     # NOTE(willkg): This used to handle UPLOAD_URL_EXCEPTIONS, but we took that out. Now
     # it does nothing interesting. We should rework the structure of all this when we
     # rewrite the storage API.
-
-    urls = []
-
-    urls.append((settings.UPLOAD_DEFAULT_URL, "public"))
-
-    return urls
+    return [settings.UPLOAD_DEFAULT_URL]
 
 
 def _ignore_member_file(filename):

@@ -2,15 +2,19 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import io
 import json
+import os
 from unittest import mock
 
+import boto3
 import botocore
+from botocore.client import ClientError, Config
 from markus.testing import MetricsMock
 import pytest
 import requests_mock
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
 from django.core.cache import caches
 
 
@@ -75,11 +79,6 @@ def requestsmock():
     with requests_mock.mock() as m:
         yield m
 
-
-# This needs to be imported at least once. Otherwise the mocking
-# done in botomock() doesn't work.
-# (peterbe) Would like to know why but for now let's just comply.
-import boto3  # noqa
 
 _orig_make_api_call = botocore.client.BaseClient._make_api_call
 
@@ -151,6 +150,111 @@ def botomock():
     return BotoMock()
 
 
+class S3Helper:
+    """S3 helper class.
+
+    When used in a context, this will clean up any buckets created.
+
+    """
+
+    def __init__(self):
+        self._buckets_seen = None
+        self.conn = self.get_client()
+
+    def get_client(self):
+        session = boto3.session.Session(
+            # NOTE(willkg): these use environment variables set in
+            # docker/config/test.env
+            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+        )
+        client = session.client(
+            service_name="s3",
+            config=Config(s3={"addressing_style": "path"}),
+            endpoint_url=os.environ["AWS_ENDPOINT_URL"],
+        )
+        return client
+
+    def __enter__(self):
+        self._buckets_seen = set()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        for bucket in self._buckets_seen:
+            # Delete any objects in the bucket
+            resp = self.conn.list_objects(Bucket=bucket)
+            for obj in resp.get("Contents", []):
+                key = obj["Key"]
+                self.conn.delete_object(Bucket=bucket, Key=key)
+
+            # Then delete the bucket
+            self.conn.delete_bucket(Bucket=bucket)
+        self._buckets_seen = None
+
+    def get_crashstorage_bucket(self):
+        return os.environ["CRASHSTORAGE_S3_BUCKET"]
+
+    def get_telemetry_bucket(self):
+        return os.environ["TELEMETRY_S3_BUCKET"]
+
+    def create_bucket(self, bucket_name):
+        """Create specified bucket if it doesn't exist."""
+        try:
+            self.conn.head_bucket(Bucket=bucket_name)
+        except ClientError:
+            self.conn.create_bucket(Bucket=bucket_name)
+        if self._buckets_seen is not None:
+            self._buckets_seen.add(bucket_name)
+
+    def upload_fileobj(self, bucket_name, key, data):
+        """Puts an object into the specified bucket."""
+        self.create_bucket(bucket_name)
+        self.conn.upload_fileobj(Fileobj=io.BytesIO(data), Bucket=bucket_name, Key=key)
+
+    def download_fileobj(self, bucket_name, key):
+        """Fetches an object from the specified bucket"""
+        self.create_bucket(bucket_name)
+        resp = self.conn.get_object(Bucket=bucket_name, Key=key)
+        return resp["Body"].read()
+
+    def list(self, bucket_name):
+        """Return list of keys for objects in bucket."""
+        self.create_bucket(bucket_name)
+        resp = self.conn.list_objects(Bucket=bucket_name)
+        return [obj["Key"] for obj in resp["Contents"]]
+
+
 @pytest.fixture
-def fakeuser():
-    return User.objects.create(username="peterbe", email="peterbe@example.com")
+def s3_helper():
+    """Returns an S3Helper for automating repetitive tasks in S3 setup.
+
+    Provides:
+
+    * ``get_client()``
+    * ``get_crashstorage_bucket()``
+    * ``create_bucket(bucket_name)``
+    * ``upload_fileobj(bucket_name, key, value)``
+    * ``download_fileobj(bucket_name, key)``
+    * ``list(bucket_name)``
+
+    """
+    with S3Helper() as s3_helper:
+        yield s3_helper
+
+
+@pytest.fixture
+def fakeuser(django_user_model):
+    """Creates and returns a fake regular user."""
+    return django_user_model.objects.create(username="fake", email="fake@example.com")
+
+
+@pytest.fixture
+def uploaderuser(django_user_model):
+    """Creates and returns a fake user in the uploaders group."""
+    user = django_user_model.objects.create(
+        username="uploader", email="uploader@example.com"
+    )
+    group = Group.objects.get(name="Uploaders")
+    user.groups.add(group)
+    assert user.has_perm("upload.upload_symbols")
+    return user

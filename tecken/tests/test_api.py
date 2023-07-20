@@ -776,7 +776,7 @@ def test_upload_files(client, settings):
     file_upload1 = FileUpload.objects.create(
         upload=upload,
         size=1234,
-        bucket_name="symbols-private",
+        bucket_name="other-public",
         key="v0/bar.dll/A4FC12EFA5/foo.sym",
     )
     file_upload2 = FileUpload.objects.create(
@@ -867,7 +867,7 @@ def test_upload_files_count(client):
     file_upload_1 = FileUpload.objects.create(
         upload=upload,
         size=1234,
-        bucket_name="symbols-private",
+        bucket_name="symbols-public",
         key="v0/bar.dll/A4FC12EFA5/foo.sym",
     )
     file_upload_2 = FileUpload.objects.create(
@@ -899,7 +899,7 @@ def test_upload_files_count(client):
             "update": False,
             "compressed": False,
             "size": 1234,
-            "bucket_name": "symbols-private",
+            "bucket_name": "symbols-public",
             "completed_at": None,
             "created_at": ANY,
             "upload": {
@@ -921,7 +921,7 @@ def test_upload_files_count(client):
     data = response.json()
     assert data["files"] == [
         {
-            "bucket_name": "symbols-private",
+            "bucket_name": "symbols-public",
             "completed_at": None,
             "compressed": False,
             "created_at": ANY,

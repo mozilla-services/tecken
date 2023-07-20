@@ -27,7 +27,7 @@ from tecken.download.models import MissingSymbol
 from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload.views import get_possible_bucket_urls
+from tecken.upload.views import get_upload_bucket_urls
 
 logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
@@ -100,7 +100,7 @@ def auth(request):
 def possible_upload_urls(request):
     context = {"urls": []}
     seen = set()
-    for url, private_or_public in get_possible_bucket_urls(request.user):
+    for url in get_upload_bucket_urls():
         bucket_info = StorageBucket(url)
 
         if bucket_info.name in seen:
@@ -110,7 +110,6 @@ def possible_upload_urls(request):
             {
                 "url": url,
                 "bucket_name": bucket_info.name,
-                "private": private_or_public == "private",
                 "default": url == settings.UPLOAD_DEFAULT_URL,
             }
         )
