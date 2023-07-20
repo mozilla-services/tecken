@@ -612,26 +612,20 @@ DOCKERFLOW_CHECKS = [
 ]
 
 
-#
 SYMBOL_URLS = _config(
     "SYMBOL_URLS",
     parser=ListOf(str),
     doc=(
-        "Comma-separated list of urls for symbol lookups.\n\n"
-        "The order here matters. Symbol download goes through these one at a time. "
-        "Ideally you want the one most commonly hit first unless there's a "
-        "cascading reason you want other buckets first.\n\n"
-        "By default, each URL is assumed to be private!\n\n"
-        "If there's a bucket you want to include that should be accessed "
-        "by HTTP only, add '?access=public' to the URL."
+        "Comma-separated list of urls for symbol downloads.\n\n"
+        "Lookups are performed in list order."
     ),
 )
 
 UPLOAD_DEFAULT_URL = _config(
     "UPLOAD_DEFAULT_URL",
     doc=(
-        "The default url to use for symbols. This must be a public bucket and "
-        "one of the items in SYMBOL_URLS."
+        "The default url to use for symbol uploads. This must be an item in "
+        "SYMBOL_URLS."
     ),
 )
 

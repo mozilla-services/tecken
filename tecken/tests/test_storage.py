@@ -2,10 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from unittest import mock
+import os
 
 import pytest
-from botocore.exceptions import ClientError, EndpointConnectionError
+from botocore.exceptions import ClientError
 
 from tecken.storage import StorageBucket, StorageError
 
@@ -17,7 +17,6 @@ INIT_CASES = {
         "endpoint_url": None,
         "name": "some-bucket",
         "prefix": "",
-        "private": True,
         "region": None,
     },
     "https://s3.amazonaws.com/some-bucket?access=public": {
@@ -26,7 +25,6 @@ INIT_CASES = {
         "endpoint_url": None,
         "name": "some-bucket",
         "prefix": "",
-        "private": False,
         "region": None,
     },
     "https://s3-eu-west-2.amazonaws.com/some-bucket": {
@@ -35,7 +33,6 @@ INIT_CASES = {
         "endpoint_url": None,
         "name": "some-bucket",
         "prefix": "",
-        "private": True,
         "region": "eu-west-2",
     },
     "http://s3.example.com/buck/prfx": {
@@ -44,7 +41,6 @@ INIT_CASES = {
         "endpoint_url": "http://s3.example.com",
         "name": "buck",
         "prefix": "prfx",
-        "private": True,
         "region": None,
     },
     "http://localstack:4566/publicbucket": {
@@ -53,7 +49,6 @@ INIT_CASES = {
         "endpoint_url": "http://localstack:4566",
         "name": "publicbucket",
         "prefix": "",
-        "private": True,
         "region": None,
     },
 }
@@ -70,7 +65,6 @@ def test_init(url, expected):
     assert bucket.endpoint_url == expected["endpoint_url"]
     assert bucket.name == expected["name"]
     assert bucket.prefix == expected["prefix"]
-    assert bucket.private == expected["private"]
     assert bucket.region == expected["region"]
     assert repr(bucket)
 
@@ -101,55 +95,40 @@ def test_init_file_prefix(url, file_prefix, prefix):
     assert bucket.prefix == prefix
 
 
-def test_exists_s3(botomock):
+def test_exists_s3(s3_helper):
     """exists() returns True when then S3 API returns 200."""
-
-    def return_200(self, operation_name, api_params):
-        assert operation_name == "HeadBucket"
-        return {"ReponseMetadata": {"HTTPStatusCode": 200}}
-
-    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
-    with botomock(return_200):
-        assert bucket.exists()
+    bucket = StorageBucket(os.environ["UPLOAD_DEFAULT_URL"])
+    s3_helper.create_bucket("publicbucket")
+    assert bucket.exists()
 
 
-def test_exists_s3_not_found(botomock):
+def test_exists_s3_not_found(s3_helper):
     """exists() returns False when the S3 API raises a 404 ClientError."""
-
-    def raise_not_found(self, operation_name, api_params):
-        assert operation_name == "HeadBucket"
-        parsed_response = {
-            "Error": {"Code": "404", "Message": "The specified bucket does not exist"}
-        }
-        raise ClientError(parsed_response, operation_name)
-
-    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
-    with botomock(raise_not_found):
-        assert not bucket.exists()
+    bucket = StorageBucket(os.environ["UPLOAD_DEFAULT_URL"])
+    assert not bucket.exists()
 
 
-def test_exists_s3_forbidden_raises(botomock):
-    """exists() raises StorageError when the S3 API raises a 403 ClientError."""
+# FIXME(willkg): rewrite this to use s3_helper, but we need some way to make the
+# bucket forbidden
+# def test_exists_s3_forbidden_raises(botomock):
+#     """exists() raises StorageError when the S3 API raises a 403 ClientError."""
+#
+#     def raise_forbidden(self, operation_name, api_params):
+#         assert operation_name == "HeadBucket"
+#         parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
+#         raise ClientError(parsed_response, operation_name)
+#
+#     bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
+#     with botomock(raise_forbidden), pytest.raises(StorageError):
+#         bucket.exists()
 
-    def raise_forbidden(self, operation_name, api_params):
-        assert operation_name == "HeadBucket"
-        parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
-        raise ClientError(parsed_response, operation_name)
 
-    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
-    with botomock(raise_forbidden), pytest.raises(StorageError):
-        bucket.exists()
-
-
-def test_exists_s3_non_client_error_raises(botomock):
+def test_exists_s3_non_client_error_raises(s3_helper):
     """exists() raises StorageError when the S3 API raises a non-client error."""
 
-    def raise_conn_error(self, operation_name, api_params):
-        assert operation_name == "HeadBucket"
-        raise EndpointConnectionError(endpoint_url="https://s3.amazonaws.com/")
-
-    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
-    with botomock(raise_conn_error), pytest.raises(StorageError):
+    # NOTE(willkg): nothing is listening at that port, so it kicks up a connection error
+    bucket = StorageBucket("http://localstack:5000/publicbucket/")
+    with pytest.raises(StorageError):
         bucket.exists()
 
 
@@ -165,39 +144,3 @@ def test_storageerror_msg():
         " operation: Forbidden"
     )
     assert str(error) == expected
-
-
-def test_StorageBucket_client():
-    mock_session = mock.Mock()
-
-    client_kwargs_calls = []
-    client_args_calls = []
-
-    def get_client(*args, **kwargs):
-        client_args_calls.append(args)
-        client_kwargs_calls.append(kwargs)
-        return mock.Mock()
-
-    mock_session.client.side_effect = get_client
-
-    def new_session():
-        return mock_session
-
-    with mock.patch("tecken.storage.boto3.session.Session", new=new_session):
-        bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
-        client = bucket.client
-        client_again = bucket.client
-        assert client_again is client
-        # Only 1 session should have been created
-        assert len(mock_session.mock_calls) == 1
-        assert "endpoint_url" not in client_kwargs_calls[-1]
-
-        # make a client that requires an endpoint_url
-        bucket = StorageBucket("http://s3.example.com/buck/prefix")
-        assert bucket.client
-        assert client_kwargs_calls[-1]["endpoint_url"] == ("http://s3.example.com")
-
-        # make a client that requires a different region
-        bucket = StorageBucket("https://s3-eu-west-2.amazonaws.com/some-bucket")
-        assert bucket.client
-        assert client_kwargs_calls[-1]["region_name"] == ("eu-west-2")

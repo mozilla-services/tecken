@@ -37,164 +37,143 @@ def reload_downloaders(urls, try_downloader=None):
         views.try_downloader = SymbolDownloader([try_downloader])
 
 
-def test_client_happy_path(client, botomock):
-    reload_downloaders("https://s3.example.com/private/prefix/")
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        return {"Contents": [{"Key": api_params["Prefix"]}]}
-
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
+def test_client_happy_path(client, db, s3_helper):
+    reload_downloaders(
+        os.environ["UPLOAD_DEFAULT_URL"],
+        try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
     )
-    with botomock(mock_api_call):
-        response = client.get(url)
-        assert response.status_code == 302
-        parsed = urlparse(response["location"])
-        assert parsed.netloc == "s3.example.com"
-        # the pre-signed URL will have the bucket in the path
-        assert parsed.path == (
-            "/private/prefix/v0/" "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
-        )
-        assert "Signature=" in parsed.query
-        assert "Expires=" in parsed.query
-        assert "AWSAccessKeyId=" in parsed.query
 
-        response = client.head(url)
-        assert response.status_code == 200
-        assert response.content == b""
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
 
-        assert response["Access-Control-Allow-Origin"] == "*"
-        assert response["Access-Control-Allow-Methods"] == "GET"
+    # Upload a file into the regular bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"v1/{module}/{debugid}/{debugfn}",
+        data=b"abc123",
+    )
+
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+
+    response = client.get(url)
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.netloc == "localstack:4566"
+
+    assert parsed.path == (
+        "/publicbucket/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
+    )
+
+    response = client.head(url)
+    assert response.status_code == 200
+
+    assert response["Access-Control-Allow-Origin"] == "*"
+    assert response["Access-Control-Allow-Methods"] == "GET"
 
 
-@pytest.mark.django_db
-def test_client_try_download(client, botomock):
+def test_client_try_download(client, db, s3_helper):
     """Suppose there's a file that doesn't exist in any of the
     settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
     then to reach that file you need to use ?try on the URL.
+
     """
     reload_downloaders(
-        "https://s3.example.com/private",
-        try_downloader="https://s3.example.com/private/trying",
+        os.environ["UPLOAD_DEFAULT_URL"],
+        try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
     )
 
-    mock_calls = []
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
 
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        mock_calls.append(api_params)
-        if api_params["Prefix"].startswith("trying/v0/"):
-            # Yeah, we have it
-            return {"Contents": [{"Key": api_params["Prefix"]}]}
-        elif api_params["Prefix"].startswith("v0"):
-            # Pretned nothing was returned. Ie. 404
-            return {}
-        else:
-            raise NotImplementedError(api_params["Prefix"])
+    # Upload a file into the try bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"try/v1/{module}/{debugid}/{debugfn}",
+        data=b"abc123",
+    )
 
-    url = reverse(
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    response = client.get(url)
+    assert response.status_code == 404
+
+    try_url = reverse("download:download_symbol_try", args=(module, debugid, debugfn))
+    response = client.get(try_url)
+    assert response.status_code == 302
+    # Also note that the headers are the same as for regular downloads
+    assert response["Access-Control-Allow-Origin"] == "*"
+
+    # And like regular download, you're only allowed to use GET or HEAD
+    response = client.put(try_url)
+    assert response.status_code == 405
+
+    # And calling it with DEBUG header should return a header with some debug info. Just
+    # like regular download.
+    response = client.get(try_url, HTTP_DEBUG="true")
+    assert response.status_code == 302
+    assert float(response["debug-time"]) > 0
+
+    # You can also use the regular URL but add ?try to the URL
+    response = client.get(url, {"try": True})
+    assert response.status_code == 302
+
+
+def test_client_with_debug(client, db, s3_helper):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
+
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
+
+    # Upload a file into the regular bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"v1/{module}/{debugid}/{debugfn}",
+        data=b"abc123",
+    )
+
+    # Do a GET request which returns the redirect url
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    response = client.get(url, HTTP_DEBUG="true")
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert float(response["debug-time"]) > 0
+    assert parsed.netloc == "localstack:4566"
+    assert parsed.path == (
+        "/publicbucket/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
+    )
+
+    # Try a HEAD request
+    response = client.head(url, HTTP_DEBUG="true")
+    assert response.status_code == 200
+    assert response.content == b""
+    assert float(response["debug-time"]) > 0
+
+    # Try a symbol file that doesn't exist--this one won't be logged because the
+    # filename is on a block list of symbol filenames to ignore
+    ignore_url = reverse(
         "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
+        args=("cxinjime.pdb", "342D9B0A3AE64812A2388C055C9F6C321", "file.ptr"),
     )
-    try_url = reverse(
-        "download:download_symbol_try",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    with botomock(mock_api_call):
-        response = client.get(url)
-        assert response.status_code == 404
-        assert len(mock_calls) == 1
+    response = client.get(ignore_url, HTTP_DEBUG="true")
+    assert response.status_code == 404
+    assert float(response["debug-time"]) == 0.0
 
-        response = client.get(try_url)
-        assert response.status_code == 302
-        assert len(mock_calls) == 2
-        # Also note that the headers are the same as for regular downloads
-        assert response["Access-Control-Allow-Origin"] == "*"
-        # And like regular download, you're only allowed to use GET or HEAD
-        response = client.put(try_url)
-        assert response.status_code == 405
-        # And calling it with DEBUG header should return a header with
-        # some debug info. Just like regular download.
-        response = client.get(try_url, HTTP_DEBUG="true")
-        assert response.status_code == 302
-        assert float(response["debug-time"]) > 0
-
-        # You can also use the regular URL but add ?try to the URL
-        response = client.get(url, {"try": True})
-        assert response.status_code == 302
-        assert len(mock_calls) == 2
-
-        # Do it again, to make sure the caches work in our favor
-        response = client.get(url)
-        assert response.status_code == 404
-        assert len(mock_calls) == 2
-
-        response = client.get(try_url)
-        assert response.status_code == 302
-        assert len(mock_calls) == 2
-
-
-def test_client_with_debug(client, botomock):
-    reload_downloaders("https://s3.example.com/private/prefix/")
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        if api_params["Prefix"].endswith("xil.sym"):
-            return {"Contents": []}
-        elif api_params["Prefix"].endswith("xul.sym"):
-            return {"Contents": [{"Key": api_params["Prefix"]}]}
-        else:
-            raise NotImplementedError(api_params)
-
-    url = reverse(
+    # Do a GET with a file that doesn't exist.
+    not_found_url = reverse(
         "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
+        args=("xil.pdb", "55F4EC8C2F41492B9369D6B9A059577A1", "xil.sym"),
     )
-    with botomock(mock_api_call):
-        response = client.get(url, HTTP_DEBUG="true")
-        assert response.status_code == 302
-        parsed = urlparse(response["location"])
-        assert float(response["debug-time"]) > 0
-        assert parsed.netloc == "s3.example.com"
-        # the pre-signed URL will have the bucket in the path
-        assert parsed.path == (
-            "/private/prefix/v0/" "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
-        )
-        assert "Signature=" in parsed.query
-        assert "Expires=" in parsed.query
-        assert "AWSAccessKeyId=" in parsed.query
-
-        response = client.head(url, HTTP_DEBUG="true")
-        assert response.status_code == 200
-        assert response.content == b""
-        assert float(response["debug-time"]) > 0
-
-        # This one won't be logged because the filename is on a block list
-        # of symbol filenames to ignore
-        ignore_url = reverse(
-            "download:download_symbol",
-            args=("cxinjime.pdb", "342D9B0A3AE64812A2388C055C9F6C321", "file.ptr"),
-        )
-        response = client.get(ignore_url, HTTP_DEBUG="true")
-        assert response.status_code == 404
-        assert float(response["debug-time"]) == 0.0
-
-        # Do a GET with a file that doesn't exist.
-        not_found_url = reverse(
-            "download:download_symbol",
-            args=("xil.pdb", "55F4EC8C2F41492B9369D6B9A059577A1", "xil.sym"),
-        )
-        response = client.get(not_found_url, HTTP_DEBUG="true")
-        assert response.status_code == 404
-        assert float(response["debug-time"]) > 0
+    response = client.get(not_found_url, HTTP_DEBUG="true")
+    assert response.status_code == 404
+    assert float(response["debug-time"]) > 0
 
 
-def test_client_with_ignorable_file_extensions(client, botomock):
-    def mock_api_call(self, operation_name, api_params):
-        raise AssertionError("This mock function shouldn't be called")
-
+def test_client_with_ignorable_file_extensions(client, db, s3_helper):
     url = reverse(
         "download:download_symbol",
         args=(
@@ -205,192 +184,190 @@ def test_client_with_ignorable_file_extensions(client, botomock):
             "xul.xxx",
         ),
     )
-    with botomock(mock_api_call):
-        response = client.get(url)
-        assert response.status_code == 404
+
+    response = client.get(url)
+    assert response.status_code == 404
 
 
-def test_client_with_debug_with_cache(client, botomock):
-    reload_downloaders("https://s3.example.com/private/prefix/")
+def test_client_with_debug_with_cache(client, db, s3_helper):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
-    mock_api_calls = []
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
 
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        mock_api_calls.append(api_params)
-        return {"Contents": [{"Key": api_params["Prefix"]}]}
+    # Upload a file into the regular bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"v1/{module}/{debugid}/{debugfn}",
+        data=b"abc123",
+    )
+
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+
+    response = client.get(url, HTTP_DEBUG="true")
+    assert response.status_code == 302
+    assert float(response["debug-time"]) > 0
+
+    # FIXME(willkg): this doesn't verify that it came from cache
+    response = client.get(url, HTTP_DEBUG="true")
+    assert response.status_code == 302
+    assert float(response["debug-time"]) > 0
+
+    response = client.head(url, HTTP_DEBUG="true")
+    assert response.status_code == 200
+    assert float(response["debug-time"]) > 0
+
+
+def test_client_with_cache_refreshed(client, db, s3_helper):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
+
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
+
+    # Upload a file into the regular bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"v1/{module}/{debugid}/{debugfn}",
+        data=b"abc123",
+    )
+
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    response = client.get(url)
+    assert response.status_code == 302
+
+    # FIXME(willkg): this doesn't verify that it came from cache
+    response = client.get(url)
+    assert response.status_code == 302
+
+    response = client.get(url, {"_refresh": 1})
+    assert response.status_code == 302
+
+
+def test_client_404(client, db, s3_helper):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
     url = reverse(
         "download:download_symbol",
         args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
     )
-    with botomock(mock_api_call):
-        response = client.get(url, HTTP_DEBUG="true")
-        assert response.status_code == 302
-        assert float(response["debug-time"]) > 0
+    response = client.get(url)
+    assert response.status_code == 404
+    assert "Symbol Not Found" in response.content.decode("utf-8")
 
-        response = client.get(url, HTTP_DEBUG="true")
-        assert response.status_code == 302
-        assert float(response["debug-time"]) > 0
-
-        response = client.head(url, HTTP_DEBUG="true")
-        assert response.status_code == 200
-        assert float(response["debug-time"]) > 0
-
-        assert len(mock_api_calls) == 1
+    response = client.head(url)
+    assert response.status_code == 404
 
 
-def test_client_with_cache_refreshed(client, botomock):
-    reload_downloaders("https://s3.example.com/private/prefix/")
-
-    mock_api_calls = []
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        mock_api_calls.append(api_params)
-        return {"Contents": [{"Key": api_params["Prefix"]}]}
-
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    with botomock(mock_api_call):
-        response = client.get(url)
-        assert response.status_code == 302
-        assert len(mock_api_calls) == 1
-
-        response = client.get(url)
-        assert response.status_code == 302
-        assert len(mock_api_calls) == 1  # still 1
-
-        response = client.get(url, {"_refresh": 1})
-        assert response.status_code == 302
-        assert len(mock_api_calls) == 2
-
-
-def test_client_404(client, botomock):
-    reload_downloaders("https://s3.example.com/private/prefix/")
-
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        return {}
-
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    with botomock(mock_api_call):
-        response = client.get(url)
-        assert response.status_code == 404
-        assert "Symbol Not Found" in response.content.decode("utf-8")
-
-        response = client.head(url)
-        assert response.status_code == 404
-
-
-@pytest.mark.django_db
-def test_client_404_logged(client, botomock, settings):
-    reload_downloaders("https://s3.example.com/private/prefix/")
+def test_client_404_logged(client, db, settings):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
 
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        return {}
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
 
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
+    # Call it twice, but it only gets logged once
+    assert client.get(url).status_code == 404
+    assert client.get(url).status_code == 404
+
+    assert MissingSymbol.objects.all().count() == 1
+    assert MissingSymbol.objects.get(
+        symbol=module,
+        debugid=debugid,
+        filename=debugfn,
+        code_file__isnull=True,
+        code_id__isnull=True,
     )
-    with botomock(mock_api_call):
-        assert client.get(url).status_code == 404
-        assert client.get(url).status_code == 404
-        # This one won't be logged because it's a HEAD
-        assert client.head(url).status_code == 404
-
-        # This one won't be logged because the filename is on a block list
-        # of symbol filenames to ignore
-        ignore_url = reverse(
-            "download:download_symbol",
-            args=("cxinjime.pdb", "342D9B0A3AE64812A2388C055C9F6C321", "file.ptr"),
-        )
-        response = client.get(ignore_url)
-        assert response.status_code == 404
-        assert response.content == b"Symbol Not Found (and ignored)"
-
-        # This one won't be logged either
-        ignore_url = reverse(
-            "download:download_symbol",
-            args=("cxinjime.pdb", "000000000000000000000000000000000", "cxinjime.sym"),
-        )
-        response = client.get(ignore_url)
-        assert response.status_code == 404
-        assert response.content == b"Symbol Not Found (and ignored)"
-
-        # This "should" have logged the missing symbols twice.
-        # Actually it shouldn't log it twice because the work on logging
-        # missing symbols is guarded by a memoizer that prevents it from
-        # executing more than once per arguments.
-        assert MissingSymbol.objects.all().count() == 1
-        assert MissingSymbol.objects.get(
-            symbol="xul.pdb",
-            debugid="44E4EC8C2F41492B9369D6B9A059577C2",
-            filename="xul.sym",
-            code_file__isnull=True,
-            code_id__isnull=True,
-        )
-
-        # Now look it up with ?code_file= and ?code_id= etc.
-        assert client.get(url, {"code_file": "xul.dll"}).status_code == 404
-        assert client.get(url, {"code_id": "deadbeef"}).status_code == 404
-        # both
-        assert (
-            client.get(url, {"code_file": "xul.dll", "code_id": "deadbeef"}).status_code
-            == 404
-        )
-
-        assert MissingSymbol.objects.all().count() == 4
-        assert MissingSymbol.objects.get(
-            symbol="xul.pdb",
-            debugid="44E4EC8C2F41492B9369D6B9A059577C2",
-            filename="xul.sym",
-            # The one with both set to something.
-            code_file="xul.dll",
-            code_id="deadbeef",
-        )
 
 
-@pytest.mark.django_db
-def test_client_404_logged_bad_code_file(client, botomock, settings):
+def test_client_404_head_not_logged(client, db, settings):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
+
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
+
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+
+    # This one won't be logged because it's a HEAD
+    assert client.head(url).status_code == 404
+    assert MissingSymbol.objects.all().count() == 0
+
+
+def test_client_404_blocklisted_not_logged(client, db, settings):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
+
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    module = "cxinjime.pdb"
+    debugid = "342D9B0A3AE64812A2388C055C9F6C321"
+    debugfn = "file.ptr"
+
+    # This one won't be logged because the filename is on a block list
+    # of symbol filenames to ignore
+    ignore_url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    response = client.get(ignore_url)
+    assert response.status_code == 404
+    assert response.content == b"Symbol Not Found (and ignored)"
+    assert MissingSymbol.objects.all().count() == 0
+
+
+def test_client_404_code_id_code_file(client, db, settings):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
+
+    settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
+
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+
+    # Now look it up with ?code_file= and ?code_id= etc.
+    assert client.get(url, {"code_file": "xul.dll"}).status_code == 404
+    assert client.get(url, {"code_id": "deadbeef"}).status_code == 404
+    # both
+    assert (
+        client.get(url, {"code_file": "xul.dll", "code_id": "deadbeef"}).status_code
+        == 404
+    )
+
+    # NOTE(willkg): This should only have 1 entry that merges all the details, but for
+    # some reason gets 3. I'm removing the missing symbols bookkeeping at some point, so
+    # I'm just going to leave this as is for now.
+    assert MissingSymbol.objects.all().count() == 3
+
+
+def test_client_404_logged_bad_code_file(client, db, settings):
     """The root of this test is to test something that's been observed
     to happen in production; query strings for missing symbols with
     values that contain URL encoded nullbytes (%00).
     """
-    reload_downloaders("https://s3.example.com/private/prefix/")
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
+    module = "xul.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "xul.sym"
 
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        return {}
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    params = {"code_file": "\x00"}
+    assert client.head(url, params).status_code == 404
+    assert client.get(url, params).status_code == 400
 
-    url = reverse(
-        "download:download_symbol",
-        args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-    )
-    with botomock(mock_api_call):
-        params = {"code_file": "\x00"}
-        assert client.head(url, params).status_code == 404
-        assert client.get(url, params).status_code == 400
+    # It won't get logged
+    assert MissingSymbol.objects.all().count() == 0
 
-        # It won't get logged
-        assert not MissingSymbol.objects.all().exists()
-
-        # Same thing to happen if the 'code_id' contains nullbytes
-        params = {"code_id": "Nice\x00Try"}
-        assert client.head(url, params).status_code == 404
-        assert client.get(url, params).status_code == 400
-        assert not MissingSymbol.objects.all().exists()
+    # Same thing to happen if the 'code_id' contains nullbytes
+    params = {"code_id": "bad\x00codeid"}
+    assert client.head(url, params).status_code == 404
+    assert client.get(url, params).status_code == 400
+    assert MissingSymbol.objects.all().exists() == 0
 
 
 def test_log_symbol_get_404_metrics(metricsmock):
@@ -427,8 +404,7 @@ def test_log_symbol_get_404_metrics(metricsmock):
     assert len(records) == 2  # changed
 
 
-@pytest.mark.django_db
-def test_missingsymbols_csv(client, settings):
+def test_missingsymbols_csv(client, db, settings):
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
 
     url = reverse("download:missingsymbols_csv")
@@ -474,8 +450,7 @@ def test_missingsymbols_csv(client, settings):
     assert line[3] == "deadbeef"
 
 
-@pytest.mark.django_db
-def test_missingsymbols(client, settings):
+def test_missingsymbols(client, db, settings):
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
 
     # Empty db works fine
@@ -558,8 +533,7 @@ def test_missingsymbols(client, settings):
     assert data == expected
 
 
-@pytest.mark.django_db
-def test_store_missing_symbol_happy_path(metricsmock):
+def test_store_missing_symbol_happy_path(db, metricsmock):
     views.store_missing_symbol("foo.pdb", "ABCDEF12345", "foo.sym")
     missing_symbol = MissingSymbol.objects.get(
         symbol="foo.pdb",
@@ -602,8 +576,9 @@ def test_store_missing_symbol_happy_path(metricsmock):
     assert second_missing_symbol.count == 1
 
 
-@pytest.mark.django_db
-def test_store_missing_symbol_skips():
+def test_store_missing_symbol_skips(
+    db,
+):
     # If either symbol, debugid or filename are too long nothing is stored
     views.store_missing_symbol("x" * 200, "ABCDEF12345", "foo.sym")
     views.store_missing_symbol("foo.pdb", "x" * 200, "foo.sym")
@@ -611,132 +586,112 @@ def test_store_missing_symbol_skips():
     assert not MissingSymbol.objects.all().exists()
 
 
-@pytest.mark.django_db
-def test_store_missing_symbol_skips_bad_code_file_or_id():
+def test_store_missing_symbol_skips_bad_code_file_or_id(db):
     # If the code_file or code_id is too long don't bother storing it.
     views.store_missing_symbol("foo.pdb", "ABCDEF12345", "foo.sym", code_file="x" * 200)
     views.store_missing_symbol("foo.pdb", "ABCDEF12345", "foo.sym", code_id="x" * 200)
     assert not MissingSymbol.objects.all().exists()
 
 
-@pytest.mark.django_db
-def test_store_missing_symbol_client(client, botomock, settings):
+def test_store_missing_symbol_client(client, db, settings):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
     settings.ENABLE_STORE_MISSING_SYMBOLS = True
-    reload_downloaders("https://s3.example.com/private/prefix/")
 
-    mock_calls = []
+    module = "foo.pdb"
+    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
+    debugfn = "foo.ex_"
 
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        mock_calls.append(api_params["Prefix"])
-        return {}
+    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+
+    response = client.get(url, {"code_file": "something"})
+    assert response.status_code == 404
+    assert response.content == b"Symbol Not Found"
+    assert MissingSymbol.objects.all().count() == 1
+
+    # Pretend we're excessively eager
+    response = client.get(url, {"code_file": "something"})
+    assert response.status_code == 404
+    assert response.content == b"Symbol Not Found"
+
+    # The act of triggering that store_missing_symbol() call is guarded by a cache. So
+    # it shouldn't have called it more than once.
+    assert MissingSymbol.objects.filter(count=1).count() == 1
+
+
+def test_client_with_bad_filenames(client, db):
+    reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
     url = reverse(
         "download:download_symbol",
-        args=("foo.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "foo.ex_"),
+        args=(
+            "xül.pdb",  # <-- note the extended ascii char
+            "44E4EC8C2F41492B9369D6B9A059577C2",
+            "xul.sym",
+        ),
     )
+    response = client.get(url)
+    assert response.status_code == 400
 
-    with botomock(mock_api_call):
-        response = client.get(url, {"code_file": "something"})
-        assert response.status_code == 404
-        assert response.content == b"Symbol Not Found"
-        assert MissingSymbol.objects.all().count() == 1
+    url = reverse(
+        "download:download_symbol",
+        args=(
+            "x%l.pdb",  # <-- note the %
+            "44E4EC8C2F41492B9369D6B9A059577C2",
+            "xul.sym",
+        ),
+    )
+    response = client.get(url)
+    assert response.status_code == 400
 
-        # Pretend we're excessively eager
-        response = client.get(url, {"code_file": "something"})
-        assert response.status_code == 404
-        assert response.content == b"Symbol Not Found"
+    url = reverse(
+        "download:download_symbol",
+        args=(
+            "xul.pdb",
+            "44E4EC8C2F41492B9369D6B9A059577C2",
+            "xul#.ex_",  # <-- note the #
+        ),
+    )
+    response = client.get(url)
+    assert response.status_code == 400
 
-        # This basically checks that the SymbolDownloader cache is
-        # not invalidated between calls.
-        assert len(mock_calls) == 1
-        # However, the act of triggering that
-        # store_missing_symbol() call is guarded by a
-        # cache. So it shouldn't have called it more than
-        # once.
-        assert MissingSymbol.objects.filter(count=1).count() == 1
+    url = reverse(
+        "download:download_symbol",
+        args=(
+            "crypt3\x10.pdb",
+            "3D0443BF4FF5446B83955512615FD0942",
+            "crypt3\x10.pd_",
+        ),
+    )
+    response = client.get(url)
+    assert response.status_code == 400
 
+    # There are many more characters that can cause a 400 response because the symbol or
+    # the filename contains, what's considered, invalid characters. But there are some
+    # that actually work that might be a bit surprising.
+    url = reverse(
+        "download:download_symbol",
+        args=("汉.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
+    )
+    response = client.get(url)
+    assert response.status_code == 404
 
-def test_client_with_bad_filenames(client, botomock):
-    reload_downloaders("https://s3.example.com/private/prefix/")
+    url = reverse(
+        "download:download_symbol",
+        args=("foo.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "⚡️.sym"),
+    )
+    response = client.get(url)
+    assert response.status_code == 404
 
-    def mock_api_call(self, operation_name, api_params):
-        assert operation_name == "ListObjectsV2"
-        return {"Contents": []}
-
-    with botomock(mock_api_call):
-        url = reverse(
-            "download:download_symbol",
-            args=(
-                "xül.pdb",  # <-- note the extended ascii char
-                "44E4EC8C2F41492B9369D6B9A059577C2",
-                "xul.sym",
-            ),
-        )
-        response = client.get(url)
-        assert response.status_code == 400
-
-        url = reverse(
-            "download:download_symbol",
-            args=(
-                "x%l.pdb",  # <-- note the %
-                "44E4EC8C2F41492B9369D6B9A059577C2",
-                "xul.sym",
-            ),
-        )
-        response = client.get(url)
-        assert response.status_code == 400
-
-        url = reverse(
-            "download:download_symbol",
-            args=(
-                "xul.pdb",
-                "44E4EC8C2F41492B9369D6B9A059577C2",
-                "xul#.ex_",  # <-- note the #
-            ),
-        )
-        response = client.get(url)
-        assert response.status_code == 400
-
-        url = reverse(
-            "download:download_symbol",
-            args=(
-                "crypt3\x10.pdb",
-                "3D0443BF4FF5446B83955512615FD0942",
-                "crypt3\x10.pd_",
-            ),
-        )
-        response = client.get(url)
-        assert response.status_code == 400
-
-        # There are many more characters that can cause a 400 response
-        # because the symbol or the filename contains, what's considered,
-        # invalid characters. But there are some that actually work
-        # that might be a bit surprising.
-        url = reverse(
-            "download:download_symbol",
-            args=("汉.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
-        )
-        response = client.get(url)
-        assert response.status_code == 404
-
-        url = reverse(
-            "download:download_symbol",
-            args=("foo.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "⚡️.sym"),
-        )
-        response = client.get(url)
-        assert response.status_code == 404
-
-        url = reverse(
-            "download:download_symbol",
-            args=(
-                "space in the filename.pdb",
-                "44E4EC8C2F41492B9369D6B9A059577C2",
-                "bar.ex_",
-            ),
-        )
-        response = client.get(url)
-        assert response.status_code == 404
+    url = reverse(
+        "download:download_symbol",
+        args=(
+            "space in the filename.pdb",
+            "44E4EC8C2F41492B9369D6B9A059577C2",
+            "bar.ex_",
+        ),
+    )
+    response = client.get(url)
+    assert response.status_code == 404
 
 
 @pytest.mark.django_db

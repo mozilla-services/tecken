@@ -19,8 +19,6 @@ def check_storage_urls(app_configs, **kwargs):
         if url in checked:
             return
         bucket = StorageBucket(url)
-        if not bucket.private:
-            return
         try:
             if not bucket.exists():
                 errors.append(

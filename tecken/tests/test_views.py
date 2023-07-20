@@ -139,8 +139,9 @@ def test_auth_debug(client):
     assert "Session cookies work!" in text
 
 
-@pytest.mark.django_db
-def test_heartbeat_no_warnings(client, settings):
+def test_heartbeat_no_warnings(client, db, s3_helper, settings):
+    s3_helper.create_bucket("publicbucket")
+
     def debug_function():
         from django.core import checks
 

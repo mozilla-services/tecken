@@ -448,7 +448,6 @@ function PossibleUploadUrlsField({ possibleUploadUrls, preferredBucketName }) {
               return (
                 <option value={item.bucket_name} key={item.url}>
                   {item.bucket_name}
-                  {item.private ? " (private)" : ""}
                 </option>
               );
             })}

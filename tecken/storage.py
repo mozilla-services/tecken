@@ -36,14 +36,12 @@ class StorageBucket:
     Usage::
 
         >>> s = StorageBucket(
-        ...    'https://s3-us-west-2.amazonaws.com/bucky/prfx?access=public'
+        ...    'https://s3-us-west-2.amazonaws.com/bucky/prfx'
         )
         >>> s.netloc
         's3-us-west-2.amazonaws.com'
         >>> s.name
         'bucky'
-        >>> s.private  # note, private is usually default
-        False
         >>> s.prefix
         'prfx'
         >>> s.client.list_objects_v2(Bucket=s.name, Prefix='some/key.ext')
@@ -91,7 +89,6 @@ class StorageBucket:
             else:
                 prefix = file_prefix
         self.prefix = prefix
-        self.private = "access=public" not in parsed.query
         self.try_symbols = try_symbols
         self.endpoint_url = None
         self.region = None

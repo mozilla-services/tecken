@@ -19,13 +19,13 @@ def test_check_storage_urls_happy_path():
 def test_check_storage_urls_missing(settings):
     settings.SYMBOL_URLS = [
         "http://s3.example.com/public",
-        "http://s3.example.com/private",
+        "http://s3.example.com/other-bucket",
     ]
     with patch("tecken.storage.StorageBucket.exists", return_value=False):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
     assert "public" in errors[0].msg
-    assert "private" in errors[1].msg
+    assert "other-bucket" in errors[1].msg
     for error in errors:
         assert "bucket not found" in error.msg
         assert error.id == "tecken.health.E001"
@@ -41,7 +41,7 @@ def test_check_storage_urls_missing(settings):
 def test_check_storage_urls_storageerror(exception, settings):
     settings.SYMBOL_URLS = [
         "http://s3.example.com/public",
-        "http://s3.example.com/private",
+        "http://s3.example.com/other-bucket",
     ]
     fake_bucket = StorageBucket(url=settings.SYMBOL_URLS[0])
     error = StorageError(bucket=fake_bucket, backend_error=exception)
@@ -56,7 +56,7 @@ def test_check_storage_urls_storageerror(exception, settings):
 def test_check_storage_urls_other_error(settings):
     settings.SYMBOL_URLS = [
         "http://s3.example.com/public",
-        "http://s3.example.com/private",
+        "http://s3.example.com/other-bucket",
     ]
     exception = RuntimeError("A different error")
     with patch(
