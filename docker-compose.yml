@@ -102,14 +102,11 @@ services:
     image: redis:6.2.6
 
   # https://hub.docker.com/r/localstack/localstack/
-  # localstack running a fake AWS S3 and SQS
+  # localstack running a fake AWS S3
   localstack:
-    image: localstack/localstack:1.1.0
+    image: localstack/localstack:2.2.0
     environment:
-      - SERVICES=s3
-      - DEFAULT_REGION=us-east-1
-      - HOSTNAME=localstack
-      - HOSTNAME_EXTERNAL=localstack
+      - LOCALSTACK_HOST=localstack
     ports:
       - "4566:4566"
 
