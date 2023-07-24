@@ -22,7 +22,7 @@ import requests
 MAX_ATTEMPTS = 5
 
 # Number of seconds to wait for a response from server
-CONNECTION_TIMEOUT = 60
+CONNECTION_TIMEOUT = 600
 
 # Number of seconds to sleep between tries to account for rate limiting
 SLEEP_TIMEOUT = 15

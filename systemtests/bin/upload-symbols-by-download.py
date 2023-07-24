@@ -23,7 +23,7 @@ MAX_ATTEMPTS = 5
 # Number of seconds to wait for a response from server; this is 3 minutes
 # because the server has to do all the work and requests needs to wait for that
 # to happen
-CONNECTION_TIMEOUT = 180
+CONNECTION_TIMEOUT = 600
 
 # Number of seconds to sleep between tries to account for rate limiting
 SLEEP_TIMEOUT = 10

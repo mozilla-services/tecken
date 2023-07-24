@@ -20,7 +20,7 @@ import requests
 
 
 # Number of seconds to wait for a response from server
-CONNECTION_TIMEOUT = 60
+CONNECTION_TIMEOUT = 600
 
 SYMBOLS_URL = "https://symbols.mozilla.org/"
 
