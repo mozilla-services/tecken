@@ -73,7 +73,7 @@ def download_sym_files(base_url, csv_file):
 
             # Download the file
             headers = {"User-Agent": "tecken-systemtests"}
-            resp = requests.get(url, headers=headers)
+            resp = requests.get(url, headers=headers, timeout=60)
 
             # Compare status code with expected status code
             if resp.status_code != int(parts[1]):
