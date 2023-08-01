@@ -42,7 +42,7 @@ whitenoise==6.4.0
 exceptiongroup==1.1.1
 importlib-metadata==6.0.0
 typing-extensions==4.5.0
-zipp==3.11.0
+zipp==3.16.2
 
 # NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
 Django==3.2.20
