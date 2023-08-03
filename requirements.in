@@ -1,8 +1,8 @@
 backoff==2.2.1
 black==23.7.0
 boltons==23.0.0
-boto3==1.28.17
-botocore==1.31.17
+boto3==1.28.18
+botocore==1.31.18
 click==8.1.6
 datadog==0.46.0
 dj-database-url==2.0.0
@@ -18,7 +18,7 @@ markus[datadog]==4.2.0
 mock==5.1.0
 mozilla-django-oidc==3.0.0
 msgpack==1.0.5
-pip-tools==7.1.0
+pip-tools==7.2.0
 psycopg2==2.9.6
 pytest==7.4.0
 pytest-django==4.5.2
