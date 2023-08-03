@@ -75,6 +75,12 @@ def download_sym_files(base_url, csv_file):
             headers = {"User-Agent": "tecken-systemtests"}
             resp = requests.get(url, headers=headers, timeout=60)
 
+            for item in resp.history:
+                if item.status_code in (301, 302):
+                    click.echo(f">>> redirect: {item.url}")
+            click.echo(f">>> final: {resp.url}")
+            click.echo(f">>> status code: {resp.status_code}")
+
             # Compare status code with expected status code
             if resp.status_code != int(parts[1]):
                 click.echo(
