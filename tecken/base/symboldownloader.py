@@ -50,7 +50,9 @@ def set_time_took(method):
 def check_url_head(url):
     session = session_with_retries()
     resp = session.head(url)
-    if resp.status_code not in (200, 404):
+    # NOTE(willkg): we get a 403 from S3 buckets HTTP requests, so we want to ignore
+    # those
+    if resp.status_code not in (200, 403, 404):
         logger.error(f"check_url_head: {url} status code is {resp.status_code}")
     return resp.status_code == 200
 
