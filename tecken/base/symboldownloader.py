@@ -43,35 +43,10 @@ def set_time_took(method):
 
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-    args_rewrite=lambda source, key: (source.name, key),
     hit_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_hit", 1),
     miss_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_miss", 1),
 )
 @metrics.timer_decorator("symboldownloader_exists")
-def exists_in_source(source, key):
-    """Return a key or URL or something truthy if it exists. False otherwise.
-
-    The reason for returning False, when it's not there in the remote storage,
-    is because if you use `None` it can't be cached since the memoizer function
-    considers `None` as a "cache failure" and not a real value."""
-    response = source.client.list_objects_v2(Bucket=source.name, Prefix=key)
-    for obj in response.get("Contents", []):
-        if obj["Key"] == key:
-            # It exists!
-            return key
-    return False
-
-
-@cache_memoize(
-    settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-    hit_callable=lambda *a, **k: metrics.incr(
-        "symboldownloader_public_exists_cache_hit", 1
-    ),
-    miss_callable=lambda *a, **k: metrics.incr(
-        "symboldownloader_public_exists_cache_miss", 1
-    ),
-)
-@metrics.timer_decorator("symboldownloader_public_exists")
 def check_url_head(url):
     session = session_with_retries()
     resp = session.head(url)
@@ -120,12 +95,12 @@ class SymbolDownloader:
             prefix = source.prefix
             assert prefix
             file_url = "{}/{}".format(
-                source.base_url, self._make_key(prefix, symbol, debugid, filename)
+                source.base_url, self.make_key(prefix, symbol, debugid, filename)
             )
             check_url_head.invalidate(file_url)
 
     @staticmethod
-    def _make_key(prefix, symbol, debugid, filename):
+    def make_key(prefix, symbol, debugid, filename):
         return "{}/{}/{}/{}".format(
             prefix,
             symbol,
@@ -151,7 +126,7 @@ class SymbolDownloader:
 
             # We'll put together the URL manually
             file_url = "{}/{}".format(
-                source.base_url, self._make_key(prefix, symbol, debugid, filename)
+                source.base_url, self.make_key(prefix, symbol, debugid, filename)
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
             if check_url_head(file_url, _refresh=refresh_cache):

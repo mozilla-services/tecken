@@ -2,21 +2,19 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import os
-
 from tecken.base.symboldownloader import (
     SymbolDownloader,
-    exists_in_source,
+    check_url_head,
 )
-from tecken.storage import StorageBucket
 
 
-def test_exists_in_source(s3_helper, settings):
+def test_check_url_head(s3_helper, settings):
     module = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     debugfn = "xul.sym"
 
     # Upload a file into the regular bucket
+    # NOTE(willkg): The information here needs to match SYMBOL_URLS[0]
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
@@ -24,12 +22,23 @@ def test_exists_in_source(s3_helper, settings):
         data=b"abc123",
     )
 
-    good_key = f"v1/{module}/{debugid}/{debugfn}"
-    bad_key = "v1/XUL/4C4C445955553144A1984A09D6A8D6930/XUL.sym"
+    good_key = SymbolDownloader.make_key(
+        prefix="v1",
+        symbol=module,
+        debugid=debugid,
+        filename=debugfn,
+    )
+    bad_key = SymbolDownloader.make_key(
+        prefix="v1",
+        symbol="XUL",
+        debugid="4C4C445955553144A1984A09D6A8D6930",
+        filename="XUL.sym",
+    )
 
-    bucket = StorageBucket(os.environ["UPLOAD_DEFAULT_URL"])
-    assert exists_in_source(bucket, good_key)
-    assert not exists_in_source(bucket, bad_key)
+    base_url = settings.SYMBOL_URLS[0]
+
+    assert check_url_head(f"{base_url}{good_key}")
+    assert not check_url_head(f"{base_url}{bad_key}")
 
 
 def test_has_symbol(s3_helper):
