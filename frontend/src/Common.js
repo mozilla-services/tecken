@@ -224,8 +224,16 @@ export const DisplayFilesSummary = (files, incomplete, skipped, ignored) => {
   const sentences = [];
   sentences.push(pluralize(files, "file uploaded", "files uploaded"));
   if (incomplete) {
+    // FIXME(willkg): If the upload is interrupted during processing, Tecken
+    // only has records for files it started processing. All the files it
+    // hadn't gotten to aren't accounted for in either the uploaded or
+    // incomplete lists.
     sentences.push(
-      pluralize(incomplete, "file incomplete", "files incomplete")
+      pluralize(
+        incomplete,
+        "file incomplete (or more)",
+        "files incomplete (or more)"
+      )
     );
   }
   sentences.push(`${skipped} skipped`);
@@ -357,10 +365,7 @@ export const ShowUploadMetadata = ({ upload }) => {
             {upload.completed_at ? (
               <DisplayDate date={upload.completed_at} />
             ) : (
-              <i>
-                Incomplete!{" "}
-                <DisplayIncompleteRatio files={upload.file_uploads} />
-              </i>
+              <i>Incomplete!</i>
             )}
             {upload.completed_at ? (
               <small>
@@ -378,14 +383,6 @@ export const ShowUploadMetadata = ({ upload }) => {
       </tbody>
     </table>
   );
-};
-
-const DisplayIncompleteRatio = ({ files }) => {
-  // Return a string like "56 of 103 (54%)" to mean that 56 of 103 files are complete.
-  const all = files.length;
-  const complete = files.filter((file) => !!file.completed_at).length;
-  const percentage = (100 * complete) / all;
-  return `${complete} of ${all} (${Math.trunc(percentage)}%)`;
 };
 
 export const ShowFileMetadata = ({ file }) => (
