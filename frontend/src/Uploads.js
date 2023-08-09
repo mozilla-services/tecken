@@ -375,6 +375,7 @@ class DisplayUploads extends React.PureComponent {
                   onChangeSort={this.props.changeOrderBy}
                 />
               </th>
+              <th title="Whether this upload had a download url for the payload">UBD?</th>
               <th>
                 Uploaded
                 <SortLink
@@ -409,6 +410,7 @@ class DisplayUploads extends React.PureComponent {
                   style={{ width: 140 }}
                 />
               </td>
+              <td></td>
               <td>
                 <input
                   type="text"
@@ -427,7 +429,7 @@ class DisplayUploads extends React.PureComponent {
               </td>
             </tr>
             <tr>
-              <td colSpan="4"></td>
+              <td colSpan="5"></td>
               <td className="buttons">
                 <button type="submit" className="button is-primary">
                   Filter Uploads
@@ -469,6 +471,7 @@ class DisplayUploads extends React.PureComponent {
                   </td>
                   <td>{upload.user.email}</td>
                   <td>{formatFileSize(upload.size)}</td>
+                  <td>{upload.download_url === null ? "" : "yes"}</td>
                   <td>
                     <DisplayDate date={upload.created_at} />{" "}
                     {this.isNew(upload.created_at) && (
