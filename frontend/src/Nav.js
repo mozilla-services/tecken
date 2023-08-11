@@ -62,14 +62,6 @@ const Nav = observer(
               >
                 Home
               </NavLink>
-              <NavLink
-                to="/downloads/missing/"
-                exact
-                className="navbar-item"
-                activeClassName="is-active"
-              >
-                Downloads Missing
-              </NavLink>
               {store.currentUser &&
                 store.hasPermission("tokens.manage_tokens") && (
                   <NavLink

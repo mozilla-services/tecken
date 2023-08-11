@@ -21,7 +21,6 @@ import Home from "./Home";
 import Help from "./Help";
 import Tokens from "./Tokens";
 import Uploads from "./Uploads";
-import DownloadsMissing from "./DownloadsMissing";
 import Upload from "./Upload";
 import UploadNow from "./UploadNow";
 import Files from "./Files";
@@ -156,10 +155,6 @@ const App = observer(
                   />
                   <Route path="/help" component={Help} />
                   <Route path="/tokens" component={Tokens} />
-                  <Route
-                    path="/downloads/missing/"
-                    component={DownloadsMissing}
-                  />
                   <Route path="/uploads/files" exact component={Files} />
                   <Route path="/uploads/files/file/:id" component={File} />
                   <Route path="/uploads/upload" exact component={UploadNow} />
