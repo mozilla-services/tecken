@@ -112,7 +112,6 @@ def site_status(request):
         "ENABLE_TOKENS_AUTHENTICATION",
         "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
         "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
-        "ENABLE_STORE_MISSING_SYMBOLS",
     )
     for key in keys:
         value = getattr(settings, key)
@@ -140,7 +139,6 @@ def site_status(request):
     tables = [
         "auth_user",
         "django_session",
-        "download_missingsymbol",
         "tokens_token",
         "upload_fileupload",
         "upload_upload",

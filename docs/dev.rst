@@ -411,18 +411,14 @@ this code and it has to be tested manually. You can do something like this:
 1. go to Tecken webapp website
 2. wait for front page to load
 3. click on "Home"
-4. click on "Downloads missing"
-5. click on "Symbolication"
-6. click on "Help"
-7. click on "Log in" and log in
-8. click on "Home"
-9. click on "Downloads missing"
-10. click on "User management"
-11. click on "API tokens"
-12. click on "Uploads"
-13. click on "Symbolication"
-14. click on "Help"
-15. click on "Sign out"
+4. click on "Help"
+5. click on "Log in" and log in
+6. click on "Home"
+7. click on "User management"
+8. click on "API tokens"
+9. click on "Uploads"
+10. click on "Help"
+11. click on "Sign out"
 
 
 Database migrations
@@ -593,7 +589,7 @@ verify the session cookie value on each and every request.
 Auth debugging
 --------------
 
-Cache/cookeis issues
+Cache/cookies issues
 ~~~~~~~~~~~~~~~~~~~~
 
 Anyone can test caching and cookies by going to

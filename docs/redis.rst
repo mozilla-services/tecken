@@ -60,7 +60,10 @@ of all symbols stored in the LRU cache:
     $ make redis-cache-cli
 
     redis-cache:6379> keys *
-    1) ":1:count_missing:20211225:20220124"
-    2) ":1:count_missing:20220124:20220125"
-    3) ":1:count_missing:20220123:20220124"
-    4) ":1:count_missing:20211226:20220125
+    1) ":1:d0f08e5ed1882049b74f1962103df580"
+    2) ":1:02b212452eb0d18d6493d1f6a9de46ea"
+    3) ":1:408a56890ff831bbd5ee91e73ddd5df8"
+    4) ":1:9b46fc5d122c3e02b89a301a9e62b69a"
+    5) ":1:e955c1adcc9d733bb77f9bb54d583a2c"
+    6) ":1:django.contrib.sessions.cached_dbqkysb6y4gcbgpqkgnebd6yfjvmwzi5ks"
+    7) ":1:django.contrib.sessions.cached_dbrwjkw2ef9xa5mszl2c3me2eh6yuvylum"
