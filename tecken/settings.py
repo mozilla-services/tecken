@@ -458,19 +458,6 @@ S3_PUT_READ_TIMEOUT = _config(
 )
 
 
-MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS = _config(
-    "MEMOIZE_LOG_MISSING_SYMBOLS_SECONDS",
-    default=str(60 * 60 * 24),
-    parser=int,
-    doc=(
-        "When a symbol is tried to be downloaded, and it turns out the symbol "
-        "does *not* exist in S3, we write this down so all missing symbols "
-        "can be post-processed after.\n\n"
-        "But we only need to write it down once per symbol. There's a memoizing "
-        "guard and this defines how long it should cache that it memoized."
-    ),
-)
-
 MEMOIZE_KEY_EXISTING_SIZE_SECONDS = _config(
     "MEMOIZE_KEY_EXISTING_SIZE_SECONDS",
     default=str(60 * 60 * 24),
@@ -494,17 +481,6 @@ UPLOAD_FILE_UPLOAD_MAX_WORKERS = _config(
         "All of these function calls get put in a "
         "concurrent.futures.ThreadPoolExecutor pool. This setting is about "
         "how many of these to start, max."
-    ),
-)
-
-ENABLE_STORE_MISSING_SYMBOLS = _config(
-    "ENABLE_STORE_MISSING_SYMBOLS",
-    default="true",
-    parser=bool,
-    doc=(
-        "Whether to store the missing symbols in Postgres or not. "
-        "If you disable this, at the time of writing, missing symbols "
-        "will be stored in the Redis default cache."
     ),
 )
 
@@ -709,7 +685,6 @@ SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = _config(
 API_UPLOADS_BATCH_SIZE = 20
 API_UPLOADS_CREATED_BATCH_SIZE = 20
 API_FILES_BATCH_SIZE = 40
-API_DOWNLOADS_MISSING_BATCH_SIZE = 20
 
 UPLOAD_REATTEMPT_LIMIT_SECONDS = _config(
     "UPLOAD_REATTEMPT_LIMIT_SECONDS",

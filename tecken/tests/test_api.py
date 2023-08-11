@@ -13,7 +13,6 @@ from django.utils import timezone
 
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.download.models import MissingSymbol
 from tecken.api.views import filter_uploads
 from tecken.api.forms import UploadsForm, BaseFilteringForm
 
@@ -1055,70 +1054,6 @@ def test_filter_uploads_by_completed_at():
     form = UploadsForm({"completed_at": ">" + today.isoformat()})
     assert form.is_valid()
     assert filter_uploads(qs, True, user1, form).count() == 0
-
-
-@pytest.mark.django_db
-def test_downloads_missing(client):
-    url = reverse("api:downloads_missing")
-    response = client.get(url)
-    data = response.json()
-    assert data["missing"] == []
-    assert data["total"] == 0
-
-    MissingSymbol.objects.create(
-        hash="x1", symbol="foo.pdb", debugid="ADEF12345", filename="foo.sym", count=1
-    )
-    MissingSymbol.objects.create(
-        hash="x2", symbol="foo.pdb", debugid="01010101", filename="foo.ex_", count=2
-    )
-    response = client.get(url)
-    data = response.json()
-    assert data["total"] == 2
-
-    # Filter by modified_at
-    response = client.get(url, {"modified_at": timezone.now().isoformat()})
-    data = response.json()
-    assert data["total"] == 0
-    response = client.get(url, {"modified_at": "<" + timezone.now().isoformat()})
-    data = response.json()
-    assert data["total"] == 2
-
-    # Filter by count
-    response = client.get(url, {"count": ">1"})
-    data = response.json()
-    assert data["total"] == 1
-
-    # Filter by debugid
-    response = client.get(url, {"debugid": "xxx"})
-    data = response.json()
-    assert data["total"] == 0
-    response = client.get(url, {"debugid": "ADEF12345"})
-    data = response.json()
-    assert data["total"] == 1
-    assert data["missing"][0]["debugid"] == "ADEF12345"
-
-    # Filter by count
-    response = client.get(url, {"count": ">1"})
-    data = response.json()
-    assert data["total"] == 1
-    assert data["missing"][0]["filename"] == "foo.ex_"
-    response = client.get(url, {"count": "2"})
-    data = response.json()
-    assert data["total"] == 1
-    assert data["missing"][0]["filename"] == "foo.ex_"
-
-    # Bad form input
-    response = client.get(url, {"modified_at": "not a date"})
-    assert response.status_code == 400
-    assert response.json()["errors"]["modified_at"]
-    response = client.get(url, {"count": "not a number"})
-    assert response.status_code == 400
-    assert response.json()["errors"]["count"]
-
-    # Bad pagination
-    response = client.get(url, {"page": "not a number"})
-    assert response.status_code == 400
-    assert response.json()["errors"]["page"]
 
 
 @pytest.mark.django_db

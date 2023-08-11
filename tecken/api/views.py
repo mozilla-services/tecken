@@ -23,7 +23,6 @@ from tecken.base.decorators import (
     api_require_http_methods,
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
-from tecken.download.models import MissingSymbol
 from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -624,77 +623,3 @@ def stats(request):
 
     context = {"stats": numbers}
     return http.JsonResponse(context)
-
-
-@metrics.timer_decorator("api", tags=["endpoint:downloads_missing"])
-def downloads_missing(request):
-    context = {}
-    form = forms.DownloadsMissingForm(
-        request.GET, valid_sorts=("modified_at", "count", "created_at")
-    )
-    if not form.is_valid():
-        return http.JsonResponse({"errors": form.errors}, status=400)
-
-    pagination_form = PaginationForm(request.GET)
-    if not pagination_form.is_valid():
-        return http.JsonResponse({"errors": pagination_form.errors}, status=400)
-
-    qs = MissingSymbol.objects.all()
-    qs = filter_missing_symbols(qs, form)
-
-    batch_size = settings.API_DOWNLOADS_MISSING_BATCH_SIZE
-    context["batch_size"] = batch_size
-
-    page = pagination_form.cleaned_data["page"]
-    start = (page - 1) * batch_size
-    end = start + batch_size
-
-    total_count = qs.count()
-
-    context["aggregates"] = {"missing": {"total": total_count}}
-
-    today = timezone.now()
-    for days in (1, 30):
-        count = qs.filter(
-            modified_at__gte=today - datetime.timedelta(days=days)
-        ).count()
-        context["aggregates"]["missing"][f"last_{days}_days"] = count
-
-    context["total"] = context["aggregates"]["missing"]["total"]
-
-    if form.cleaned_data.get("order_by"):
-        order_by = form.cleaned_data["order_by"]
-    else:
-        order_by = {"sort": "modified_at", "reverse": True}
-
-    rows = []
-    order_by_string = ("-" if order_by["reverse"] else "") + order_by["sort"]
-    for missing in qs.order_by(order_by_string)[start:end]:
-        rows.append(
-            {
-                "id": missing.id,
-                "symbol": missing.symbol,
-                "debugid": missing.debugid,
-                "filename": missing.filename,
-                "code_file": missing.code_file,
-                "code_id": missing.code_id,
-                "count": missing.count,
-                "modified_at": missing.modified_at,
-                "created_at": missing.created_at,
-            }
-        )
-    context["missing"] = rows
-    context["order_by"] = order_by
-
-    return http.JsonResponse(context)
-
-
-def filter_missing_symbols(qs, form):
-    qs = filter_form_dates(qs, form, ("created_at", "modified_at"))
-    for operator, value in form.cleaned_data["count"]:
-        orm_operator = "count__{}".format(ORM_OPERATORS[operator])
-        qs = qs.filter(**{orm_operator: value})
-    for key in ("symbol", "debugid", "filename"):
-        if form.cleaned_data[key]:
-            qs = qs.filter(**{f"{key}__contains": form.cleaned_data[key]})
-    return qs

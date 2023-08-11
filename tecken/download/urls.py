@@ -25,8 +25,6 @@ register_converter(MixedCaseHexConverter, "hex")
 app_name = "download"
 
 urlpatterns = [
-    path("missingsymbols.csv", views.missingsymbols_csv, name="missingsymbols_csv"),
-    path("missingsymbols/", views.missingsymbols, name="missingsymbols"),
     path(
         "try/<str:symbol>/<hex:debugid>/<str:filename>",
         views.download_symbol_try,

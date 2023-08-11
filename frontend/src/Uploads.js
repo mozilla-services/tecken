@@ -375,7 +375,9 @@ class DisplayUploads extends React.PureComponent {
                   onChangeSort={this.props.changeOrderBy}
                 />
               </th>
-              <th title="Whether this upload had a download url for the payload">UBD?</th>
+              <th title="Whether this upload had a download url for the payload">
+                UBD?
+              </th>
               <th>
                 Uploaded
                 <SortLink
