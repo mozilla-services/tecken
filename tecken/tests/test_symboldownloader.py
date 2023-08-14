@@ -2,10 +2,38 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import pytest
+
 from tecken.base.symboldownloader import (
     SymbolDownloader,
     check_url_head,
 )
+
+
+@pytest.mark.parametrize(
+    "prefix, symbol, debugid, filename, expected",
+    [
+        (
+            "v1",
+            "xul.pdb",
+            "44E4EC8C2F41492B9369D6B9A059577C2",
+            "xul.sym",
+            "v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        ),
+        (
+            "v1",
+            "libc++abi.dylib",
+            "43940F08B65E38888CD3C52398EB1CA10",
+            "libc++abi.dylib.sym",
+            "v1/libc%2B%2Babi.dylib/43940F08B65E38888CD3C52398EB1CA10/libc%2B%2Babi.dylib.sym",
+        ),
+    ],
+)
+def test_make_url_path(prefix, symbol, debugid, filename, expected):
+    path = SymbolDownloader.make_url_path(
+        prefix=prefix, symbol=symbol, debugid=debugid, filename=filename
+    )
+    assert path == expected
 
 
 def test_check_url_head(s3_helper, settings):
@@ -22,13 +50,13 @@ def test_check_url_head(s3_helper, settings):
         data=b"abc123",
     )
 
-    good_key = SymbolDownloader.make_key(
+    good_key = SymbolDownloader.make_url_path(
         prefix="v1",
         symbol=module,
         debugid=debugid,
         filename=debugfn,
     )
-    bad_key = SymbolDownloader.make_key(
+    bad_key = SymbolDownloader.make_url_path(
         prefix="v1",
         symbol="XUL",
         debugid="4C4C445955553144A1984A09D6A8D6930",
