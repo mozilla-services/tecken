@@ -2,8 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import time
 from functools import wraps
+import time
+from urllib.parse import quote
 
 from cache_memoize import cache_memoize
 import logging
@@ -97,21 +98,26 @@ class SymbolDownloader:
             prefix = source.prefix
             assert prefix
             file_url = "{}/{}".format(
-                source.base_url, self.make_key(prefix, symbol, debugid, filename)
+                source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
             check_url_head.invalidate(file_url)
 
     @staticmethod
-    def make_key(prefix, symbol, debugid, filename):
-        return "{}/{}/{}/{}".format(
-            prefix,
-            symbol,
-            # The are some legacy use case where the debug ID might
-            # not already be uppercased. If so, we override it.
-            # Every debug ID is always in uppercase.
-            debugid.upper(),
-            filename,
-        )
+    def make_url_path(prefix, symbol, debugid, filename):
+        """Generates a url quoted path which works with HTTP requests against AWS S3
+        buckets
+
+        :arg prefix:
+        :arg symbol:
+        :arg debugid:
+        :arg filename:
+
+        :returns: url quoted relative path to be joined with a base url
+
+        """
+        # The are some legacy use case where the debug ID might not already be
+        # uppercased. If so, we override it. Every debug ID is always in uppercase.
+        return quote(f"{prefix}/{symbol}/{debugid.upper()}/{filename}")
 
     def _get(self, symbol, debugid, filename, refresh_cache=False):
         """Return a dict if the symbol can be found.
@@ -128,7 +134,7 @@ class SymbolDownloader:
 
             # We'll put together the URL manually
             file_url = "{}/{}".format(
-                source.base_url, self.make_key(prefix, symbol, debugid, filename)
+                source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
             if check_url_head(file_url, _refresh=refresh_cache):
