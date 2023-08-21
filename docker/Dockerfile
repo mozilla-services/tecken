@@ -48,7 +48,7 @@ COPY requirements.txt /tmp/
 WORKDIR /tmp
 
 RUN pip install -U 'pip>=20' && \
-    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --no-deps -r requirements.txt && \
     pip check --disable-pip-version-check
 
 COPY . /app
