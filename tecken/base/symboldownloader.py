@@ -49,7 +49,7 @@ def set_time_took(method):
 )
 @metrics.timer_decorator("symboldownloader_exists")
 def check_url_head(url):
-    session = session_with_retries()
+    session = session_with_retries(status_forcelist=(429, 500, 503))
     resp = session.head(url)
     # NOTE(willkg): we get a 403 from S3 buckets HTTP requests, so we want to ignore
     # those
