@@ -73,7 +73,7 @@ Downloading API
 
    :query code_id: the ``code_id`` from the module if any
 
-   :query code_filename: the ``code_filename`` from the module if any
+   :query code_file: the ``code_file`` from the module if any
 
    :statuscode 200: symbol file exists
    :statuscode 404: symbol file does not exist
@@ -99,7 +99,7 @@ Downloading API
 
    :query code_id: the ``code_id`` from the module if any
 
-   :query code_filename: the ``code_filename`` from the module if any
+   :query code_file: the ``code_file`` from the module if any
 
    :statuscode 302: symbol file was found and the final url was returned as a redirect
    :statuscode 400: requested symbol file has bad characters
