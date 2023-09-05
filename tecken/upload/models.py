@@ -102,14 +102,46 @@ class FileUpload(models.Model):
     # download, but that code was removed, so now this does nothing and can be removed.
     microsoft_download = models.BooleanField(default=False)
 
+    # For sym files, these are generated during the build process. We track them because
+    # they're helpful for debugging and lookups by code_id.
+    debug_filename = models.TextField(
+        null=True,
+        blank=True,
+        help_text=(
+            "The debug filename for the symbol file generated at build time. Examples: "
+            + "libmozsqlite3.so, xul.pdb. (sym)"
+        ),
+    )
+    debug_id = models.CharField(
+        max_length=40,
+        null=True,
+        blank=True,
+        help_text="The debug id for the symbol file generated at build time. (sym)",
+    )
+    code_file = models.TextField(
+        null=True, blank=True, help_text="The module code file. (sym, Windows)"
+    )
+    code_id = models.CharField(
+        max_length=40,
+        null=True,
+        blank=True,
+        help_text="The module code id. (sym, Windows)",
+    )
+    generator = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="The tool that generated the sym file. (sym)",
+    )
+
     def __str__(self):
         return (
             "<"
             + f"{self.__class__.__name__}:{self.id} "
             + f"bucket_name={self.bucket_name!r} "
             + f"key={self.key!r} "
-            + f"size={self.size} "
-            + f"created_at={self.created_at}"
+            + f"size={self.size!r} "
+            + f"created_at={self.created_at!r}"
             + ">"
         )
 
