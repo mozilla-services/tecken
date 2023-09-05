@@ -37,7 +37,7 @@ class FileUploadAdmin(CursorPaginatorAdmin):
         "upload",
     ]
     date_hierarchy = "created_at"
-    search_fields = ["key"]
+    search_fields = ["key", "debug_id", "debug_filename", "code_id", "code_file"]
     list_display = ["id", "upload_id", "bucket_name", "key", "size", "created_at"]
 
     view_on_site = True
