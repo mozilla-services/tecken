@@ -40,6 +40,10 @@ class DuplicateFileDifferentSize(ValueError):
     different."""
 
 
+class SymParseError(Exception):
+    """Any kind of error when parsing a sym file."""
+
+
 def get_file_md5_hash(fn, blocksize=65536):
     hasher = hashlib.md5()
     with open(fn, "rb") as f:
@@ -48,6 +52,57 @@ def get_file_md5_hash(fn, blocksize=65536):
             hasher.update(buf)
             buf = f.read(blocksize)
     return hasher.hexdigest()
+
+
+def extract_sym_header_data(file_path):
+    """Returns header data from thh sym file header.
+
+    :arg file_path: the path to the sym file
+
+    :returns: sym info as a dict
+
+    :raises SymParseError: any kind of sym parse error
+
+    """
+    data = {
+        "debug_filename": "",
+        "debug_id": "",
+        "code_file": "",
+        "code_id": "",
+        "generator": "",
+    }
+    with open(file_path, "r") as fp:
+        try:
+            for line in fp.readlines():
+                if line.startswith("MODULE"):
+                    parts = line.strip().split()
+                    _, opsys, arch, debug_id, debug_filename = parts
+                    data["debug_filename"] = debug_filename
+                    data["debug_id"] = debug_id.upper()
+
+                elif line.startswith("INFO CODE_ID"):
+                    parts = line.strip().split()
+                    # NOTE(willkg): Non-Windows module sym files don't have a code_file
+                    if len(parts) == 3:
+                        _, _, code_id = parts
+                        code_file = ""
+                    elif len(parts) == 4:
+                        _, _, code_id, code_file = parts
+
+                    data["code_file"] = code_file
+                    data["code_id"] = code_id.upper()
+
+                elif line.startswith("INFO GENERATOR"):
+                    _, _, generator = line.strip().split(maxsplit=2)
+                    data["generator"] = generator
+
+                else:
+                    break
+
+        except Exception as exc:
+            raise SymParseError(f"sym parse error {exc!r} with {line!r}") from exc
+
+    return data
 
 
 @metrics.timer_decorator("upload_dump_and_extract")
@@ -138,10 +193,18 @@ def key_existing(client, bucket, key):
 
 
 def should_compressed_key(key_name):
-    """Return true if, based on this key name, the content should be
-    gzip compressed."""
+    """Return true if the key name suggests this should be gzip compressed."""
     key_extension = os.path.splitext(key_name)[1].lower()[1:]
     return key_extension in settings.COMPRESS_EXTENSIONS
+
+
+def is_sym_file(key_name):
+    """Return true if it's a symbol file."""
+    try:
+        key_extension = os.path.splitext(key_name)[1].lower()
+        return key_extension == ".sym"
+    except IndexError:
+        return False
 
 
 def get_key_content_type(key_name):
@@ -184,7 +247,17 @@ def upload_file_upload(
             return
 
     metadata = {}
+    sym_data = {}
     compressed = False
+
+    if is_sym_file(key_name):
+        # If it's a sym file, we want to parse the header to get the debug filename,
+        # debug id, code file, and code id to store in the db. We do this before we
+        # compress the file.
+        try:
+            sym_data = extract_sym_header_data(file_path)
+        except SymParseError as exc:
+            logging.debug("symparseerror: %s", exc)
 
     if should_compressed_key(key_name):
         compressed = True
@@ -239,6 +312,12 @@ def upload_file_upload(
         update=update,
         compressed=compressed,
         size=size,
+        # sym file information
+        debug_filename=sym_data.get("debug_filename"),
+        debug_id=sym_data.get("debug_id"),
+        code_file=sym_data.get("code_file"),
+        code_id=sym_data.get("code_id"),
+        generator=sym_data.get("generator"),
     )
 
     content_type = get_key_content_type(key_name)
@@ -268,8 +347,8 @@ def upload_file_upload(
     logger.info(f"Uploaded key {key_name}")
     metrics.incr("upload_file_upload_upload", 1)
 
-    # If we managed to upload a file, different or not,
-    # cache invalidate the key_existing_size() lookup.
+    # If we managed to upload a file, different or not, cache invalidate the
+    # key_existing_size() lookup.
     try:
         key_existing.invalidate(client, bucket_name, key_name)
     except Exception:  # pragma: no cover

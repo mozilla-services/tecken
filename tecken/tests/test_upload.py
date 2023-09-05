@@ -6,7 +6,6 @@ import datetime
 from io import BytesIO, StringIO
 import logging
 import os
-from pathlib import Path
 from unittest import mock
 
 from botocore.exceptions import ClientError
@@ -24,12 +23,6 @@ from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload.utils import (
-    dump_and_extract,
-    key_existing,
-    should_compressed_key,
-    get_key_content_type,
-)
 from tecken.upload.views import get_bucket_info
 
 
@@ -44,47 +37,6 @@ INVALID_CHARACTERS_ZIP_FILE = _join("invalid-characters.zip")
 ACTUALLY_NOT_ZIP_FILE = _join("notazipdespiteitsname.zip")
 DUPLICATED_SAME_SIZE_ZIP_FILE = _join("duplicated-same-size.zip")
 DUPLICATED_DIFFERENT_SIZE_ZIP_FILE = _join("duplicated-different-size.zip")
-
-
-def test_dump_and_extract(tmpdir):
-    with open(ZIP_FILE, "rb") as f:
-        file_listings = dump_and_extract(str(tmpdir), f, ZIP_FILE)
-
-    # That .zip file has multiple files in it so it's hard to rely on the order.
-    assert len(file_listings) == 3
-    for file_listing in file_listings:
-        assert file_listing.path
-        assert os.path.isfile(file_listing.path)
-        assert file_listing.name
-        assert not file_listing.name.startswith("/")
-        assert file_listing.size
-        assert file_listing.size == os.stat(file_listing.path).st_size
-
-    # Inside the tmpdir there should now exist these files. Know thy fixtures...
-    assert Path(tmpdir / "xpcshell.dbg").is_dir()
-    assert Path(tmpdir / "flag").is_dir()
-    assert Path(tmpdir / "build-symbols.txt").is_file()
-
-
-def test_dump_and_extract_duplicate_name_same_size(tmpdir):
-    with open(DUPLICATED_SAME_SIZE_ZIP_FILE, "rb") as f:
-        file_listings = dump_and_extract(str(tmpdir), f, DUPLICATED_SAME_SIZE_ZIP_FILE)
-    # Even though the file contains 2 files.
-    assert len(file_listings) == 1
-
-
-def test_should_compressed_key(settings):
-    settings.COMPRESS_EXTENSIONS = ["bar"]
-    assert should_compressed_key("foo.bar")
-    assert should_compressed_key("foo.BAR")
-    assert not should_compressed_key("foo.exe")
-
-
-def test_get_key_content_type(settings):
-    settings.MIME_OVERRIDES = {"html": "text/html"}
-    assert get_key_content_type("foo.bar") is None
-    assert get_key_content_type("foo.html") == "text/html"
-    assert get_key_content_type("foo.HTML") == "text/html"
 
 
 def test_upload_archive_with_ignorable_files(
@@ -270,7 +222,7 @@ def test_upload_archive_one_uploaded_one_skipped(
     # and gets ignored when it's uploaded
     rootdir = str(tmp_path)
     with open(ZIP_FILE, "rb") as fp:
-        dump_and_extract(rootdir, fp, ZIP_FILE)
+        utils.dump_and_extract(rootdir, fp, ZIP_FILE)
     flag_jpeg_path = tmp_path / "flag/deadbeef/flag.jpeg"
     with open(flag_jpeg_path, "rb") as fp:
         s3_helper.upload_fileobj(
@@ -310,56 +262,6 @@ def test_upload_archive_one_uploaded_one_skipped(
         size__lt=1156,
         completed_at__isnull=False,
     )
-
-
-def test_key_existing_caching(s3_helper):
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="somefile.txt",
-        data=b"abc123",
-    )
-
-    client = s3_helper.conn
-
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 6
-    assert metadata == {}
-
-    # Change the file, but don't invalidate the cache
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="somefile.txt",
-        data=b"abc123123",
-    )
-
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 6
-    assert metadata == {}
-
-    # Invalidate the cache and make sure the size changes
-    key_existing.invalidate(client, "publicbucket", "somefile.txt")
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 9
-    assert metadata == {}
-
-
-def test_key_existing_size_caching_not_found(s3_helper):
-    s3_helper.create_bucket("publicbucket")
-    client = s3_helper.conn
-
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 0
-    assert metadata is None
-
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 0
-    assert metadata is None
-
-    key_existing.invalidate(client, "publicbucket", "somefile.txt")
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 0
-    assert metadata is None
 
 
 def test_upload_archive_key_lookup_cached(
