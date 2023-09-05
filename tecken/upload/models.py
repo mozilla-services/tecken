@@ -60,13 +60,21 @@ class Upload(models.Model):
             ("view_all_uploads", "View All Symbols Uploads"),
         )
 
-    def __repr__(self):
+    def __str__(self):
         return (
-            f"<{self.__class__.__name__} id={self.id} "
-            f"filename={self.filename!r} "
-            f"bucket_name={self.bucket_name!r}"
-            f">"
+            "<"
+            + f"{self.__class__.__name__}:{self.id} "
+            + f"bucket_name={self.bucket_name!r} "
+            + f"filename={self.filename!r} "
+            + f"size={self.size!r} "
+            + f"created_at={self.created_at!r}"
+            + ">"
         )
+
+    def get_absolute_url(self):
+        # NOTE(willkg): This is a React url. This will fail in local development because
+        # Django webapp runs at port 8000, but the React webapp runs at port 3000.
+        return f"/uploads/upload/{self.id}"
 
 
 class FileUpload(models.Model):
@@ -75,6 +83,10 @@ class FileUpload(models.Model):
     files are uploaded individually to the same bucket.
     """
 
+    # NOTE(willkg): we use SET_NULL here because this table and the FileUpload tables
+    # are really big so deleting things with CASCADE gets rough; at some point when we
+    # have more time for deleting things and it's done regularly, we should set this to
+    # CASCADE.
     upload = models.ForeignKey(Upload, null=True, on_delete=models.SET_NULL)
     bucket_name = models.CharField(max_length=100)
     key = models.CharField(max_length=300)
@@ -86,13 +98,22 @@ class FileUpload(models.Model):
     completed_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
-    # NOTE(willkg): This used to be used when this upload belongs to a
-    # Microsoft proxy download, but that code was removed, so now this does
-    # nothing and can be removed.
+    # NOTE(willkg): This used to be used when this upload belongs to a Microsoft proxy
+    # download, but that code was removed, so now this does nothing and can be removed.
     microsoft_download = models.BooleanField(default=False)
 
-    def __repr__(self):
+    def __str__(self):
         return (
-            f"<{self.__class__.__name__} bucket_name={self.bucket_name!r} "
-            f"key={self.key!r} size={self.size}>"
+            "<"
+            + f"{self.__class__.__name__}:{self.id} "
+            + f"bucket_name={self.bucket_name!r} "
+            + f"key={self.key!r} "
+            + f"size={self.size} "
+            + f"created_at={self.created_at}"
+            + ">"
         )
+
+    def get_absolute_url(self):
+        # NOTE(willkg): This is a React url. This will fail in local development because
+        # Django webapp runs at port 8000, but the React webapp runs at port 3000.
+        return f"/uploads/files/file/{self.id}"
