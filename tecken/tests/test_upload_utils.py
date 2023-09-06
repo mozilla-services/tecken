@@ -129,6 +129,22 @@ PUBLIC 1020 0 <.plt ELF section in basic.dbg>
             "generator": "mozilla/dump_syms XYZ",
         }
 
+    def test_sym_parse_error(self, tmp_path):
+        """Verify linux module sym file headers with no code_file"""
+        sym_path = tmp_path / "basic.dbg.sym"
+        sym_path.write_bytes(
+            b"""\
+MODULE Linux x86_64
+INFO CODE_ID B060AD20C6B47781552708AA192E7739FAC7C84A
+INFO GENERATOR mozilla/dump_syms XYZ
+FILE 0 /home/calixte/dev/mozilla/dump_syms.calixteman/test_data/linux/basic.cpp
+PUBLIC 1000 0 _init
+PUBLIC 1020 0 <.plt ELF section in basic.dbg>
+"""
+        )
+        with pytest.raises(SymParseError):
+            extract_sym_header_data(str(sym_path))
+
 
 @pytest.mark.parametrize(
     "key, expected",
