@@ -16,11 +16,15 @@ from tecken.base.decorators import (
 )
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.utils import invalid_key_name_characters
-from tecken.download.forms import DownloadForm
 from tecken.storage import StorageBucket
+from tecken.upload.models import FileUpload
+
 
 logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
+
+
+BOGUS_DEBUG_ID = "000000000000000000000000000000000"
 
 
 normal_downloader = SymbolDownloader(
@@ -38,9 +42,6 @@ def _ignore_symbol(symbol, debugid, filename):
     if filename == "file.ptr":
         return True
 
-    if debugid == "000000000000000000000000000000000":
-        return True
-
     if not filename.endswith(tuple(settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED)):
         return True
 
@@ -50,6 +51,28 @@ def _ignore_symbol(symbol, debugid, filename):
 
 def download_symbol_try(request, symbol, debugid, filename):
     return download_symbol(request, symbol, debugid, filename, try_symbols=True)
+
+
+def lookup_debug_id_by_code_id(code_file, code_id):
+    """Returns the debug id for a FileUpload for code_file/code_id
+
+    This is only useful for Windows module sym files. Other platforms don't have valid
+    code_file / code_id.
+
+    :arg code_file: the code_file to look up with; ex. "xul.dll"
+    :arg code_id: the code_id to look up with
+
+    :returns: None (no record with that combination) or the debug_id
+
+    """
+    logging.info("looking up by code_file %s code_id %s", code_file, code_id)
+    file_upload = (
+        FileUpload.objects.filter(code_file=code_file, code_id=code_id)
+        .order_by("created_at")
+        .last()
+    )
+    if file_upload:
+        return file_upload.debug_id
 
 
 @metrics.timer_decorator("download_symbol")
@@ -86,6 +109,21 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
     else:
         downloader = normal_downloader
 
+    if debugid == BOGUS_DEBUG_ID:
+        code_file = request.GET.get("code_file", None)
+        code_id = request.GET.get("code_id", None)
+        if code_file and code_id:
+            new_debugid = lookup_debug_id_by_code_id(
+                code_file=code_file, code_id=code_id
+            )
+            if new_debugid:
+                # We swap out the bogus debug id with the new debug id. We do it with a
+                # string replacement because it's easy.
+                new_url = request.get_full_path()
+                new_url = new_url.replace(BOGUS_DEBUG_ID, new_debugid)
+                metrics.incr("download_symbol_code_id_lookup")
+                return http.HttpResponseRedirect(new_url)
+
     if request.method == "HEAD":
         if downloader.has_symbol(
             symbol, debugid, filename, refresh_cache=refresh_cache
@@ -116,17 +154,6 @@ def download_symbol(request, symbol, debugid, filename, try_symbols=False):
             if request._request_debug:
                 response["Debug-Time"] = downloader.time_took
             return response
-
-    if request.method == "GET":
-        # If the request was a GET, we can return a more helpful response especially
-        # if the arguments were bad.
-        form = DownloadForm(request.GET)
-        if not form.is_valid():
-            # Even if there might be more than one error, just exit out on the first
-            # one. It's not important to know all the errors if there is at least one.
-            for key in form.errors:
-                for message in form.errors[key]:
-                    return http.HttpResponseBadRequest(f"{key}: {message}")
 
     response = http.HttpResponseNotFound("Symbol Not Found")
     if request._request_debug:
