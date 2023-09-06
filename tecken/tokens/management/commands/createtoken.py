@@ -12,15 +12,11 @@ class Command(BaseCommand):
     help = "Create an API token."
 
     def add_arguments(self, parser):
-        parser.add_argument("email", default=None, nargs="?")
+        parser.add_argument("email")
         parser.add_argument("token_key", default=None, nargs="?")
 
     def handle(self, *args, **options):
         email = options["email"]
-        if not email:
-            email = input("Email: ").strip()
-        if " " in email or email.count("@") != 1:
-            raise CommandError(f"Invalid email {email!r}")
 
         token_key = options["token_key"]
         if not token_key:
