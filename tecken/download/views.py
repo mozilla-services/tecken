@@ -65,7 +65,6 @@ def lookup_debug_id_by_code_id(code_file, code_id):
     :returns: None (no record with that combination) or the debug_id
 
     """
-    logging.info("looking up by code_file %s code_id %s", code_file, code_id)
     file_upload = (
         FileUpload.objects.filter(code_file=code_file, code_id=code_id)
         .order_by("created_at")
