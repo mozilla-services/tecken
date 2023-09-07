@@ -26,12 +26,12 @@ app_name = "download"
 
 urlpatterns = [
     path(
-        "try/<str:symbol>/<hex:debugid>/<str:filename>",
+        "try/<str:debugfilename>/<hex:debugid>/<str:filename>",
         views.download_symbol_try,
         name="download_symbol_try",
     ),
     path(
-        "<str:symbol>/<hex:debugid>/<str:filename>",
+        "<str:debugfilename>/<hex:debugid>/<str:filename>",
         views.download_symbol,
         name="download_symbol",
     ),

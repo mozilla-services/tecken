@@ -34,19 +34,19 @@ def test_client_happy_path(client, db, s3_helper):
         try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
     )
 
-    module = "xul.pdb"
+    debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    debugfn = "xul.sym"
+    symfile = "xul.sym"
 
     # Upload a file into the regular bucket
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
-        key=f"v1/{module}/{debugid}/{debugfn}",
+        key=f"v1/{debugfilename}/{debugid}/{symfile}",
         data=b"abc123",
     )
 
-    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
 
     response = client.get(url)
     assert response.status_code == 302
@@ -75,23 +75,25 @@ def test_client_try_download(client, db, s3_helper):
         try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
     )
 
-    module = "xul.pdb"
+    debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    debugfn = "xul.sym"
+    symfile = "xul.sym"
 
     # Upload a file into the try bucket
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
-        key=f"try/v1/{module}/{debugid}/{debugfn}",
+        key=f"try/v1/{debugfilename}/{debugid}/{symfile}",
         data=b"abc123",
     )
 
-    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
     response = client.get(url)
     assert response.status_code == 404
 
-    try_url = reverse("download:download_symbol_try", args=(module, debugid, debugfn))
+    try_url = reverse(
+        "download:download_symbol_try", args=(debugfilename, debugid, symfile)
+    )
     response = client.get(try_url)
     assert response.status_code == 302
     # Also note that the headers are the same as for regular downloads
@@ -115,20 +117,20 @@ def test_client_try_download(client, db, s3_helper):
 def test_client_with_debug(client, db, s3_helper):
     reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
-    module = "xul.pdb"
+    debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    debugfn = "xul.sym"
+    symfile = "xul.sym"
 
     # Upload a file into the regular bucket
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
-        key=f"v1/{module}/{debugid}/{debugfn}",
+        key=f"v1/{debugfilename}/{debugid}/{symfile}",
         data=b"abc123",
     )
 
     # Do a GET request which returns the redirect url
-    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
     response = client.get(url, HTTP_DEBUG="true")
     assert response.status_code == 302
     parsed = urlparse(response["location"])
@@ -183,19 +185,19 @@ def test_client_with_ignorable_file_extensions(client, db, s3_helper):
 def test_client_with_debug_with_cache(client, db, s3_helper):
     reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
-    module = "xul.pdb"
+    debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    debugfn = "xul.sym"
+    symfile = "xul.sym"
 
     # Upload a file into the regular bucket
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
-        key=f"v1/{module}/{debugid}/{debugfn}",
+        key=f"v1/{debugfilename}/{debugid}/{symfile}",
         data=b"abc123",
     )
 
-    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
 
     response = client.get(url, HTTP_DEBUG="true")
     assert response.status_code == 302
@@ -214,19 +216,19 @@ def test_client_with_debug_with_cache(client, db, s3_helper):
 def test_client_with_cache_refreshed(client, db, s3_helper):
     reload_downloaders(os.environ["UPLOAD_DEFAULT_URL"])
 
-    module = "xul.pdb"
+    debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    debugfn = "xul.sym"
+    symfile = "xul.sym"
 
     # Upload a file into the regular bucket
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
-        key=f"v1/{module}/{debugid}/{debugfn}",
+        key=f"v1/{debugfilename}/{debugid}/{symfile}",
         data=b"abc123",
     )
 
-    url = reverse("download:download_symbol", args=(module, debugid, debugfn))
+    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
     response = client.get(url)
     assert response.status_code == 302
 
@@ -358,20 +360,30 @@ def test_get_code_id_lookup(client, db, s3_helper):
         code_id=code_id,
     )
 
+    # Try normal download API url
     url = reverse(
         "download:download_symbol",
-        args=(debug_filename, views.BOGUS_DEBUG_ID, sym_file),
+        args=(debug_filename, debug_id, sym_file),
     )
-
-    # Try with no querystring params
     response = client.get(url)
-    assert response.status_code == 404
+    assert response.status_code == 302
+
+    # Try with code_file/code_id
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
+    response = client.get(url)
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
 
     # Try with querystring params
     response = client.get(url, {"code_file": code_file, "code_id": code_id})
     assert response.status_code == 302
     parsed = urlparse(response["location"])
     assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.query == f"code_file={code_file}&code_id={code_id}"
 
 
 def test_head_code_id_lookup(client, db, s3_helper):
@@ -403,17 +415,31 @@ def test_head_code_id_lookup(client, db, s3_helper):
         code_id=code_id,
     )
 
+    # Try regular download API returns 200
     url = reverse(
         "download:download_symbol",
-        args=(debug_filename, views.BOGUS_DEBUG_ID, sym_file),
+        args=(debug_filename, debug_id, sym_file),
     )
-
-    # Try with no querystring params
     response = client.head(url)
-    assert response.status_code == 404
+    assert response.status_code == 200
 
-    # Try with querystring params
+    # Try with code_file/code_id returns 302 redirect
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
+    response = client.head(url)
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+
+    # Try with querystring
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
     response = client.head(url, {"code_file": code_file, "code_id": code_id})
     assert response.status_code == 302
     parsed = urlparse(response["location"])
     assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.query == f"code_file={code_file}&code_id={code_id}"
