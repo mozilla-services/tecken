@@ -32,6 +32,9 @@ class UploadAdmin(admin.ModelAdmin):
 
 @admin.register(FileUpload)
 class FileUploadAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        "upload",
+    ]
     date_hierarchy = "created_at"
     search_fields = ["key"]
     list_display = ["id", "upload_id", "bucket_name", "key", "size", "created_at"]
