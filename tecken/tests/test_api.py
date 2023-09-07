@@ -776,13 +776,13 @@ def test_upload_files(client, settings):
         upload=upload,
         size=1234,
         bucket_name="other-public",
-        key="v0/bar.dll/A4FC12EFA5/foo.sym",
+        key="v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
     )
     file_upload2 = FileUpload.objects.create(
         size=100,
-        key="v0/foo.pdb/deadbeef/foo.sym",
-        compressed=True,
         bucket_name="symbols-public",
+        key="v1/libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
+        compressed=True,
     )
 
     response = client.get(url)
@@ -792,8 +792,10 @@ def test_upload_files(client, settings):
     all_ids = {file_upload1.id, file_upload2.id}
     assert {x["id"] for x in data["files"]} == all_ids
     assert data["batch_size"] == settings.API_FILES_BATCH_SIZE
+
     # No filters yields BIG_NUMBER total
     assert data["total"] == 1000000
+
     # Check the 'upload' which should either be None or a dict
     for file_upload in data["files"]:
         if file_upload["id"] == file_upload1.id:
@@ -830,11 +832,13 @@ def test_upload_files(client, settings):
     assert [x["id"] for x in data["files"]] == [file_upload1.id]
 
     # Filter by key
-    response = client.get(url, {"key": "foo.sym"})
+    response = client.get(url, {"key": "sym"})
     assert response.status_code == 200
     data = response.json()
     assert {x["id"] for x in data["files"]} == all_ids
-    response = client.get(url, {"key": "foo.sym, deadbeef"})
+    response = client.get(
+        url, {"key": "libxul.so.sym, A772CC9A3E852CF48965ED79FB65E3150"}
+    )
     assert response.status_code == 200
     data = response.json()
     assert [x["id"] for x in data["files"]] == [file_upload2.id]
@@ -844,6 +848,7 @@ def test_upload_files(client, settings):
     assert response.status_code == 200
     data = response.json()
     assert [x["id"] for x in data["files"]] == [file_upload1.id]
+
     # By negated bucket name
     response = client.get(url, {"bucket_name": f"!{file_upload1.bucket_name}"})
     assert response.status_code == 200
@@ -867,13 +872,13 @@ def test_upload_files_count(client):
         upload=upload,
         size=1234,
         bucket_name="symbols-public",
-        key="v0/bar.dll/A4FC12EFA5/foo.sym",
+        key="v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
     )
     file_upload_2 = FileUpload.objects.create(
         size=100,
-        key="v0/foo.pdb/deadbeef/foo.sym",
-        compressed=True,
         bucket_name="symbols-public",
+        key="v1/libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
+        compressed=True,
     )
 
     # Fetch uploads with no filters
@@ -883,7 +888,7 @@ def test_upload_files_count(client):
     assert data["files"] == [
         {
             "id": file_upload_2.id,
-            "key": "v0/foo.pdb/deadbeef/foo.sym",
+            "key": "v1/libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
             "update": False,
             "compressed": True,
             "size": 100,
@@ -894,7 +899,7 @@ def test_upload_files_count(client):
         },
         {
             "id": file_upload_1.id,
-            "key": "v0/bar.dll/A4FC12EFA5/foo.sym",
+            "key": "v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
             "update": False,
             "compressed": False,
             "size": 1234,
@@ -925,7 +930,7 @@ def test_upload_files_count(client):
             "compressed": False,
             "created_at": ANY,
             "id": file_upload_1.id,
-            "key": "v0/bar.dll/A4FC12EFA5/foo.sym",
+            "key": "v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
             "size": 1234,
             "update": False,
             "upload": {
@@ -1077,7 +1082,15 @@ def test_file_upload(client):
     )
     # Also, let's pretend there's at least one file upload
     file_upload = FileUpload.objects.create(
-        upload=upload, size=1234, key="foo.pdb/deadbeaf123/foo.sym"
+        upload=upload,
+        size=1234,
+        bucket_name="other-public",
+        key="v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
+        debug_filename="bar.pdb",
+        debug_id="46A0ADB3F299A70B4C4C44205044422E1",
+        code_file="bar.dll",
+        code_id="64EC878F867C000",
+        generator="mozilla/dump_syms XYZ",
     )
     url = reverse("api:upload_file", args=(file_upload.id,))
     response = client.get(url)
@@ -1092,7 +1105,24 @@ def test_file_upload(client):
 
     data = response.json()["file"]
     assert data["upload"]["user"]["email"] == user.email
-    assert data["url"] == "/foo.pdb/deadbeaf123/foo.sym"
+    assert data["url"] == "/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym"
+    assert list(sorted(data.keys())) == [
+        "bucket_name",
+        "code_file",
+        "code_id",
+        "completed_at",
+        "compressed",
+        "created_at",
+        "debug_filename",
+        "debug_id",
+        "generator",
+        "id",
+        "key",
+        "size",
+        "update",
+        "upload",
+        "url",
+    ]
 
 
 @pytest.mark.django_db

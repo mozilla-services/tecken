@@ -88,12 +88,13 @@ class Command(BaseCommand):
                         FileUpload(
                             upload=upload,
                             bucket_name="publicbucket",
-                            key=f"/{debug_info['debug_filename']}/{debug_info['debug_id']}/{sym_file}",
+                            key=f"v1/{debug_info['debug_filename']}/{debug_info['debug_id']}/{sym_file}",
                             size=random.randint(1000, 100000),
-                            # debug_filename=debug_info["debug_filename"],
-                            # debug_id=debug_info["debug_id"],
-                            # code_file=debug_info["code_file"],
-                            # code_id=debug_info["code_id"],
+                            debug_filename=debug_info["debug_filename"],
+                            debug_id=debug_info["debug_id"],
+                            code_file=debug_info["code_file"],
+                            code_id=debug_info["code_id"],
+                            generator="generate_fake_data",
                         )
                     )
                 FileUpload.objects.bulk_create(objs)
