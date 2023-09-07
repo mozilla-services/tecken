@@ -181,8 +181,12 @@ django==3.2.21 \
     # via
     #   -r requirements.in
     #   dj-database-url
+    #   django-admin-cursor-paginator
     #   django-redis
     #   mozilla-django-oidc
+django-admin-cursor-paginator==0.1.4 \
+    --hash=sha256:133a79a30c38f9a69fc51d6131b0c7e459043a4d3620fac17194badb97ee5df4
+    # via -r requirements.in
 django-cache-memoize==0.1.10 \
     --hash=sha256:63e8faa245a41c0dbad843807e9f21a6e59eba8e6e50df310fdf6485a6749843 \
     --hash=sha256:676299313079cde9242ae84db0160e80b1d44e8dd6bc9b1f4f1247e11b30c9e0

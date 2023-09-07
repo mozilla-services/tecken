@@ -204,6 +204,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.messages",
     "django.contrib.admin.apps.SimpleAdminConfig",
+    "admin_cursor_paginator",
     # Project specific apps
     "tecken.apps.TeckenAppConfig",
     "tecken.base",

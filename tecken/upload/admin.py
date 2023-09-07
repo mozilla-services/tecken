@@ -3,12 +3,13 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from django.contrib import admin
+from admin_cursor_paginator import CursorPaginatorAdmin
 
 from tecken.upload.models import Upload, FileUpload
 
 
 @admin.register(Upload)
-class UploadAdmin(admin.ModelAdmin):
+class UploadAdmin(CursorPaginatorAdmin):
     date_hierarchy = "created_at"
     search_fields = ["user.email", "bucket_name"]
     list_display = [
@@ -31,7 +32,7 @@ class UploadAdmin(admin.ModelAdmin):
 
 
 @admin.register(FileUpload)
-class FileUploadAdmin(admin.ModelAdmin):
+class FileUploadAdmin(CursorPaginatorAdmin):
     readonly_fields = [
         "upload",
     ]
