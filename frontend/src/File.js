@@ -10,6 +10,7 @@ import {
   Loading,
   ShowUploadMetadata,
   ShowFileMetadata,
+  ShowFileSymData,
   BooleanIcon,
 } from "./Common";
 import Fetch from "./Fetch";
@@ -167,6 +168,13 @@ class DisplayFile extends React.PureComponent {
 
         <h4 className="title is-4">Metadata</h4>
         <ShowFileMetadata file={file} />
+
+        {file.key.endsWith(".sym") && (
+          <>
+            <h4 className="title is-4">Symbol file data</h4>
+            <ShowFileSymData file={file} />
+          </>
+        )}
 
         {file.upload && (
           <h4 className="title is-4">

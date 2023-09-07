@@ -556,6 +556,11 @@ def upload_file(request, id):
         "url": url,
         "completed_at": file_upload.completed_at,
         "created_at": file_upload.created_at,
+        "debug_filename": file_upload.debug_filename,
+        "debug_id": file_upload.debug_id,
+        "code_file": file_upload.code_file,
+        "code_id": file_upload.code_id,
+        "generator": file_upload.generator,
         "upload": None,
     }
 

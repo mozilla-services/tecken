@@ -439,6 +439,33 @@ export const ShowFileMetadata = ({ file }) => (
   </table>
 );
 
+export const ShowFileSymData = ({ file }) => (
+  <table className="table is-fullwidth">
+    <tbody>
+      <tr>
+        <th>Debug filename</th>
+        <td>{file.debug_filename}</td>
+      </tr>
+      <tr>
+        <th>Debug id</th>
+        <td>{file.debug_id}</td>
+      </tr>
+      <tr>
+        <th>Code file (Windows-only)</th>
+        <td>{file.code_file}</td>
+      </tr>
+      <tr>
+        <th>Code id (Windows-only)</th>
+        <td>{file.code_id}</td>
+      </tr>
+      <tr>
+        <th>Generator</th>
+        <td>{file.generator}</td>
+      </tr>
+    </tbody>
+  </table>
+);
+
 const capitalize = (s) => {
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
