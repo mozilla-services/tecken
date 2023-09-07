@@ -49,8 +49,12 @@ def upload_sym_file(ctx, auth_token, base_url, symfile):
     parts = firstline.split(" ")
     debugid = parts[3].strip()
     debugfilename = parts[4].strip()
+    if debugfilename.endswith(".pdb"):
+        sym_file = debugfilename[:-4] + ".sym"
+    else:
+        sym_file = debugfilename
 
-    path = f"{debugfilename}/{debugid}/{debugfilename}.sym"
+    path = f"{debugfilename}/{debugid}/{sym_file}"
     with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
         zip_filename = datetime.datetime.now().strftime("symbols_%Y%m%d_%H%M%S.zip")
         zip_path = os.path.join(tmpdirname, zip_filename)
