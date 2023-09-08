@@ -383,7 +383,10 @@ def test_get_code_id_lookup(client, db, s3_helper):
     assert response.status_code == 302
     parsed = urlparse(response["location"])
     assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
-    assert parsed.query == f"code_file={code_file}&code_id={code_id}"
+    assert parsed.query in [
+        f"code_file={code_file}&code_id={code_id}",
+        f"code_id={code_id}&code_file={code_file}",
+    ]
 
 
 def test_head_code_id_lookup(client, db, s3_helper):
@@ -442,4 +445,7 @@ def test_head_code_id_lookup(client, db, s3_helper):
     assert response.status_code == 302
     parsed = urlparse(response["location"])
     assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
-    assert parsed.query == f"code_file={code_file}&code_id={code_id}"
+    assert parsed.query in [
+        f"code_file={code_file}&code_id={code_id}",
+        f"code_id={code_id}&code_file={code_file}",
+    ]
