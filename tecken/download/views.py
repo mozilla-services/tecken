@@ -112,8 +112,6 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
         return response
 
     refresh_cache = "_refresh" in request.GET
-    if refresh_cache:
-        logger.debug("refreshing cache")
 
     if "try" in request.GET or try_symbols:
         downloader = try_downloader
