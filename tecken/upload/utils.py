@@ -17,7 +17,7 @@ from botocore.vendored.requests.exceptions import ReadTimeout
 from django.conf import settings
 from django.utils import timezone
 
-from tecken.storage import StorageBucket
+from tecken.ext.s3.storage import StorageBucket
 from tecken.upload.models import FileUpload, Upload
 from tecken.libmarkus import METRICS
 
