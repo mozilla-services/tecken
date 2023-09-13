@@ -57,8 +57,18 @@ def test_client_homepage_with_valid_token(client):
     user = User.objects.create(username="peterbe", email="peterbe@example.com")
     assert not user.last_login
     token = Token.objects.create(user=user)
+    token_key = token.key
 
-    response = client.get(url, HTTP_AUTH_TOKEN=token.key)
+    response = client.get(url, HTTP_AUTH_TOKEN=token_key)
+    assert response.status_code == 200
+    assert "sign_in_url" not in response.json()["user"]
+    assert response.json()["user"]["email"] == user.email
+    user.refresh_from_db()
+    assert user.last_login
+
+    # Test with token comment
+    token_key = f"{token_key}-testtoken"
+    response = client.get(url, HTTP_AUTH_TOKEN=token_key)
     assert response.status_code == 200
     assert "sign_in_url" not in response.json()["user"]
     assert response.json()["user"]["email"] == user.email

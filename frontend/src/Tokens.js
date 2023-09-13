@@ -330,11 +330,20 @@ class CreateTokenForm extends PureComponent {
         </div>
 
         {hasBothUploadPermissions ? (
-          <p>
-            <b>Note!</b> An API Token can not contain <i>both</i> the{" "}
-            <code>Upload Symbols Files</code> <i>and</i>
-            <code>Upload Try Symbols Files</code>.
-          </p>
+          <>
+            <p>
+              You can append a <code>-</code> and a label to your API tokens.
+              Anything including and after the <code>-</code> is ignored. For
+              example, if you had a token with "Upload Try Symbols Files"
+              permissions, you could append a <code>-uploadtry</code> to help
+              differentiate it from other tokens with different permissions.
+            </p>
+            <p>
+              <b>Note</b>: An API Token cannot contain <i>both</i> the{" "}
+              <code>Upload Symbols Files</code> <i>and</i>
+              <code>Upload Try Symbols Files</code>.
+            </p>
+          </>
         ) : null}
       </form>
     );
