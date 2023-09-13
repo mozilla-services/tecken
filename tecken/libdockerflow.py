@@ -8,7 +8,8 @@ from pathlib import Path
 from django.core import checks
 from django.conf import settings
 
-from tecken.storage import StorageBucket, StorageError
+from tecken.libstorage import StorageError
+from tecken.ext.s3.storage import StorageBucket
 
 
 def check_storage_urls(app_configs, **kwargs):

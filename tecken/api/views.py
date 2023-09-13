@@ -25,7 +25,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
 from tecken.download.views import cached_lookup_by_syminfo
-from tecken.storage import StorageBucket
+from tecken.ext.s3.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.views import get_upload_bucket_urls

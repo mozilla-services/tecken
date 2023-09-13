@@ -7,12 +7,13 @@ import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from tecken import libdockerflow
-from tecken.storage import StorageBucket, StorageError
+from tecken.ext.s3.storage import StorageBucket
+from tecken.libstorage import StorageError
 from tecken.libdockerflow import get_version_info, get_release_name
 
 
 def test_check_storage_urls_happy_path():
-    with patch("tecken.storage.StorageBucket.exists", return_value=True):
+    with patch("tecken.ext.s3.storage.StorageBucket.exists", return_value=True):
         assert not libdockerflow.check_storage_urls(None)
 
 
@@ -21,7 +22,7 @@ def test_check_storage_urls_missing(settings):
         "http://s3.example.com/public",
         "http://s3.example.com/other-bucket",
     ]
-    with patch("tecken.storage.StorageBucket.exists", return_value=False):
+    with patch("tecken.ext.s3.storage.StorageBucket.exists", return_value=False):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
     assert "public" in errors[0].msg
@@ -43,9 +44,11 @@ def test_check_storage_urls_storageerror(exception, settings):
         "http://s3.example.com/public",
         "http://s3.example.com/other-bucket",
     ]
-    fake_bucket = StorageBucket(url=settings.SYMBOL_URLS[0])
-    error = StorageError(bucket=fake_bucket, backend_error=exception)
-    with patch("tecken.storage.StorageBucket.exists", side_effect=error):
+    fakebucket = StorageBucket(url=settings.SYMBOL_URLS[0])
+    error = StorageError(
+        backend=fakebucket.backend, url=fakebucket.url, error=exception
+    )
+    with patch("tecken.ext.s3.storage.StorageBucket.exists", side_effect=error):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
     for error in errors:
@@ -60,7 +63,7 @@ def test_check_storage_urls_other_error(settings):
     ]
     exception = RuntimeError("A different error")
     with patch(
-        "tecken.storage.StorageBucket.exists", side_effect=exception
+        "tecken.ext.s3.storage.StorageBucket.exists", side_effect=exception
     ), pytest.raises(RuntimeError):
         libdockerflow.check_storage_urls(None)
 
