@@ -11,7 +11,7 @@ import logging
 
 from tecken.libmarkus import METRICS
 from tecken.librequests import session_with_retries
-from tecken.storage import StorageBucket
+from tecken.ext.s3.storage import StorageBucket
 
 
 logger = logging.getLogger("tecken")

@@ -7,7 +7,8 @@ import os
 import pytest
 from botocore.exceptions import ClientError
 
-from tecken.storage import StorageBucket, StorageError
+from tecken.libstorage import StorageError
+from tecken.ext.s3.storage import StorageBucket
 
 
 INIT_CASES = {
@@ -137,7 +138,7 @@ def test_storageerror_msg():
     bucket = StorageBucket("https://s3.amazonaws.com/some-bucket?access=public")
     parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
     backend_error = ClientError(parsed_response, "HeadBucket")
-    error = StorageError(bucket, backend_error)
+    error = StorageError(backend=bucket.backend, url=bucket.url, error=backend_error)
     expected = (
         "s3 backend (https://s3.amazonaws.com/some-bucket?access=public)"
         " raised ClientError: An error occurred (403) when calling the HeadBucket"
