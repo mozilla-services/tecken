@@ -223,6 +223,20 @@ or "Upload Try Symbols" permission.
 
 The auth token is sent as an ``Auth-Token`` HTTP header in the HTTP POST.
 
+.. Note::
+
+   Auth tokens support labels to make it easier to know which auth token has
+   which permissions. A `-` and anything after that in the auth token is
+   considered a label and ignored.
+
+   For example, if you had an auth token for "Upload Try Symbols"::
+
+      E468C3D4BBDA43DEBC0B856983895835
+
+   you could use::
+
+      E468C3D4BBDA43DEBC0B856983895835-uploadtry-20230913
+
 
 Testing symbol uploads with our stage environment
 =================================================

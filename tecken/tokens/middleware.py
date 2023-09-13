@@ -61,6 +61,11 @@ class APITokenAuthenticationMiddleware:
         if not key:
             return
 
+        # Auth tokens allow for a "comment" which is anything after the first "-";
+        # peel it off and ignore it
+        if "-" in key:
+            key = key.split("-", 1)[0]
+
         try:
             token = Token.objects.select_related("user").get(key=key)
             if token.is_expired:
