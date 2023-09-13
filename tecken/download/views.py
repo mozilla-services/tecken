@@ -17,9 +17,9 @@ from tecken.base.decorators import (
 )
 from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import invalid_key_name_characters
+from tecken.ext.s3.storage import StorageBucket
 from tecken.libtiming import measure_time
 from tecken.upload.models import FileUpload
-from tecken.storage import StorageBucket
 from tecken.libmarkus import METRICS
 
 

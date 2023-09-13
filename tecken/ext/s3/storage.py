@@ -12,20 +12,10 @@ from botocore.config import Config
 
 from django.conf import settings
 
+from tecken.libstorage import StorageError
+
 
 ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
-
-
-class StorageError(Exception):
-    """A backend-specific client reported an error."""
-
-    def __init__(self, bucket, backend_error):
-        self.backend = bucket.backend
-        self.url = bucket.url
-        self.backend_msg = f"{type(backend_error).__name__}: {backend_error}"
-
-    def __str__(self):
-        return f"{self.backend} backend ({self.url}) raised {self.backend_msg}"
 
 
 class StorageBucket:
@@ -111,8 +101,8 @@ class StorageBucket:
     def __repr__(self):
         return (
             f"<{self.__class__.__name__} name={self.name!r} "
-            f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
-            f"backend={self.backend!r}>"
+            + f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
+            + f"backend={self.backend!r}>"
         )
 
     def get_storage_client(self):
@@ -135,6 +125,7 @@ class StorageBucket:
 
         :raises StorageError: An unexpected backed-specific error was raised.
         :returns: True if the bucket exists, False if it does not
+
         """
         client = self.get_storage_client()
 
@@ -148,9 +139,13 @@ class StorageBucket:
             if error.response["Error"]["Code"] == "404":
                 return False
             else:
-                raise StorageError(self, error) from error
+                raise StorageError(
+                    backend=self.backend, url=self.url, error=error
+                ) from error
         except BotoCoreError as error:
-            raise StorageError(self, error) from error
+            raise StorageError(
+                backend=self.backend, url=self.url, error=error
+            ) from error
         else:
             return True
 
