@@ -11,13 +11,13 @@ from botocore.config import Config
 
 from django.conf import settings
 
-from tecken.libstorage import StorageError
+from tecken.libstorage import StorageBackendBase, StorageError
 
 
 ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
 
 
-class StorageBucket:
+class StorageBucket(StorageBackendBase):
     """
     Deconstructs a URL about an S3 bucket and breaks it into parts that
     can be used for various purposes. Also, contains a convenient method

@@ -14,3 +14,21 @@ class StorageError(Exception):
 
     def __str__(self):
         return f"{self.backend} backend ({self.url}) raised {self.backend_msg}"
+
+
+def build_storage_backend():
+    pass
+
+
+class StorageBackendBase:
+    """Base class for storage backends."""
+
+    def exists(self):
+        """Check that this storage exists.
+
+        :returns: True if the storage exists and False if not
+
+        :raises StorageError: an unexpected backend-specific error was raised
+
+        """
+        raise NotImplementedError("exists not implemented")
