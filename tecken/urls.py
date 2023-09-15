@@ -28,6 +28,19 @@ class FrontendRoutesPrefixConverter:
 register_converter(FrontendRoutesPrefixConverter, "frontendroutes")
 
 
+class MixedCaseHexConverter:
+    regex = "[0-9A-Fa-f]+"
+
+    def to_python(self, value):
+        return value
+
+    def to_url(self, value):
+        return value
+
+
+register_converter(MixedCaseHexConverter, "hex")
+
+
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("__auth_debug__", views.auth_debug, name="auth_debug"),

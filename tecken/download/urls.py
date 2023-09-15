@@ -2,24 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from django.urls import register_converter, path
+from django.urls import path
 
 from tecken.download import views
-
-
-class _Converter:
-    def to_python(self, value):
-        return value
-
-    def to_url(self, value):
-        return value
-
-
-class MixedCaseHexConverter(_Converter):
-    regex = "[0-9A-Fa-f]+"
-
-
-register_converter(MixedCaseHexConverter, "hex")
 
 
 app_name = "download"

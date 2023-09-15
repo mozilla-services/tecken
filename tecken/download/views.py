@@ -8,7 +8,6 @@ import markus
 
 from django import http
 from django.conf import settings
-from django.urls import reverse
 
 from tecken.base.decorators import (
     set_request_debug,
@@ -18,7 +17,6 @@ from tecken.base.decorators import (
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.utils import invalid_key_name_characters
 from tecken.storage import StorageBucket
-from tecken.upload.models import FileUpload
 
 
 logger = logging.getLogger("tecken")
@@ -55,33 +53,6 @@ def _ignore_symbol(debugfilename, debugid, filename):
 
 def download_symbol_try(request, debugfilename, debugid, filename):
     return download_symbol(request, debugfilename, debugid, filename, try_symbols=True)
-
-
-def lookup_by_code_file_code_id(code_file, code_id):
-    """Returns the debug_filename/debug_id for given code_file/code_id
-
-    This is only useful for Windows module sym files. Other platforms don't have valid
-    code_file/code_id values.
-
-    :arg code_file: the code_file to look up with; ex. "xul.dll"
-    :arg code_id: the code_id to look up with
-
-    :returns: dict with (debug_filename, debug_id) keys or None if there's no such
-        record
-
-    """
-    logger.debug(f"lookup by code_file={code_file!r} code_id={code_id!r}")
-    file_upload = (
-        FileUpload.objects.filter(code_file=code_file, code_id=code_id)
-        .order_by("created_at")
-        .last()
-    )
-
-    if file_upload:
-        return {
-            "debug_filename": file_upload.debug_filename,
-            "debug_id": file_upload.debug_id,
-        }
 
 
 @metrics.timer_decorator("download_symbol")
@@ -148,20 +119,6 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
             if request._request_debug:
                 response["Debug-Time"] = downloader.time_took
             return response
-
-    # If we can't find the file, maybe it's in the form
-    # /{code_file}/{code_id}/{sym_file}, so see if we have a record with that
-    # code_file/code_id combination
-    ret = lookup_by_code_file_code_id(code_file=debugfilename, code_id=debugid)
-    if ret:
-        new_url = reverse(
-            "download:download_symbol",
-            args=(ret["debug_filename"], ret["debug_id"], filename),
-        )
-        if request.GET:
-            new_url = f"{new_url}?{request.GET.urlencode()}"
-        metrics.incr("download_symbol_code_id_lookup")
-        return http.HttpResponseRedirect(new_url)
 
     response = http.HttpResponseNotFound("Symbol Not Found")
     if request._request_debug:

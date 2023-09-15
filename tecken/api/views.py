@@ -4,6 +4,7 @@
 
 import datetime
 import logging
+import time
 
 import markus
 
@@ -21,6 +22,7 @@ from tecken.base.decorators import (
     api_login_required,
     api_permission_required,
     api_require_http_methods,
+    set_cors_headers,
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
 from tecken.storage import StorageBucket
@@ -628,3 +630,37 @@ def stats(request):
 
     context = {"stats": numbers}
     return http.JsonResponse(context)
+
+
+@metrics.timer_decorator("codeinfo_test")
+@api_require_http_methods(["GET"])
+@set_cors_headers(origin="*", methods="GET")
+def syminfo(request, somefile, someid):
+    start_time = time.time()
+    ret = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
+    end_time = time.time()
+    if ret:
+        sym_file = ret["debug_filename"]
+        if sym_file.endswith(".pdb"):
+            sym_file = sym_file[:-4] + ".sym"
+
+        new_url = request.build_absolute_uri(
+            reverse(
+                "download:download_symbol",
+                args=(ret["debug_filename"], ret["debug_id"], sym_file),
+            )
+        )
+
+        return http.JsonResponse(
+            {
+                "debug_id": ret["debug_id"],
+                "debug_filename": ret["debug_filename"],
+                "code_file": ret["code_file"],
+                "code_id": ret["code_id"],
+                "generator": ret["generator"],
+                "url": new_url,
+                "time": end_time - start_time,
+            }
+        )
+
+    return http.HttpResponseNotFound("Code file / id Not Found")
