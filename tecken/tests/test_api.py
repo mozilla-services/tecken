@@ -1142,3 +1142,80 @@ def test_file_upload_try_upload(client):
     assert response.status_code == 200
     data = response.json()["file"]
     assert data["url"] == "/foo.pdb/deadbeaf123/foo.sym?try"
+
+
+class Test_syminfo:
+    def test_debuginfo_lookup(self, client, db):
+        sym_file = "xul.sym"
+        debug_filename = "xul.pdb"
+        debug_id = "404B9729BE96C3CF4C4C44205044422E1"
+        code_file = "xul.dll"
+        code_id = "64E130A115A30000"
+        generator = "mozilla/dump_syms XYZ"
+
+        FileUpload.objects.create(
+            bucket_name="publicbucket",
+            key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+            size=100,
+            debug_filename=debug_filename,
+            debug_id=debug_id,
+            code_file=code_file,
+            code_id=code_id,
+            generator=generator,
+        )
+
+        # Try syminfo with debug info
+        url = reverse("api:syminfo", args=(debug_filename, debug_id))
+        response = client.get(url)
+        assert response.status_code == 200
+        assert response.json() == {
+            "debug_filename": debug_filename,
+            "debug_id": debug_id,
+            "code_file": code_file,
+            "code_id": code_id,
+            "generator": generator,
+            "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
+            "time": ANY,
+        }
+
+    def test_codeinfo_lookup(self, client, db):
+        sym_file = "xul.sym"
+        debug_filename = "xul.pdb"
+        debug_id = "404B9729BE96C3CF4C4C44205044422E1"
+        code_file = "xul.dll"
+        code_id = "64E130A115A30000"
+        generator = "mozilla/dump_syms XYZ"
+
+        FileUpload.objects.create(
+            bucket_name="publicbucket",
+            key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+            size=100,
+            debug_filename=debug_filename,
+            debug_id=debug_id,
+            code_file=code_file,
+            code_id=code_id,
+            generator=generator,
+        )
+
+        # Try syminfo with debug info
+        url = reverse("api:syminfo", args=(code_file, code_id))
+        response = client.get(url)
+        assert response.status_code == 200
+        assert response.json() == {
+            "debug_filename": debug_filename,
+            "debug_id": debug_id,
+            "code_file": code_file,
+            "code_id": code_id,
+            "generator": generator,
+            "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
+            "time": ANY,
+        }
+
+    def test_lookup_failed(self, client, db):
+        debug_filename = "xul.pdb"
+        debug_id = "404B9729BE96C3CF4C4C44205044422E1"
+
+        # Try syminfo with debug info
+        url = reverse("api:syminfo", args=(debug_filename, debug_id))
+        response = client.get(url)
+        assert response.status_code == 404

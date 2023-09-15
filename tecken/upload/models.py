@@ -2,13 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from django.db import models
+import logging
+
 from django.conf import settings
-from django.db.models import Aggregate
+from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
 
-class SumCardinality(Aggregate):
+logger = logging.getLogger("tecken")
+
+
+class SumCardinality(models.Aggregate):
     template = "SUM(CARDINALITY(%(expressions)s))"
 
 
@@ -77,11 +81,46 @@ class Upload(models.Model):
         return f"/uploads/upload/{self.id}"
 
 
+class FileUploadManager(models.Manager):
+    def lookup_by_syminfo(self, some_file, some_id):
+        """Returns the sym information for some debug_filename/debug_id or code_file/code_id
+        combo
+
+        :arg some_file: either a debug_filename (e.g. "xul.pdb") or a code_file (e.g. "xul.dll")
+        :arg some_id: either a debug_id or a code_id
+
+        :returns: dict with (debug_filename, debug_id, code_file, code_id, generator, url)
+            keys or None if there's no such record
+
+        """
+        logger.debug(f"lookup by some file={some_file!r} some_id={some_id!r}")
+        file_upload = (
+            self.filter(
+                (models.Q(debug_filename=some_file) & models.Q(debug_id=some_id))
+                | (models.Q(code_file=some_file) & models.Q(code_id=some_id))
+            )
+            .order_by()
+            .values("debug_filename", "debug_id", "code_file", "code_id", "generator")
+            .last()
+        )
+
+        if file_upload:
+            return {
+                "debug_filename": file_upload["debug_filename"],
+                "debug_id": file_upload["debug_id"],
+                "code_file": file_upload["code_file"],
+                "code_id": file_upload["code_id"],
+                "generator": file_upload["generator"],
+            }
+
+
 class FileUpload(models.Model):
     """
     Each Upload is a .zip file containing other files. Each of those
     files are uploaded individually to the same bucket.
     """
+
+    objects = FileUploadManager()
 
     # NOTE(willkg): we use SET_NULL here because this table and the FileUpload tables
     # are really big so deleting things with CASCADE gets rough; at some point when we
