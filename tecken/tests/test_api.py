@@ -1175,7 +1175,6 @@ class Test_syminfo:
             "code_id": code_id,
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
-            "time": ANY,
         }
         metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
         metricsmock.assert_incr(
@@ -1212,7 +1211,6 @@ class Test_syminfo:
             "code_id": code_id,
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
-            "time": ANY,
         }
         metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
         metricsmock.assert_incr(
@@ -1274,7 +1272,6 @@ class Test_syminfo:
             "code_id": code_id,
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
-            "time": ANY,
         }
 
         metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
@@ -1312,7 +1309,6 @@ class Test_syminfo:
             "code_id": code_id,
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
-            "time": ANY,
         }
 
         metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
@@ -1330,7 +1326,6 @@ class Test_syminfo:
             "code_id": code_id,
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
-            "time": ANY,
         }
 
         metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
