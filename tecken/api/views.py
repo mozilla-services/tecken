@@ -4,7 +4,6 @@
 
 import datetime
 import logging
-import time
 
 import markus
 
@@ -669,9 +668,7 @@ def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
 @api_require_http_methods(["GET"])
 @set_cors_headers(origin="*", methods="GET")
 def syminfo(request, some_file, some_id):
-    start_time = time.time()
     ret = cached_lookup_by_syminfo(somefile=some_file, someid=some_id)
-    end_time = time.time()
     if ret:
         sym_file = ret["debug_filename"]
         if sym_file.endswith(".pdb"):
@@ -692,7 +689,6 @@ def syminfo(request, some_file, some_id):
                 "code_id": ret["code_id"],
                 "generator": ret["generator"],
                 "url": new_url,
-                "time": end_time - start_time,
             }
         )
 
