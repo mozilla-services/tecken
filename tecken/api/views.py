@@ -8,14 +8,15 @@ import time
 
 import markus
 
-from django import http
 from django.conf import settings
-from django.urls import reverse
 from django.contrib.auth.models import Permission
-from django.db.models import Aggregate, Count, Q, Sum
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, BadRequest
+from django.db.models import Aggregate, Count, Q, Sum
+from django import http
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.utils import timezone
 
 from tecken.api import forms
 from tecken.base.decorators import (
@@ -632,12 +633,44 @@ def stats(request):
     return http.JsonResponse(context)
 
 
+# Store a result for 10 minutes
+SYMINFO_RESULT_CACHE_TIMEOUT = 600
+
+# Indicates there's nothing in the cache
+NO_VALUE_IN_CACHE = object()
+
+
+@metrics.timer_decorator("lookup_by_syminfo.timing")
+def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
+    """Looks up somefile/someid in fileupload data; caches result
+
+    This value is cached.
+
+    :arg somefile: a string that's either a debug_file or a code_file
+    :arg someid: a string that's either a debug_id or a code_id
+    :arg refresh_cache: force a cache refresh
+
+    :returns: dict with keys from lookup_by_syminfo
+
+    """
+    key = f"lookup_by_syminfo::{somefile}//{someid}"
+    ret = cache.get(key, default=NO_VALUE_IN_CACHE)
+    if ret is NO_VALUE_IN_CACHE or refresh_cache is True:
+        ret = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
+        cache.set(key, ret, SYMINFO_RESULT_CACHE_TIMEOUT)
+        metrics.incr("lookup_by_syminfo.cached", tags=["result:false"])
+    else:
+        metrics.incr("lookup_by_syminfo.cached", tags=["result:true"])
+
+    return ret
+
+
 @metrics.timer_decorator("codeinfo_test")
 @api_require_http_methods(["GET"])
 @set_cors_headers(origin="*", methods="GET")
-def syminfo(request, somefile, someid):
+def syminfo(request, some_file, some_id):
     start_time = time.time()
-    ret = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
+    ret = cached_lookup_by_syminfo(somefile=some_file, someid=some_id)
     end_time = time.time()
     if ret:
         sym_file = ret["debug_filename"]
