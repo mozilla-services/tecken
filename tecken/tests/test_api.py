@@ -1176,10 +1176,8 @@ class Test_syminfo:
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
         }
-        metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
-        metricsmock.assert_incr(
-            "tecken.lookup_by_syminfo.cached", tags=["result:false"]
-        )
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
     def test_codeinfo_lookup(self, client, db, metricsmock):
         sym_file = "xul.sym"
@@ -1212,10 +1210,8 @@ class Test_syminfo:
             "generator": generator,
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
         }
-        metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
-        metricsmock.assert_incr(
-            "tecken.lookup_by_syminfo.cached", tags=["result:false"]
-        )
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
     def test_lookup_failed(self, client, db, metricsmock):
         debug_filename = "xul.pdb"
@@ -1226,10 +1222,8 @@ class Test_syminfo:
         response = client.get(url)
         assert response.status_code == 404
 
-        metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
-        metricsmock.assert_incr(
-            "tecken.lookup_by_syminfo.cached", tags=["result:false"]
-        )
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
     def test_debuginfo_lookup_double_record(self, client, db, metricsmock):
         sym_file = "xul.sym"
@@ -1274,10 +1268,8 @@ class Test_syminfo:
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
         }
 
-        metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
-        metricsmock.assert_incr(
-            "tecken.lookup_by_syminfo.cached", tags=["result:false"]
-        )
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
     def test_debuginfo_lookup_cached(self, client, db, metricsmock):
         sym_file = "xul.sym"
@@ -1311,10 +1303,8 @@ class Test_syminfo:
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
         }
 
-        metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
-        metricsmock.assert_incr(
-            "tecken.lookup_by_syminfo.cached", tags=["result:false"]
-        )
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
         # Request it again--this time it should come from cache
         response = client.get(url)
@@ -1328,5 +1318,5 @@ class Test_syminfo:
             "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
         }
 
-        metricsmock.assert_timing("tecken.lookup_by_syminfo.timing")
-        metricsmock.assert_incr("tecken.lookup_by_syminfo.cached", tags=["result:true"])
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])

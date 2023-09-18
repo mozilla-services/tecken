@@ -639,7 +639,7 @@ SYMINFO_RESULT_CACHE_TIMEOUT = 600
 NO_VALUE_IN_CACHE = object()
 
 
-@metrics.timer_decorator("lookup_by_syminfo.timing")
+@metrics.timer_decorator("syminfo.lookup.timing")
 def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
     """Looks up somefile/someid in fileupload data; caches result
 
@@ -657,14 +657,14 @@ def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
     if ret is NO_VALUE_IN_CACHE or refresh_cache is True:
         ret = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
         cache.set(key, ret, SYMINFO_RESULT_CACHE_TIMEOUT)
-        metrics.incr("lookup_by_syminfo.cached", tags=["result:false"])
+        metrics.incr("syminfo.lookup.cached", tags=["result:false"])
     else:
-        metrics.incr("lookup_by_syminfo.cached", tags=["result:true"])
+        metrics.incr("syminfo.lookup.cached", tags=["result:true"])
 
     return ret
 
 
-@metrics.timer_decorator("codeinfo_test")
+@metrics.timer_decorator("api", tags=["endpoint:syminfo"])
 @api_require_http_methods(["GET"])
 @set_cors_headers(origin="*", methods="GET")
 def syminfo(request, some_file, some_id):
