@@ -81,30 +81,6 @@ Downloading API
    Same as ``HEAD /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but for try symbols.
 
 
-.. http:head:: /<CODE_FILE>/<CODE_ID>/<SYMBOL_FILE>
-
-   Looks for an upload record for a symbol file with the specified
-   ``code_file`` and ``code_id``. If it has one, then this returns an HTTP 302
-   to the download API using the ``debug_filename`` and ``debug_id``.
-
-   :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
-
-      If ``Debug-Time`` is `0.0``: symbol file ends in an unsupported extension
-
-   :reqheader User-Agent: please provide a unique user agent to make it easier for us
-       to help you debug problems
-
-   :query try: use ``try=1`` to download Try symbols
-
-   :query _refresh: use ``_refresh=1`` to force Tecken to update cache
-
-   :statuscode 302: redirect to download API url using ``debug_filename`` and ``debug_id``
-   :statuscode 404: symbol file does not exist
-   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
-       file a bug report
-   :statuscode 503: sleep for a bit and retry
-
-
 .. http:get:: /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
 
    Download a symbol file.
@@ -121,33 +97,6 @@ Downloading API
    :query _refresh: use ``_refresh=1`` to force Tecken to update cache
 
    :statuscode 302: symbol file was found and the final url was returned as a redirect
-   :statuscode 400: requested symbol file has bad characters
-   :statuscode 404: symbol file was not found
-   :statuscode 429: sleep for a bit and retry
-   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
-       file a bug report
-   :statuscode 503: sleep for a bit and retry; if retrying doesn't work, then please
-       file a bug report
-
-
-.. http:get:: /<CODE_FILE>/<CODE_ID>/<SYMBOL_FILE>
-
-   Looks for an upload record for a symbol file with the specified
-   ``code_file`` and ``code_id``. If it has one, then this returns an HTTP 302
-   to the download API using the ``debug_filename`` and ``debug_id``.
-
-   :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
-
-      If ``Debug-Time`` is `0.0``: symbol file ends in an unsupported extension
-
-   :reqheader User-Agent: please provide a unique user agent to make it easier for us
-       to help you debug problems
-
-   :query try: use ``try=1`` to download Try symbols
-
-   :query _refresh: use ``_refresh=1`` to force Tecken to update cache
-
-   :statuscode 302: redirect to download API url using ``debug_filename`` and ``debug_id``
    :statuscode 400: requested symbol file has bad characters
    :statuscode 404: symbol file was not found
    :statuscode 429: sleep for a bit and retry
