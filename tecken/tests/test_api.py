@@ -1306,6 +1306,8 @@ class Test_syminfo:
         metricsmock.assert_timing("tecken.syminfo.lookup.timing")
         metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
+        metricsmock.clear_records()
+
         # Request it again--this time it should come from cache
         response = client.get(url)
         assert response.status_code == 200
@@ -1320,3 +1322,20 @@ class Test_syminfo:
 
         metricsmock.assert_timing("tecken.syminfo.lookup.timing")
         metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+
+        metricsmock.clear_records()
+
+        # Request it again--this time force a cache refresh
+        response = client.get(url, {"_refresh": 1})
+        assert response.status_code == 200
+        assert response.json() == {
+            "debug_filename": debug_filename,
+            "debug_id": debug_id,
+            "code_file": code_file,
+            "code_id": code_id,
+            "generator": generator,
+            "url": f"http://testserver/{debug_filename}/{debug_id}/{sym_file}",
+        }
+
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])

@@ -668,7 +668,10 @@ def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
 @api_require_http_methods(["GET"])
 @set_cors_headers(origin="*", methods="GET")
 def syminfo(request, some_file, some_id):
-    ret = cached_lookup_by_syminfo(somefile=some_file, someid=some_id)
+    refresh_cache = "_refresh" in request.GET
+    ret = cached_lookup_by_syminfo(
+        somefile=some_file, someid=some_id, refresh_cache=refresh_cache
+    )
     if ret:
         sym_file = ret["debug_filename"]
         if sym_file.endswith(".pdb"):
