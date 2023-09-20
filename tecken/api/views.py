@@ -677,11 +677,12 @@ def syminfo(request, some_file, some_id):
         if sym_file.endswith(".pdb"):
             sym_file = sym_file[:-4] + ".sym"
 
+        view_name = "download:download_symbol"
+        if ret["key"].startswith("try"):
+            view_name = "download:download_symbol_try"
+
         new_url = request.build_absolute_uri(
-            reverse(
-                "download:download_symbol",
-                args=(ret["debug_filename"], ret["debug_id"], sym_file),
-            )
+            reverse(view_name, args=(ret["debug_filename"], ret["debug_id"], sym_file))
         )
 
         return http.JsonResponse(
