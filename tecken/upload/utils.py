@@ -72,8 +72,9 @@ def extract_sym_header_data(file_path):
         "generator": "",
     }
     with open(file_path, "r") as fp:
+        line = "no line yet"
         try:
-            for line in fp.readlines():
+            for line in fp:
                 if line.startswith("MODULE"):
                     parts = line.strip().split()
                     _, opsys, arch, debug_id, debug_filename = parts
