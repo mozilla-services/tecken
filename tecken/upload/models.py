@@ -100,12 +100,15 @@ class FileUploadManager(models.Manager):
                 | (models.Q(code_file=some_file) & models.Q(code_id=some_id))
             )
             .order_by()
-            .values("debug_filename", "debug_id", "code_file", "code_id", "generator")
+            .values(
+                "key", "debug_filename", "debug_id", "code_file", "code_id", "generator"
+            )
             .last()
         )
 
         if file_upload:
             return {
+                "key": file_upload["key"],
                 "debug_filename": file_upload["debug_filename"],
                 "debug_id": file_upload["debug_id"],
                 "code_file": file_upload["code_file"],

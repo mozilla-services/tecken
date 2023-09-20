@@ -1213,6 +1213,40 @@ class Test_syminfo:
         metricsmock.assert_timing("tecken.syminfo.lookup.timing")
         metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
 
+    def test_try_lookup(self, client, db, metricsmock):
+        sym_file = "xul.sym"
+        debug_filename = "xul.pdb"
+        debug_id = "404B9729BE96C3CF4C4C44205044422E1"
+        code_file = "xul.dll"
+        code_id = "64E130A115A30000"
+        generator = "mozilla/dump_syms XYZ"
+
+        FileUpload.objects.create(
+            bucket_name="publicbucket",
+            key=f"try/v1/{debug_filename}/{debug_id}/{sym_file}",
+            size=100,
+            debug_filename=debug_filename,
+            debug_id=debug_id,
+            code_file=code_file,
+            code_id=code_id,
+            generator=generator,
+        )
+
+        # Try syminfo with debug info
+        url = reverse("api:syminfo", args=(debug_filename, debug_id))
+        response = client.get(url)
+        assert response.status_code == 200
+        assert response.json() == {
+            "debug_filename": debug_filename,
+            "debug_id": debug_id,
+            "code_file": code_file,
+            "code_id": code_id,
+            "generator": generator,
+            "url": f"http://testserver/try/{debug_filename}/{debug_id}/{sym_file}",
+        }
+        metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+        metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
     def test_lookup_failed(self, client, db, metricsmock):
         debug_filename = "xul.pdb"
         debug_id = "404B9729BE96C3CF4C4C44205044422E1"
