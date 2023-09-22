@@ -41,8 +41,3 @@ class FileUploadAdmin(CursorPaginatorAdmin):
     list_display = ["id", "upload_id", "bucket_name", "key", "size", "created_at"]
 
     view_on_site = True
-
-    def upload_id(self, obj):
-        if obj.upload:
-            return obj.upload.id
-        return -1
