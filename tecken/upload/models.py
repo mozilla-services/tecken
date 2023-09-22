@@ -83,13 +83,12 @@ class Upload(models.Model):
 
 class FileUploadManager(models.Manager):
     def lookup_by_syminfo(self, some_file, some_id):
-        """Returns the sym information for some debug_filename/debug_id or code_file/code_id
-        combo
+        """Returns a queryset filtering on debug_filename/debug_id or code_file/code_id combo
 
         :arg some_file: either a debug_filename (e.g. "xul.pdb") or a code_file (e.g. "xul.dll")
         :arg some_id: either a debug_id or a code_id
 
-        :returns: FileUpload or None
+        :returns: queryset or None
 
         """
         logger.debug(f"lookup by some file={some_file!r} some_id={some_id!r}")
@@ -104,6 +103,25 @@ class FileUpload(models.Model):
     Each Upload is a .zip file containing other files. Each of those
     files are uploaded individually to the same bucket.
     """
+
+    class Meta:
+        indexes = [
+            models.Index(
+                name="upload_fileupload_debuginfo",
+                fields=["debug_filename", "debug_id"],
+                condition=(
+                    models.Q(debug_filename__isnull=False)
+                    & models.Q(debug_id__isnull=False)
+                ),
+            ),
+            models.Index(
+                name="upload_fileupload_codeinfo",
+                fields=["code_file", "code_id"],
+                condition=(
+                    models.Q(code_file__isnull=False) & models.Q(code_id__isnull=False)
+                ),
+            ),
+        ]
 
     objects = FileUploadManager()
 
