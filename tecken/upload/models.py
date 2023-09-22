@@ -89,32 +89,14 @@ class FileUploadManager(models.Manager):
         :arg some_file: either a debug_filename (e.g. "xul.pdb") or a code_file (e.g. "xul.dll")
         :arg some_id: either a debug_id or a code_id
 
-        :returns: dict with (debug_filename, debug_id, code_file, code_id, generator, url)
-            keys or None if there's no such record
+        :returns: FileUpload or None
 
         """
         logger.debug(f"lookup by some file={some_file!r} some_id={some_id!r}")
-        file_upload = (
-            self.filter(
-                (models.Q(debug_filename=some_file) & models.Q(debug_id=some_id))
-                | (models.Q(code_file=some_file) & models.Q(code_id=some_id))
-            )
-            .order_by()
-            .values(
-                "key", "debug_filename", "debug_id", "code_file", "code_id", "generator"
-            )
-            .last()
-        )
-
-        if file_upload:
-            return {
-                "key": file_upload["key"],
-                "debug_filename": file_upload["debug_filename"],
-                "debug_id": file_upload["debug_id"],
-                "code_file": file_upload["code_file"],
-                "code_id": file_upload["code_id"],
-                "generator": file_upload["generator"],
-            }
+        return self.filter(
+            (models.Q(debug_filename=some_file) & models.Q(debug_id=some_id))
+            | (models.Q(code_file=some_file) & models.Q(code_id=some_id))
+        ).order_by()
 
 
 class FileUpload(models.Model):

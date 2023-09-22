@@ -649,19 +649,24 @@ def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
     :arg someid: a string that's either a debug_id or a code_id
     :arg refresh_cache: force a cache refresh
 
-    :returns: dict with keys from lookup_by_syminfo
+    :returns: dict with (key, debug_filename, debug_id, code_file, code_id, generator)
+        keys
 
     """
     key = f"lookup_by_syminfo::{somefile}//{someid}"
-    ret = cache.get(key, default=NO_VALUE_IN_CACHE)
-    if ret is NO_VALUE_IN_CACHE or refresh_cache is True:
-        ret = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
-        cache.set(key, ret, SYMINFO_RESULT_CACHE_TIMEOUT)
+    data = cache.get(key, default=NO_VALUE_IN_CACHE)
+    if data is NO_VALUE_IN_CACHE or refresh_cache is True:
+        qs = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
+        data = qs.values(
+            "key", "debug_filename", "debug_id", "code_file", "code_id", "generator"
+        ).last()
+
+        cache.set(key, data, SYMINFO_RESULT_CACHE_TIMEOUT)
         metrics.incr("syminfo.lookup.cached", tags=["result:false"])
     else:
         metrics.incr("syminfo.lookup.cached", tags=["result:true"])
 
-    return ret
+    return data
 
 
 @metrics.timer_decorator("api", tags=["endpoint:syminfo"])
