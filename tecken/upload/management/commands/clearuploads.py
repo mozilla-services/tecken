@@ -20,14 +20,14 @@ REGULAR_RECORD_AGE_CUTOFF = 365 * 2
 
 
 class Command(BaseCommand):
-    """Periodic maintenance task for deleting old upload records.
+    """Clean out expired upload and fileupload records.
 
-    The S3 buckets expire old objects, so we should expire the related records
-    in these tables as well.
+    The S3 buckets expire old objects, so we should expire the related records in these
+    tables as well.
 
     """
 
-    help = "Cleanse the upload_upload and upload_fileupload table of impurities."
+    help = "Clean out expired upload and fileupload records."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -64,7 +64,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.stdout.write("cleanse_upload:")
+        self.stdout.write("clearuploads:")
 
         # NOTE(willkg): if DEBUG=False, there's nothing to reset and this is a no-op
         reset_queries()
@@ -80,17 +80,17 @@ class Command(BaseCommand):
             upload_count = Upload.objects.all().count()
             fileupload_count = FileUpload.objects.all().count()
             self.stdout.write(
-                ">>> count before cleansing: "
+                ">>> count before clearing: "
                 + f"upload={upload_count}, fileupload={fileupload_count}"
             )
 
         with record_timing("delete", self.stdout):
-            # First cleanse try records
+            # First clear try records
             try_cutoff = today - datetime.timedelta(days=TRY_RECORD_AGE_CUTOFF)
             self.delete_records(is_dry_run=is_dry_run, is_try=True, cutoff=try_cutoff)
 
         with record_timing("delete", self.stdout):
-            # Now cleanse regular records
+            # Now clear regular records
             cutoff = today - datetime.timedelta(days=REGULAR_RECORD_AGE_CUTOFF)
             self.delete_records(is_dry_run=is_dry_run, is_try=False, cutoff=cutoff)
 

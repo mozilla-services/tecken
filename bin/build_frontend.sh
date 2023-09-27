@@ -1,5 +1,4 @@
 #!/bin/bash
-set -eo pipefail
 
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -9,6 +8,8 @@ set -eo pipefail
 
 # NOTE(willkg): Since this is in the image at /app/frontend/build, it gets
 # stomped on when you mount your repo directory as /app.
+
+set -eo pipefail
 
 # We prefer to not leave any JavaScript as inline no matter how small.
 export INLINE_RUNTIME_CHUNK=false

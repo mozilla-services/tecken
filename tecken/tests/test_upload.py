@@ -823,8 +823,8 @@ def test_UploadByDownloadForm_redirection_exhaustion(requestsmock, settings):
     assert "Too many redirects" in validation_errors[0].message
 
 
-def test_cleanse_upload_records(db, fakeuser):
-    """cleanse_upload deletes appropriate records"""
+def test_clearuploads_records(db, fakeuser):
+    """clearuploads deletes appropriate records"""
     today = timezone.now()
     try_cutoff = today - datetime.timedelta(days=30)
     reg_cutoff = today - datetime.timedelta(days=365 * 2)
@@ -860,7 +860,7 @@ def test_cleanse_upload_records(db, fakeuser):
         FileUpload.objects.create(upload=upload, key="try-2-2.sym", size=100)
 
     stdout = StringIO()
-    call_command("cleanse_upload", dry_run=False, stdout=stdout)
+    call_command("clearuploads", dry_run=False, stdout=stdout)
 
     assert "DRY RUN" not in stdout.getvalue()
 
@@ -873,8 +873,8 @@ def test_cleanse_upload_records(db, fakeuser):
     assert file_keys == ["reg-1-1.sym", "reg-1-2.sym", "try-1-1.sym", "try-1-2.sym"]
 
 
-def test_cleanse_upload_records_dry_run(db, fakeuser):
-    """cleanse_upload dry_run doesn't delete records"""
+def test_clearuploads_records_dry_run(db, fakeuser):
+    """clearuploads dry_run doesn't delete records"""
     today = timezone.now()
     try_cutoff = today - datetime.timedelta(days=30)
     reg_cutoff = today - datetime.timedelta(days=365 * 2)
@@ -910,7 +910,7 @@ def test_cleanse_upload_records_dry_run(db, fakeuser):
         FileUpload.objects.create(upload=upload, key="try-2-2.sym", size=100)
 
     stdout = StringIO()
-    call_command("cleanse_upload", dry_run=True, stdout=stdout)
+    call_command("clearuploads", dry_run=True, stdout=stdout)
 
     assert "DRY RUN" in stdout.getvalue()
 
