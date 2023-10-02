@@ -653,7 +653,6 @@ urllib3==1.26.17 \
     --hash=sha256:24d6a242c28d29af46c3fae832c36db3bbebcc533dd1bb549172cd739c82df21 \
     --hash=sha256:94a757d178c9be92ef5539b8840d48dc9cf1b2709c9d6b588232a055c524458b
     # via
-    #   -r requirements.in
     #   botocore
     #   requests
     #   sentry-sdk
