@@ -24,3 +24,11 @@ bugzilla_product = "Tecken"
 bugzilla_component = "General"
 main_branch = "main"
 tag_name_template = "%Y.%m.%d"
+
+
+[tool.service-status]
+main_branch = "main"
+hosts = [
+    "stage=https://symbols.stage.mozaws.net",
+    "prod=https://symbols.mozilla.org"
+]
