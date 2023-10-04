@@ -20,7 +20,7 @@ mock==5.1.0
 mozilla-django-oidc==3.0.0
 msgpack==1.0.7
 pip-tools==7.3.0
-psycopg2==2.9.8
+psycopg2==2.9.9
 pytest==7.4.2
 pytest-django==4.5.2
 pytest-mock==3.11.1
