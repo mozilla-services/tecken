@@ -9,6 +9,9 @@ from django.urls import reverse
 
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.download import views
+from tecken.upload.models import FileUpload
+
+import pytest
 
 
 _here = os.path.dirname(__file__)
@@ -328,3 +331,195 @@ def test_client_with_bad_filenames(client, db):
     )
     response = client.get(url)
     assert response.status_code == 404
+
+
+def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
+    reload_downloaders(
+        os.environ["UPLOAD_DEFAULT_URL"],
+        try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
+    )
+
+    sym_file = "xul.sym"
+    debug_filename = "xul.pdb"
+    debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
+    code_file = "xul.dll"
+    code_id = "651C9AF99241000"
+
+    # Upload a file into the regular bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+        data=b"abc123",
+    )
+    FileUpload.objects.create(
+        bucket_name="publicbucket",
+        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+        size=100,
+        debug_filename=debug_filename,
+        debug_id=debug_id,
+        code_file=code_file,
+        code_id=code_id,
+    )
+
+    # Try normal download API url
+    url = reverse(
+        "download:download_symbol",
+        args=(debug_filename, debug_id, sym_file),
+    )
+    response = client.get(url)
+    assert response.status_code == 302
+    # Since it was a debugfilename/debugid, it should not trigger the codeinfo lookup
+    metricsmock.assert_not_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_not_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
+    # Try with code_file/code_id
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
+    response = client.get(url)
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
+    # Try with querystring params
+    response = client.get(url, {"code_file": code_file, "code_id": code_id})
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.query in [
+        f"code_file={code_file}&code_id={code_id}",
+        f"code_id={code_id}&code_file={code_file}",
+    ]
+    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+
+
+def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
+    reload_downloaders(
+        os.environ["UPLOAD_DEFAULT_URL"],
+        try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
+    )
+
+    sym_file = "xul.sym"
+    debug_filename = "xul.pdb"
+    debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
+    code_file = "xul.dll"
+    code_id = "651C9AF99241000"
+
+    s3_helper.create_bucket("publicbucket")
+
+    # Try normal download API url
+    url = reverse(
+        "download:download_symbol",
+        args=(debug_filename, debug_id, sym_file),
+    )
+    response = client.get(url)
+    assert response.status_code == 404
+    # Since it was a debugfilename/debugid, it should not trigger the codeinfo lookup
+    metricsmock.assert_not_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_not_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
+    # Try with code_file/code_id
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
+    response = client.get(url)
+    assert response.status_code == 404
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
+    metricsmock.clear_records()
+
+    # Try again
+    response = client.get(url)
+    assert response.status_code == 404
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+
+
+def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
+    reload_downloaders(
+        os.environ["UPLOAD_DEFAULT_URL"],
+        try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
+    )
+
+    sym_file = "xul.sym"
+    debug_filename = "xul.pdb"
+    debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
+    code_file = "xul.dll"
+    code_id = "651C9AF99241000"
+
+    # Upload a file into the regular bucket
+    s3_helper.create_bucket("publicbucket")
+    s3_helper.upload_fileobj(
+        bucket_name="publicbucket",
+        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+        data=b"abc123",
+    )
+    FileUpload.objects.create(
+        bucket_name="publicbucket",
+        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+        size=100,
+        debug_filename=debug_filename,
+        debug_id=debug_id,
+        code_file=code_file,
+        code_id=code_id,
+    )
+
+    # Try regular download API returns 200
+    url = reverse(
+        "download:download_symbol",
+        args=(debug_filename, debug_id, sym_file),
+    )
+    response = client.head(url)
+    assert response.status_code == 200
+    metricsmock.assert_not_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_not_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
+    # Try with code_file/code_id returns 302 redirect
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
+    response = client.head(url)
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
+    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+
+    # Try with querystring
+    url = reverse(
+        "download:download_symbol",
+        args=(code_file, code_id, sym_file),
+    )
+    response = client.head(url, {"code_file": code_file, "code_id": code_id})
+    assert response.status_code == 302
+    parsed = urlparse(response["location"])
+    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.query in [
+        f"code_file={code_file}&code_id={code_id}",
+        f"code_id={code_id}&code_file={code_file}",
+    ]
+    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+
+
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        # Definitely codeinfo
+        (("xul.dll", "651C9AF99241000", "xul.sym"), True),
+        (("firefox.exe", "650C1B67AE000", "firefox.sym"), True),
+        # Not codeinfo
+        (("", "ACF393EAF700487177FB4224149071A756EE51F7", "firefox.sym"), False),
+        (("gkcodecs.dll", "650C26A577000", "gkcodecs.dl_"), False),
+        (("firefox", "EA93F3AC00F7714877FB4224149071A70", "firefox.sym"), False),
+        (("libxul.so", "F02950187F3B1A110763AD1633BBE1B60", "libxul.so.sym"), False),
+    ],
+)
+def test_is_maybe_codeinfo(metricsmock, params, expected):
+    assert views.is_maybe_codeinfo(*params) == expected

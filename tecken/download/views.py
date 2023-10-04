@@ -8,6 +8,8 @@ import markus
 
 from django import http
 from django.conf import settings
+from django.core.cache import cache
+from django.urls import reverse
 
 from tecken.base.decorators import (
     set_request_debug,
@@ -16,6 +18,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.utils import invalid_key_name_characters
+from tecken.upload.models import FileUpload
 from tecken.storage import StorageBucket
 
 
@@ -49,6 +52,70 @@ def _ignore_symbol(debugfilename, debugid, filename):
 
     # The default is to NOT ignore it
     return False
+
+
+# Store a result for 10 minutes
+SYMINFO_RESULT_CACHE_TIMEOUT = 600
+
+# Indicates there's nothing in the cache
+NO_VALUE_IN_CACHE = object()
+
+
+@metrics.timer_decorator("syminfo.lookup.timing")
+def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
+    """Looks up somefile/someid in fileupload data; caches result
+
+    This value is cached.
+
+    :arg somefile: a string that's either a debug_file or a code_file
+    :arg someid: a string that's either a debug_id or a code_id
+    :arg refresh_cache: force a cache refresh
+
+    :returns: dict with (key, debug_filename, debug_id, code_file, code_id, generator)
+        keys
+
+    NOTE(willkg): This doesn't differentiate between try symbols and regular symbols.
+    It's probably the case that something is requesting using codeinfo wants to query
+    try symbols as well.
+
+    """
+    key = f"lookup_by_syminfo::{somefile}//{someid}"
+    data = cache.get(key, default=NO_VALUE_IN_CACHE)
+    if data is NO_VALUE_IN_CACHE or refresh_cache is True:
+        qs = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
+        data = qs.values(
+            "key", "debug_filename", "debug_id", "code_file", "code_id", "generator"
+        ).last()
+
+        cache.set(key, data, SYMINFO_RESULT_CACHE_TIMEOUT)
+        metrics.incr("syminfo.lookup.cached", tags=["result:false"])
+    else:
+        metrics.incr("syminfo.lookup.cached", tags=["result:true"])
+
+    return data
+
+
+def is_maybe_codeinfo(some_file, some_id, filename):
+    """Returns true if this is possibly a codeinfo.
+
+    :arg some_file: a filename; a code file will end with ".dll" or ".exe" or something
+        like that
+    :arg some_id: an id; a code id that's hex characters and less than 33
+        characters long
+    :arg filename: a symbol file that ends wtih ".sym"
+
+    :returns: bool
+
+    """
+    return (
+        bool(filename)
+        and filename.endswith(".sym")
+        and bool(some_file)
+        and bool(some_id)
+        # NOTE(willkg): debug ids are 33 characters and code ids can vary; further
+        # some_id is guaranteed to be hex characters because of the urlpattern
+        and len(some_id) < 33
+    )
 
 
 def download_symbol_try(request, debugfilename, debugid, filename):
@@ -119,6 +186,26 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
             if request._request_debug:
                 response["Debug-Time"] = downloader.time_took
             return response
+
+    if is_maybe_codeinfo(debugfilename, debugid, filename):
+        ret = cached_lookup_by_syminfo(
+            somefile=debugfilename, someid=debugid, refresh_cache=refresh_cache
+        )
+        if ret:
+            # Redirect to the correct debuginfo download url
+            if "try" in request.GET or try_symbols:
+                view_to_use = "download:download_symbol_try"
+            else:
+                view_to_use = "download:download_symbol"
+
+            new_url = reverse(
+                view_to_use,
+                args=(ret["debug_filename"], ret["debug_id"], filename),
+            )
+            if request.GET:
+                new_url = f"{new_url}?{request.GET.urlencode()}"
+            metrics.incr("download_symbol_code_id_lookup")
+            return http.HttpResponseRedirect(new_url)
 
     response = http.HttpResponseNotFound("Symbol Not Found")
     if request._request_debug:
