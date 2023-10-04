@@ -9,7 +9,6 @@ import markus
 
 from django.conf import settings
 from django.contrib.auth.models import Permission
-from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, BadRequest
 from django.db.models import Aggregate, Count, Q, Sum
 from django import http
@@ -25,6 +24,7 @@ from tecken.base.decorators import (
     set_cors_headers,
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
+from tecken.download.views import cached_lookup_by_syminfo
 from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -630,43 +630,6 @@ def stats(request):
 
     context = {"stats": numbers}
     return http.JsonResponse(context)
-
-
-# Store a result for 10 minutes
-SYMINFO_RESULT_CACHE_TIMEOUT = 600
-
-# Indicates there's nothing in the cache
-NO_VALUE_IN_CACHE = object()
-
-
-@metrics.timer_decorator("syminfo.lookup.timing")
-def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
-    """Looks up somefile/someid in fileupload data; caches result
-
-    This value is cached.
-
-    :arg somefile: a string that's either a debug_file or a code_file
-    :arg someid: a string that's either a debug_id or a code_id
-    :arg refresh_cache: force a cache refresh
-
-    :returns: dict with (key, debug_filename, debug_id, code_file, code_id, generator)
-        keys
-
-    """
-    key = f"lookup_by_syminfo::{somefile}//{someid}"
-    data = cache.get(key, default=NO_VALUE_IN_CACHE)
-    if data is NO_VALUE_IN_CACHE or refresh_cache is True:
-        qs = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
-        data = qs.values(
-            "key", "debug_filename", "debug_id", "code_file", "code_id", "generator"
-        ).last()
-
-        cache.set(key, data, SYMINFO_RESULT_CACHE_TIMEOUT)
-        metrics.incr("syminfo.lookup.cached", tags=["result:false"])
-    else:
-        metrics.incr("syminfo.lookup.cached", tags=["result:true"])
-
-    return data
 
 
 @metrics.timer_decorator("api", tags=["endpoint:syminfo"])
