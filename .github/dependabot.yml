@@ -1,14 +1,18 @@
+---
 version: 2
 updates:
-  - package-ecosystem: pip
-    directory: /
+  - package-ecosystem: "pip"
+    directory: "/"
     schedule:
-      interval: monthly
+      interval: "monthly"
     reviewers:
-      - willkg
-  - package-ecosystem: docker
-    directory: /docker
+      - "willkg"
+    rebase-strategy: "disabled"
+
+  - package-ecosystem: "docker"
+    directory: "/docker"
     schedule:
-      interval: monthly
+      interval: "monthly"
     reviewers:
-      - willkg
+      - "willkg"
+    rebase-strategy: "disabled"
