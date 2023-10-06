@@ -41,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # -- Custom configuration -------------------------------------------------
 
 extlinks = {
-    "base_url": ("https://symbols.mozilla.org/%s", "https://symbols.mozilla.org")
+    "base_url": ("https://symbols.mozilla.org/%s", "https://symbols.mozilla.org/%s")
 }
 
 # -- General configuration ------------------------------------------------
