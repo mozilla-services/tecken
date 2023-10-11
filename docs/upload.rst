@@ -13,13 +13,12 @@ Uploading symbols
 Basics
 ======
 
-Tecken lets you upload symbol files. It stores these symbol files allowing
-others to use the download API to access them for symbolicating stacks,
-profiling, debugging, etc.
+Tecken lets you upload :term:`symbols files <symbols file>`. It stores these
+symbols files allowing others to use the download API to access them for
+symbolicating stacks, profiling, debugging, etc.
 
-When building software, you can run `dump_syms
-<https://github.com/mozilla/dump_syms/>`_ to extract debugging information and
-generate Breakpad symbol files.
+When building software, you can run :term:`dump_syms` to extract debugging
+information and generate symbols files.
 
 You can upload your symbols ZIP file to Tecken using the upload API.
 
@@ -27,8 +26,8 @@ You can upload your symbols ZIP file to Tecken using the upload API.
 Symbols ZIP file structure
 --------------------------
 
-To upload symbol files, you must first put them in a ZIP file. The ZIP file
-must consist of Breakpad symbol files in this structure::
+To upload symbols files, you must first put them in a ZIP file. The ZIP file
+must consist of symbols files in this structure::
 
     <module>/<debug_id>/<file>
 
