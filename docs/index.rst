@@ -8,6 +8,7 @@
    overview
    upload
    download
+   glossary
 
 .. toctree::
    :caption: Developers/Admin of Tecken

@@ -5,8 +5,8 @@ Redis Documentation
 Usage
 =====
 
-The Symbols Service webapp uses Redis for miscellaneous caching and as a broker
-for message queue workers (TO BE UPDATED).
+Tecken uses Redis for miscellaneous caching and as a broker for message queue
+workers (TO BE UPDATED).
 
 
 Usage In Django

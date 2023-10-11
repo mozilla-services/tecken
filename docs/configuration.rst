@@ -8,8 +8,6 @@ Configuration
 Symbols Service configuration
 =============================
 
-The Symbols Service covers uploading and downloading symbols.
-
 Gunicorn configuration:
 
 .. everett:option:: GUNICORN_TIMEOUT
