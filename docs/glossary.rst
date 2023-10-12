@@ -5,6 +5,73 @@ Glossary
 .. glossary::
    :sorted:
 
+   code file
+   code_file
+       The code file is the filename of the binary.
+
+       For example, on Windows, the compiler may produce a ``.dll``
+       file--that's the code file.
+
+       This piece of data is only relevant for Windows binaries.
+
+
+   code id
+   code_id
+   code identifier
+   code_identifier
+       The code id is generated when compiling a binary. It's 12 hex characters
+       long.
+
+       Example::
+
+           6527E59F9071000
+
+
+   debug file
+   debug_file
+       The debug file is the filename of the file that has debug information.
+
+       For example, on Windows, the compiler may produce a ``.dll`` file and
+       the debug file would be ``.pdb``.
+
+       On Linux, the compiler may produce a ``.so`` file and the debug file
+       would be the same.
+
+       On MacOS, the compiler may produce a ``.dylib`` file and the debug file
+       would be the same.
+
+
+   debug id
+   debug_id
+   debug identifier
+   debug_identifier
+       The debug identifier is a string that identifies a specific build of a
+       binary. Each build has a different debug identifier, so compiling the
+       same binary twice in a row will yield two different debug identifiers.
+       It is computed differently depending on the platform.
+
+       Debug identifiers are 33 hexidecimal digits.
+
+       Example::
+
+           B7C0D76AF5EE3B644C4C44205044422E1
+
+       Sometimes, it's shown hyphenated::
+
+           b7c0d76a-f5ee-3b64-4c4c-44205044422e-1
+
+       This debug identifier is the null debug identifier and it means we don't
+       know what the debug identifier for the module is::
+
+           000000000000000000000000000000000
+
+       The debug identifier
+
+       .. seealso::
+
+          `Sentry docs on debug information <https://docs.sentry.io/platforms/native/guides/breakpad/data-management/debug-files/identifiers/>`__
+
+
    dump_syms
        dump_syms is a tool for parsing the debugging information the compiler
        provides (whether as DWARF or STABS sections in an ELF file or as
@@ -15,6 +82,18 @@ Glossary
 
           `dump_syms <https://github.com/mozilla/dump_syms>`__
               dump_syms project.
+
+
+   missing symbol
+       Tecken stores symbols files for modules compiled by Mozilla build
+       systems as well as system modules from device drivers, video drivers,
+       system libraries, and other external things.
+
+       When the Socorro processor processes a minidump, there are occasions
+       when modules that Tecken does not have a symbols file for a module
+       loaded in memory of the crashed process.
+
+       We call this a "missing symbol".
 
 
    symbols
