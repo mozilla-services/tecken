@@ -181,3 +181,24 @@ Glossary
 
           `Eliot <https://mozilla-eliot.readthedocs.io/>`__
               Documentation for the Mozilla Symbolication Server.
+
+
+   try symbols
+       Engineers can kick off "try" builds in Firefox CI. This allows them to
+       test changes on systems other than they one they're doing development
+       on as well as perform other build tasks.
+
+       Try builds are ephemeral. They're helpful for a short period of time
+       and after that, they're not useful anymore.
+
+       Try builds upload symbols, but since the build is ephemeral, we don't
+       want to keep the symbols files forever and ever. Instead, Tecken
+       differentiates between symbols from regular builds and try builds,
+       stores the files in different places, and expires try build files after
+       30 days.
+
+       .. seealso::
+
+          `Tecken download API <https://tecken.readthedocs.io/en/latest/download.html#try-builds>`__
+              Documentation on downloading try build symbols with the Tecken
+              download API.
