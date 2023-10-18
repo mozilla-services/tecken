@@ -643,9 +643,9 @@ ujson==5.8.0 \
     --hash=sha256:f504117a39cb98abba4153bf0b46b4954cc5d62f6351a14660201500ba31fe7f \
     --hash=sha256:fb87decf38cc82bcdea1d7511e73629e651bdec3a43ab40985167ab8449b769c
     # via -r requirements.in
-urllib3==1.26.17 \
-    --hash=sha256:24d6a242c28d29af46c3fae832c36db3bbebcc533dd1bb549172cd739c82df21 \
-    --hash=sha256:94a757d178c9be92ef5539b8840d48dc9cf1b2709c9d6b588232a055c524458b
+urllib3==1.26.18 \
+    --hash=sha256:34b97092d7e0a3a8cf7cd10e386f401b3737364026c45e622aa02903dffe0f07 \
+    --hash=sha256:f8ecc1bba5667413457c529ab955bf8c67b45db799d159066261719e328580a0
     # via
     #   botocore
     #   requests
