@@ -24,11 +24,14 @@ import requests
 @click.argument("outputdir")
 @click.argument("debugid")
 @click.argument("debugfilename")
+@click.argument("symfilename", required=False)
 @click.pass_context
-def download_sym_file(ctx, base_url, outputdir, debugid, debugfilename):
+def download_sym_file(ctx, base_url, outputdir, debugid, debugfilename, symfilename):
     """Downloads a sym file given a debug id and debug filename."""
     # Download sym file
-    path = f"{debugfilename}/{debugid}/{debugfilename}.sym"
+    if symfilename is None:
+        symfilename = debugfilename.removesuffix(".pdb") + ".sym"
+    path = f"{debugfilename}/{debugid}/{symfilename}"
     url = urljoin(base_url, path)
     headers = {"User-Agent": "tecken-download-sym"}
 
