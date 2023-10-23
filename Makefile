@@ -64,6 +64,7 @@ clean: .env stop  ## | Stop and remove docker containers and artifacts.
 	${DC} rm -f
 	rm -fr .docker-build
 	rm -rf frontend/build/
+	git restore frontend/build/
 
 .PHONY: clear-cache
 clear-cache:  ## | Clear Redis cache.
