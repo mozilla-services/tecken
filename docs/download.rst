@@ -10,10 +10,11 @@ Download
 Basics
 ======
 
-The Tecken webapp handles requests for :term:`symbols files <symbols file>`.
-Tecken takes the request, figures out which bucket the file is in, and returns
-a redirect to that bucket. This allows us to use multiple buckets for symbols
-without requiring everyone to maintain lists of buckets.
+The Tecken webapp handles download requests for
+:term:`symbols files <symbols file>`. Tecken handles download API requests,
+determines whether the symbols file exists and which storage location it's in,
+and returns a redirect to the storage location. In this way, we can store
+symbols files in multiple places and there's a single place to request them.
 
 For example, at the time of this writing doing a ``GET`` for
 :base_url:`/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym` will
@@ -25,47 +26,81 @@ return a ``302 Found`` redirect to the file in storage.
 Try Builds
 ==========
 
-By default, when you request to download a symbol, Tecken will iterate through
-a list of available S3 configurations.
+Try builds are ephemeral and we store the symbols from those builds for shorter
+period of time than we store symbols from regular builds. Generally, try builds
+are only useful in cases where engineers are debugging specific crashes in the
+code they're working on. For this reason, by default, Tecken does not look
+for symbols files in storage locations for try build symbols files.
 
-To download symbols that might be part of a Try build you have to pass an
-optional query string key ``try`` or you can prefix the URL with ``/try``.
-For example:
+If you want to download symbols files for regular and try builds, you have to
+specify that in the download API request. There are two ways to do it:
 
-.. code-block:: shell
+1. use the ``/try`` prefix
 
-    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/tried.pdb/HEX/tried.sym?try
-    ...302 Found...
+   Example::
 
-    $ curl --user-agent "example/1.0" https://symbols.mozilla.org/try/tried.pdb/HEX/tried.sym
-    ...302 Found...
+       https://symbols.mozilla.org/try/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym
+                                  ^^^^
 
-If you specify that you're requesting a Try build, Tecken will look at
-all the S3 bucket locations as well as all the Try locations in those
-S3 buckets.
+   This is helpful if you're using a debugger. You can set the symbols server
+   to::
 
-Symbols from Try builds is always tried last! So if there's a known symbol
-called ``foo.pdb/HEX/foo.sym`` and someone triggers a Try build (which uploads
-its symbols) with the exact same name (and build ID) and even if you use
-``https://symbols.mozilla.org/foo.pdb/HEX/foo.sym?try`` the existing (non-Try
-build) symbol will be matched first.
+       https://symbols.mozilla.org/try
+
+   and pick up regular and try build symbols files.
+
+2. use the ``try`` query string parameter
+
+   Example::
+
+       https://symbols.mozilla.org/firefox.pdb/448794C699914DB8A8F9B9F88B98D7412/firefox.sym?try=1
+                                                                                            ^^^^^^
+
+When you do either of these, Tecken will look for symbols files in storage
+locations for both regular and try build symbols files with a preference for
+regular build symbols files first.
 
 
 Downloading API
 ===============
 
-.. http:head:: /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+.. http:head:: /(str:debug_filename)/(hex:debug_id)/(str:symbol_file)
+               /try/(str:debug_filename)/(hex:debug_id)/(str:symbol_file)
 
    Determine whether the symbol file exists or not.
 
+   For finding regular and try symbols files, either prefix the path with
+   ``/try`` or include ``try=1`` querystring parameter.
+
+   Example request:
+
+   .. sourcecode:: http
+
+      HEAD /xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym HTTP/1.1
+      Host: symbols.mozilla.org
+      User-Agent: example/1.0
+
+   .. sourcecode:: http
+
+      HEAD /try/xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym HTTP/1.1
+      Host: symbols.mozilla.org
+      User-Agent: example/1.0
+
+   :param str debug_filename: the filename of the debug file
+
+   :param hex debug_id: the debug id in hex characters all upper-cased
+
+   :param str symbol_file: the filename of the symbol file; ends with ``.sym``
+
    :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
 
-      If ``Debug-Time`` is `0.0``: symbol file ends in an unsupported extension
+      If ``Debug-Time`` is ``0.0``: symbol file ends in an unsupported extension
 
    :reqheader User-Agent: please provide a unique user agent to make it easier for us
        to help you debug problems
 
-   :query try: use ``try=1`` to download Try symbols
+   :query try: use ``try=1`` to download regular and try build symbols files
+       with a preference for regular build symbols files
 
    :query _refresh: use ``_refresh=1`` to force Tecken to update cache
 
@@ -76,22 +111,29 @@ Downloading API
    :statuscode 503: sleep for a bit and retry
 
 
-.. http:head:: /try/<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
-
-   Same as ``HEAD /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but this will
-   check try symbols and then regular symbols.
-
-
-.. http:get:: /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+.. http:get:: /(str:debug_filename)/(hex:debug_id)/(str:symbol_file)
+              /try/(str:debug_filename)/(hex:debug_id)/(str:symbol_file)
 
    Download a symbol file.
 
-   Example::
+   For finding regular and try symbols files, either prefix the path with
+   ``/try`` or include ``try=1`` querystring parameter.
 
-      $ curl -L --verbose https://symbols.mozilla.org/xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym
+   Example request:
+
+   .. sourcecode:: http
+
+      GET /xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym HTTP/1.1
+      Host: symbols.mozilla.org
+      User-Agent: example/1.0
+
+   Example curl::
+
+      $ curl --location --user-agent "example/1.0" --verbose \
+          https://symbols.mozilla.org/xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym
       > GET /xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym HTTP/1.1
       > Host: symbols.mozilla.org
-      > User-Agent: curl/7.88.1
+      > User-Agent: example/1.0
       > Accept: */*
       >
       < HTTP/1.1 302 Found
@@ -101,7 +143,7 @@ Downloading API
 
       > GET /org.mozilla.crash-stats.symbols-public/v1/xul.pdb/B7DC60E91588D8A54C4C44205044422E1/xul.sym HTTP/1.1
       > Host: s3.us-west-2.amazonaws.com
-      > User-Agent: curl/7.88.1
+      > User-Agent: example/1.0
       > Accept: */*
       >
       < HTTP/1.1 200 OK
@@ -113,14 +155,21 @@ Downloading API
       <
       <OUTPUT>
 
+   :param str debug_filename: the filename of the debug file
+
+   :param hex debug_id: the debug id in hex characters all upper-cased
+
+   :param str symbol_file: the filename of the symbol file; ends with ``.sym``
+
    :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
 
-      If ``Debug-Time`` is `0.0``: symbol file ends in an unsupported extension
+      If ``Debug-Time`` is ``0.0``: symbol file ends in an unsupported extension
 
    :reqheader User-Agent: please provide a unique user agent to make it easier for us
        to help you debug problems
 
-   :query try: use ``try=1`` to download Try symbols
+   :query try: use ``try=1`` to download regular and try build symbols files
+       with a preference for regular build symbols files
 
    :query _refresh: use ``_refresh=1`` to force Tecken to update cache
 
@@ -135,19 +184,44 @@ Downloading API
        file a bug report
 
 
-.. http:get:: /<CODE_FILENAME>/<CODE_ID>/<SYMBOL_FILE>
+.. http:get:: /(str:code_filename)/(hex:code_id)/(str:symbol_file)
+              /try/(str:code_filename)/(hex:code_id)/(str:symbol_file)
 
-   Same as ``GET /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but this will
-   look up the debug filename and debug id for a module using the code filename
-   and code id and return a redirect to the download API with the debug
-   filename and debug id.
+   Same as :http:get:`/(str:debug_filename)/(hex:debug_id)/(str:symbol_file)`,
+   but this will look up the debug filename and debug id for a module using the
+   code filename and code id and return a redirect to the download API with the
+   debug filename and debug id.
 
-   Example::
+   For finding regular and try symbols files, either prefix the path with
+   ``/try`` or include ``try=1`` querystring parameter.
 
-      $ curl -L --verbose https://symbols.mozilla.org/xul.dll/652DE0ED706D000/xul.sym
+   .. Note::
+
+      This is only helpful for symbols files for modules compiled for Windows.
+      Modules compiled for other operating systems don't have code files and
+      code ids.
+
+   Example request:
+
+   .. sourcecode:: http
+
+      GET /xul.dll/652DE0ED706D000/xul.sym HTTP/1.1
+      Host: symbols.mozilla.org
+      User-Agent: example/1.0
+
+   .. sourcecode:: http
+
+      GET /try/xul.dll/652DE0ED706D000/xul.sym HTTP/1.1
+      Host: symbols.mozilla.org
+      User-Agent: example/1.0
+
+   Example curl::
+
+      $ curl --location --user-agent "example/1.0" --verbose \
+          https://symbols.mozilla.org/xul.dll/652DE0ED706D000/xul.sym
       > GET /xul.dll/652DE0ED706D000/xul.sym HTTP/1.1
       > Host: symbols.mozilla.org
-      > User-Agent: curl/7.88.1
+      > User-Agent: example/1.0
       > Accept: */*
       >
       < HTTP/1.1 302 Found
@@ -157,7 +231,7 @@ Downloading API
 
       > GET /xul.pdb/569E0A6C6B88C1564C4C44205044422E1/xul.sym HTTP/1.1
       > Host: symbols.mozilla.org
-      > User-Agent: curl/7.88.1
+      > User-Agent: example/1.0
       > Accept: */*
       >
       < HTTP/1.1 302 Found
@@ -166,7 +240,7 @@ Downloading API
 
       > GET /org.mozilla.crash-stats.symbols-public/v1/xul.pdb/569E0A6C6B88C1564C4C44205044422E1/xul.sym HTTP/1.1
       > Host: s3.us-west-2.amazonaws.com
-      > User-Agent: curl/7.88.1
+      > User-Agent: example/1.0
       > Accept: */*
       >
       < HTTP/1.1 200 OK
@@ -178,13 +252,8 @@ Downloading API
       <
       <OUTPUT>
 
-.. http:get:: /try/<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>
+   :param str code_filename: the filename of the code file
 
-   Same as ``GET /<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but this will
-   check try symbols and then regular symbols
+   :param hex code_id: the code id in hex characters all upper-cased
 
-.. http:get:: /try/<CODE_FILENAME>/<CODE_ID>/<SYMBOL_FILE>
-
-   Same as ``GET /try/<DEBUG_FILENAME>/<DEBUG_ID>/<SYMBOL_FILE>``, but this
-   will look up the debug filename and debug id for a module using the code
-   filename and code id.
+   :param str symbol_file: the filename of the symbol file; ends with ``.sym``
