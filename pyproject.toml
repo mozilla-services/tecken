@@ -17,6 +17,12 @@ line-length = 88
 target-version = ["py37"]
 
 
+[tool.paul-mclendahand]
+github_user = "mozilla-services"
+github_project = "tecken"
+main_branch = "main"
+
+
 [tool.release]
 github_user = "mozilla-services"
 github_project = "tecken"
