@@ -72,7 +72,7 @@ BROKEN_EVENT = {
                 "stacktrace": {
                     "frames": [
                         {
-                            "abs_path": "/usr/local/lib/python3.9/site-packages/django/core/handlers/exception.py",
+                            "abs_path": "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py",
                             "context_line": ANY,
                             "filename": "django/core/handlers/exception.py",
                             "function": "inner",
@@ -88,7 +88,7 @@ BROKEN_EVENT = {
                             },
                         },
                         {
-                            "abs_path": "/usr/local/lib/python3.9/site-packages/django/core/handlers/base.py",
+                            "abs_path": "/usr/local/lib/python3.11/site-packages/django/core/handlers/base.py",
                             "context_line": ANY,
                             "filename": "django/core/handlers/base.py",
                             "function": "_get_response",
