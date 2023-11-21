@@ -44,5 +44,5 @@ importlib-metadata==6.8.0
 typing-extensions==4.8.0
 zipp==3.17.0
 
-# NOTE(willkg): We stick with LTS releases and the next one is 4.2 (2023).
-Django==3.2.23
+# NOTE(willkg): We stick with LTS releases.
+Django==4.2.7
