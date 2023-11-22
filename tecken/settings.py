@@ -421,6 +421,12 @@ else:
         },
     }
 
+CLOUD_SERVICE_PROVIDER = _config(
+    "CLOUD_SERVICE_PROVIDER",
+    default="AWS",
+    doc="The cloud service provider Tecken is using. Either AWS or GCP.",
+)
+
 AWS_ACCESS_KEY_ID = _config("AWS_ACCESS_KEY_ID", default="", doc="AWS access key id.")
 AWS_SECRET_ACCESS_KEY = _config(
     "AWS_SECRET_ACCESS_KEY", default="", doc="AWS secret access key."
