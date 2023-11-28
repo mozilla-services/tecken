@@ -1052,7 +1052,9 @@ class Test_remove_orphaned_files:
         )
         assert len(delete_incr) == 3
 
-    def test_errors(self, db, settings, tmp_path, monkeypatch, caplog, metricsmock):
+    def test_errors(
+        self, db, settings, tmp_path, monkeypatch, caplog, metricsmock, sentry_helper
+    ):
         tempdir = str(tmp_path)
         settings.UPLOAD_TEMPDIR = tempdir
         settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
@@ -1081,15 +1083,21 @@ class Test_remove_orphaned_files:
 
         monkeypatch.setattr(os.path, "getmtime", adjusted_getmtime)
 
-        # Run the command
-        call_command("remove_orphaned_files", verbose=True)
+        with sentry_helper.reuse() as sentry_client:
+            # Run the command
+            call_command("remove_orphaned_files", verbose=True)
 
-        # Assert message is logged
-        assert f"error getting size: {str(path)}" in caplog.text
-        assert "FileNotFound" in caplog.text
+            # Assert message is logged
+            assert f"error getting size: {str(path)}" in caplog.text
+            assert "FileNotFound" in caplog.text
 
-        # Assert metric is emitted
-        incr_records = metricsmock.filter_records(
-            "incr", stat="tecken.remove_orphaned_files.delete_file_error"
-        )
-        assert len(incr_records) == 1
+            # Assert a Sentry event was emitted
+            event = sentry_client.events[0]
+            assert event["logentry"]["message"] == "error getting size: %s"
+            assert event["logger"] == "tecken.remove_orphaned_files"
+
+            # Assert metric is emitted
+            incr_records = metricsmock.filter_records(
+                "incr", stat="tecken.remove_orphaned_files.delete_file_error"
+            )
+            assert len(incr_records) == 1
