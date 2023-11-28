@@ -90,7 +90,7 @@ class Command(BaseCommand):
 
         watchdir = os.path.abspath(str(watchdir))
         if not os.path.exists(watchdir):
-            logger.error("error: %r does not exist. Exiting.", watchdir)
-            return 1
+            logger.info("%r does not exist; exiting.", watchdir)
+            return 0
 
         self.delete_orphans(watchdir=watchdir, expires=expires)
