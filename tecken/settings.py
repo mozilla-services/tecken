@@ -492,7 +492,7 @@ UPLOAD_TEMPDIR = _config(
 )
 UPLOAD_TEMPDIR_ORPHANS_CUTOFF = _config(
     "UPLOAD_TEMPDIR_ORPHANS_CUTOFF",
-    default="60",
+    default="15",
     parser=int,
     doc=(
         "Time in minutes before we consider a file to have been orphaned and should "
