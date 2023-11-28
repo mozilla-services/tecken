@@ -8,22 +8,22 @@
 #
 # Note: This should be called from inside a container.
 
-set -euo pipefail
+# NOTE(willkg): we don't want errors to kill the script, so we don't have set
+# -e enabled.
+set -uo pipefail
 
 cd /app/
 
 export PROCESS_NAME=disk_manager
 
-# Run disk manager in a loop so that if it dies (ignore exit value), the loop
-# pauses for 1 minute and then starts up again. This expects the disk manager
-# to send errors to Sentry. The 1 minute sleep is to reduce the likelihood
-# there's a spike in error reports. The loop allows this to maybe recover
-# depending on what the error was.
+SLEEP_SECONDS=300
+PROCESS_TIMEOUT=60
+
+# Run disk manager in a loop sleeping SLEEP_SECONDS between rounds. Wrap in
+# sentry-wrap so it sends errors to Sentry.
 while true
 do
-    python manage.py remove_orphaned_files --daemon
-
-    echo "Sleep 1 minute..."
-    sleep 60
+    python /app/bin/sentry-wrap.py wrap-process --timeout="${PROCESS_TIMEOUT}" -- \
+        python /app/manage.py remove_orphaned_files --skip-checks
+    sleep "${SLEEP_SECONDS}"
 done
-

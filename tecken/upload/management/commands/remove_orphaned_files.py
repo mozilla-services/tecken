@@ -5,7 +5,6 @@
 import datetime
 import logging
 import os
-import time
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -17,16 +16,10 @@ logger = logging.getLogger("tecken.remove_orphaned_files")
 metrics = markus.get_metrics("tecken")
 
 
-SLEEP_TIME = 5 * 60
-
-
 class Command(BaseCommand):
     help = "Watch upload_tempdir directory for orphaned files and delete them."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--daemon", action="store_true", help="Whether to run as a daemon or not."
-        )
         parser.add_argument(
             "--verbose", action="store_true", help="Whether to run verbosely."
         )
@@ -85,7 +78,6 @@ class Command(BaseCommand):
                         metrics.incr("remove_orphaned_files.delete_file_error")
 
     def handle(self, *args, **options):
-        is_daemon = options["daemon"]
         is_verbose = options["verbose"]
 
         watchdir = settings.UPLOAD_TEMPDIR
@@ -93,8 +85,6 @@ class Command(BaseCommand):
 
         logger.info("expires: %s (minutes)", expires)
         logger.info("watchdir: %r", watchdir)
-        if is_daemon:
-            logger.info("daemon mode on: will check every 5 minutes.")
         if is_verbose:
             logger.info("verbose: on")
 
@@ -103,11 +93,4 @@ class Command(BaseCommand):
             logger.error("error: %r does not exist. Exiting.", watchdir)
             return 1
 
-        while True:
-            self.delete_orphans(watchdir=watchdir, expires=expires)
-            if not is_daemon:
-                break
-
-            if is_verbose:
-                logger.debug("sleeping {SLEEP_TIME}...")
-            time.sleep(SLEEP_TIME)
+        self.delete_orphans(watchdir=watchdir, expires=expires)

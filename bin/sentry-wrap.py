@@ -51,13 +51,18 @@ def test_sentry(ctx):
     default=300,
     help="Timeout in seconds to wait for process before giving up.",
 )
+@click.option(
+    "--verbose/--no-verbose",
+    default=False,
+    help="Whether to print verbsoe output.",
+)
 @click.argument("cmd", nargs=-1)
 @click.pass_context
-def wrap_process(ctx, timeout, cmd):
+def wrap_process(ctx, timeout, verbose, cmd):
     sentry_dsn = os.environ.get("SENTRY_DSN")
 
     if not sentry_dsn:
-        click.echo("SENTRY_DSN is not defined. Exiting.")
+        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
         sys.exit(1)
 
     if not cmd:
@@ -69,7 +74,8 @@ def wrap_process(ctx, timeout, cmd):
 
     cmd = " ".join(cmd)
     cmd_args = shlex.split(cmd)
-    click.echo(f"Running: {cmd_args}")
+    if verbose:
+        click.echo(f"Running: {cmd_args}")
 
     try:
         ret = subprocess.run(cmd_args, capture_output=True, timeout=timeout)
@@ -86,13 +92,14 @@ def wrap_process(ctx, timeout, cmd):
             click.echo(ret.stdout.decode("utf-8"))
             click.echo(ret.stderr.decode("utf-8"))
             time_delta = (time.time() - start_time) / 1000
-            click.echo(f"Fail. {time_delta:.2f}s")
+            click.echo(f"Command failed. time: {time_delta:.2f}s", err=True)
             ctx.exit(1)
 
         else:
-            click.echo(ret.stdout.decode("utf-8"))
+            click.echo(ret.stdout.decode("utf-8"), nl=False)
             time_delta = (time.time() - start_time) / 1000
-            click.echo(f"Success! {time_delta:.2f}s")
+            if verbose:
+                click.echo(f"Success. time: {time_delta:.2f}s")
 
     except click.exceptions.Exit:
         raise
