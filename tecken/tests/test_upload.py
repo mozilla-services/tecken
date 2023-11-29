@@ -933,6 +933,28 @@ def test_clearuploads_records_dry_run(db, fakeuser):
 
 
 class Test_remove_orphaned_files:
+    def test_no_watchdir(self, db, settings, caplog):
+        caplog.set_level(logging.INFO)
+
+        tempdir = "/does/not/exist"
+        settings.UPLOAD_TEMPDIR = tempdir
+        settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
+
+        call_command("remove_orphaned_files", verbose=True)
+
+        # Make sure we've got the right expires value
+        assert "expires: 5 (minutes)" in caplog.text
+
+        # Make sure we're watching the correct path
+        assert f"watchdir: {tempdir!r}" in caplog.text
+
+        # Make sure it notes that the watchdir is missing
+        assert f"{tempdir!r} does not exist" in caplog.text
+
+        # Make sure there's no error output
+        error_records = [rec for rec in caplog.records if rec.levelname == "ERROR"]
+        assert len(error_records) == 0
+
     def test_no_files(self, db, settings, tmp_path, caplog):
         caplog.set_level(logging.INFO)
 
