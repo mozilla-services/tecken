@@ -153,6 +153,9 @@ class FileMember:
     def size(self):
         return os.stat(self.path).st_size
 
+    def __repr__(self):
+        return f"<FileMenber {self.path} {self.name}>"
+
 
 def _key_existing_miss(client, bucket, key):
     logger.debug(f"key_existing cache miss on {bucket}:{key}")
