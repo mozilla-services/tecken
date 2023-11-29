@@ -78,19 +78,24 @@ def wrap_process(ctx, timeout, verbose, cmd):
         click.echo(f"Running: {cmd_args}")
 
     try:
-        ret = subprocess.run(cmd_args, capture_output=True, timeout=timeout)
+        ret = subprocess.run(
+            cmd_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+        )
         if ret.returncode != 0:
             sentry_sdk.set_context(
                 "status",
                 {
                     "exit_code": ret.returncode,
-                    "stdout": ret.stdout.decode("utf-8"),
-                    "stderr": ret.stderr.decode("utf-8"),
+                    # Truncate stdout/stderr to the last 5,000 characters in case the
+                    # output is monstrously large.
+                    "stdout": ret.stdout.decode("utf-8")[-5000:],
                 },
             )
             capture_message(f"Command {cmd!r} failed.")
             click.echo(ret.stdout.decode("utf-8"))
-            click.echo(ret.stderr.decode("utf-8"))
             time_delta = (time.time() - start_time) / 1000
             click.echo(f"Command failed. time: {time_delta:.2f}s", err=True)
             ctx.exit(1)
