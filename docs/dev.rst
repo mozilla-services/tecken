@@ -273,8 +273,11 @@ Use the ``bin/s3_cli.py`` script:
 How to access the database
 --------------------------
 
+We use postgresql. To open a psql shell, do:
 
+.. code-block:: shell
 
+   make psql
 
 
 Bugs / Issues
