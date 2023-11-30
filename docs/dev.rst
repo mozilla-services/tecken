@@ -88,6 +88,167 @@ To run the webapp service, do:
 The Symbols Service webapp is at: http://localhost:3000
 
 
+How to
+======
+
+What services are running in a local dev environment
+----------------------------------------------------
+
+============  ====  =============================================
+service       port  description
+============  ====  =============================================
+frontend      3000  Javascript proxy for webapp--use with browser
+web           8000  Django webapp--use with APIs
+localstack    4566  S3 emulation service
+db            5432  Postgres database
+redis         6379  Redis service
+fakesentry    8090  Sentry emulation service
+oidcprovider  8080  SSO emulation service
+statsd        8081  Grafana / statsd
+============  ====  =============================================
+
+
+How to change settings in your local dev environment
+----------------------------------------------------
+
+Edit the ``.env`` file and add/remove/change settings.
+
+
+How to use the webapp
+---------------------
+
+The Tecken webapp in the local dev environment is split into two
+containers:
+
+* frontend: (localhost:3000) a Javascript proxy that serves up-to-date
+  Javascript and CSS files
+* web: (localhost:8000) the Django webapp
+
+To connect to the webapp in your browser, use ``http://localhost:3000``.
+
+To use a webapp API, use ``http://localhost:8000``.
+
+
+How to create a superuser account from the command line
+-------------------------------------------------------
+
+You need to create an account in two places: the oidcprovider (our SSO
+emulation service) and in the Tecken webapp.
+
+.. code-block:: shell
+
+   # Run these from the host
+
+   # This creates an SSO account in the oidcprovider
+   $ docker compose exec oidcprovider /code/manage.py createuser FAKEUSERNAME FAKEPASSWORD FAKEEMAIL
+
+   # This creates a superuser account in the Tecken webapp
+   $ docker compose run --rm web bash python manage.py superuser FAKEEMAIL
+
+.. Note::
+
+   The oidcprovider account will persist until the ``oidcprovider`` container is
+   stopped.
+
+
+How to create an account from the webapp
+----------------------------------------
+
+To log in, do this:
+
+1. Load http://localhost:3000
+2. Click "Sign In" to start an OpenID Connect session on ``oidcprovider``
+3. Click "Sign up" to create an ``oidcprovider`` account:
+
+  * Username: A non-email username, like ``username``
+  * Email: Your email address
+  * Password: Any password, like ``password``
+
+4. Click "Authorize" to authorize Tecken to use your ``oidcprovider`` account
+5. You are returned to http://localhost:3000. If needed, a parallel Tecken User
+   will be created, with default permissions and identified by email address.
+
+You'll remain logged in to ``oidcprovider``, and the account will persist until
+the ``oidcprovider`` container is stopped.
+You can visit http://localhost:8080/account/logout to manually log out.
+
+
+How to create an API token from the command line
+------------------------------------------------
+
+.. code-block:: shell
+
+   # Run this from the host
+
+   $ docker compose run --rm web bash python manage.py createtoken EMAIL TOKEN
+
+Tokens are 32 character hex strings. You can create one in Python:
+
+>>> import uuid
+>>> uuid.uuid4().hex
+'64cfcc37088e43909168739bc7369197'
+
+.. Note::
+
+   Tokens can include an optional hyphen and comment at the end to make
+   it easier to distinguish tokens.
+
+   Examples::
+
+       # No comment
+       c7c1f8cab79545b6a06bc4122f0eb3cb
+
+       # With comment
+       c7c1f8cab79545b6a06bc4122f0eb3cb-localdevtoken
+
+
+How to create a new database migration
+--------------------------------------
+
+The Symbols Service webapp uses Django's ORM and thus we do database migrations
+using Django's migration system.
+
+Do this:
+
+.. code-block:: shell
+
+   $ make shell
+   app@xxx:/app$ ./manage.py makemigration --name "BUGID_desc" APP
+
+
+How to manipulate the local dev environment S3 bucket
+-----------------------------------------------------
+
+We use `localstack <https://github.com/localstack/localstack>`__ for S3
+emulation.
+
+Use the ``bin/s3_cli.py`` script:
+
+.. code-block:: shell
+
+   $ make shell
+   app@xxx:/app$ ./bin/s3_cli.py --help
+   Usage: s3_cli.py [OPTIONS] COMMAND [ARGS]...
+
+     Local dev environment S3 manipulation script and bargain emporium.
+
+   Options:
+     --help  Show this message and exit.
+
+   Commands:
+     create        Creates a bucket
+     delete        Deletes a bucket
+     list_buckets  List S3 buckets
+     list_objects  List contents of a bucket
+
+
+How to access the database
+--------------------------
+
+
+
+
+
 Bugs / Issues
 =============
 
@@ -125,7 +286,7 @@ example::
     bug-nnnnnnn: removed frog from tree class
 
 For multiple bugs fixed within a single pull request, list the bugs out individually. For example::
-   
+
    bug-nnnnnnn, bug-nnnnnnn: removed frog from tree class
 
 Pull request descriptions should cover at least some of the following:
@@ -315,75 +476,10 @@ Then view ``docs/_build/html/index.html`` in your browser.
 Testing
 =======
 
-Unit tests
-----------
-
-Tecken uses the `pytest <https://pytest.org/>`_ test framework.
-
-To run all of the unit tests, do:
-
-.. code-block:: shell
-
-   $ make test
-
-
-See :ref:`dev-symbols-tests` for details.
-
-
-System tests
-------------
-
-System tests are located in the repository in ``systemtests/``. See the
-``README.rst`` there for usage.
-
-System tests can be run against any running environment: local, stage, or prod.
-
-
-Load tests
-----------
-
-At various points, we've done some minor load testing of the system. The
-scripts are located in:
-
-https://github.com/mozilla-services/tecken-loadtests/
-
-They're good for bootstrapping another load testing effort, but they're not
-otherwise maintained.
-
-
-Symbols Service webapp things
-=============================
-
-When running the Tecken webapp in the local dev environment, it's at:
-http://localhost:3000
-
-The code is in ``tecken/``.
-
-You can override Symbols Service webapp configuration in your ``.env`` file.
-
-To log in, do this:
-
-1. Load http://localhost:3000
-2. Click "Sign In" to start an OpenID Connect session on ``oidcprovider``
-3. Click "Sign up" to create an ``oidcprovider`` account:
-
-  * Username: A non-email username, like ``username``
-  * Email: Your email address
-  * Password: Any password, like ``password``
-
-4. Click "Authorize" to authorize Tecken to use your ``oidcprovider`` account
-5. You are returned to http://localhost:3000. If needed, a parallel Tecken User
-   will be created, with default permissions and identified by email address.
-
-You'll remain logged in to ``oidcprovider``, and the account will persist until
-the ``oidcprovider`` container is stopped.
-You can visit http://localhost:8080/account/logout to manually log out.
-
-
-.. _dev-symbols-tests:
-
 Python tests for Symbols Service webapp
 ---------------------------------------
+
+Tecken uses the `pytest <https://pytest.org/>`_ test framework.
 
 To run the tests, do:
 
@@ -428,107 +524,43 @@ this code and it has to be tested manually. You can do something like this:
 11. click on "Sign out"
 
 
-Database migrations
--------------------
+System tests
+------------
 
-The Symbols Service webapp uses Django's ORM and thus we do database migrations
-using Django's migration system.
+System tests are located in the repository in ``systemtests/``. See the
+``README.rst`` there for usage.
 
-Do this:
+System tests can be run against any running environment:
 
-.. code-block:: shell
+* local: local dev environment
+* stage: the stage server environment
+* prod: the prod server environment--will not run destructive tests
 
-   $ make shell
-   app@xxx:/app$ ./manage.py makemigration --name "BUGID_desc" APP
-
-
-Accounts and first superuser
-----------------------------
-
-The Symbols Service webapp has an accounts system.
-
-Users need to create their own API tokens but before they can do that they need
-to be promoted to have that permission at all.
-
-The only person/people who can give other users permissions is the superuser.
-To bootstrap the user administration you need to create at least one superuser.
-That superuser can promote other users to superusers too.
-
-This action does NOT require that the user signs in at least once. If the user
-does not exist, it gets created.
-
-The easiest way to create your first superuser is to use ``docker compose``:
-
-.. code-block:: shell
-
-   $ docker compose run --rm web bash python manage.py superuser yourname@example.com
-
-Additionally, in a local development environment, you can create a
-corresponding user in the oidcprovider service like this:
-
-.. code-block:: shell
-
-   $ docker compose exec oidcprovider /code/manage.py createuser yourname yourpassword yourname@example.com
+System tests can help verify that upload API and download API work. They
+periodically need to be updated as symbols files expire out of the systems.
 
 
-Giving users permission to upload symbols
------------------------------------------
+Load tests
+----------
 
-The user should write up a bug. See :ref:`upload-basics`.
+At various points, we've done some load testing of the system. The scripts are
+located in:
 
-If the user is a Mozilla employee, needinfo the user's manager and verify the
-user needs upload permission.
+https://github.com/mozilla-services/tecken-loadtests/
 
-If the user is not a Mozilla employee, find someone to vouch for the user.
-
-Once vouched:
-
-1. Log in to `<https://symbols.mozilla.org/users>`_
-2. Use the search filter at the bottom of the page to find the user
-3. Click to edit and make give them the "Uploaders" group (only).
-4. Respond and say that they now have permission and should be able to either
-   upload via the web or create an API Token with the "Upload Symbol Files"
-   permission.
-5. Resolve the bug.
+They're generally unmaintained, but can be a good starting point for a new load
+testing effort.
 
 
-Viewing all metrics keys
-------------------------
 
-In the Symbols Service webapp, to get insight into all metrics keys that are
-used, a special Markus backend is enabled called
-``tecken.libmarkus.LogAllMetricsKeys``. It's enabled by default in local
-development. And to inspect its content you can either open
-``all-metrics-keys.json`` directly (it's git ignored) or you can run:
-
-.. code-block:: shell
-
-   $ make shell
-   app@xxx:/app$ ./bin/list-all-metrics-keys.py
-
-Now you can see a list of all keys that are used. Take this and, for example,
-make sure you make a graph in Datadog of each and everyone. If there's a key in
-there that you know you don't need or care about in Datadog, then delete it
-from the code.
-
-The file ``all-metrics-keys.json`` can be deleted any time and it will be
-recreated again.
-
-
-Localstack (S3 mock server)
----------------------------
-
-When doing local development we, by default, mock AWS S3 and instead use
-`localstack`_. It's an S3 emulator.
-
-When started with docker, it starts a web server on ``:4566`` that you can
-use to browse uploaded files. Go to ``http://localhost:4566``.
-
-.. _localstack: https://github.com/localstack/localstack
 
 
 How to do local Upload by Download URL
---------------------------------------
+======================================
+
+.. Note::
+
+   This may need to be updated.
 
 When doing local development and you want to work on doing Symbol Upload
 by HTTP posting the URL, you have a choice. Either put files somewhere
@@ -562,11 +594,15 @@ Now, you can send these in with ``tecken-loadtest`` like this:
    $ python upload-symbol-zips.py http://localhost:8000 -t 160 --download-url=http://localhost:9090/symbols.zip
 
 This way you'll have 3 terminals. 2 bash terminals inside the container
-and one outside in the ``tecke-loadtests`` directory on your host.
+and one outside in the ``tecken-loadtests`` directory on your host.
 
 
 Debugging a "broken" Redis
---------------------------
+==========================
+
+.. Note::
+
+   This may need to be updated.
 
 By default, we have our Redis Cache configured to swallow all exceptions
 (...and just log them). This is useful because the Redis Cache is only
@@ -594,10 +630,14 @@ verify the session cookie value on each and every request.
 
 
 Auth debugging
---------------
+==============
+
+.. Note::
+
+   This may need to be updated.
 
 Cache/cookies issues
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 Anyone can test caching and cookies by going to
 `<https://symbols.mozilla.org/__auth_debug__>`_.  That's a good first debugging
@@ -605,7 +645,7 @@ step for helping users figure out auth problems.
 
 
 Auth0 issues
-~~~~~~~~~~~~
+------------
 
 Symbols Service uses Mozilla SSO. Anyone can log in, but by default accounts
 don't have special permissions to anything.
@@ -636,7 +676,7 @@ override this interval change the environment variable
 
 
 Testing if a user is blocked
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 
 To check if a user is blocked, use the ``is-blocked-in-auth0`` which is
 development tool shortcut for what the middleware does:
