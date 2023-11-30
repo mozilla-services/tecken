@@ -23,6 +23,7 @@ else
         --bind 0.0.0.0:"${PORT}" \
         --timeout "${GUNICORN_TIMEOUT}" \
         --workers "${GUNICORN_WORKERS}" \
+        --config=tecken/gunicornhooks.py \
         --access-logfile - \
         tecken.wsgi:application
 fi
