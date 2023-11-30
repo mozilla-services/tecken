@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# $Id$
+#
+# Bootstrap script for a Tecken local development environment. Refer to
+# documentation of the local dev environment and some of these commands at
+# https://tecken.readthedocs.io/
+
+set -ex
+
+# Change these to whatever you need. These are fake credentials to be used in a
+# local development environment--not a server environment.
+#
+# Fill these in
+FAKEUSERNAME=""
+FAKEPASSWORD=""
+FAKEEMAIL=""
+
+# 32-character hex token
+FAKETOKEN="c7c1f8cab79545b6a06bc4122f0eb3cb"
+
+# Build Tecken
+make build
+
+# Start services
+docker compose up -d --remove-orphans db redis-cache statsd localstack oidcprovider fakesentry
+
+# Run setup
+make setup
+
+# Set up user
+docker compose exec oidcprovider /code/manage.py createuser "${FAKEUSERNAME}" "${FAKEPASSWORD}" "${FAKEEMAIL}"
+docker compose run --rm web bash python manage.py superuser "${FAKEEMAIL}"
+docker compose run --rm web bash python manage.py createtoken "${FAKEEMAIL}" "${FAKETOKEN}"
+#
+# Reset fakesentry
+if command -v curl &> /dev/null
+then
+    curl -X POST http://localhost:8090/api/flush/
+fi
+
+# Reset Redis
+make clear-cache

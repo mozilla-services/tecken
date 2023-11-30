@@ -16,6 +16,8 @@ USE_GID ?= 10001
 DOCKER := $(shell which docker)
 DC=${DOCKER} compose
 
+SERVICES=db fakesentry redis-cache localstack statsd oidcprovider
+
 .DEFAULT_GOAL := help
 .PHONY: help
 help:
@@ -35,12 +37,16 @@ help:
 	make build
 
 .env:
-	./bin/cp-env-file.sh
+	./bin/cp-dist-file.sh docker/config/env-dist .env
+
+slick.sh:
+	./bin/cp-dist-file.sh docker/config/slick.sh-dist slick.sh
+	chmod 755 slick.sh
 
 .PHONY: build
 build: .env  ## | Build docker images.
 	${DC} build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} --progress plain base frontend
-	${DC} build --progress plain db fakesentry redis-cache localstack oidcprovider statsd
+	${DC} build --progress plain fakesentry ${SERVICES}
 	touch .docker-build
 
 .PHONY: setup
@@ -77,16 +83,16 @@ redis-cache-cli: .env .docker-build  ## | Open Redis CLI to cache Redis server.
 .PHONY: psql
 psql: .env .docker-build  ## | Open psql cli.
 	@echo "NOTE: Password is 'postgres'."
-	${DC} run --rm db psql -h db -U postgres -d tecken
+	${DC} run --rm db psql -h db -U postgres --detach tecken
 
 .PHONY: test
 test: .env .docker-build  ## | Run Python unit test suite.
-	${DC} up -d db redis-cache localstack statsd oidcprovider
+	${DC} up --detach ${SERVICES}
 	${DC} run --rm test bash ./bin/run_test.sh
 
 .PHONY: testshell
 testshell: .env .docker-build  ## | Open shell in test environment.
-	${DC} up -d db redis-cache localstack statsd oidcprovider
+	${DC} up --detach ${SERVICES}
 	${DC} run --rm test bash ./bin/run_test.sh --shell
 
 .PHONY: docs
