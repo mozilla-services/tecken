@@ -6,19 +6,23 @@
 Gunicorn server hooks.
 
 See https://docs.gunicorn.org/en/stable/settings.html#server-hooks
+
+Note: Don't import anything that involves Django machinery here.
 """
 
 import markus
-
-from tecken import settings
 
 
 metrics = markus.get_metrics("tecken")
 
 
-def configure_markus():
-    markus.configure(settings.MARKUS_BACKENDS)
-
-
 def worker_abort(worker):
+    """Emit metric when a Gunicorn worker is terminated from timeout
+
+    .. Note::
+
+       This gets called by the Gunicorn worker handle_abort() function so it'll use the
+       markus and logging configuration of the Django webapp.
+
+    """
     metrics.incr("gunicorn_worker_abort")
