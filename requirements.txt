@@ -298,9 +298,9 @@ everett==3.2.0 \
     --hash=sha256:80517946d9746734ff8e6bda56d629f0092083389730c72157745f8d5d43d196 \
     --hash=sha256:cdca5fc8815f402df650444eb1a2fa24c05ef524ff3ebbae3310d17edb11ea6a
     # via -r requirements.in
-fillmore==1.1.0 \
-    --hash=sha256:68b2aa27340725026d7be1e4e96c3ec3ef954f66410e1cb65d0d85a692f0fdc1 \
-    --hash=sha256:8afe5fa0f59d99bc10f2996d23755860dd8b8f1aebe96c34fd5d0e5e1c2e0771
+fillmore==1.2.0 \
+    --hash=sha256:1968a2ba5adc17ebef362df51ec958c3d78427a77d2218a2709aabc3598eeceb \
+    --hash=sha256:c95f7172614c256fe162e93ae6d5beb07e45e1fe7f71b94f5a08eab45dc58a40
     # via -r requirements.in
 gunicorn==21.2.0 \
     --hash=sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0 \
