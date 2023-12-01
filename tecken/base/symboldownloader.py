@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import datetime
+from email.utils import parsedate_to_datetime
 from functools import wraps
 import time
 from urllib.parse import quote
@@ -48,14 +50,40 @@ def set_time_took(method):
     miss_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_miss", 1),
 )
 @metrics.timer_decorator("symboldownloader_exists")
-def check_url_head(url):
+def get_last_modified(url: str) -> datetime.datetime:
+    """
+    Get the last modified date of the given URL.
+
+    This function performs a HEAD request to the given URL. If the status code is 200,
+    the Last-Modified header is parsed into a datetime.datetime object and returned.
+    If the response does not include a Last-Modified header, or the header can't be
+    parsed, the current time is returned. If the response status code is not 200, the
+    function returns None.
+
+    :arg url: The target URL.
+    :returns: The time the resource at the URL was last modified.
+    """
     session = session_with_retries(status_forcelist=(429, 500, 503))
     resp = session.head(url)
     # NOTE(willkg): we get a 403 from S3 buckets HTTP requests, so we want to ignore
     # those
     if resp.status_code not in (200, 403, 404):
-        logger.error(f"check_url_head: {url} status code is {resp.status_code}")
-    return resp.status_code == 200
+        logger.error(f"get_last_modified: {url} status code is {resp.status_code}")
+    if resp.status_code == 200:
+        try:
+            return parsedate_to_datetime(resp.headers["last-modified"])
+        except (ValueError, KeyError):
+            # KeyError occurs when the response does not hav a Last-Modified header,
+            # and ValueError occurs if the Last-Modified header isn't properly
+            # RFC-5322-formatted. Neither of this should ever happen, since S3 always
+            # includes a properly formatted Last-Modified header in responses, so
+            # this code is just a fallback to avoid erroring out if something
+            # unexpected happened.
+            logger.error(
+                f"get_last_modified: HEAD request to {url} did not return "
+                "a valid last-modified header"
+            )
+            return datetime.datetime.now()
 
 
 class SymbolDownloader:
@@ -69,10 +97,13 @@ class SymbolDownloader:
 
     """
 
-    def __init__(self, urls, file_prefix=settings.SYMBOL_FILE_PREFIX):
+    def __init__(
+        self, urls, file_prefix=settings.SYMBOL_FILE_PREFIX, try_url_index=None
+    ):
         self.urls = urls
         self._sources = None
         self.file_prefix = file_prefix
+        self.try_url_index = try_url_index
 
     def __repr__(self):
         return f"<{self.__class__.__name__} urls={self.urls}>"
@@ -100,7 +131,7 @@ class SymbolDownloader:
             file_url = "{}/{}".format(
                 source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
-            check_url_head.invalidate(file_url)
+            get_last_modified.invalidate(file_url)
 
     @staticmethod
     def make_url_path(prefix, symbol, debugid, filename):
@@ -128,7 +159,7 @@ class SymbolDownloader:
         was returned as an indication that the symbol actually exists.
 
         """
-        for source in self.sources:
+        for i, source in enumerate(self.sources):
             prefix = source.prefix
             assert prefix
 
@@ -137,8 +168,17 @@ class SymbolDownloader:
                 source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
-            if check_url_head(file_url, _refresh=refresh_cache):
-                return {"url": file_url, "source": source}
+            if last_modified := get_last_modified(file_url, _refresh=refresh_cache):
+                age_days = (datetime.datetime.now(datetime.timezone.utc) - last_modified).days
+                if i == self.try_url_index:
+                    tags = ["symbol_build:try"]
+                else:
+                    tags = ["symbol_build:regular"]
+                metrics.histogram("symboldownloader.file_age_days", age_days, tags)
+                return {
+                    "url": file_url,
+                    "source": source,
+                }
 
     @set_time_took
     def has_symbol(self, symbol, debugid, filename, refresh_cache=False):
