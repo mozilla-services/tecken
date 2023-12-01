@@ -9,7 +9,7 @@ django-redis==5.4.0
 dockerflow==2022.8.0
 encore==0.8.0
 everett==3.2.0
-fillmore==1.1.0
+fillmore==1.2.0
 google-cloud-storage==2.14.0
 gunicorn==22.0.0
 honcho==1.1.0
