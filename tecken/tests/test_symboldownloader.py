@@ -6,7 +6,7 @@ import pytest
 
 from tecken.base.symboldownloader import (
     SymbolDownloader,
-    check_url_head,
+    get_last_modified,
 )
 
 
@@ -36,7 +36,7 @@ def test_make_url_path(prefix, symbol, debugid, filename, expected):
     assert path == expected
 
 
-def test_check_url_head(s3_helper, settings):
+def test_get_last_modified(s3_helper, settings):
     module = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     debugfn = "xul.sym"
@@ -65,8 +65,8 @@ def test_check_url_head(s3_helper, settings):
 
     base_url = settings.SYMBOL_URLS[0]
 
-    assert check_url_head(f"{base_url}{good_key}")
-    assert not check_url_head(f"{base_url}{bad_key}")
+    assert get_last_modified(f"{base_url}{good_key}")
+    assert not get_last_modified(f"{base_url}{bad_key}")
 
 
 def test_has_symbol(s3_helper):

@@ -3,8 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter, Retry
 
 
 class HTTPAdapterWithTimeout(HTTPAdapter):
@@ -23,13 +22,13 @@ class HTTPAdapterWithTimeout(HTTPAdapter):
 
     """
 
-    def __init__(self, *args, **kwargs):
-        self._default_timeout = kwargs.pop("default_timeout", 5.0)
+    def __init__(self, *args, default_timeout=5.0, **kwargs):
+        self._default_timeout = default_timeout
         super().__init__(*args, **kwargs)
 
     def send(self, *args, **kwargs):
         # If there's a timeout, use that. Otherwise, use the default.
-        kwargs["timeout"] = kwargs.get("timeout") or self._default_timeout
+        kwargs.setdefault("timeout", self._default_timeout)
         return super().send(*args, **kwargs)
 
 

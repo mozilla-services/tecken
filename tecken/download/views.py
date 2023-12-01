@@ -35,6 +35,7 @@ normal_downloader = SymbolDownloader(
 try_downloader = SymbolDownloader(
     settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
     file_prefix=settings.SYMBOL_FILE_PREFIX,
+    try_url_index=len(settings.SYMBOL_URLS),
 )
 
 
