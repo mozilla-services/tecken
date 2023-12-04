@@ -7,13 +7,9 @@ Gunicorn server hooks.
 
 See https://docs.gunicorn.org/en/stable/settings.html#server-hooks
 
-Note: Don't import anything that involves Django machinery here.
+Note: This file is imported by the Gunicorn manager, so don't import anything that
+involves Tecken webapp machinery here.
 """
-
-import markus
-
-
-metrics = markus.get_metrics("tecken")
 
 
 def worker_abort(worker):
@@ -25,4 +21,7 @@ def worker_abort(worker):
        markus and logging configuration of the Django webapp.
 
     """
+    import markus
+
+    metrics = markus.get_metrics("tecken")
     metrics.incr("gunicorn_worker_abort")
