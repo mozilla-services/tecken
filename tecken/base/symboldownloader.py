@@ -6,6 +6,7 @@ import datetime
 from email.utils import parsedate_to_datetime
 from functools import wraps
 import time
+from typing import Optional
 from urllib.parse import quote
 
 from cache_memoize import cache_memoize
@@ -50,7 +51,7 @@ def set_time_took(method):
     miss_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_miss", 1),
 )
 @metrics.timer_decorator("symboldownloader_exists")
-def get_last_modified(url: str) -> datetime.datetime:
+def get_last_modified(url: str) -> Optional[datetime.datetime]:
     """
     Get the last modified date of the given URL.
 
@@ -61,7 +62,7 @@ def get_last_modified(url: str) -> datetime.datetime:
     function returns None.
 
     :arg url: The target URL.
-    :returns: The time the resource at the URL was last modified.
+    :returns: The time the resource at the URL was last modified or `None`.
     """
     session = session_with_retries(status_forcelist=(429, 500, 503))
     resp = session.head(url)
@@ -80,8 +81,9 @@ def get_last_modified(url: str) -> datetime.datetime:
             # this code is just a fallback to avoid erroring out if something
             # unexpected happened.
             logger.error(
-                f"get_last_modified: HEAD request to {url} did not return "
-                "a valid last-modified header"
+                "get_last_modified: HEAD request to %s did not return "
+                "a valid last-modified header",
+                url,
             )
             return datetime.datetime.now()
 
@@ -171,9 +173,9 @@ class SymbolDownloader:
             if last_modified := get_last_modified(file_url, _refresh=refresh_cache):
                 age_days = (datetime.datetime.now(datetime.timezone.utc) - last_modified).days
                 if i == self.try_url_index:
-                    tags = ["symbol_build:try"]
+                    tags = ["storage:try"]
                 else:
-                    tags = ["symbol_build:regular"]
+                    tags = ["storage:regular"]
                 metrics.histogram("symboldownloader.file_age_days", age_days, tags)
                 return {
                     "url": file_url,
