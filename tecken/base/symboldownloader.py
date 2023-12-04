@@ -171,7 +171,9 @@ class SymbolDownloader:
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
             if last_modified := get_last_modified(file_url, _refresh=refresh_cache):
-                age_days = (datetime.datetime.now(datetime.timezone.utc) - last_modified).days
+                age_days = (
+                    datetime.datetime.now(datetime.timezone.utc) - last_modified
+                ).days
                 if i == self.try_url_index:
                     tags = ["storage:try"]
                 else:

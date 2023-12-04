@@ -27,10 +27,10 @@ def reload_downloaders(urls, try_downloader=None):
         urls = tuple([urls])
     views.normal_downloader = SymbolDownloader(urls)
     if try_downloader:
-        views.try_downloader = SymbolDownloader([try_downloader])
+        views.try_downloader = SymbolDownloader([try_downloader], try_url_index=0)
 
 
-def test_client_happy_path(client, db, s3_helper):
+def test_client_happy_path(client, db, s3_helper, metricsmock):
     reload_downloaders(
         os.environ["UPLOAD_DEFAULT_URL"],
         try_downloader=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
@@ -58,6 +58,9 @@ def test_client_happy_path(client, db, s3_helper):
     assert parsed.path == (
         "/publicbucket/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
+    metricsmock.assert_histogram_once(
+        "tecken.symboldownloader.file_age_days", value=0, tags=["storage:regular"]
+    )
 
     response = client.head(url)
     assert response.status_code == 200
@@ -66,7 +69,7 @@ def test_client_happy_path(client, db, s3_helper):
     assert response["Access-Control-Allow-Methods"] == "GET"
 
 
-def test_client_try_download(client, db, s3_helper):
+def test_client_try_download(client, db, s3_helper, metricsmock):
     """Suppose there's a file that doesn't exist in any of the
     settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
     then to reach that file you need to use ?try on the URL.
@@ -100,6 +103,9 @@ def test_client_try_download(client, db, s3_helper):
     assert response.status_code == 302
     # Also note that the headers are the same as for regular downloads
     assert response["Access-Control-Allow-Origin"] == "*"
+    metricsmock.assert_histogram_once(
+        "tecken.symboldownloader.file_age_days", value=0, tags=["storage:try"]
+    )
 
     # And like regular download, you're only allowed to use GET or HEAD
     response = client.put(try_url)
