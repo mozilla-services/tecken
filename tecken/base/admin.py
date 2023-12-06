@@ -108,10 +108,11 @@ def site_status(request):
 
     # Only include keys that can never be useful in security context.
     keys = (
+        "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
+        "CLOUD_SERVICE_PROVIDER",
+        "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
         "ENABLE_AUTH0_BLOCKED_CHECK",
         "ENABLE_TOKENS_AUTHENTICATION",
-        "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
-        "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
     )
     for key in keys:
         value = getattr(settings, key)
