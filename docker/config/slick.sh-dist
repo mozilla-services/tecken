@@ -34,10 +34,7 @@ docker compose run --rm web bash python manage.py superuser "${FAKEEMAIL}"
 docker compose run --rm web bash python manage.py createtoken "${FAKEEMAIL}" "${FAKETOKEN}"
 #
 # Reset fakesentry
-if command -v curl &> /dev/null
-then
-    curl -X POST http://localhost:8090/api/flush/
-fi
+curl -X POST http://localhost:8090/api/flush/
 
 # Reset Redis
 make clear-cache
