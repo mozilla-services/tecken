@@ -278,6 +278,15 @@ We use postgresql. To open a psql shell, do:
 .. code-block:: shell
 
    make psql
+   NOTE: Password is 'postgres'.
+   /usr/bin/docker compose run --rm db psql -h db -U postgres -d tecken
+   Password for user postgres:
+   psql (12.7 (Debian 12.7-1.pgdg100+1))
+   Type "help" for help.
+
+   tecken=#
+
+Note that it tells you the password to use.
 
 
 Bugs / Issues

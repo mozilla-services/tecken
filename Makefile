@@ -82,7 +82,7 @@ redis-cache-cli: .env .docker-build  ## | Open Redis CLI to cache Redis server.
 
 .PHONY: psql
 psql: .env .docker-build  ## | Open psql cli.
-	@echo "NOTE: Password is 'postgres'."
+	@echo "\e[0;32mNOTE: Use password 'postgres'.\e[0m\n"
 	${DC} run --rm db psql -h db -U postgres -d tecken
 
 .PHONY: test
