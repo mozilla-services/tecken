@@ -399,7 +399,7 @@ DJANGO_REDIS_LOG_IGNORED_EXCEPTIONS = True
 
 REDIS_IGNORE_EXCEPTIONS = True
 
-if TEST_ENV or TOOL_ENV:
+if TOOL_ENV:
     CACHES = {
         "default": {
             "BACKEND": "tecken.libcache.RedisLocMemCache",
