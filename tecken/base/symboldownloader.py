@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import datetime
 from email.utils import parsedate_to_datetime
 from functools import wraps
 import time
@@ -51,18 +50,18 @@ def set_time_took(method):
     miss_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_miss", 1),
 )
 @metrics.timer_decorator("symboldownloader_exists")
-def get_last_modified(url: str) -> Optional[datetime.datetime]:
+def get_last_modified(url: str) -> Optional[int]:
     """
     Get the last modified date of the given URL.
 
     This function performs a HEAD request to the given URL. If the status code is 200,
-    the Last-Modified header is parsed into a datetime.datetime object and returned.
+    the Last-Modified header is parsed into a Unix timestamp and returned.
     If the response does not include a Last-Modified header, or the header can't be
     parsed, the current time is returned. If the response status code is not 200, the
     function returns None.
 
     :arg url: The target URL.
-    :returns: The time the resource at the URL was last modified or `None`.
+    :returns: The timestamp of the last modification of the resource at the URL or `None`.
     """
     session = session_with_retries(status_forcelist=(429, 500, 503))
     resp = session.head(url)
@@ -72,7 +71,8 @@ def get_last_modified(url: str) -> Optional[datetime.datetime]:
         logger.error(f"get_last_modified: {url} status code is {resp.status_code}")
     if resp.status_code == 200:
         try:
-            return parsedate_to_datetime(resp.headers["last-modified"])
+            last_modified = parsedate_to_datetime(resp.headers["last-modified"])
+            return int(last_modified.timestamp())
         except (ValueError, KeyError):
             # KeyError occurs when the response does not hav a Last-Modified header,
             # and ValueError occurs if the Last-Modified header isn't properly
@@ -85,7 +85,7 @@ def get_last_modified(url: str) -> Optional[datetime.datetime]:
                 "a valid last-modified header",
                 url,
             )
-            return datetime.datetime.now()
+            return int(time.time())
 
 
 class SymbolDownloader:
@@ -171,9 +171,7 @@ class SymbolDownloader:
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
             if last_modified := get_last_modified(file_url, _refresh=refresh_cache):
-                age_days = (
-                    datetime.datetime.now(datetime.timezone.utc) - last_modified
-                ).days
+                age_days = int(time.time() - last_modified) // 86_400  # seconds per day
                 if i == self.try_url_index:
                     tags = ["storage:try"]
                 else:
