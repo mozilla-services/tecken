@@ -1,0 +1,18 @@
+---
+# Dev container https://containers.dev/, e.g. for VS Code
+version: '2.4'
+services:
+  devcontainer:
+    extends:
+      file: "docker-compose.yml"
+      service: test
+    build:
+      dockerfile: .devcontainer/Dockerfile
+    links:
+      - db
+      - fakesentry
+      - redis-cache
+      - localstack
+      - oidcprovider
+      - statsd
+    entrypoint: ["sleep", "inf"]
