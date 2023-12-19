@@ -10,6 +10,9 @@ set -eo pipefail
 python bin/s3_cli.py delete "${UPLOAD_DEFAULT_URL}"
 python bin/s3_cli.py create "${UPLOAD_DEFAULT_URL}"
 
+# Set up GCS
+# TODO use a new bin/gcs_cli.py CLI
+
 # Set up db
 python bin/db.py drop || true
 python bin/db.py create

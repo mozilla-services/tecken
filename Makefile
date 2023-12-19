@@ -10,7 +10,7 @@ export
 DOCKER := $(shell which docker)
 DC=${DOCKER} compose
 
-SERVICES=db fakesentry redis-cache localstack statsd oidcprovider
+SERVICES=db fakesentry redis-cache localstack statsd oidcprovider gcs-emulator
 
 .DEFAULT_GOAL := help
 .PHONY: help
