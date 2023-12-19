@@ -1,6 +1,5 @@
 all-metrics-keys.json
 .cache/
-.cache/
 .coverage
 coverage
 coverage.xml
@@ -18,6 +17,7 @@ npm-debug.log*
 __pycache__
 .pytest_cache/
 revision.txt
+slick.sh
 version.json
 yarn-debug.log*
 yarn-error.log*
