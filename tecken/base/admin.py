@@ -165,7 +165,9 @@ def site_status(request):
         with connection.cursor() as cursor:
             cursor.execute("SELECT id, app, name, applied FROM django_migrations")
             cols = [col[0] for col in cursor.description]
-            django_db_data = [dict(zip(cols, row)) for row in cursor.fetchall()]
+            django_db_data = [
+                dict(zip(cols, row, strict=True)) for row in cursor.fetchall()
+            ]
             django_db_error = ""
     except Exception as exc:
         django_db_data = []
