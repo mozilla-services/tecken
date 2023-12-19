@@ -6,7 +6,7 @@ select = ["E", "F", "B"]
 line-length = 88
 ignore = ["E501"]
 
-target-version = "py39"
+target-version = "py311"
 
 [tool.ruff.flake8-quotes]
 docstring-quotes = "double"
@@ -14,7 +14,7 @@ docstring-quotes = "double"
 
 [tool.black]
 line-length = 88
-target-version = ["py37"]
+target-version = ["py311"]
 
 
 [tool.paul-mclendahand]
