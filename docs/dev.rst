@@ -101,6 +101,7 @@ should be prompted whether you want to reopen the folder in a container on
 startup. You can also use the "Dev containers: Reopen in container" command
 from the command palette. The container has all Python requirements installed.
 IntelliSense, type checking, code formatting with Black and running the tests
+from the test browser are all set up to work without further configuration.
 
 What services are running in a local dev environment
 ----------------------------------------------------

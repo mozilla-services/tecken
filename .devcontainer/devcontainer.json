@@ -1,4 +1,5 @@
 {
+  "name": "Tecken",
   "dockerComposeFile": [
     "../docker-compose.yml",
     "docker-compose.yml"

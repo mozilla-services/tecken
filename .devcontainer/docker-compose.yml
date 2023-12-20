@@ -8,6 +8,7 @@ services:
       service: test
     build:
       dockerfile: .devcontainer/Dockerfile
+    image: tecken-devcontainer
     links:
       - db
       - fakesentry
