@@ -42,6 +42,7 @@ services:
       - docker/config/test.env
     links:
       - db
+      - gcs-emulator
       - fakesentry
       - redis-cache
       - localstack
@@ -114,7 +115,7 @@ services:
   gcs-emulator:
     image: fsouza/fake-gcs-server:latest
     ports:
-      - "${EXPOSE_GCS_EMULATOR_PORT:-4443}:4443"
+      - "${EXPOSE_GCS_EMULATOR_PORT:-5553}:4443"
 
   # https://hub.docker.com/r/localstack/localstack/
   # localstack running a fake AWS S3
