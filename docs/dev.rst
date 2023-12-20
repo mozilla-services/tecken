@@ -91,6 +91,18 @@ The Symbols Service webapp is at: http://localhost:3000
 How to
 ======
 
+How to set up a development container for VS Code
+-------------------------------------------------
+
+The repository contains configuration files to build a
+`development container <https://containers.dev/>`_ in the `.devcontainer`
+directory. If you have the "Dev Containers" extension installed in VS Code, you
+should be prompted whether you want to reopen the folder in a container on
+startup. You can also use the "Dev containers: Reopen in container" command
+from the command palette. The container has all Python requirements installed.
+IntelliSense, type checking, code formatting with Black and running the tests
+from the test browser are all set up to work without further configuration.
+
 What services are running in a local dev environment
 ----------------------------------------------------
 
