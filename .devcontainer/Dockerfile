@@ -2,6 +2,10 @@ FROM mcr.microsoft.com/devcontainers/python:3.11-bullseye@sha256:105bf6a63ab0252
 
 WORKDIR /app
 
+# Install Debian packages
+RUN apt-get update && \
+    apt-get install -y ripgrep
+
 # Install Python dependencies
 COPY requirements.txt /app/
 RUN pip install -U 'pip>=20' && \
