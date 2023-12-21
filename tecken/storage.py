@@ -113,19 +113,6 @@ class StorageBucket:
             f"backend={self.backend!r}>"
         )
 
-    @property
-    def client(self):
-        """Return a backend-specific client, cached on first access.
-
-        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
-        the backend-specific clients (bug 1564452).
-        """
-        if not getattr(self, "_client", None):
-            self._client = get_storage_client(
-                endpoint_url=self.endpoint_url, region_name=self.region
-            )
-        return self._client
-
     def get_storage_client(self, **config_params):
         """Return a backend-specific client, overriding default config parameters.
 

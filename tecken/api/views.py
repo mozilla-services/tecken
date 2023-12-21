@@ -10,7 +10,7 @@ import markus
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.core.exceptions import PermissionDenied, BadRequest
-from django.db.models import Aggregate, Count, Q, Sum
+from django.db.models import Count, Q, Sum
 from django import http
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
@@ -37,10 +37,6 @@ metrics = markus.get_metrics("tecken")
 # Arbitrary big number for paging so we don't do a count on the full table; this
 # needs to match the big number used in the frontend
 BIG_NUMBER = 1_000_000
-
-
-class SumCardinality(Aggregate):
-    template = "SUM(CARDINALITY(%(expressions)s))"
 
 
 @metrics.timer_decorator("api", tags=["endpoint:auth"])

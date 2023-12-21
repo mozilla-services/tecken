@@ -8,7 +8,7 @@ import re
 import dateutil
 
 from django import forms
-from django.contrib.auth.models import Permission, Group, User
+from django.contrib.auth.models import Permission, User
 from django.utils import timezone
 
 
@@ -62,24 +62,6 @@ class TokensForm(forms.Form):
         if value and value not in ("expired", "all"):
             raise forms.ValidationError(f"Unrecognized state value {value!r}")
         return value
-
-
-class UserEditForm(forms.ModelForm):
-    groups = forms.CharField(required=False)
-
-    class Meta:
-        model = User
-        fields = ("is_active", "is_superuser")
-
-    def clean_groups(self):
-        value = self.cleaned_data["groups"]
-        groups = []
-        for pk in [x for x in value.split(",") if x.strip()]:
-            try:
-                groups.append(Group.objects.get(id=pk))
-            except ValueError as exc:
-                raise forms.ValidationError("Invalid group ID") from exc
-        return groups
 
 
 class BaseFilteringForm(forms.Form):

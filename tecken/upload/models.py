@@ -12,10 +12,6 @@ from django.contrib.postgres.fields import ArrayField
 logger = logging.getLogger("tecken")
 
 
-class SumCardinality(models.Aggregate):
-    template = "SUM(CARDINALITY(%(expressions)s))"
-
-
 class Upload(models.Model):
     """
     Record of every uploaded archive file (e.g. .zip) that is uploaded,

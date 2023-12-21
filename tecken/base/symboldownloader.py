@@ -22,16 +22,6 @@ logger = logging.getLogger("tecken")
 metrics = markus.get_metrics("tecken")
 
 
-class SymbolNotFound(Exception):
-    """Happens when you try to download a symbols file that doesn't exist"""
-
-
-class SymbolDownloadError(Exception):
-    def __init__(self, status_code, url):
-        self.status_code = status_code
-        self.url = url
-
-
 def set_time_took(method):
     @wraps(method)
     def wrapper(self, *args, **kwargs):
