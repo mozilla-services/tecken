@@ -16,9 +16,6 @@ services:
   web:
     extends:
       service: base
-    depends_on:
-      - db
-      - redis-cache
     ports:
       - "${EXPOSE_TECKEN_PORT:-8000}:8000"
     links:
@@ -33,19 +30,6 @@ services:
     command: ["web", "--dev"]
 
   # Container specifically for running tests.
-  test:
-    extends:
-      service: base
-    env_file:
-      - docker/config/local_dev.env
-      - docker/config/test.env
-    links:
-      - db
-      - fakesentry
-      - redis-cache
-    volumes:
-      - $PWD:/app
-
   test-ci:
     extends:
       service: base
@@ -56,6 +40,24 @@ services:
       - db
       - fakesentry
       - redis-cache
+      - localstack
+      - oidcprovider
+      - statsd
+
+  test:
+    extends:
+      service: test-ci
+    volumes:
+      - $PWD:/app
+
+  # Dev container https://containers.dev/, e.g. for VS Code
+  devcontainer:
+    extends:
+      service: test
+    build:
+      dockerfile: .devcontainer/Dockerfile
+    image: tecken-devcontainer
+    entrypoint: ["sleep", "inf"]
 
   # Web container is a prod-like fully-functioning container.
   gunicorn:
