@@ -7,6 +7,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      args:
+        userid: ${USE_UID:-10001}
+        groupid: ${USE_GID:-10001}
     image: tecken:build
     env_file:
       - docker/config/local_dev.env
@@ -70,10 +73,18 @@ services:
       - redis-cache
     command: web
 
-  frontend:
+  # Same as 'frontend' but no volumes or command
+  frontend-ci:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        userid: ${USE_UID:-10001}
+        groupid: ${USE_GID:-10001}
+
+  frontend:
+    extends:
+      frontend-ci
     environment:
       - NODE_ENV=development
     ports:
@@ -82,12 +93,6 @@ services:
     volumes:
       - $PWD/frontend:/app
     command: start
-
-  # Same as 'frontend' but no volumes or command
-  frontend-ci:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
 
   # https://hub.docker.com/_/postgres/
   db:
