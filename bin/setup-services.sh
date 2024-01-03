@@ -11,7 +11,12 @@ python bin/s3_cli.py delete "${UPLOAD_DEFAULT_URL}"
 python bin/s3_cli.py create "${UPLOAD_DEFAULT_URL}"
 
 # Set up GCS
-# TODO use a new bin/gcs_cli.py CLI
+# FIXME bug 1827506: conditionally set UPLOAD_DEFAULT_URL TO GCS URL
+# (i.e. https://gcs-emulator:4443/storage/v1/b/{bucket_name})
+# when CLOUD_SERVICE_PROVIDER == "GCP" and pass that in here instead
+# of publicbucket.
+python bin/gcs_cli.py delete publicbucket
+python bin/gcs_cli.py create publicbucket
 
 # Set up db
 python bin/db.py drop || true
