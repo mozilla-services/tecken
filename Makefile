@@ -7,12 +7,6 @@
 include .env
 export
 
-# Set these in the environment to override them. This is helpful for
-# development if you have file ownership problems because the user
-# in the container doesn't match the user on your host.
-USE_UID ?= 10001
-USE_GID ?= 10001
-
 DOCKER := $(shell which docker)
 DC=${DOCKER} compose
 
@@ -45,8 +39,7 @@ slick.sh:
 
 .PHONY: build
 build: .env  ## | Build docker images.
-	${DC} build --build-arg userid=${USE_UID} --build-arg groupid=${USE_GID} --progress plain base frontend
-	${DC} build --progress plain fakesentry ${SERVICES}
+	${DC} build --progress plain base frontend fakesentry ${SERVICES}
 	touch .docker-build
 
 .PHONY: setup
@@ -97,8 +90,8 @@ testshell: .env .docker-build  ## | Open shell in test environment.
 
 .PHONY: docs
 docs: .env .docker-build  ## | Build docs.
-	${DC} run --rm --user ${USE_UID} --no-deps web bash make -C docs/ clean
-	${DC} run --rm --user ${USE_UID} --no-deps web bash make -C docs/ html
+	${DC} run --rm --no-deps web bash make -C docs/ clean
+	${DC} run --rm --no-deps web bash make -C docs/ html
 
 .PHONY: lint
 lint: .env .docker-build  ## | Lint code.

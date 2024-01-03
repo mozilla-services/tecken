@@ -7,6 +7,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
+      args:
+        userid: ${USE_UID:-10001}
+        groupid: ${USE_GID:-10001}
     image: tecken:build
     env_file:
       - docker/config/local_dev.env
@@ -16,9 +19,6 @@ services:
   web:
     extends:
       service: base
-    depends_on:
-      - db
-      - redis-cache
     ports:
       - "${EXPOSE_TECKEN_PORT:-8000}:8000"
     links:
@@ -33,19 +33,6 @@ services:
     command: ["web", "--dev"]
 
   # Container specifically for running tests.
-  test:
-    extends:
-      service: base
-    env_file:
-      - docker/config/local_dev.env
-      - docker/config/test.env
-    links:
-      - db
-      - fakesentry
-      - redis-cache
-    volumes:
-      - $PWD:/app
-
   test-ci:
     extends:
       service: base
@@ -56,6 +43,24 @@ services:
       - db
       - fakesentry
       - redis-cache
+      - localstack
+      - oidcprovider
+      - statsd
+
+  test:
+    extends:
+      service: test-ci
+    volumes:
+      - $PWD:/app
+
+  # Dev container https://containers.dev/, e.g. for VS Code
+  devcontainer:
+    extends:
+      service: test
+    build:
+      dockerfile: .devcontainer/Dockerfile
+    image: tecken-devcontainer
+    entrypoint: ["sleep", "inf"]
 
   # Web container is a prod-like fully-functioning container.
   gunicorn:
@@ -68,10 +73,18 @@ services:
       - redis-cache
     command: web
 
-  frontend:
+  # Same as 'frontend' but no volumes or command
+  frontend-ci:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        userid: ${USE_UID:-10001}
+        groupid: ${USE_GID:-10001}
+
+  frontend:
+    extends:
+      frontend-ci
     environment:
       - NODE_ENV=development
     ports:
@@ -80,12 +93,6 @@ services:
     volumes:
       - $PWD/frontend:/app
     command: start
-
-  # Same as 'frontend' but no volumes or command
-  frontend-ci:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
 
   # https://hub.docker.com/_/postgres/
   db:
