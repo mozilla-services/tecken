@@ -1074,7 +1074,52 @@ class Test_remove_orphaned_files:
         )
         assert len(delete_incr) == 3
 
-    def test_errors(
+    def test_oserror(
+        self, db, settings, tmp_path, monkeypatch, caplog, metricsmock, sentry_helper
+    ):
+        tempdir = str(tmp_path)
+        settings.UPLOAD_TEMPDIR = tempdir
+        settings.UPLOAD_TEMPDIR_ORPHANS_CUTOFF = 5
+
+        # Create a directory with an old file in it
+        (tmp_path / "upload1").mkdir(parents=True)
+        path = tmp_path / "upload1" / "file1.sym"
+        now = datetime.datetime.now() - datetime.timedelta(minutes=10)
+        now_epoch = now.timestamp()
+        path.write_text("abcde")
+        os.utime(path, times=(now_epoch, now_epoch))
+
+        contents = [str(path)[len(str(tmp_path)) :] for path in tmp_path.glob("**/*")]
+        contents.sort()
+        assert contents == ["/upload1", "/upload1/file1.sym"]
+
+        # Monkeypatch os.path.getsize to throw an OSError so as to simulate something
+        # going wrong other than FileNotFoundError
+        def adjusted_getsize(fn):
+            raise OSError()
+
+        monkeypatch.setattr(os.path, "getsize", adjusted_getsize)
+
+        with sentry_helper.reuse() as sentry_client:
+            # Run the command
+            call_command("remove_orphaned_files", verbose=True)
+
+            # Assert message is logged
+            assert f"error getting size: {str(path)}" in caplog.text
+            assert "OSError" in caplog.text
+
+            # Assert a Sentry event was emitted
+            event = sentry_client.events[0]
+            assert event["logentry"]["message"] == "error getting size: %s"
+            assert event["logger"] == "tecken.remove_orphaned_files"
+
+            # Assert metric is emitted
+            incr_records = metricsmock.filter_records(
+                "incr", stat="tecken.remove_orphaned_files.delete_file_error"
+            )
+            assert len(incr_records) == 1
+
+    def test_filenotfound_racecondition(
         self, db, settings, tmp_path, monkeypatch, caplog, metricsmock, sentry_helper
     ):
         tempdir = str(tmp_path)
@@ -1110,16 +1155,14 @@ class Test_remove_orphaned_files:
             call_command("remove_orphaned_files", verbose=True)
 
             # Assert message is logged
-            assert f"error getting size: {str(path)}" in caplog.text
-            assert "FileNotFound" in caplog.text
+            assert f"error getting size: {str(path)}" not in caplog.text
+            assert "FileNotFoundError" not in caplog.text
 
             # Assert a Sentry event was emitted
-            event = sentry_client.events[0]
-            assert event["logentry"]["message"] == "error getting size: %s"
-            assert event["logger"] == "tecken.remove_orphaned_files"
+            assert [] == sentry_client.events
 
             # Assert metric is emitted
             incr_records = metricsmock.filter_records(
                 "incr", stat="tecken.remove_orphaned_files.delete_file_error"
             )
-            assert len(incr_records) == 1
+            assert len(incr_records) == 0

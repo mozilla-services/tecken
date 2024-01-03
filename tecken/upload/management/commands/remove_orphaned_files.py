@@ -52,6 +52,9 @@ class Command(BaseCommand):
                 # Time in seconds since epoch
                 try:
                     mtime = os.path.getmtime(fn)
+                except FileNotFoundError:
+                    # if there's nothing to delete then we are done here
+                    continue
                 except OSError:
                     logger.exception("error getting mtime: %s", fn)
                     metrics.incr("remove_orphaned_files.delete_file_error")
@@ -62,6 +65,9 @@ class Command(BaseCommand):
                 if mtime < cutoff_epoch:
                     try:
                         size = os.path.getsize(fn)
+                    except FileNotFoundError:
+                        # if there's nothing to delete then we are done here
+                        continue
                     except OSError:
                         logger.exception("error getting size: %s", fn)
                         metrics.incr("remove_orphaned_files.delete_file_error")
@@ -73,6 +79,9 @@ class Command(BaseCommand):
                         os.remove(fn)
                         logger.info("deleted file: %s, %sb", fn, size)
                         metrics.incr("remove_orphaned_files.delete_file")
+                    except FileNotFoundError:
+                        # if there's nothing to delete then we are done here
+                        continue
                     except OSError:
                         logger.exception("error deleting file: %s", fn)
                         metrics.incr("remove_orphaned_files.delete_file_error")
