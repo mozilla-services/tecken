@@ -10,16 +10,15 @@ from urllib.parse import quote
 
 from cache_memoize import cache_memoize
 import logging
-import markus
 
 from django.conf import settings
 
+from tecken.libmarkus import METRICS
 from tecken.librequests import session_with_retries
 from tecken.storage import StorageBucket
 
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics("tecken")
 
 
 def set_time_took(method):
@@ -36,10 +35,10 @@ def set_time_took(method):
 
 @cache_memoize(
     settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-    hit_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_hit", 1),
-    miss_callable=lambda *a, **k: metrics.incr("symboldownloader_exists_cache_miss", 1),
+    hit_callable=lambda *a, **k: METRICS.incr("symboldownloader_exists_cache_hit", 1),
+    miss_callable=lambda *a, **k: METRICS.incr("symboldownloader_exists_cache_miss", 1),
 )
-@metrics.timer_decorator("symboldownloader_exists")
+@METRICS.timer_decorator("symboldownloader_exists")
 def get_last_modified(url: str) -> Optional[int]:
     """
     Get the last modified date of the given URL.
@@ -166,7 +165,7 @@ class SymbolDownloader:
                     tags = ["storage:try"]
                 else:
                     tags = ["storage:regular"]
-                metrics.histogram("symboldownloader.file_age_days", age_days, tags)
+                METRICS.histogram("symboldownloader.file_age_days", age_days, tags)
                 return {
                     "url": file_url,
                     "source": source,

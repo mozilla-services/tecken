@@ -141,6 +141,8 @@ def test_upload_archive_happy_path(
     assert all_keys.count("tecken.upload_file_upload") == 2
     assert all_keys.count("tecken.upload_uploads") == 1
     assert all_keys.count("tecken.upload_archive") == 1
+    # check that all metrics have the correct host tag
+    assert all("host:testnode" in record.tags for record in records)
 
 
 def test_upload_try_symbols_happy_path(
@@ -1073,6 +1075,8 @@ class Test_remove_orphaned_files:
             "incr", stat="tecken.remove_orphaned_files.delete_file"
         )
         assert len(delete_incr) == 3
+        # check that all metrics have the correct host tag
+        assert all("host:testnode" in record.tags for record in delete_incr)
 
     def test_oserror(
         self, db, settings, tmp_path, monkeypatch, caplog, metricsmock, sentry_helper
@@ -1114,10 +1118,9 @@ class Test_remove_orphaned_files:
             assert event["logger"] == "tecken.remove_orphaned_files"
 
             # Assert metric is emitted
-            incr_records = metricsmock.filter_records(
-                "incr", stat="tecken.remove_orphaned_files.delete_file_error"
+            metricsmock.assert_incr_once(
+                "tecken.remove_orphaned_files.delete_file_error", tags=["host:testnode"]
             )
-            assert len(incr_records) == 1
 
     def test_filenotfound_racecondition(
         self, db, settings, tmp_path, monkeypatch, caplog, metricsmock, sentry_helper
@@ -1162,7 +1165,6 @@ class Test_remove_orphaned_files:
             assert [] == sentry_client.events
 
             # Assert metric is emitted
-            incr_records = metricsmock.filter_records(
-                "incr", stat="tecken.remove_orphaned_files.delete_file_error"
+            metricsmock.assert_not_incr(
+                "tecken.remove_orphaned_files.delete_file_error"
             )
-            assert len(incr_records) == 0

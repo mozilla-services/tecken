@@ -174,7 +174,7 @@ def test_get_key_content_type(settings, key, expected):
     assert get_key_content_type(key) == expected
 
 
-def test_key_existing_caching(s3_helper):
+def test_key_existing_caching(s3_helper, metricsmock):
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(
         bucket_name="publicbucket",
@@ -187,6 +187,8 @@ def test_key_existing_caching(s3_helper):
     size, metadata = key_existing(client, "publicbucket", "somefile.txt")
     assert size == 6
     assert metadata == {}
+    metricsmock.assert_timing_once("tecken.upload_file_exists", tags=["host:testnode"])
+    metricsmock.clear_records()
 
     # Change the file, but don't invalidate the cache
     s3_helper.upload_fileobj(
@@ -198,12 +200,14 @@ def test_key_existing_caching(s3_helper):
     size, metadata = key_existing(client, "publicbucket", "somefile.txt")
     assert size == 6
     assert metadata == {}
+    metricsmock.assert_not_timing("tecken.upload_file_exists")
 
     # Invalidate the cache and make sure the size changes
     key_existing.invalidate(client, "publicbucket", "somefile.txt")
     size, metadata = key_existing(client, "publicbucket", "somefile.txt")
     assert size == 9
     assert metadata == {}
+    metricsmock.assert_timing_once("tecken.upload_file_exists", tags=["host:testnode"])
 
 
 def test_key_existing_size_caching_not_found(s3_helper):

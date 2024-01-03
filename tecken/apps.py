@@ -12,7 +12,6 @@ from fillmore.scrubber import (
     build_scrub_query_string,
     SCRUB_RULES_DEFAULT,
 )
-import markus
 from sentry_sdk.integrations.boto3 import Boto3Integration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
@@ -22,10 +21,10 @@ from django.conf import settings
 from django.apps import AppConfig
 
 from tecken.libdockerflow import get_release_name
+from tecken.libmarkus import METRICS, setup_markus
 
 
 logger = logging.getLogger("django")
-metrics = markus.get_metrics("tecken")
 
 
 # Set up Sentry to scrub infrastructure secrets, user credentials, and auth state
@@ -60,13 +59,12 @@ SCRUB_RULES_TECKEN = [
 
 
 def count_sentry_scrub_error(msg):
-    metrics.incr("sentry_scrub_error", 1)
+    METRICS.incr("sentry_scrub_error", 1)
 
 
 def configure_sentry():
     if settings.SENTRY_DSN:
         release = get_release_name(basedir=settings.BASE_DIR)
-        host_id = settings.HOST_ID
         scrubber = Scrubber(
             rules=SCRUB_RULES_DEFAULT + SCRUB_RULES_TECKEN,
             error_handler=count_sentry_scrub_error,
@@ -75,7 +73,7 @@ def configure_sentry():
         set_up_sentry(
             sentry_dsn=settings.SENTRY_DSN,
             release=release,
-            host_id=host_id,
+            host_id=settings.HOSTNAME,
             integrations=[
                 DjangoIntegration(),
                 Boto3Integration(),
@@ -106,7 +104,7 @@ class TeckenAppConfig(AppConfig):
 
     @staticmethod
     def _configure_markus():
-        markus.configure(settings.MARKUS_BACKENDS)
+        setup_markus(settings.MARKUS_BACKENDS, settings.HOSTNAME)
 
     @staticmethod
     def _fix_default_redis_connection():

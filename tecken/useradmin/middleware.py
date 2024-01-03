@@ -5,7 +5,6 @@
 import logging
 from urllib.parse import urlparse
 
-import markus
 
 from django.conf import settings
 from django.core.cache import cache
@@ -13,17 +12,17 @@ from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
 from django.contrib import auth
 
 from tecken.librequests import session_with_retries
+from tecken.libmarkus import METRICS
 
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics("tecken")
 
 
 class Auth0ManagementAPIError(Exception):
     """happens if the Auth0 management API can't be reached"""
 
 
-@metrics.timer_decorator("useradmin_is_blocked_in_auth0")
+@METRICS.timer_decorator("useradmin_is_blocked_in_auth0")
 def is_blocked_in_auth0(email):
     session = session_with_retries(total_retries=5)
     users = find_users(

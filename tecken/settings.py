@@ -82,7 +82,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 SENTRY_DSN = _config("SENTRY_DSN", default="", doc="Sentry DSN or empty string")
 
-HOST_ID = socket.gethostname()
+HOSTNAME = _config(
+    "HOSTNAME",
+    default=socket.gethostname(),
+    doc="Unique identifier for the host that is running Tecken. This is used "
+    "in logging and metrics. The default is socket.gethostname().",
+)
 
 LOGGING_DEFAULT_LEVEL = _config(
     "LOGGING_DEFAULT_LEVEL",

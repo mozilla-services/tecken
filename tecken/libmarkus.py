@@ -6,8 +6,27 @@ import json
 import time
 from functools import partialmethod
 
+import markus
 from markus import INCR, GAUGE, HISTOGRAM, TIMING
 from markus.backends import BackendBase
+from markus.filters import AddTagFilter
+
+_IS_MARKUS_SETUP = False
+METRICS = markus.get_metrics("tecken")
+
+
+def setup_markus(backends, hostname):
+    global _IS_MARKUS_SETUP, METRICS
+    if _IS_MARKUS_SETUP:
+        return
+
+    markus.configure(backends)
+
+    if hostname:
+        # Define host tag here instead of in the backend so it shows up in tests
+        METRICS.filters.append(AddTagFilter(f"host:{hostname}"))
+
+    _IS_MARKUS_SETUP = True
 
 
 class LogAllMetricsKeys(BackendBase):  # pragma: no cover
