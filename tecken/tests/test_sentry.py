@@ -5,7 +5,6 @@
 from unittest.mock import ANY
 
 from fillmore.test import diff_event
-from markus.testing import MetricsMock
 from werkzeug.test import Client
 
 from django.contrib.auth.models import User
@@ -221,8 +220,9 @@ def test_sentry_scrubbing(sentry_helper, transactional_db):
         assert differences == []
 
 
-def test_count_sentry_scrub_error():
-    with MetricsMock() as metricsmock:
-        metricsmock.clear_records()
-        count_sentry_scrub_error("foo")
-        metricsmock.assert_incr("tecken.sentry_scrub_error", value=1)
+def test_count_sentry_scrub_error(metricsmock):
+    metricsmock.clear_records()
+    count_sentry_scrub_error("foo")
+    metricsmock.assert_incr(
+        "tecken.sentry_scrub_error", value=1, tags=["host:testnode"]
+    )

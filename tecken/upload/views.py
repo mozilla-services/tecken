@@ -12,7 +12,6 @@ from tempfile import TemporaryDirectory
 import time
 import zipfile
 
-import markus
 from encore.concurrent.futures.synchronous import SynchronousExecutor
 
 from django import http
@@ -37,10 +36,10 @@ from tecken.upload.utils import (
 )
 from tecken.librequests import session_with_retries
 from tecken.storage import StorageBucket
+from tecken.libmarkus import METRICS
 
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics("tecken")
 
 
 class NoPossibleBucketName(Exception):
@@ -193,7 +192,7 @@ def make_tempdir(tempdir_root, suffix=None):
     return decorator
 
 
-@metrics.timer_decorator("upload_archive")
+@METRICS.timer_decorator("upload_archive")
 @api_require_POST
 @csrf_exempt
 @api_login_required
@@ -224,7 +223,7 @@ def upload_archive(request, upload_workspace):
                     redirect_urls = form.cleaned_data["upload"]["redirect_urls"] or None
                     download_name = os.path.join(upload_workspace, name)
                     session = session_with_retries(default_timeout=(5, 300))
-                    with metrics.timer("upload_download_by_url"):
+                    with METRICS.timer("upload_download_by_url"):
                         response_stream = session.get(url, stream=True)
                         # NOTE(willkg): The UploadByDownloadForm handles most errors
                         # when it does a HEAD, so this mostly covers transient errors
@@ -408,7 +407,7 @@ def upload_archive(request, upload_workspace):
                 uploaded_symbol_keys.append(key_to_symbol_keys[file_upload.key])
             else:
                 skipped_keys.append(future_to_key[future])
-                metrics.incr("upload_file_upload_skip", 1)
+                METRICS.incr("upload_file_upload_skip", 1)
 
     if file_uploads_created:
         logger.info(f"Created {file_uploads_created} FileUpload objects")
@@ -421,7 +420,7 @@ def upload_archive(request, upload_workspace):
         completed_at=timezone.now(),
     )
 
-    metrics.incr(
+    METRICS.incr(
         "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{bucket_info.name}"]
     )
 

@@ -21,7 +21,6 @@ def worker_abort(worker):
        markus and logging configuration of the Django webapp.
 
     """
-    import markus
+    from tecken.libmarkus import METRICS
 
-    metrics = markus.get_metrics("tecken")
-    metrics.incr("gunicorn_worker_abort")
+    METRICS.incr("gunicorn_worker_abort")

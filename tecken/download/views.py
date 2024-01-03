@@ -4,7 +4,6 @@
 
 import logging
 
-import markus
 
 from django import http
 from django.conf import settings
@@ -20,10 +19,10 @@ from tecken.base.symboldownloader import SymbolDownloader
 from tecken.base.utils import invalid_key_name_characters
 from tecken.upload.models import FileUpload
 from tecken.storage import StorageBucket
+from tecken.libmarkus import METRICS
 
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics("tecken")
 
 
 BOGUS_DEBUG_ID = "000000000000000000000000000000000"
@@ -62,7 +61,7 @@ SYMINFO_RESULT_CACHE_TIMEOUT = 600
 NO_VALUE_IN_CACHE = object()
 
 
-@metrics.timer_decorator("syminfo.lookup.timing")
+@METRICS.timer_decorator("syminfo.lookup.timing")
 def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
     """Looks up somefile/someid in fileupload data; caches result
 
@@ -89,9 +88,9 @@ def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
         ).last()
 
         cache.set(key, data, SYMINFO_RESULT_CACHE_TIMEOUT)
-        metrics.incr("syminfo.lookup.cached", tags=["result:false"])
+        METRICS.incr("syminfo.lookup.cached", tags=["result:false"])
     else:
-        metrics.incr("syminfo.lookup.cached", tags=["result:true"])
+        METRICS.incr("syminfo.lookup.cached", tags=["result:true"])
 
     return data
 
@@ -123,7 +122,7 @@ def download_symbol_try(request, debugfilename, debugid, filename):
     return download_symbol(request, debugfilename, debugid, filename, try_symbols=True)
 
 
-@metrics.timer_decorator("download_symbol")
+@METRICS.timer_decorator("download_symbol")
 @set_request_debug
 @api_require_http_methods(["GET", "HEAD"])
 @set_cors_headers(origin="*", methods="GET")
@@ -205,7 +204,7 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
             )
             if request.GET:
                 new_url = f"{new_url}?{request.GET.urlencode()}"
-            metrics.incr("download_symbol_code_id_lookup")
+            METRICS.incr("download_symbol_code_id_lookup")
             return http.HttpResponseRedirect(new_url)
 
     response = http.HttpResponseNotFound("Symbol Not Found")

@@ -5,8 +5,6 @@
 import datetime
 import logging
 
-import markus
-
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.core.exceptions import PermissionDenied, BadRequest
@@ -29,9 +27,9 @@ from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
 from tecken.upload.views import get_upload_bucket_urls
+from tecken.libmarkus import METRICS
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics("tecken")
 
 
 # Arbitrary big number for paging so we don't do a count on the full table; this
@@ -39,7 +37,7 @@ metrics = markus.get_metrics("tecken")
 BIG_NUMBER = 1_000_000
 
 
-@metrics.timer_decorator("api", tags=["endpoint:auth"])
+@METRICS.timer_decorator("api", tags=["endpoint:auth"])
 def auth(request):
     context = {}
     if request.user.is_authenticated:
@@ -93,7 +91,7 @@ def auth(request):
 
 
 @api_login_required
-@metrics.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
+@METRICS.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
 def possible_upload_urls(request):
     context = {"urls": []}
     seen = set()
@@ -308,7 +306,7 @@ def _uploads_content(form, pagination_form, qs, can_view_all):
     return content
 
 
-@metrics.timer_decorator("api", tags=["endpoint:uploads"])
+@METRICS.timer_decorator("api", tags=["endpoint:uploads"])
 @api_login_required
 def uploads(request):
     form = forms.UploadsForm(request.GET, valid_sorts=("size", "created_at"))
@@ -350,7 +348,7 @@ def filter_uploads(qs, can_view_all, user, form):
     return qs
 
 
-@metrics.timer_decorator("api", tags=["endpoint:upload"])
+@METRICS.timer_decorator("api", tags=["endpoint:upload"])
 @api_login_required
 def upload(request, id):
     obj = get_object_or_404(Upload, id=id)
@@ -512,7 +510,7 @@ def _upload_files_content(request, qs):
     return content
 
 
-@metrics.timer_decorator("api", tags=["endpoint:upload_files"])
+@METRICS.timer_decorator("api", tags=["endpoint:upload_files"])
 @api_login_required
 @api_permission_required("upload.view_all_uploads")
 def upload_files(request):
@@ -527,7 +525,7 @@ def upload_files(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api", tags=["endpoint:upload_file"])
+@METRICS.timer_decorator("api", tags=["endpoint:upload_file"])
 @api_login_required
 def upload_file(request, id):
     file_upload = get_object_or_404(FileUpload, id=id)
@@ -584,7 +582,7 @@ def upload_file(request, id):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api", tags=["endpoint:stats"])
+@METRICS.timer_decorator("api", tags=["endpoint:stats"])
 @api_login_required
 def stats(request):
     numbers = {}
@@ -596,7 +594,7 @@ def stats(request):
     start_yesterday = start_today - datetime.timedelta(days=1)
     last_30_days = today - datetime.timedelta(days=30)
 
-    with metrics.timer("api_stats", tags=["section:all_uploads"]):
+    with METRICS.timer("api_stats", tags=["section:all_uploads"]):
         upload_qs = Upload.objects.all()
 
         if not all_uploads:
@@ -628,7 +626,7 @@ def stats(request):
     return http.JsonResponse(context)
 
 
-@metrics.timer_decorator("api", tags=["endpoint:syminfo"])
+@METRICS.timer_decorator("api", tags=["endpoint:syminfo"])
 @api_require_http_methods(["GET"])
 @set_cors_headers(origin="*", methods="GET")
 def syminfo(request, some_file, some_id):

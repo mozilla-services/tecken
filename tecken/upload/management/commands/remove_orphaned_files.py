@@ -9,11 +9,10 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-import markus
+from tecken.libmarkus import METRICS
 
 
 logger = logging.getLogger("tecken.remove_orphaned_files")
-metrics = markus.get_metrics("tecken")
 
 
 class Command(BaseCommand):
@@ -57,7 +56,7 @@ class Command(BaseCommand):
                     continue
                 except OSError:
                     logger.exception("error getting mtime: %s", fn)
-                    metrics.incr("remove_orphaned_files.delete_file_error")
+                    METRICS.incr("remove_orphaned_files.delete_file_error")
                     # OSError means we're not going to be able to delete this file. It's
                     # either gone already or we don't have access.
                     continue
@@ -70,7 +69,7 @@ class Command(BaseCommand):
                         continue
                     except OSError:
                         logger.exception("error getting size: %s", fn)
-                        metrics.incr("remove_orphaned_files.delete_file_error")
+                        METRICS.incr("remove_orphaned_files.delete_file_error")
                         # OSError means we're not going to be able to delete this file.
                         # It's either gone already or we don't have access.
                         continue
@@ -78,13 +77,13 @@ class Command(BaseCommand):
                     try:
                         os.remove(fn)
                         logger.info("deleted file: %s, %sb", fn, size)
-                        metrics.incr("remove_orphaned_files.delete_file")
+                        METRICS.incr("remove_orphaned_files.delete_file")
                     except FileNotFoundError:
                         # if there's nothing to delete then we are done here
                         continue
                     except OSError:
                         logger.exception("error deleting file: %s", fn)
-                        metrics.incr("remove_orphaned_files.delete_file_error")
+                        METRICS.incr("remove_orphaned_files.delete_file_error")
 
     def handle(self, *args, **options):
         is_verbose = options["verbose"]

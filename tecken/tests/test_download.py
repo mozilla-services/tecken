@@ -59,7 +59,9 @@ def test_client_happy_path(client, db, s3_helper, metricsmock):
         "/publicbucket/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
     metricsmock.assert_histogram_once(
-        "tecken.symboldownloader.file_age_days", value=0, tags=["storage:regular"]
+        "tecken.symboldownloader.file_age_days",
+        value=0,
+        tags=["storage:regular", "host:testnode"],
     )
 
     response = client.head(url)
@@ -104,7 +106,9 @@ def test_client_try_download(client, db, s3_helper, metricsmock):
     # Also note that the headers are the same as for regular downloads
     assert response["Access-Control-Allow-Origin"] == "*"
     metricsmock.assert_histogram_once(
-        "tecken.symboldownloader.file_age_days", value=0, tags=["storage:try"]
+        "tecken.symboldownloader.file_age_days",
+        value=0,
+        tags=["storage:try", "host:testnode"],
     )
 
     # And like regular download, you're only allowed to use GET or HEAD
@@ -389,7 +393,9 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
     parsed = urlparse(response["location"])
     assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
     metricsmock.assert_timing("tecken.syminfo.lookup.timing")
-    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+    metricsmock.assert_incr(
+        "tecken.syminfo.lookup.cached", tags=["result:false", "host:testnode"]
+    )
 
     # Try with querystring params
     response = client.get(url, {"code_file": code_file, "code_id": code_id})
@@ -400,7 +406,9 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
         f"code_file={code_file}&code_id={code_id}",
         f"code_id={code_id}&code_file={code_file}",
     ]
-    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+    metricsmock.assert_incr(
+        "tecken.syminfo.lookup.cached", tags=["result:true", "host:testnode"]
+    )
 
 
 def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
@@ -435,16 +443,20 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
     )
     response = client.get(url)
     assert response.status_code == 404
-    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
-    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing", tags=["host:testnode"])
+    metricsmock.assert_incr(
+        "tecken.syminfo.lookup.cached", tags=["result:false", "host:testnode"]
+    )
 
     metricsmock.clear_records()
 
     # Try again
     response = client.get(url)
     assert response.status_code == 404
-    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
-    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing", tags=["host:testnode"])
+    metricsmock.assert_incr(
+        "tecken.syminfo.lookup.cached", tags=["result:true", "host:testnode"]
+    )
 
 
 def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
@@ -495,8 +507,10 @@ def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
     assert response.status_code == 302
     parsed = urlparse(response["location"])
     assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
-    metricsmock.assert_timing("tecken.syminfo.lookup.timing")
-    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:false"])
+    metricsmock.assert_timing("tecken.syminfo.lookup.timing", tags=["host:testnode"])
+    metricsmock.assert_incr(
+        "tecken.syminfo.lookup.cached", tags=["result:false", "host:testnode"]
+    )
 
     # Try with querystring
     url = reverse(
@@ -511,7 +525,9 @@ def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
         f"code_file={code_file}&code_id={code_id}",
         f"code_id={code_id}&code_file={code_file}",
     ]
-    metricsmock.assert_incr("tecken.syminfo.lookup.cached", tags=["result:true"])
+    metricsmock.assert_incr(
+        "tecken.syminfo.lookup.cached", tags=["result:true", "host:testnode"]
+    )
 
 
 @pytest.mark.parametrize(

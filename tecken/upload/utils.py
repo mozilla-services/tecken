@@ -10,7 +10,6 @@ import shutil
 import logging
 import socket
 
-import markus
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
 from cache_memoize import cache_memoize
@@ -20,10 +19,9 @@ from django.utils import timezone
 
 from tecken.upload.models import FileUpload
 from tecken.base.symboldownloader import SymbolDownloader
-
+from tecken.libmarkus import METRICS
 
 logger = logging.getLogger("tecken")
-metrics = markus.get_metrics("tecken")
 
 # FIXME(willkg): This downloader needs to point to all the things that can be downloaded
 # from so it can correctly invalidate the cache
@@ -106,7 +104,7 @@ def extract_sym_header_data(file_path):
     return data
 
 
-@metrics.timer_decorator("upload_dump_and_extract")
+@METRICS.timer_decorator("upload_dump_and_extract")
 def dump_and_extract(root_dir, file_buffer, name):
     """Given a directory and an open compressed file and its filename,
     extract all the files in the file and return a list of FileMember
@@ -172,7 +170,7 @@ def _key_existing_hit(client, bucket, key):
     miss_callable=_key_existing_miss,
     hit_callable=_key_existing_hit,
 )
-@metrics.timer_decorator("upload_file_exists")
+@METRICS.timer_decorator("upload_file_exists")
 def key_existing(client, bucket, key):
     """return a tuple of (
         key's size if it exists or 0,
@@ -217,7 +215,7 @@ def get_key_content_type(key_name):
     return settings.MIME_OVERRIDES.get(key_extension)
 
 
-@metrics.timer_decorator("upload_file_upload")
+@METRICS.timer_decorator("upload_file_upload")
 def upload_file_upload(
     client,
     bucket_name,
@@ -247,7 +245,7 @@ def upload_file_upload(
         # It's easy when you don't have to compare compressed files.
         if existing_size and existing_size == size:
             # Then don't bother!
-            metrics.incr("upload_skip_early_uncompressed", 1)
+            METRICS.incr("upload_skip_early_uncompressed", 1)
             return
 
     metadata = {}
@@ -279,7 +277,7 @@ def upload_file_upload(
             # An upload existed with the exact same original size
             # and the exact same md5 hash.
             # Then we can definitely exit early here.
-            metrics.incr("upload_skip_early_compressed", 1)
+            METRICS.incr("upload_skip_early_compressed", 1)
             return
 
         # At this point, we can't exit early by comparing the original.
@@ -287,7 +285,7 @@ def upload_file_upload(
         metadata["original_size"] = str(original_size)  # has to be string
         metadata["original_md5_hash"] = original_md5_hash
 
-        with metrics.timer("upload_gzip_payload"):
+        with METRICS.timer("upload_gzip_payload"):
             with open(file_path, "rb") as f_in:
                 with gzip.open(file_path + ".gz", "wb") as f_out:
                     shutil.copyfileobj(f_in, f_out)
@@ -304,7 +302,7 @@ def upload_file_upload(
             # there is one last possibility to compare the size of the
             # exising file in S3 when this local file has been compressed
             # too.
-            metrics.incr("upload_skip_early_compressed_legacy", 1)
+            METRICS.incr("upload_skip_early_compressed_legacy", 1)
             return
 
     update = bool(existing_size)
@@ -344,12 +342,12 @@ def upload_file_upload(
         extras["Metadata"] = metadata
 
     logger.debug(f"Uploading file {key_name!r} into {bucket_name!r}")
-    with metrics.timer("upload_put_object"):
+    with METRICS.timer("upload_put_object"):
         with open(file_path, "rb") as f:
             client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
     FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
     logger.info(f"Uploaded key {key_name}")
-    metrics.incr("upload_file_upload_upload", 1)
+    METRICS.incr("upload_file_upload_upload", 1)
 
     # If we managed to upload a file, different or not, cache invalidate the
     # key_existing_size() lookup.

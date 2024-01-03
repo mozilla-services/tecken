@@ -11,4 +11,6 @@ def test_worker_abort_emits_metric(metricsmock):
     # instance, that's fine.
     gunicornhooks.worker_abort(None)
 
-    metricsmock.assert_incr("tecken.gunicorn_worker_abort", value=1)
+    metricsmock.assert_incr(
+        "tecken.gunicorn_worker_abort", value=1, tags=["host:testnode"]
+    )
