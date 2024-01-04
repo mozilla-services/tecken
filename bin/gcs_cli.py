@@ -52,10 +52,6 @@ def create_bucket(bucket_name):
 
     try:
         client.get_bucket(bucket_name)
-        # TODO Bucket already exists, but do we have access to it?
-        # s3 client has a head_bucket method which also checks access permissions:
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/head_bucket.html#head-bucket
-        # Address this for all uses of client.get_bucket in this script.
         click.echo(f"GCS bucket {bucket_name!r} exists in {endpoint_url!r}.")
     except NotFound:
         client.create_bucket(bucket_name)
