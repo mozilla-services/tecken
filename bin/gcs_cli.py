@@ -106,9 +106,32 @@ def list_buckets(details):
             click.echo(f"{bucket.name}")
 
 
-# def list_objects():
-# todo
-# see client.list_blobs(bucket_name)
+@gcs_group.command("list_objects")
+@click.option("--details/--no-details", default=True, type=bool, help="With details")
+@click.argument("bucket_name")
+def list_objects(bucket_name, details):
+    """List contents of a bucket"""
+
+    client = get_client()
+
+    try:
+        client.get_bucket(bucket_name)
+    except NotFound:
+        click.echo(f"GCS bucket {bucket_name!r} does not exist.")
+        return
+
+    blobs = client.list_blobs(bucket_name)
+    is_empty = True
+    for blob in blobs:
+        is_empty = False
+        # https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
+        if details:
+            click.echo(f"{blob.name}\t{blob.size}\t{blob.updated}")
+        else:
+            click.echo(f"{blob.name}")
+    if is_empty:
+        click.echo("No objects in bucket.")
+
 
 if __name__ == "__main__":
     gcs_group()
