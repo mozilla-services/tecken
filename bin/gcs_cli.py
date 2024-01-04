@@ -90,9 +90,21 @@ def delete_bucket(bucket_name):
     click.echo(f"GCS bucket {bucket_name!r} at {endpoint_url!r} deleted.")
 
 
-# def list_buckets():
-# todo
-# see client.list_buckets
+@gcs_group.command("list_buckets")
+@click.option("--details/--no-details", default=True, type=bool, help="With details")
+def list_buckets(details):
+    """List GCS buckets"""
+
+    client = get_client()
+
+    buckets = client.list_buckets()
+    for bucket in buckets:
+        if details:
+            # https://cloud.google.com/storage/docs/json_api/v1/buckets#resource-representations
+            click.echo(f"{bucket.name}\t{bucket.time_created}")
+        else:
+            click.echo(f"{bucket.name}")
+
 
 # def list_objects():
 # todo
