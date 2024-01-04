@@ -63,7 +63,7 @@ Setup quickstart
 
    That will build the app Docker image required for development.
 
-5. Initialize Postgres and S3 (localstack).
+5. Initialize Postgres and S3 (localstack) / GCS (gcs-emulator).
 
    Run:
 
@@ -74,7 +74,7 @@ Setup quickstart
    This creates the Postgres database and sets up tables, integrity rules, and
    a bunch of other things.
 
-   For S3, this creates the required buckets.
+   For S3/GCS, this creates the required buckets.
 
 Tecken consists of Symbols Service webapp that covers uploading and downloading symbols.
 
@@ -112,6 +112,7 @@ service       port  description
 frontend      3000  Javascript proxy for webapp--use with browser
 web           8000  Django webapp--use with APIs
 localstack    4566  S3 emulation service
+gcs-emulator  4443  GCS emulation service
 db            5432  Postgres database
 redis         6379  Redis service
 fakesentry    8090  Sentry emulation service
@@ -280,6 +281,32 @@ Use the ``bin/s3_cli.py`` script:
      delete        Deletes a bucket
      list_buckets  List S3 buckets
      list_objects  List contents of a bucket
+
+
+How to manipulate the local dev environment GCS bucket
+-----------------------------------------------------
+
+We use `fake-gcs-server <https://github.com/fsouza/fake-gcs-server>`__ for GCS
+emulation.
+
+Use the ``bin/gcs_cli.py`` script:
+
+.. code-block:: shell
+
+   $ make shell
+   app@xxx:/app$ ./bin/gcs_cli.py --help
+   Usage: gcs_cli.py [OPTIONS] COMMAND [ARGS]...
+
+  Local dev environment GCS manipulation script
+
+  Options:
+    --help  Show this message and exit.
+
+  Commands:
+    create        Creates a bucket
+    delete        Deletes a bucket
+    list_buckets  List GCS buckets
+    list_objects  List contents of a bucket
 
 
 How to access the database
