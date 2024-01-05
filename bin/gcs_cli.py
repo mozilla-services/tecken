@@ -120,16 +120,15 @@ def list_objects(bucket_name, details):
         click.echo(f"GCS bucket {bucket_name!r} does not exist.")
         return
 
-    blobs = client.list_blobs(bucket_name)
-    is_empty = True
-    for blob in blobs:
-        is_empty = False
-        # https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
-        if details:
-            click.echo(f"{blob.name}\t{blob.size}\t{blob.updated}")
-        else:
-            click.echo(f"{blob.name}")
-    if is_empty:
+    blobs = list(client.list_blobs(bucket_name))
+    if blobs:
+        for blob in blobs:
+            # https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
+            if details:
+                click.echo(f"{blob.name}\t{blob.size}\t{blob.updated}")
+            else:
+                click.echo(f"{blob.name}")
+    else:
         click.echo("No objects in bucket.")
 
 
