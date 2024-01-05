@@ -103,6 +103,13 @@ from the command palette. The container has all Python requirements installed.
 IntelliSense, type checking, code formatting with Black and running the tests
 from the test browser are all set up to work without further configuration.
 
+VS Code should automatically start the container, but it may need to be built on
+first run:
+
+.. code-block:: shell
+   $ make devcontainerbuild
+
+
 What services are running in a local dev environment
 ----------------------------------------------------
 
@@ -124,7 +131,28 @@ statsd        8081  Grafana / statsd
 How to change settings in your local dev environment
 ----------------------------------------------------
 
-Edit the ``.env`` file and add/remove/change settings.
+Edit the ``.env`` file and add/remove/change settings. These environment
+variables are used by make and automatically included by docker compose.
+
+If you are using a VS Code development container for other repositories such as
+`eliot <https://github.com/mozilla-services/eliot>`_ or
+`socorro <https://github.com/mozilla-services/socorro>`_, you may need to
+change the default ports exposed by docker compose to avoid conflicts with
+similar services, for example:
+
+.. code-block:: shell
+   EXPOSE_TECKEN_PORT=8200
+   EXPOSE_LOCALSTACK_PORT=4567
+   EXPOSE_SENTRY_PORT=8290
+   EXPOSE_OIDC_PORT=8280
+   EXPOSE_STATSD_PORT=8281
+   EXPOSE_GCS_EMULATOR_PORT=4443
+
+If you are using a development container for VS Code, you make need to restart
+the container to pick up changes:
+
+.. code-block:: shell
+   $ make devcontainer
 
 
 How to create a script to recreate your local dev environment

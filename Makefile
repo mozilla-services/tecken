@@ -30,6 +30,9 @@ help:
 .docker-build:
 	make build
 
+.devcontainer-build:
+	make devcontainerbuild
+
 .env:
 	./bin/cp-dist-file.sh docker/config/env-dist .env
 
@@ -49,6 +52,15 @@ setup: .env  ## | Initialize services.
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
 	${DC} up web frontend fakesentry
+
+.PHONY: devcontainerbuild
+devcontainerbuild: .env .docker-build .devcontainer-build  ## | Build VS Code development container.
+	${DC} build devcontainer
+	touch .devcontainer-build
+
+.PHONY: devcontainer
+devcontainer: .env .docker-build  ## | Run VS Code development container.
+	${DC} up --detach devcontainer
 
 .PHONY: stop
 stop: .env  ## | Stop docker containers.
