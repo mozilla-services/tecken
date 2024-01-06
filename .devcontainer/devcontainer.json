@@ -22,5 +22,7 @@
         "ms-python.black-formatter"
       ]
     }
-  }
+  },
+  "remoteUser": "app",
+  "updateRemoteUserUID": false
 }
