@@ -1,6 +1,14 @@
 FROM mcr.microsoft.com/devcontainers/python:3.11-bullseye@sha256:105bf6a63ab025206f019a371a735fec6553db0be520030c7a2fd0e002947232
 
+ARG userid=10001
+ARG groupid=10001
+
 WORKDIR /app
+
+# add a non-privileged user for installing and running the application
+RUN groupadd --gid $groupid app && \
+    useradd -g app --uid $userid --shell /usr/sbin/nologin --create-home app && \
+    chown app:app /app/
 
 # Install Debian packages
 RUN apt-get update && \
