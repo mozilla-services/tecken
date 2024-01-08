@@ -61,6 +61,9 @@ services:
       service: test
     build:
       dockerfile: .devcontainer/Dockerfile
+      args:
+        userid: ${USE_UID:-10001}
+        groupid: ${USE_GID:-10001}
     image: tecken-devcontainer
     entrypoint: ["sleep", "inf"]
 
