@@ -39,8 +39,7 @@ def main(symbols, out_file, remote_url):
                     f.write(response.content)
                     raw_size = int(response.headers["content-length"])
                     print(
-                        "Downloaded {} bytes ({}, {} on disk) into {}"
-                        "".format(
+                        "Downloaded {} bytes ({}, {} on disk) into {}".format(
                             raw_size,
                             fmt_size(raw_size),
                             fmt_size(os.stat(fn).st_size),

@@ -40,8 +40,7 @@ def handler403(request, exception):
             # there's a plain `raise PermissionDenied` without a parameter.
             # If that is the case it's slightly nicer to at least return
             # the word 'Forbidden'.
-            "error": str(exception)
-            or "Forbidden"
+            "error": str(exception) or "Forbidden"
         },
         status=403,
     )

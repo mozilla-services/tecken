@@ -100,7 +100,7 @@ directory. If you have the "Dev Containers" extension installed in VS Code, you
 should be prompted whether you want to reopen the folder in a container on
 startup. You can also use the "Dev containers: Reopen in container" command
 from the command palette. The container has all Python requirements installed.
-IntelliSense, type checking, code formatting with Black and running the tests
+IntelliSense, type checking, code formatting with Ruff and running the tests
 from the test browser are all set up to work without further configuration.
 
 What services are running in a local dev environment
@@ -423,7 +423,7 @@ All Python code files should have an MPL v2 header at the top::
   # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-We use `black <https://black.readthedocs.io/en/stable/>`_ to reformat Python
+We use `ruff <https://docs.astral.sh/ruff/>`_ to reformat Python
 code and we use `prettier <https://prettier.io/>`_ to reformat JS code.
 
 
