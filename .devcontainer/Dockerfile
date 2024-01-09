@@ -5,9 +5,10 @@ ARG groupid=10001
 
 WORKDIR /app
 
-# add a non-privileged user for installing and running the application
-RUN groupadd --gid $groupid app && \
-    useradd -g app --uid $userid --shell /usr/sbin/nologin --create-home app && \
+# Add a non-privileged user for installing and running the application.
+# We use --non-unique in case $groupid/$userid collide with the existing "vscode" user.
+RUN groupadd --gid $groupid --non-unique app && \
+    useradd -g app --uid $userid --non-unique --shell /usr/sbin/nologin --create-home app && \
     chown app:app /app/
 
 # Install Debian packages
