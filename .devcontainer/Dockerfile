@@ -13,7 +13,7 @@ RUN groupadd --gid $groupid --non-unique app && \
 
 # Install Debian packages
 RUN apt-get update && \
-    apt-get install -y ripgrep
+    apt-get install -y ripgrep tig
 
 # Install Python dependencies
 COPY requirements.txt /app/
