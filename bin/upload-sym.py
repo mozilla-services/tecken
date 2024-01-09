@@ -52,7 +52,7 @@ def upload_sym_file(ctx, auth_token, base_url, symfile):
     if debugfilename.endswith(".pdb"):
         sym_file = debugfilename[:-4] + ".sym"
     else:
-        sym_file = debugfilename
+        sym_file = debugfilename + ".sym"
 
     path = f"{debugfilename}/{debugid}/{sym_file}"
     with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
