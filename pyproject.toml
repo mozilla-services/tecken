@@ -22,7 +22,7 @@ github_project = "tecken"
 bugzilla_product = "Tecken"
 bugzilla_component = "General"
 main_branch = "main"
-tag_name_template = "%Y.%m.%d"
+tag_name_template = "v%Y.%m.%d"
 
 
 [tool.service-status]
