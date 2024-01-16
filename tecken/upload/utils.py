@@ -12,7 +12,6 @@ import socket
 
 from botocore.exceptions import ClientError
 from botocore.vendored.requests.exceptions import ReadTimeout
-from cache_memoize import cache_memoize
 
 from django.conf import settings
 from django.utils import timezone
@@ -163,13 +162,6 @@ def _key_existing_hit(client, bucket, key):
     logger.debug(f"key_existing cache hit on {bucket}:{key}")
 
 
-@cache_memoize(
-    settings.MEMOIZE_KEY_EXISTING_SIZE_SECONDS,
-    prefix="key_existing",
-    args_rewrite=lambda client, bucket, key: (f"{bucket}:{key}",),
-    miss_callable=_key_existing_miss,
-    hit_callable=_key_existing_hit,
-)
 @METRICS.timer_decorator("upload_file_exists")
 def key_existing(client, bucket, key):
     """return a tuple of (

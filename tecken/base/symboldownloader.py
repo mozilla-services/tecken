@@ -8,7 +8,6 @@ import time
 from typing import Optional
 from urllib.parse import quote
 
-from cache_memoize import cache_memoize
 import logging
 
 from django.conf import settings
@@ -33,11 +32,6 @@ def set_time_took(method):
     return wrapper
 
 
-@cache_memoize(
-    settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-    hit_callable=lambda *a, **k: METRICS.incr("symboldownloader_exists_cache_hit", 1),
-    miss_callable=lambda *a, **k: METRICS.incr("symboldownloader_exists_cache_miss", 1),
-)
 @METRICS.timer_decorator("symboldownloader_exists")
 def get_last_modified(url: str) -> Optional[int]:
     """
@@ -159,7 +153,7 @@ class SymbolDownloader:
                 source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
-            if last_modified := get_last_modified(file_url, _refresh=refresh_cache):
+            if last_modified := get_last_modified(file_url):
                 age_days = int(time.time() - last_modified) // 86_400  # seconds per day
                 if i == self.try_url_index:
                     tags = ["storage:try"]
