@@ -29,6 +29,15 @@ services:
       - localstack
       - oidcprovider
       - statsd
+    depends_on:
+      db: &condition_service_healthy
+        condition: service_healthy
+      fakesentry: *condition_service_healthy
+      gcs-emulator: *condition_service_healthy
+      redis-cache: *condition_service_healthy
+      localstack: *condition_service_healthy
+      oidcprovider: *condition_service_healthy
+      statsd: *condition_service_healthy
     volumes:
       - $PWD:/app
     command: ["web", "--dev"]
@@ -48,6 +57,14 @@ services:
       - localstack
       - oidcprovider
       - statsd
+    depends_on:
+      db: *condition_service_healthy
+      gcs-emulator: *condition_service_healthy
+      fakesentry: *condition_service_healthy
+      redis-cache: *condition_service_healthy
+      localstack: *condition_service_healthy
+      oidcprovider: *condition_service_healthy
+      statsd: *condition_service_healthy
 
   test:
     extends:
@@ -76,6 +93,9 @@ services:
     links:
       - db
       - redis-cache
+    depends_on:
+      db: *condition_service_healthy
+      redis-cache: *condition_service_healthy
     command: web
 
   # Same as 'frontend' but no volumes or command
@@ -107,18 +127,35 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=tecken
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # https://hub.docker.com/_/redis
   # This is the version we run in production
   redis-cache:
     image: redis:6.2.6
+    healthcheck:
+      test: ["CMD-SHELL", '[ "$(redis-cli ping)" = "PONG" ]']
+      interval: 1s
+      timeout: 3s
+      retries: 5
 
   # https://github.com/fsouza/fake-gcs-server
   # Fake GCP GCS server for local development and testing
   gcs-emulator:
-    image: fsouza/fake-gcs-server:latest
+    build:
+      context: docker/images/gcs-emulator
+    image: local/tecken_gcs_emulator
     ports:
       - "${EXPOSE_GCS_EMULATOR_PORT:-4443}:4443"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--insecure", "https://localhost:4443/storage/v1/b"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # https://hub.docker.com/r/localstack/localstack/
   # localstack running a fake AWS S3
@@ -137,6 +174,11 @@ services:
     ports:
       - "${EXPOSE_SENTRY_PORT:-8090}:8090"
     command: run --host 0.0.0.0 --port 8090
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # https://hub.docker.com/r/mozilla/oidc-testprovider
   oidcprovider:
@@ -145,9 +187,19 @@ services:
     image: local/tecken_oidcprovider
     ports:
       - "${EXPOSE_OIDC_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # https://hub.docker.com/r/hopsoft/graphite-statsd/
   statsd:
     image: hopsoft/graphite-statsd:latest
     ports:
       - "${EXPOSE_GRAFANA_PORT:-8081}:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

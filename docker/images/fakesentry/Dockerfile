@@ -9,7 +9,7 @@ RUN addgroup -g $groupid app && \
     adduser --disabled-password --gecos "" --home /home/app --ingroup app --uid $userid app && \
     chown app:app /app/
 
-RUN apk add --no-cache tini
+RUN apk add --no-cache curl tini
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
