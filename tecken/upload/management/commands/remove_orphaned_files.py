@@ -85,6 +85,7 @@ class Command(BaseCommand):
                         logger.exception("error deleting file: %s", fn)
                         METRICS.incr("remove_orphaned_files.delete_file_error")
 
+    @METRICS.timer_decorator("remove_orphaned_files.timing")
     def handle(self, *args, **options):
         is_verbose = options["verbose"]
 
