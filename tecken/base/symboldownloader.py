@@ -106,18 +106,6 @@ class SymbolDownloader:
             self._sources = list(self._get_sources())
         return self._sources
 
-    def invalidate_cache(self, symbol, debugid, filename):
-        # Because we can't know exactly which source (aka URL) was
-        # used when the key was cached by exists_in_source() we have
-        # to iterate over the source.
-        for source in self.sources:
-            prefix = source.prefix
-            assert prefix
-            file_url = "{}/{}".format(
-                source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
-            )
-            get_last_modified.invalidate(file_url)
-
     @staticmethod
     def make_url_path(prefix, symbol, debugid, filename):
         """Generates a url quoted path which works with HTTP requests against AWS S3
@@ -135,7 +123,7 @@ class SymbolDownloader:
         # uppercased. If so, we override it. Every debug ID is always in uppercase.
         return quote(f"{prefix}/{symbol}/{debugid.upper()}/{filename}")
 
-    def _get(self, symbol, debugid, filename, refresh_cache=False):
+    def _get(self, symbol, debugid, filename):
         """Return a dict if the symbol can be found.
 
         Dict includes a "url" key.
@@ -166,18 +154,18 @@ class SymbolDownloader:
                 }
 
     @set_time_took
-    def has_symbol(self, symbol, debugid, filename, refresh_cache=False):
+    def has_symbol(self, symbol, debugid, filename):
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
-        return bool(self._get(symbol, debugid, filename, refresh_cache=refresh_cache))
+        return bool(self._get(symbol, debugid, filename))
 
     @set_time_took
-    def get_symbol_url(self, symbol, debugid, filename, refresh_cache=False):
+    def get_symbol_url(self, symbol, debugid, filename):
         """Return the redirect URL or None.
 
         If we return None it means we can't find the object in any of the URLs provided.
 
         """
-        found = self._get(symbol, debugid, filename, refresh_cache=refresh_cache)
+        found = self._get(symbol, debugid, filename)
         if found:
             return found["url"]

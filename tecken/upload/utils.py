@@ -22,8 +22,6 @@ from tecken.libmarkus import METRICS
 
 logger = logging.getLogger("tecken")
 
-# FIXME(willkg): This downloader needs to point to all the things that can be downloaded
-# from so it can correctly invalidate the cache
 downloader = SymbolDownloader(settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL])
 
 
@@ -152,14 +150,6 @@ class FileMember:
 
     def __repr__(self):
         return f"<FileMenber {self.path} {self.name}>"
-
-
-def _key_existing_miss(client, bucket, key):
-    logger.debug(f"key_existing cache miss on {bucket}:{key}")
-
-
-def _key_existing_hit(client, bucket, key):
-    logger.debug(f"key_existing cache hit on {bucket}:{key}")
 
 
 @METRICS.timer_decorator("upload_file_exists")
@@ -340,28 +330,5 @@ def upload_file_upload(
     FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
     logger.info(f"Uploaded key {key_name}")
     METRICS.incr("upload_file_upload_upload", 1)
-
-    # If we managed to upload a file, different or not, cache invalidate the
-    # key_existing_size() lookup.
-    try:
-        key_existing.invalidate(client, bucket_name, key_name)
-    except Exception:  # pragma: no cover
-        if settings.DEBUG:
-            raise
-        logger.error(f"Unable to invalidate key size {key_name}", exc_info=True)
-
-    # Take this opportunity to inform possible caches that the file,
-    # if before wasn't the case, is now stored in S3.
-    symbol, debugid, filename = key_name.split(settings.SYMBOL_FILE_PREFIX + "/")[
-        1
-    ].split("/")
-    try:
-        downloader.invalidate_cache(symbol, debugid, filename)
-    except Exception:  # pragma: no cover
-        if settings.DEBUG:
-            raise
-        logger.error(
-            f"Unable to invalidate symbol {symbol}/{debugid}/{filename}", exc_info=True
-        )
 
     return file_upload

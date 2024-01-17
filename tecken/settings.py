@@ -680,18 +680,6 @@ DISALLOWED_SYMBOLS_SNIPPETS = _config(
     ),
 )
 
-SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS = _config(
-    "SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS",
-    default=str(60 * 60 * 6),
-    parser=int,
-    doc=(
-        "We can cache quite aggressively here because the SymbolDownloader "
-        "has chance to invalidate certain keys. "
-        "Also, any time a symbol archive file is upload, for each file within "
-        "that we end up uploading to S3 we also cache invalidate."
-    ),
-)
-
 # How many uploads to display per page when paginating through
 # past uploads.
 API_UPLOADS_BATCH_SIZE = 20
