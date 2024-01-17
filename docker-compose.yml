@@ -21,14 +21,6 @@ services:
       service: base
     ports:
       - "${EXPOSE_TECKEN_PORT:-8000}:8000"
-    links:
-      - db
-      - fakesentry
-      - gcs-emulator
-      - redis-cache
-      - localstack
-      - oidcprovider
-      - statsd
     depends_on:
       db: &condition_service_healthy
         condition: service_healthy
@@ -49,14 +41,6 @@ services:
     env_file:
       - docker/config/local_dev.env
       - docker/config/test.env
-    links:
-      - db
-      - gcs-emulator
-      - fakesentry
-      - redis-cache
-      - localstack
-      - oidcprovider
-      - statsd
     depends_on:
       db: *condition_service_healthy
       gcs-emulator: *condition_service_healthy
@@ -90,9 +74,6 @@ services:
       service: base
     ports:
       - "${EXPOSE_TECKEN_PORT:-8000}:8000"
-    links:
-      - db
-      - redis-cache
     depends_on:
       db: *condition_service_healthy
       redis-cache: *condition_service_healthy
@@ -129,8 +110,8 @@ services:
       - POSTGRES_DB=tecken
     healthcheck:
       test: ["CMD", "pg_isready"]
-      interval: 10s
-      timeout: 5s
+      interval: 1s
+      timeout: 3s
       retries: 5
 
   # https://hub.docker.com/_/redis
@@ -153,8 +134,8 @@ services:
       - "${EXPOSE_GCS_EMULATOR_PORT:-4443}:4443"
     healthcheck:
       test: ["CMD", "curl", "-f", "--insecure", "https://localhost:4443/storage/v1/b"]
-      interval: 10s
-      timeout: 5s
+      interval: 1s
+      timeout: 3s
       retries: 5
 
   # https://hub.docker.com/r/localstack/localstack/
@@ -176,8 +157,8 @@ services:
     command: run --host 0.0.0.0 --port 8090
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090/"]
-      interval: 10s
-      timeout: 5s
+      interval: 1s
+      timeout: 3s
       retries: 5
 
   # https://hub.docker.com/r/mozilla/oidc-testprovider
@@ -189,8 +170,8 @@ services:
       - "${EXPOSE_OIDC_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
-      interval: 10s
-      timeout: 5s
+      interval: 1s
+      timeout: 3s
       retries: 5
 
   # https://hub.docker.com/r/hopsoft/graphite-statsd/
@@ -200,6 +181,6 @@ services:
       - "${EXPOSE_GRAFANA_PORT:-8081}:80"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 10s
-      timeout: 5s
+      interval: 1s
+      timeout: 3s
       retries: 5

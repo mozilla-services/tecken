@@ -25,13 +25,6 @@ if [ -z "$*" ]; then
     exit 1
 fi
 
-# Only wait for backend services in local development and CI
-if [ ! -z ${DEVELOPMENT+check} ]; then
-    echo "Waiting for services..."
-    urlwait postgres://db:5432 10
-    urlwait redis://redis-cache:6379 10
-fi
-
 SERVICE=$1
 shift
 
