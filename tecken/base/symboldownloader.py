@@ -8,7 +8,6 @@ import time
 from typing import Optional
 from urllib.parse import quote
 
-from cache_memoize import cache_memoize
 import logging
 
 from django.conf import settings
@@ -33,11 +32,6 @@ def set_time_took(method):
     return wrapper
 
 
-@cache_memoize(
-    settings.SYMBOLDOWNLOAD_EXISTS_TTL_SECONDS,
-    hit_callable=lambda *a, **k: METRICS.incr("symboldownloader_exists_cache_hit", 1),
-    miss_callable=lambda *a, **k: METRICS.incr("symboldownloader_exists_cache_miss", 1),
-)
 @METRICS.timer_decorator("symboldownloader_exists")
 def get_last_modified(url: str) -> Optional[int]:
     """
@@ -112,18 +106,6 @@ class SymbolDownloader:
             self._sources = list(self._get_sources())
         return self._sources
 
-    def invalidate_cache(self, symbol, debugid, filename):
-        # Because we can't know exactly which source (aka URL) was
-        # used when the key was cached by exists_in_source() we have
-        # to iterate over the source.
-        for source in self.sources:
-            prefix = source.prefix
-            assert prefix
-            file_url = "{}/{}".format(
-                source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
-            )
-            get_last_modified.invalidate(file_url)
-
     @staticmethod
     def make_url_path(prefix, symbol, debugid, filename):
         """Generates a url quoted path which works with HTTP requests against AWS S3
@@ -141,7 +123,7 @@ class SymbolDownloader:
         # uppercased. If so, we override it. Every debug ID is always in uppercase.
         return quote(f"{prefix}/{symbol}/{debugid.upper()}/{filename}")
 
-    def _get(self, symbol, debugid, filename, refresh_cache=False):
+    def _get(self, symbol, debugid, filename):
         """Return a dict if the symbol can be found.
 
         Dict includes a "url" key.
@@ -159,7 +141,7 @@ class SymbolDownloader:
                 source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
-            if last_modified := get_last_modified(file_url, _refresh=refresh_cache):
+            if last_modified := get_last_modified(file_url):
                 age_days = int(time.time() - last_modified) // 86_400  # seconds per day
                 if i == self.try_url_index:
                     tags = ["storage:try"]
@@ -172,18 +154,18 @@ class SymbolDownloader:
                 }
 
     @set_time_took
-    def has_symbol(self, symbol, debugid, filename, refresh_cache=False):
+    def has_symbol(self, symbol, debugid, filename):
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
-        return bool(self._get(symbol, debugid, filename, refresh_cache=refresh_cache))
+        return bool(self._get(symbol, debugid, filename))
 
     @set_time_took
-    def get_symbol_url(self, symbol, debugid, filename, refresh_cache=False):
+    def get_symbol_url(self, symbol, debugid, filename):
         """Return the redirect URL or None.
 
         If we return None it means we can't find the object in any of the URLs provided.
 
         """
-        found = self._get(symbol, debugid, filename, refresh_cache=refresh_cache)
+        found = self._get(symbol, debugid, filename)
         if found:
             return found["url"]
