@@ -17,12 +17,9 @@ from django.conf import settings
 from django.utils import timezone
 
 from tecken.upload.models import FileUpload
-from tecken.base.symboldownloader import SymbolDownloader
 from tecken.libmarkus import METRICS
 
 logger = logging.getLogger("tecken")
-
-downloader = SymbolDownloader(settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL])
 
 
 class UnrecognizedArchiveFileExtension(ValueError):
