@@ -1077,6 +1077,10 @@ class Test_remove_orphaned_files:
         assert len(delete_incr) == 3
         # check that all metrics have the correct host tag
         assert all("host:testnode" in record.tags for record in delete_incr)
+        # check that timing is recorded
+        metricsmock.assert_timing_once(
+            "tecken.remove_orphaned_files.timing", tags=["host:testnode"]
+        )
 
     def test_oserror(
         self, db, settings, tmp_path, monkeypatch, caplog, metricsmock, sentry_helper
