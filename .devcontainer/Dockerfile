@@ -8,7 +8,7 @@ WORKDIR /app
 # Add a non-privileged user for installing and running the application.
 # We use --non-unique in case $groupid/$userid collide with the existing "vscode" user.
 RUN groupadd --gid $groupid --non-unique app && \
-    useradd -g app --uid $userid --non-unique --shell /usr/sbin/nologin --create-home app && \
+    useradd -g app --uid $userid --non-unique --shell /bin/bash --create-home app && \
     chown app:app /app/
 
 # Install Debian packages
