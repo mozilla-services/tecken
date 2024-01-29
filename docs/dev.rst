@@ -107,6 +107,7 @@ VS Code should automatically start the container, but it may need to be built on
 first run:
 
 .. code-block:: shell
+
    $ make devcontainerbuild
 
 
@@ -141,6 +142,7 @@ change the default ports exposed by docker compose to avoid conflicts with
 similar services, for example:
 
 .. code-block:: shell
+
    EXPOSE_TECKEN_PORT=8200
    EXPOSE_LOCALSTACK_PORT=4567
    EXPOSE_SENTRY_PORT=8290
@@ -152,6 +154,7 @@ If you are using a development container for VS Code, you make need to restart
 the container to pick up changes:
 
 .. code-block:: shell
+
    $ make devcontainer
 
 
@@ -162,7 +165,7 @@ Run:
 
 .. code-block:: shell
 
-   make slick.sh
+   $ make slick.sh
 
 Then edit the ``slick.sh`` script filling in:
 
@@ -179,7 +182,7 @@ up when you're switching contexts or testing things.
 
 .. code-block:: shell
 
-   ./slick.sh
+   $ ./slick.sh
    [gobs of output here]
 
 
@@ -312,7 +315,7 @@ Use the ``bin/s3_cli.py`` script:
 
 
 How to manipulate the local dev environment GCS bucket
------------------------------------------------------
+------------------------------------------------------
 
 We use `fake-gcs-server <https://github.com/fsouza/fake-gcs-server>`__ for GCS
 emulation.
@@ -325,16 +328,16 @@ Use the ``bin/gcs_cli.py`` script:
    app@xxx:/app$ ./bin/gcs_cli.py --help
    Usage: gcs_cli.py [OPTIONS] COMMAND [ARGS]...
 
-  Local dev environment GCS manipulation script
+   Local dev environment GCS manipulation script
 
-  Options:
-    --help  Show this message and exit.
+   Options:
+     --help  Show this message and exit.
 
-  Commands:
-    create        Creates a bucket
-    delete        Deletes a bucket
-    list_buckets  List GCS buckets
-    list_objects  List contents of a bucket
+   Commands:
+     create        Creates a bucket
+     delete        Deletes a bucket
+     list_buckets  List GCS buckets
+     list_objects  List contents of a bucket
 
 
 How to access the database
@@ -344,7 +347,7 @@ We use postgresql. To open a psql shell, do:
 
 .. code-block:: shell
 
-   make psql
+   $ make psql
    NOTE: Password is 'postgres'.
    /usr/bin/docker compose run --rm db psql -h db -U postgres -d tecken
    Password for user postgres:
@@ -459,14 +462,14 @@ To lint all the code, do:
 
 .. code-block:: bash
 
-  $ make lint
+   $ make lint
 
 
 To reformat all the code, do:
 
 .. code-block:: bash
 
-  $ make lintfix
+   $ make lintfix
 
 
 HTML/CSS conventions
@@ -524,7 +527,7 @@ Then rebuild your docker environment:
 
 .. code-block:: shell
 
-  $ make build
+   $ make build
 
 If there are problems, it'll tell you.
 
@@ -575,7 +578,7 @@ To build the docs, do:
 
 .. code-block:: shell
 
-  $ make docs
+   $ make docs
 
 Then view ``docs/_build/html/index.html`` in your browser.
 
@@ -657,9 +660,6 @@ https://github.com/mozilla-services/tecken-loadtests/
 
 They're generally unmaintained, but can be a good starting point for a new load
 testing effort.
-
-
-
 
 
 How to do local Upload by Download URL
