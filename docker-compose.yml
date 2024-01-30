@@ -50,9 +50,22 @@ services:
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
 
+  # TODO(2024-01-30): This configuration can be simplified using `extends: test-ci` once the fix for
+  # https://github.com/docker/compose/issues/11413 is available in all relevant environments.
   test:
     extends:
-      service: test-ci
+      service: base
+    env_file:
+      - docker/config/local_dev.env
+      - docker/config/test.env
+    depends_on:
+      db: *condition_service_healthy
+      gcs-emulator: *condition_service_healthy
+      fakesentry: *condition_service_healthy
+      redis-cache: *condition_service_healthy
+      localstack: *condition_service_healthy
+      oidcprovider: *condition_service_healthy
+      statsd: *condition_service_healthy
     volumes:
       - $PWD:/app
 
