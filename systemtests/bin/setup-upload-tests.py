@@ -13,89 +13,15 @@ import os
 import shutil
 import tempfile
 from urllib.parse import urljoin
-import zipfile
 
 import click
-import requests
 
+from systemtests.utils import build_zip_file, download_sym_file, get_sym_files
 
 # Number of seconds to wait for a response from server
 CONNECTION_TIMEOUT = 600
 
 SYMBOLS_URL = "https://symbols.mozilla.org/"
-
-
-def get_sym_files(auth_token, url, start_page):
-    """Given an auth token, generates filenames and sizes for SYM files.
-
-    :param auth_token: auth token for symbols.mozilla.org
-    :param url: url for file uploads
-    :param start_page: the page of files to start with
-
-    :returns: generator of (key, size) typles
-
-    """
-    sym_files = []
-    page = start_page
-    params = {"page": start_page}
-    headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
-
-    while True:
-        if sym_files:
-            yield sym_files.pop(0)
-        else:
-            params["page"] = page
-            resp = requests.get(
-                url,
-                params=params,
-                headers=headers,
-                timeout=CONNECTION_TIMEOUT,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            sym_files = [(record["key"], record["size"]) for record in data["files"]]
-            page += 1
-
-
-def build_zip_file(zip_filename, sym_dir):
-    """Generates a ZIP file of contents of sym dir.
-
-    :param zip_filename: full path to zip file
-    :param sym_dir: full path to directory of SYM files
-
-    :returns: path to zip file
-
-    """
-    # Create zip file
-    with zipfile.ZipFile(zip_filename, mode="w") as fp:
-        for root, _, files in os.walk(sym_dir):
-            if not files:
-                continue
-
-            for sym_file in files:
-                full_path = os.path.join(root, sym_file)
-                arcname = full_path[len(sym_dir) + 1 :]
-
-                fp.write(
-                    full_path,
-                    arcname=arcname,
-                    compress_type=zipfile.ZIP_DEFLATED,
-                )
-
-
-def download_sym_file(url, sym_file):
-    """Download SYM file into sym_dir."""
-    headers = {"User-Agent": "tecken-systemtests"}
-    resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
-    if resp.status_code != 200:
-        return
-
-    dirname = os.path.dirname(sym_file)
-    if not os.path.exists(dirname):
-        os.makedirs(dirname)
-
-    with open(sym_file, "wb") as fp:
-        fp.write(resp.content)
 
 
 def get_size(filename):

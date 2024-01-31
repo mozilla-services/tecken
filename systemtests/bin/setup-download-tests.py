@@ -8,17 +8,13 @@
 #
 # Usage: ./bin/setup-download-tests.py [OPTIONS] --auth-token="${PROD_AUTH_TOKEN}" [OUTPUTDIR]
 
+import csv
 import datetime
-import os
-import shutil
-import tempfile
 from urllib.parse import urljoin
-import zipfile
 
 import click
-import requests
 
-import csv
+from systemtests.utils import build_zip_file, download_sym_file, get_sym_files
 
 
 # Number of seconds to wait for a response from server
@@ -32,38 +28,6 @@ SYM_FILENAMES_FOR_NEGATIVE_TESTS = [
     "libvlc.dll/3BDB3BCF29000/libvlc.dl_",
 ]
 REQUIRED_FILE_TYPES = ["try", "mac", "linux", "windows"]
-
-
-def get_sym_files(auth_token, url, start_page):
-    """Given an auth token, generates filenames and sizes for SYM files.
-
-    :param auth_token: auth token for symbols.mozilla.org
-    :param url: url for file uploads
-    :param start_page: the page of files to start with
-
-    :returns: generator of (key, size) typles
-
-    """
-    sym_files = []
-    page = start_page
-    params = {"page": start_page}
-    headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
-
-    while True:
-        if sym_files:
-            yield sym_files.pop(0)
-        else:
-            params["page"] = page
-            resp = requests.get(
-                url,
-                params=params,
-                headers=headers,
-                timeout=CONNECTION_TIMEOUT,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            sym_files = [(record["key"], record["size"]) for record in data["files"]]
-            page += 1
 
 
 def check_platform(sym_filename):
