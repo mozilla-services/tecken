@@ -55,8 +55,8 @@ run: .env .docker-build  ## | Run the web app and services.
 	# prevent dependencies from spamming stdout
 	${DC} up \
 		--attach web \
-    	--attach frontend \
-    	--attach fakesentry \
+		--attach frontend \
+		--attach fakesentry \
 		web frontend fakesentry
 
 .PHONY: devcontainerbuild
