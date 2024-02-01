@@ -51,16 +51,8 @@ setup: .env  ## | Initialize services.
 
 .PHONY: run
 run: .env .docker-build  ## | Run the web app and services.
-	# NOTE(willkg): We tag all the backing services with --no-attach here to
-	# prevent them from spamming stdout
 	${DC} up \
-		--no-attach db \
-		--no-attach statsd \
-		--no-attach gcs-emulator \
-		--no-attach redis-cache \
-		--no-attach localstack \
-		--no-attach oidcprovider \
-		--no-attach statsd \
+		--attach-dependencies=false \
 		web frontend fakesentry
 
 .PHONY: devcontainerbuild
