@@ -54,9 +54,9 @@ run: .env .docker-build  ## | Run the web app and services.
 	# NOTE(willkg): We tag all the services with --attach here to
 	# prevent dependencies from spamming stdout
 	${DC} up \
-    --attach web \
-    --attach frontend \
-    --attach fakesentry \
+		--attach web \
+    	--attach frontend \
+    	--attach fakesentry \
 		web frontend fakesentry
 
 .PHONY: devcontainerbuild
