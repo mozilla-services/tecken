@@ -1,9 +1,9 @@
-# File built: 2024-01-29
+# File built: 2024-02-05
 # Format: symfile,expected status code
 # NOTE: None of these should take over 1000ms to download.
-libxul.so/D0A1D086A0BA352AB01A1553D6701C560/libxul.so.sym,200
-libxul.so/D0A1D086A0BA352AB01A1553D6701C560/libxul.so.sym,200
-xul.pdb/3B2CE9048D97ACFC4C4C44205044422E1/xul.sym,200
-libmozglue.dylib/201ABD97FB143C988DAB7B3F70E8848C0/libmozglue.dylib.dSYM.tar.bz2,200
+libxul.so/A69F54C62DE0FB4EBEA29761E98592160/libxul.so.sym,200
+libxul.so/F85EFCFE4D4D27EC7069634FE930E0890/libxul.so.sym,200
+xul.pdb/18FC431703588ACC4C4C44205044422E1/xul.sym,200
+org.mozilla.updater/4C4C447555553144A1C31907B81801A70/org.mozilla.updater.dSYM.tar.bz2,200
 libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym,404
 libvlc.dll/3BDB3BCF29000/libvlc.dl_,404

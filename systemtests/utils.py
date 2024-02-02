@@ -73,16 +73,16 @@ def build_zip_file(zip_filename, sym_dir):
                 )
 
 
-def download_sym_file(url, sym_file):
-    """Download SYM file into sym_dir."""
+def download_sym_file(url, sym_file_path):
+    """Download SYM file at url into sym_file_path."""
     headers = {"User-Agent": "tecken-systemtests"}
     resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
     if resp.status_code != 200:
         return
 
-    dirname = os.path.dirname(sym_file)
+    dirname = os.path.dirname(sym_file_path)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
 
-    with open(sym_file, "wb") as fp:
+    with open(sym_file_path, "wb") as fp:
         fp.write(resp.content)

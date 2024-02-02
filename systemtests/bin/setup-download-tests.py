@@ -10,6 +10,8 @@
 
 import csv
 import datetime
+import os
+import tempfile
 from urllib.parse import urljoin
 
 import click
@@ -103,22 +105,45 @@ def iterate_through_symbols_files(
 
 def build_list_of_sym_filenames(
     sym_filename, file_type, is_try, sym_filenames, sym_file_type_to_filename
-):  # TODO: if file already exists and isn't expired, return
+):
+    """
+    Builds up a sym_file_type_to_filename map of the form:
+
+    {
+        try: {filename1},
+        linux: {filename2},
+        mac: {filename3},
+        windows: {filename4}
+    }
+
+    Where each filename occurs at most once as a value in the map, and the
+    only try file is filename1.
+    """
+    # TODO: if file already exists and isn't expired, return
     # TODO: We might want to have a .sym file in our list as well; since they're
     # the most common file type FWICT
+    # TODO: Do we need sym_filenames? Can we get rid of it in favor of using
+    # the Python equivalent of Object.keys(sym_file_type_to_filename)?
     if file_type is None:
         return
 
     # The same file could be both a try file and a platform file,
     # so check for both (try first).
-    if is_try and "try" not in sym_file_type_to_filename:
-        click.echo(
-            click.style(
-                f"Adding {sym_filename} to the list as file type: try ...", fg="green"
+    if is_try:
+        if "try" not in sym_file_type_to_filename:
+            click.echo(
+                click.style(
+                    f"Adding {sym_filename} to the list as file type: try ...",
+                    fg="green",
+                )
             )
-        )
-        sym_file_type_to_filename["try"] = sym_filename
-        sym_filenames.append(sym_filename)
+            sym_file_type_to_filename["try"] = sym_filename
+            sym_filenames.append(sym_filename)
+            return
+        # If we ensure any of our platform file types (mac, linux, windows) are from the
+        # regular bucket only, we can guarantee we get the download URL right based on
+        # the correct bucket downstream.
+        return
 
     if file_type in sym_file_type_to_filename:
         return
@@ -150,6 +175,7 @@ def write_list_of_sym_filenames_to_csv(
             )
         )
 
+    # TODO: Add what type of file it is to the CSV (i.e. try, mac, linux, windows, ...)
     click.echo(f"Writing SYM filenames to CSV in {outputdir} ...")
     csv_rows = []
     date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -179,12 +205,13 @@ def write_list_of_sym_filenames_to_csv(
     type=int,
     help="Page of SYM files to start with.",
 )
-@click.argument("outputdir")
+@click.argument("csv_output_path")
+@click.argument("zip_output_dir")
 @click.pass_context
-def setup_download_tests(ctx, auth_token, start_page, outputdir):
+def setup_download_tests(ctx, auth_token, start_page, csv_output_path, zip_output_dir):
     """
-    Writes a subset of the SYM files' filenames to a CSV.
-    This is used for the download symbols tests.
+    Generates a list of sym files, writes them to a CSV, and downloads
+    them to a zip folder. This is used for the download symbols tests.
 
     Note: This requires an auth token for symbols.mozilla.org to view files.
 
@@ -220,11 +247,44 @@ def setup_download_tests(ctx, auth_token, start_page, outputdir):
         end_condition_num_files,
     )
 
+    if not os.path.exists(zip_output_dir):
+        # Create the zip output directory if it doesn't exist
+        os.makedirs(zip_output_dir)
+
+    # Figure out the ZIP file name and final path
+    zip_filename = datetime.datetime.now().strftime("symbols_%Y%m%d_%H%M%S.zip")
+    zip_path = os.path.join(zip_output_dir, zip_filename)
+
+    # Download the list of sym files to a temporary directory and then zip them
+    # to the specified zip output directory
+    with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
+        sym_dir = os.path.join(tmpdirname, "syms")
+        for file_type, sym_filename in sym_file_type_to_filename.items():
+            url = urljoin(SYMBOLS_URL, sym_filename)
+            if file_type == "try":
+                url = url + "?try"
+            sym_file = os.path.join(sym_dir, sym_filename)
+            click.echo(
+                click.style(
+                    f"Downloading {sym_filename} to a temporary location before zipping ...",
+                    fg="green",
+                )
+            )
+            download_sym_file(url, sym_file)
+
+        click.echo(
+            click.style(
+                f"Adding {sym_filenames} to the zip file at {zip_path} ...",
+                fg="green",
+            )
+        )
+        build_zip_file(zip_path, sym_dir)
+
     write_list_of_sym_filenames_to_csv(
-        sym_filenames, sym_file_type_to_filename, outputdir
+        sym_filenames, sym_file_type_to_filename, csv_output_path
     )
 
-    click.echo(f"Created {outputdir} with list of SYM files for download tests.")
+    click.echo(f"Created {csv_output_path} with list of SYM files for download tests.")
 
 
 if __name__ == "__main__":
