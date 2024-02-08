@@ -39,6 +39,10 @@ markus.configure([{"class": StdoutMetrics}], raise_errors=True)
 METRICS = markus.get_metrics()
 
 
+def is_try(symbols_file):
+    return symbols_file.endswith("__try")
+
+
 @click.command()
 @click.option(
     "--base-url",
@@ -88,9 +92,12 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile, expect_code):
         try:
             with METRICS.timer("upload_time"):
                 with open(symbolsfile, "rb") as fp:
+                    files = {basename: fp}
+                    if is_try(symbolsfile):
+                        files["try"] = 1
                     resp = requests.post(
                         api_url,
-                        files={basename: fp},
+                        files=files,
                         headers=headers,
                         timeout=CONNECTION_TIMEOUT,
                     )

@@ -175,22 +175,72 @@ def write_list_of_sym_filenames_to_csv(
             )
         )
 
-    # TODO: Add what type of file it is to the CSV (i.e. try, mac, linux, windows, ...)
     click.echo(f"Writing SYM filenames to CSV in {outputdir} ...")
     csv_rows = []
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     csv_rows.append([f"# File built: {date}"])
-    csv_rows.append(["# Format: symfile", "expected status code"])
+    csv_rows.append(["# Format: symfile", "expected status code", "bucket", "platform"])
     csv_rows.append(["# NOTE: None of these should take over 1000ms to download."])
     # These are recent uploads, so they're 200.
-    for sym_filename in sym_filenames:
-        csv_rows.append([sym_filename, 200])
+    for file_type, sym_filename in sym_file_type_to_filename.items():
+        bucket = "regular"
+        platform = file_type
+        if file_type == "try":
+            bucket = file_type
+            platform = check_platform(sym_filename)
+        csv_rows.append([sym_filename, 200, bucket, platform])
     # These were from tecken-loadtests and have expired, so they're 404.
     for sym_filename in SYM_FILENAMES_FOR_NEGATIVE_TESTS:
-        csv_rows.append([sym_filename, 404])
+        csv_rows.append([sym_filename, 404, bucket, check_platform(sym_filename)])
     with open(f"{outputdir}", "w") as f:
         write = csv.writer(f)
         write.writerows(csv_rows)
+
+
+def download_and_zip_files(is_try, zip_path, subset_to_zip):
+    # download and zip the files for the given bucket
+    with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
+        sym_dir = os.path.join(tmpdirname, "syms")
+        for (
+            file_type,
+            sym_filename,
+        ) in subset_to_zip.items():
+            url = urljoin(SYMBOLS_URL, sym_filename)
+            if is_try and file_type == "try":
+                url = url + "?try"
+            sym_file = os.path.join(sym_dir, sym_filename)
+            click.echo(
+                click.style(
+                    f"Downloading {sym_filename} to a temporary location before zipping ...",
+                    fg="green",
+                )
+            )
+            download_sym_file(url, sym_file)
+
+        click.echo(
+            click.style(
+                f"Adding {sym_filename} to the zip file at {zip_path} ...",
+                fg="green",
+            )
+        )
+        build_zip_file(zip_path, sym_dir)
+
+
+def get_subset_to_zip(is_try, sym_file_type_to_filename):
+    """
+    From the overall set of sym files in the provided map, return a
+    subset of just the try files or just the regular files.
+    """
+    subset_to_zip = dict.copy(sym_file_type_to_filename)
+    if is_try:
+        # delete all but the try key-value pairs
+        keys_to_delete = [elem for elem in sym_file_type_to_filename if elem != "try"]
+        for key in keys_to_delete:
+            del subset_to_zip[key]
+    else:
+        # delete the try key-value pairs
+        del subset_to_zip["try"]
+    return subset_to_zip
 
 
 @click.command()
@@ -207,11 +257,11 @@ def write_list_of_sym_filenames_to_csv(
 )
 @click.argument("csv_output_path")
 @click.argument("zip_output_dir")
-@click.pass_context
-def setup_download_tests(ctx, auth_token, start_page, csv_output_path, zip_output_dir):
+def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir):
     """
     Generates a list of sym files, writes them to a CSV, and downloads
-    them to a zip folder. This is used for the download symbols tests.
+    them to two separate zip folders: one for try symbols files, and one for
+    regular symbols files. This is used for the download system tests.
 
     Note: This requires an auth token for symbols.mozilla.org to view files.
 
@@ -251,34 +301,25 @@ def setup_download_tests(ctx, auth_token, start_page, csv_output_path, zip_outpu
         # Create the zip output directory if it doesn't exist
         os.makedirs(zip_output_dir)
 
-    # Figure out the ZIP file name and final path
-    zip_filename = datetime.datetime.now().strftime("symbols_%Y%m%d_%H%M%S.zip")
-    zip_path = os.path.join(zip_output_dir, zip_filename)
+    # Figure out the ZIP file names and final path
+    # Try files go into a separate zip from regular files, so they
+    # can be uploaded to the correct bucket later as part of the
+    # upload system tests.
+    zip_filename_try = datetime.datetime.now().strftime(
+        "symbols_%Y%m%d_%H%M%S__try.zip"
+    )
+    zip_filename_regular = datetime.datetime.now().strftime(
+        "symbols_%Y%m%d_%H%M%S__regular.zip"
+    )
+    zip_path_try = os.path.join(zip_output_dir, zip_filename_try)
+    zip_path_regular = os.path.join(zip_output_dir, zip_filename_regular)
 
     # Download the list of sym files to a temporary directory and then zip them
-    # to the specified zip output directory
-    with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
-        sym_dir = os.path.join(tmpdirname, "syms")
-        for file_type, sym_filename in sym_file_type_to_filename.items():
-            url = urljoin(SYMBOLS_URL, sym_filename)
-            if file_type == "try":
-                url = url + "?try"
-            sym_file = os.path.join(sym_dir, sym_filename)
-            click.echo(
-                click.style(
-                    f"Downloading {sym_filename} to a temporary location before zipping ...",
-                    fg="green",
-                )
-            )
-            download_sym_file(url, sym_file)
-
-        click.echo(
-            click.style(
-                f"Adding {sym_filenames} to the zip file at {zip_path} ...",
-                fg="green",
-            )
-        )
-        build_zip_file(zip_path, sym_dir)
+    # to the specified zip output directory.
+    subset_to_zip_try = get_subset_to_zip(True, sym_file_type_to_filename)
+    subset_to_zip_regular = get_subset_to_zip(False, sym_file_type_to_filename)
+    download_and_zip_files(True, zip_path_try, subset_to_zip_try)
+    download_and_zip_files(False, zip_path_regular, subset_to_zip_regular)
 
     write_list_of_sym_filenames_to_csv(
         sym_filenames, sym_file_type_to_filename, csv_output_path

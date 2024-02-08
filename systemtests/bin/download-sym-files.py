@@ -67,8 +67,12 @@ def download_sym_files(base_url, csv_file):
         with METRICS.timer("download_time"):
             parts = line.split(",")
 
+            sym_filename, expected_status_code, bucket, _ = parts
+
             # Compute url
-            url = urljoin(base_url, parts[0])
+            url = urljoin(base_url, sym_filename)
+            if bucket == "try":
+                url = url + "?try"
             click.echo(click.style(f"Working on {url} ...", fg="yellow"))
 
             # Download the file
@@ -82,10 +86,10 @@ def download_sym_files(base_url, csv_file):
             click.echo(f">>> status code: {resp.status_code}")
 
             # Compare status code with expected status code
-            if resp.status_code != int(parts[1]):
+            if resp.status_code != int(expected_status_code):
                 click.echo(
                     click.style(
-                        f"FAIL: Status code: {resp.status_code} != {parts[1]}",
+                        f"FAIL: Status code: {resp.status_code} != {expected_status_code}",
                         fg="red",
                     )
                 )

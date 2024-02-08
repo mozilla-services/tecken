@@ -66,7 +66,9 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
 
     """
     # Figure out the ZIP file name and final path
-    zip_filename = datetime.datetime.now().strftime("symbols_%Y%m%d_%H%M%S.zip")
+    zip_filename = datetime.datetime.now().strftime(
+        "symbols_%Y%m%d_%H%M%S__regular.zip"
+    )
     zip_path = os.path.join(outputdir, zip_filename)
 
     click.echo(f"Generating ZIP file {zip_path} ...")

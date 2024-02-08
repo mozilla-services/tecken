@@ -24,7 +24,7 @@ echo "Generating systemtest data files ..."
 # # Generate some symbols ZIP files to upload
 # mkdir -p "${ZIPSDIR}" || true
 # ZIPSCOUNT=$(find "${ZIPSDIR}" -type f | wc -l)
-# if [ ${ZIPSCOUNT} -lt 2 ]; then
+# if [ ${ZIPSCOUNT} -lt 4 ]; then
 #     # TODO: Restore `--max-size` params of 10000000 and 50000000 before opening PR
 #     ./bin/setup-upload-tests.py --max-size=10000 --start-page=1 --auth-token="${PROD_AUTH_TOKEN}" "${ZIPSDIR}"
 #     ./bin/setup-upload-tests.py --max-size=10000 --start-page=10 --auth-token="${PROD_AUTH_TOKEN}" "${ZIPSDIR}"

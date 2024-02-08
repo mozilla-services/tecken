@@ -1,9 +1,9 @@
-# File built: 2024-02-05
-# Format: symfile,expected status code
+# File built: 2024-02-12
+# Format: symfile,expected status code,bucket,platform
 # NOTE: None of these should take over 1000ms to download.
-libxul.so/A69F54C62DE0FB4EBEA29761E98592160/libxul.so.sym,200
-libxul.so/F85EFCFE4D4D27EC7069634FE930E0890/libxul.so.sym,200
-xul.pdb/18FC431703588ACC4C4C44205044422E1/xul.sym,200
-org.mozilla.updater/4C4C447555553144A1C31907B81801A70/org.mozilla.updater.dSYM.tar.bz2,200
-libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym,404
-libvlc.dll/3BDB3BCF29000/libvlc.dl_,404
+xul.pdb/28F60751BB9DF4244C4C44205044422E1/xul.sym,200,try,windows
+libxul.so/C7E12057DB7CA4540993EE6F69BC7A400/libxul.so.sym,200,regular,linux
+windows.ui.xaml.pdb/65EEFEFEA0C9EF9D8932F03E6A068B731/windows.ui.xaml.sym,200,regular,windows
+pk12util/C8EB20B1EE4B30118EEFA08994C28D310/pk12util.dSYM.tar.bz2,200,regular,mac
+libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym,404,regular,linux
+libvlc.dll/3BDB3BCF29000/libvlc.dl_,404,regular,windows
