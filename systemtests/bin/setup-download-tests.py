@@ -6,7 +6,7 @@
 
 # Generate a list of sym files as a CSV for testing downloads.
 #
-# Usage: ./bin/setup-download-tests.py [OPTIONS] --auth-token="${PROD_AUTH_TOKEN}" [OUTPUTDIR]
+# Usage: ./bin/setup-download-tests.py [OPTIONS] --auth-token="${PROD_AUTH_TOKEN}" [CSV_OUTPUT_PATH] [ZIP_OUTPUT_DIR]
 
 import csv
 import datetime
@@ -29,13 +29,12 @@ SYM_FILENAMES_FOR_NEGATIVE_TESTS = [
     "libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym",
     "libvlc.dll/3BDB3BCF29000/libvlc.dl_",
 ]
-REQUIRED_FILE_TYPES = ["try", "mac", "linux", "windows"]
+REQUIRED_FILE_TYPES = ["try", "mac", "linux", "windows", "unknown"]
 
 
 def check_platform(sym_filename):
     sym_filename_lowercase = sym_filename.lower()
 
-    # TODO: Are these right?
     # Reference: https://wiki.mozilla.org/Breakpad:Symbols#How_symbols_get_to_the_symbol_server
     def is_mac():
         return ".dsym" in sym_filename_lowercase
@@ -57,14 +56,13 @@ def check_platform(sym_filename):
     if is_windows():
         return "windows"
     else:
-        return None
+        return "unknown"
 
 
 def iterate_through_symbols_files(
     auth_token,
     sym_files_url,
     start_page,
-    sym_filenames,
     sym_file_type_to_filename,
     end_condition_num_files,
 ):
@@ -76,13 +74,6 @@ def iterate_through_symbols_files(
 
         is_try = False
 
-        click.echo(
-            click.style(
-                f"Checking {sym_filename} to see if it should be added to the list of sym files...",
-                fg="yellow",
-            )
-        )
-
         if sym_filename.startswith("try/"):
             sym_filename = sym_filename[4:]
             is_try = True
@@ -90,21 +81,20 @@ def iterate_through_symbols_files(
         if sym_filename.startswith("v1/"):
             sym_filename = sym_filename[3:]
 
-        file_type = check_platform(sym_filename)
+        platform = check_platform(sym_filename)
         build_list_of_sym_filenames(
             sym_filename,
-            file_type,
+            platform,
             is_try,
-            sym_filenames,
             sym_file_type_to_filename,
         )
 
-        if len(sym_filenames) >= end_condition_num_files:
+        if len(list(sym_file_type_to_filename.values())) >= end_condition_num_files:
             break
 
 
 def build_list_of_sym_filenames(
-    sym_filename, file_type, is_try, sym_filenames, sym_file_type_to_filename
+    sym_filename, platform, is_try, sym_file_type_to_filename
 ):
     """
     Builds up a sym_file_type_to_filename map of the form:
@@ -113,18 +103,14 @@ def build_list_of_sym_filenames(
         try: {filename1},
         linux: {filename2},
         mac: {filename3},
-        windows: {filename4}
+        windows: {filename4},
+        unknown: {filename5}
     }
 
     Where each filename occurs at most once as a value in the map, and the
     only try file is filename1.
     """
-    # TODO: if file already exists and isn't expired, return
-    # TODO: We might want to have a .sym file in our list as well; since they're
-    # the most common file type FWICT
-    # TODO: Do we need sym_filenames? Can we get rid of it in favor of using
-    # the Python equivalent of Object.keys(sym_file_type_to_filename)?
-    if file_type is None:
+    if platform == "unknown" and "unknown" in sym_file_type_to_filename:
         return
 
     # The same file could be both a try file and a platform file,
@@ -132,47 +118,31 @@ def build_list_of_sym_filenames(
     if is_try:
         if "try" not in sym_file_type_to_filename:
             click.echo(
-                click.style(
-                    f"Adding {sym_filename} to the list as file type: try ...",
-                    fg="green",
-                )
+                f"Adding {sym_filename} to the list as bucket: try, platform: {platform} ...",
             )
             sym_file_type_to_filename["try"] = sym_filename
-            sym_filenames.append(sym_filename)
             return
         # If we ensure any of our platform file types (mac, linux, windows) are from the
         # regular bucket only, we can guarantee we get the download URL right based on
         # the correct bucket downstream.
         return
 
-    if file_type in sym_file_type_to_filename:
+    if platform in sym_file_type_to_filename:
         return
 
     click.echo(
-        click.style(
-            f"Adding {sym_filename} to the list as file type: {file_type} ...",
-            fg="green",
-        )
+        f"Adding {sym_filename} to the list as bucket: regular, platform: {platform} ..."
     )
-    sym_file_type_to_filename[file_type] = sym_filename
-    sym_filenames.append(sym_filename)
+    sym_file_type_to_filename[platform] = sym_filename
 
 
-def write_list_of_sym_filenames_to_csv(
-    sym_filenames, sym_file_type_to_filename, outputdir
-):
-    # TODO: if file already exists and isn't expired, return
-    # TODO: Make the comments as similar to the original hardcoded CSV as possible
-    # Check if we're missing any file types
+def write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, outputdir):
     file_types = list(sym_file_type_to_filename.keys())
     file_types.sort()
     REQUIRED_FILE_TYPES.sort()
     if file_types != REQUIRED_FILE_TYPES:
-        click.echo(
-            click.style(
-                f"Missing file types for download test ... Needed: {REQUIRED_FILE_TYPES} Have: {file_types}",
-                fg="red",
-            )
+        raise KeyError(
+            f"Missing file types for download test ... Needed: {REQUIRED_FILE_TYPES} Have: {file_types}."
         )
 
     click.echo(f"Writing SYM filenames to CSV in {outputdir} ...")
@@ -180,8 +150,9 @@ def write_list_of_sym_filenames_to_csv(
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     csv_rows.append([f"# File built: {date}"])
     csv_rows.append(["# Format: symfile", "expected status code", "bucket", "platform"])
-    csv_rows.append(["# NOTE: None of these should take over 1000ms to download."])
-    # These are recent uploads, so they're 200.
+    csv_rows.append(["@ECHO NOTE: None of these should take over 1000ms to download."])
+    csv_rows.append(["@ECHO"])
+    csv_rows.append(["# These are recent uploads", " so they're 200s."])
     for file_type, sym_filename in sym_file_type_to_filename.items():
         bucket = "regular"
         platform = file_type
@@ -189,7 +160,9 @@ def write_list_of_sym_filenames_to_csv(
             bucket = file_type
             platform = check_platform(sym_filename)
         csv_rows.append([sym_filename, 200, bucket, platform])
-    # These were from tecken-loadtests and have expired, so they're 404.
+    csv_rows.append(
+        ["# These were from tecken-loadtests and have expired", " so they're 404."]
+    )
     for sym_filename in SYM_FILENAMES_FOR_NEGATIVE_TESTS:
         csv_rows.append([sym_filename, 404, bucket, check_platform(sym_filename)])
     with open(f"{outputdir}", "w") as f:
@@ -198,7 +171,6 @@ def write_list_of_sym_filenames_to_csv(
 
 
 def download_and_zip_files(is_try, zip_path, subset_to_zip):
-    # download and zip the files for the given bucket
     with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
         sym_dir = os.path.join(tmpdirname, "syms")
         for (
@@ -210,18 +182,12 @@ def download_and_zip_files(is_try, zip_path, subset_to_zip):
                 url = url + "?try"
             sym_file = os.path.join(sym_dir, sym_filename)
             click.echo(
-                click.style(
-                    f"Downloading {sym_filename} to a temporary location before zipping ...",
-                    fg="green",
-                )
+                f"Downloading {sym_filename} to a temporary location before zipping ...",
             )
             download_sym_file(url, sym_file)
 
         click.echo(
-            click.style(
-                f"Adding {sym_filename} to the zip file at {zip_path} ...",
-                fg="green",
-            )
+            f"Zipping {list(subset_to_zip.values())} to {zip_path} ...",
         )
         build_zip_file(zip_path, sym_dir)
 
@@ -266,8 +232,6 @@ def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir
     Note: This requires an auth token for symbols.mozilla.org to view files.
 
     """
-    sym_filenames = []
-
     # We want at least one SYM file from the /try bucket and one from each platform,
     # so initialize a map to keep track of what file types we have
     sym_file_type_to_filename = {}
@@ -280,7 +244,6 @@ def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir
         auth_token,
         sym_files_url,
         start_page,
-        sym_filenames,
         sym_file_type_to_filename,
         end_condition_num_files,
     )
@@ -292,7 +255,6 @@ def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir
         auth_token,
         sym_files_url,
         start_page,
-        sym_filenames,
         sym_file_type_to_filename,
         end_condition_num_files,
     )
@@ -319,13 +281,27 @@ def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir
     subset_to_zip_try = get_subset_to_zip(True, sym_file_type_to_filename)
     subset_to_zip_regular = get_subset_to_zip(False, sym_file_type_to_filename)
     download_and_zip_files(True, zip_path_try, subset_to_zip_try)
+    click.echo(
+        click.style(
+            f"Zipped {subset_to_zip_try} to {zip_path_try} ...",
+            fg="yellow",
+        )
+    )
     download_and_zip_files(False, zip_path_regular, subset_to_zip_regular)
-
-    write_list_of_sym_filenames_to_csv(
-        sym_filenames, sym_file_type_to_filename, csv_output_path
+    click.echo(
+        click.style(
+            f"Zipped {subset_to_zip_regular} to {zip_path_regular} ...",
+            fg="yellow",
+        )
     )
 
-    click.echo(f"Created {csv_output_path} with list of SYM files for download tests.")
+    write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, csv_output_path)
+    click.echo(
+        click.style(
+            f"Created {csv_output_path} with list of SYM files for download tests.",
+            fg="yellow",
+        )
+    )
 
 
 if __name__ == "__main__":

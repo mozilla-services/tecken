@@ -1,9 +1,13 @@
 # File built: 2024-02-12
 # Format: symfile,expected status code,bucket,platform
-# NOTE: None of these should take over 1000ms to download.
+@ECHO NOTE: None of these should take over 1000ms to download.
+@ECHO
+# These are recent uploads, so they're 200s.
 xul.pdb/28F60751BB9DF4244C4C44205044422E1/xul.sym,200,try,windows
-libxul.so/C7E12057DB7CA4540993EE6F69BC7A400/libxul.so.sym,200,regular,linux
-windows.ui.xaml.pdb/65EEFEFEA0C9EF9D8932F03E6A068B731/windows.ui.xaml.sym,200,regular,windows
-pk12util/C8EB20B1EE4B30118EEFA08994C28D310/pk12util.dSYM.tar.bz2,200,regular,mac
+xul.pdb/BC5790BA5B9D79244C4C44205044422E1/xul.pd_,200,regular,windows
+libxul.so/A27C44C44E990794E21659A55F1435990/libxul.so.dbg.gz,200,regular,linux
+js/87A25076ECA4852136A59A4BCD644B170/js.sym,200,regular,unknown
+minidump-analyzer/0BD224DF944C352B969AE86F5EB306AD0/minidump-analyzer.dSYM.tar.bz2,200,regular,mac
+# These were from tecken-loadtests and have expired, so they're 404.
 libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym,404,regular,linux
 libvlc.dll/3BDB3BCF29000/libvlc.dl_,404,regular,windows
