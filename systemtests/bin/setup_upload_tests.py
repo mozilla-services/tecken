@@ -57,8 +57,7 @@ def get_size(filename):
     help="Max size in bytes resulting ZIP file can't exceed.",
 )
 @click.argument("outputdir")
-@click.pass_context
-def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
+def setup_upload_tests(max_size, start_page, auth_token, outputdir):
     """
     Builds a zip file of SYM files recently uploaded to symbols.mozilla.org.
 
@@ -125,4 +124,4 @@ def make_symbols_zip(ctx, auth_token, start_page, max_size, outputdir):
 
 
 if __name__ == "__main__":
-    make_symbols_zip()
+    setup_upload_tests()

@@ -4,7 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# Generate a list of sym files as a CSV for testing downloads.
+# Generate a list of sym files as a CSV for testing downloads,
+# downloading and zipping them as two zip files (one for the try bucket
+# and one for the regular bucket) to a local directory.
 #
 # Usage: ./bin/setup-download-tests.py [OPTIONS] --auth-token="${PROD_AUTH_TOKEN}" [CSV_OUTPUT_PATH] [ZIP_OUTPUT_DIR]
 
@@ -223,7 +225,7 @@ def get_subset_to_zip(is_try, sym_file_type_to_filename):
 )
 @click.argument("csv_output_path")
 @click.argument("zip_output_dir")
-def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir):
+def setup_download_tests(start_page, auth_token, csv_output_path, zip_output_dir):
     """
     Generates a list of sym files, writes them to a CSV, and downloads
     them to two separate zip folders: one for try symbols files, and one for
@@ -258,10 +260,6 @@ def setup_download_tests(auth_token, start_page, csv_output_path, zip_output_dir
         sym_file_type_to_filename,
         end_condition_num_files,
     )
-
-    if not os.path.exists(zip_output_dir):
-        # Create the zip output directory if it doesn't exist
-        os.makedirs(zip_output_dir)
 
     # Figure out the ZIP file names and final path
     # Try files go into a separate zip from regular files, so they
