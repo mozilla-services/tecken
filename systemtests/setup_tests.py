@@ -23,7 +23,11 @@ if not os.path.exists(ZIPS_DIR):
 print("Generating systemtest data files ...")
 try:
     zips_count = len(
-        [name for name in os.listdir(f"{ZIPS_DIR}") if os.path.isfile(name)]
+        [
+            name
+            for name in os.listdir(f"{ZIPS_DIR}")
+            if os.path.isfile(f"{ZIPS_DIR}/{name}")
+        ]
     )
     if zips_count < 4:
         # Generate some symbols ZIP files to upload, and a CSV

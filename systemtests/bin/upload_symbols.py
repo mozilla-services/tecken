@@ -63,7 +63,7 @@ def is_try(symbols_file):
 )
 @click.argument("symbolsfile")
 @click.pass_context
-def upload_symbols(ctx, base_url, auth_token, symbolsfile, expect_code):
+def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
     """Upload SYM file to a host."""
 
     if not os.path.exists(symbolsfile):
