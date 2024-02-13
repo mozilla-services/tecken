@@ -18,9 +18,11 @@ Set up the tests this way::
 
     $ make shell
     root@e62fb7ae586f:/app# cd systemtests
-    root@e62fb7ae586f:/app/systemtests# ./setup_tests.sh
+    root@e62fb7ae586f:/app/systemtests# ./setup_tests.py
 
 That creates files in directories under ``data/``.
+
+You only need to set up the tests once to run the system tests against all environments.
 
 
 Running tests
@@ -38,7 +40,7 @@ To run the systemtests, do::
 
    $ make shell
    root@f09b3cdf8570:/app# cd systemtests/
-   root@e62fb7ae586f:/app/systemtests# ./test_env.sh ENVIRONMENT
+   root@e62fb7ae586f:/app/systemtests# ./test_env.py ENVIRONMENT
 
 where ``ENVIRONMENT`` is one of the following:
 
