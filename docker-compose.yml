@@ -143,10 +143,11 @@ services:
     build:
       context: docker/images/gcs-emulator
     image: local/tecken_gcs_emulator
+    command: -port 8001 -scheme http
     ports:
-      - "${EXPOSE_GCS_EMULATOR_PORT:-4443}:4443"
+      - "${EXPOSE_GCS_EMULATOR_PORT:-8001}:8001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "--insecure", "https://localhost:4443/storage/v1/b"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/storage/v1/b"]
       interval: 1s
       timeout: 3s
       retries: 5
