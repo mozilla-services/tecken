@@ -11,25 +11,19 @@
 import os
 
 import click
-import requests
-import urllib3
 
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
-base_url = os.environ["STORAGE_EMULATOR_HOST"]
+
+def get_endpoint_url(bucket_name):
+    base_url = os.environ["STORAGE_EMULATOR_HOST"]
+    return f"{base_url}/storage/v1/b/{bucket_name}"
 
 
 def get_client():
-    # Create a session that is OK talking over insecure HTTPS
-    weak_https = requests.Session()
-    weak_https.verify = False
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-    return storage.Client(
-        credentials=AnonymousCredentials(), project="test", _http=weak_https
-    )
+    return storage.Client(credentials=AnonymousCredentials(), project="test")
 
 
 @click.group()
@@ -42,11 +36,11 @@ def gcs_group():
 def create_bucket(bucket_name):
     """Creates a bucket
 
-    Specify BUCKET name.
+    Specify BUCKET_NAME.
 
     """
     # https://github.com/fsouza/fake-gcs-server/blob/0c31d1573c14912fc58ae68118f9c9ece266756a/README.md?plain=1#L47
-    endpoint_url = f"{base_url}/storage/v1/b/{bucket_name}"
+    endpoint_url = get_endpoint_url(bucket_name)
 
     client = get_client()
 
@@ -63,11 +57,11 @@ def create_bucket(bucket_name):
 def delete_bucket(bucket_name):
     """Deletes a bucket
 
-    Specify BUCKET name.
+    Specify BUCKET_NAME.
 
     """
     # https://github.com/fsouza/fake-gcs-server/blob/0c31d1573c14912fc58ae68118f9c9ece266756a/README.md?plain=1#L47
-    endpoint_url = f"{base_url}/storage/v1/b/{bucket_name}"
+    endpoint_url = get_endpoint_url(bucket_name)
 
     client = get_client()
 
