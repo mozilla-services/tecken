@@ -16,7 +16,7 @@ from urllib.parse import urljoin
 
 import click
 
-from systemtests.utils import build_zip_file, download_sym_file, get_sym_files
+from systemtestslib.utils import build_zip_file, download_sym_file, get_sym_files
 
 # Number of seconds to wait for a response from server
 CONNECTION_TIMEOUT = 600

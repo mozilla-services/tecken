@@ -67,7 +67,7 @@ def download_sym_files(base_url, csv_file):
         with METRICS.timer("download_time"):
             parts = line.split(",")
 
-            sym_filename, expected_status_code, bucket, _ = parts
+            sym_filename, expected_status_code, bucket = parts
 
             # Compute url
             url = urljoin(base_url, sym_filename)
@@ -93,6 +93,8 @@ def download_sym_files(base_url, csv_file):
                         fg="red",
                     )
                 )
+            else:
+                click.echo(click.style("Success!", fg="green"))
 
 
 if __name__ == "__main__":

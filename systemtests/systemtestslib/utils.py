@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -78,6 +76,7 @@ def download_sym_file(url, sym_file_path):
     headers = {"User-Agent": "tecken-systemtests"}
     resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
     if resp.status_code != 200:
+        # FIXME: Retry request and Response.raise_for_status
         return
 
     dirname = os.path.dirname(sym_file_path)

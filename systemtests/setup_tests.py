@@ -6,6 +6,8 @@
 
 import os
 
+import click
+
 from systemtests.bin.setup_download_tests import setup_download_tests
 from systemtests.bin.setup_upload_tests import setup_upload_tests
 
@@ -16,60 +18,54 @@ from systemtests.bin.setup_upload_tests import setup_upload_tests
 ZIPS_DIR = "./data/zip-files/"
 PROD_AUTH_TOKEN = os.environ["PROD_AUTH_TOKEN"]
 
-if not os.path.exists(ZIPS_DIR):
-    # Create the zip output directory if it doesn't exist
-    os.makedirs(ZIPS_DIR)
 
-print("Generating systemtest data files ...")
-try:
-    zips_count = len(
-        [
-            name
-            for name in os.listdir(f"{ZIPS_DIR}")
-            if os.path.isfile(f"{ZIPS_DIR}/{name}")
-        ]
-    )
-    if zips_count < 4:
-        # Generate some symbols ZIP files to upload, and a CSV
-        # of those symbols files to download
-        setup_download_tests(
-            [
-                "--start-page",
-                1,
-                "--auth-token",
-                f"{PROD_AUTH_TOKEN}",
-                "./data/sym_files_to_download.csv",
-                f"{ZIPS_DIR}",
-            ],
-            standalone_mode=False,
-        )
+@click.command()
+@click.pass_context
+def setup_tests(ctx):
+    if not os.path.exists(ZIPS_DIR):
+        # Create the zip output directory if it doesn't exist
+        os.makedirs(ZIPS_DIR)
 
-        # Generate some symbols ZIP files to upload
-        setup_upload_tests(
+    print("Generating systemtest data files ...")
+    try:
+        zips_count = len(
             [
-                "--max-size",
-                10000000,
-                "--start-page",
-                1,
-                "--auth-token",
-                f"{PROD_AUTH_TOKEN}",
-                f"{ZIPS_DIR}",
-            ],
-            standalone_mode=False,
+                name
+                for name in os.listdir(f"{ZIPS_DIR}")
+                if os.path.isfile(f"{ZIPS_DIR}/{name}")
+            ]
         )
-        setup_upload_tests(
-            [
-                "--max-size",
-                50000000,
-                "--start-page",
-                10,
-                "--auth-token",
-                f"{PROD_AUTH_TOKEN}",
-                f"{ZIPS_DIR}",
-            ],
-            standalone_mode=False,
-        )
-    else:
-        print(f"Already have ${zips_count} zip files.")
-except Exception as exc:
-    print(f"Unexpected error: {exc}")
+        if zips_count < 4:
+            # Generate some symbols ZIP files to upload, and a CSV
+            # of those symbols files to download
+            ctx.invoke(
+                setup_download_tests,
+                start_page=1,
+                auth_token=f"{PROD_AUTH_TOKEN}",
+                csv_output_path="./data/sym_files_to_download.csv",
+                zip_output_dir=f"{ZIPS_DIR}",
+            )
+
+            # Generate some symbols ZIP files to upload
+            ctx.invoke(
+                setup_upload_tests,
+                max_size=10000000,
+                start_page=1,
+                auth_token=f"{PROD_AUTH_TOKEN}",
+                outputdir=f"{ZIPS_DIR}",
+            )
+            ctx.invoke(
+                setup_upload_tests,
+                max_size=50000000,
+                start_page=10,
+                auth_token=f"{PROD_AUTH_TOKEN}",
+                outputdir=f"{ZIPS_DIR}",
+            )
+        else:
+            print(f"Already have ${zips_count} zip files.")
+    except Exception as exc:
+        print(f"Unexpected error: {exc}")
+
+
+if __name__ == "__main__":
+    setup_tests()

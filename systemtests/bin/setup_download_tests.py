@@ -8,7 +8,7 @@
 # downloading and zipping them as two zip files (one for the try bucket
 # and one for the regular bucket) to a local directory.
 #
-# Usage: ./bin/setup-download-tests.py [OPTIONS] --auth-token="${PROD_AUTH_TOKEN}" [CSV_OUTPUT_PATH] [ZIP_OUTPUT_DIR]
+# Usage: ./bin/setup_download_tests.py [OPTIONS] --auth-token=[AUTH_TOKEN] [CSV_OUTPUT_PATH] [ZIP_OUTPUT_DIR]
 
 import csv
 import datetime
@@ -18,7 +18,7 @@ from urllib.parse import urljoin
 
 import click
 
-from systemtests.utils import build_zip_file, download_sym_file, get_sym_files
+from systemtestslib.utils import build_zip_file, download_sym_file, get_sym_files
 
 
 # Number of seconds to wait for a response from server
@@ -31,34 +31,8 @@ SYM_FILENAMES_FOR_NEGATIVE_TESTS = [
     "libEGL.so/8787CB75CD6E976D87477CA9AC1EB98D0/libEGL.so.sym",
     "libvlc.dll/3BDB3BCF29000/libvlc.dl_",
 ]
-REQUIRED_FILE_TYPES = ["try", "mac", "linux", "windows", "unknown"]
 
-
-def check_platform(sym_filename):
-    sym_filename_lowercase = sym_filename.lower()
-
-    # Reference: https://wiki.mozilla.org/Breakpad:Symbols#How_symbols_get_to_the_symbol_server
-    def is_mac():
-        return ".dsym" in sym_filename_lowercase
-
-    def is_linux():
-        return ".dbg" in sym_filename_lowercase or ".so" in sym_filename_lowercase
-
-    def is_windows():
-        return (
-            ".pdb" in sym_filename_lowercase
-            or ".exe" in sym_filename_lowercase
-            or ".dll" in sym_filename_lowercase
-        )
-
-    if is_mac():
-        return "mac"
-    if is_linux():
-        return "linux"
-    if is_windows():
-        return "windows"
-    else:
-        return "unknown"
+REQUIRED_FILE_TYPES = ["try", "regular"]
 
 
 def iterate_through_symbols_files(
@@ -74,6 +48,10 @@ def iterate_through_symbols_files(
             # Skip these because there aren't SYM files for them.
             continue
 
+        if not sym_filename.endswith(".sym"):
+            # We only test for sym files currently
+            continue
+
         is_try = False
 
         if sym_filename.startswith("try/"):
@@ -83,10 +61,8 @@ def iterate_through_symbols_files(
         if sym_filename.startswith("v1/"):
             sym_filename = sym_filename[3:]
 
-        platform = check_platform(sym_filename)
         build_list_of_sym_filenames(
             sym_filename,
-            platform,
             is_try,
             sym_file_type_to_filename,
         )
@@ -95,32 +71,23 @@ def iterate_through_symbols_files(
             break
 
 
-def build_list_of_sym_filenames(
-    sym_filename, platform, is_try, sym_file_type_to_filename
-):
+def build_list_of_sym_filenames(sym_filename, is_try, sym_file_type_to_filename):
     """
     Builds up a sym_file_type_to_filename map of the form:
 
     {
         try: {filename1},
-        linux: {filename2},
-        mac: {filename3},
-        windows: {filename4},
-        unknown: {filename5}
+        regular: {filename2}
     }
 
-    Where each filename occurs at most once as a value in the map, and the
-    only try file is filename1.
+    Where each filename occurs at most once as a value in the map.
     """
-    if platform == "unknown" and "unknown" in sym_file_type_to_filename:
-        return
-
     # The same file could be both a try file and a platform file,
     # so check for both (try first).
     if is_try:
         if "try" not in sym_file_type_to_filename:
             click.echo(
-                f"Adding {sym_filename} to the list as bucket: try, platform: {platform} ...",
+                f"Adding {sym_filename} to the list as bucket: try ...",
             )
             sym_file_type_to_filename["try"] = sym_filename
             return
@@ -129,13 +96,11 @@ def build_list_of_sym_filenames(
         # the correct bucket downstream.
         return
 
-    if platform in sym_file_type_to_filename:
+    if "regular" in sym_file_type_to_filename:
         return
 
-    click.echo(
-        f"Adding {sym_filename} to the list as bucket: regular, platform: {platform} ..."
-    )
-    sym_file_type_to_filename[platform] = sym_filename
+    click.echo(f"Adding {sym_filename} to the list as bucket: regular ...")
+    sym_file_type_to_filename["regular"] = sym_filename
 
 
 def write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, outputdir):
@@ -143,7 +108,7 @@ def write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, outputdir):
     file_types.sort()
     REQUIRED_FILE_TYPES.sort()
     if file_types != REQUIRED_FILE_TYPES:
-        raise KeyError(
+        raise ValueError(
             f"Missing file types for download test ... Needed: {REQUIRED_FILE_TYPES} Have: {file_types}."
         )
 
@@ -151,28 +116,31 @@ def write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, outputdir):
     csv_rows = []
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     csv_rows.append([f"# File built: {date}"])
-    csv_rows.append(["# Format: symfile", "expected status code", "bucket", "platform"])
+    csv_rows.append(["# Format: symfile", "expected status code", "bucket"])
     csv_rows.append(["@ECHO NOTE: None of these should take over 1000ms to download."])
     csv_rows.append(["@ECHO"])
-    csv_rows.append(["# These are recent uploads", " so they're 200s."])
+    csv_rows.append(["# These are recent uploads, so they're 200s."])
     for file_type, sym_filename in sym_file_type_to_filename.items():
         bucket = "regular"
-        platform = file_type
         if file_type == "try":
             bucket = file_type
-            platform = check_platform(sym_filename)
-        csv_rows.append([sym_filename, 200, bucket, platform])
+        csv_rows.append([sym_filename, 200, bucket])
     csv_rows.append(
-        ["# These were from tecken-loadtests and have expired", " so they're 404."]
+        ["# These were from tecken-loadtests and have expired, so they're 404."]
     )
     for sym_filename in SYM_FILENAMES_FOR_NEGATIVE_TESTS:
-        csv_rows.append([sym_filename, 404, bucket, check_platform(sym_filename)])
-    with open(f"{outputdir}", "w") as f:
-        write = csv.writer(f)
-        write.writerows(csv_rows)
+        csv_rows.append([sym_filename, 404, bucket])
+
+    with open(f"{outputdir}", "w", newline="") as fp:
+        writer = csv.writer(fp, lineterminator="\n")
+        for row in csv_rows:
+            if row[0].startswith(("#", "@")):
+                fp.write(f"{row[0]}\n")
+            else:
+                writer.writerow(row)
 
 
-def download_and_zip_files(is_try, zip_path, subset_to_zip):
+def download_and_zip_files(zip_path, subset_to_zip):
     with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
         sym_dir = os.path.join(tmpdirname, "syms")
         for (
@@ -180,7 +148,7 @@ def download_and_zip_files(is_try, zip_path, subset_to_zip):
             sym_filename,
         ) in subset_to_zip.items():
             url = urljoin(SYMBOLS_URL, sym_filename)
-            if is_try and file_type == "try":
+            if file_type == "try":
                 url = url + "?try"
             sym_file = os.path.join(sym_dir, sym_filename)
             click.echo(
@@ -278,14 +246,14 @@ def setup_download_tests(start_page, auth_token, csv_output_path, zip_output_dir
     # to the specified zip output directory.
     subset_to_zip_try = get_subset_to_zip(True, sym_file_type_to_filename)
     subset_to_zip_regular = get_subset_to_zip(False, sym_file_type_to_filename)
-    download_and_zip_files(True, zip_path_try, subset_to_zip_try)
+    download_and_zip_files(zip_path_try, subset_to_zip_try)
     click.echo(
         click.style(
             f"Zipped {subset_to_zip_try} to {zip_path_try} ...",
             fg="yellow",
         )
     )
-    download_and_zip_files(False, zip_path_regular, subset_to_zip_regular)
+    download_and_zip_files(zip_path_regular, subset_to_zip_regular)
     click.echo(
         click.style(
             f"Zipped {subset_to_zip_regular} to {zip_path_regular} ...",
