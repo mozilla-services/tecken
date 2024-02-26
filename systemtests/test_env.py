@@ -45,29 +45,26 @@ def test_env(ctx, env):
     tecken_host = ""
     auth_token = ""
 
-    try:
-        if env == "local":
-            destructive_tests = 1
-            bad_token_test = 1
-            tecken_host = "http://web:8000/"
-            auth_token = os.environ["LOCAL_AUTH_TOKEN"]
-        elif env == "stage":
-            destructive_tests = 1
-            bad_token_test = 1
-            tecken_host = "https://symbols.stage.mozaws.net/"
-            auth_token = os.environ["STAGE_AUTH_TOKEN"]
-        elif env == "prod":
-            click.echo(
-                click.style(
-                    "Running tests in prod--skipping destructive tests!", fg="yellow"
-                )
+    if env == "local":
+        destructive_tests = 1
+        bad_token_test = 1
+        tecken_host = "http://web:8000/"
+        auth_token = os.environ["LOCAL_AUTH_TOKEN"]
+    elif env == "stage":
+        destructive_tests = 1
+        bad_token_test = 1
+        tecken_host = "https://symbols.stage.mozaws.net/"
+        auth_token = os.environ["STAGE_AUTH_TOKEN"]
+    elif env == "prod":
+        click.echo(
+            click.style(
+                "Running tests in prod--skipping destructive tests!", fg="yellow"
             )
-            tecken_host = "https://symbols.mozilla.org/"
-            auth_token = os.environ["PROD_AUTH_TOKEN"]
-        else:
-            raise click.UsageError("ENV must be one of 'local', 'stage', or 'prod'.")
-    except KeyError:
-        raise click.UsageError(f"Token for {env} is not set.") from KeyError
+        )
+        tecken_host = "https://symbols.mozilla.org/"
+        auth_token = os.environ["PROD_AUTH_TOKEN"]
+    else:
+        raise click.UsageError("ENV must be one of 'local', 'stage', or 'prod'.")
 
     click.echo(click.style(f"tecken_host: {tecken_host}\n", fg="yellow"))
 
