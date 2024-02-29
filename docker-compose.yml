@@ -72,7 +72,7 @@ services:
   # Dev container https://containers.dev/, e.g. for VS Code
   devcontainer:
     extends:
-      service: test
+      service: base
     build:
       dockerfile: .devcontainer/Dockerfile
       args:
@@ -80,6 +80,19 @@ services:
         groupid: ${USE_GID:-10001}
     image: tecken-devcontainer
     entrypoint: ["sleep", "inf"]
+    env_file:
+      - docker/config/local_dev.env
+      - docker/config/test.env
+    depends_on:
+      db: *condition_service_healthy
+      gcs-emulator: *condition_service_healthy
+      fakesentry: *condition_service_healthy
+      redis-cache: *condition_service_healthy
+      localstack: *condition_service_healthy
+      oidcprovider: *condition_service_healthy
+      statsd: *condition_service_healthy
+    volumes:
+      - $PWD:/app
 
   # Web container is a prod-like fully-functioning container.
   gunicorn:
