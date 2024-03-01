@@ -14,6 +14,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("email")
         parser.add_argument("token_key", default=None, nargs="?")
+        parser.add_argument("try_upload", default=False, nargs="?")
 
     def handle(self, *args, **options):
         email = options["email"]
@@ -31,9 +32,13 @@ class Command(BaseCommand):
             raise CommandError(f"Token with key {token_key!r} already exists")
 
         permissions = [
-            Permission.objects.get(codename="upload_symbols"),
             Permission.objects.get(codename="view_all_uploads"),
         ]
+        try_upload = options["try_upload"]
+        if try_upload:
+            permissions.append(Permission.objects.get(codename="upload_try_symbols"))
+        else:
+            permissions.append(Permission.objects.get(codename="upload_symbols"))
         self.stdout.write(self.style.SUCCESS(f"{token_key} created"))
         token = Token.objects.create(
             user=user,

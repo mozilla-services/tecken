@@ -40,7 +40,7 @@ METRICS = markus.get_metrics()
 
 
 def is_try(symbols_file):
-    return symbols_file.endswith("__try")
+    return symbols_file.endswith("__try.zip")
 
 
 @click.command()
@@ -55,6 +55,11 @@ def is_try(symbols_file):
     help="Auth token for uploading SYM files.",
 )
 @click.option(
+    "--auth-token-try",
+    required=True,
+    help="Auth token for uploading try SYM files.",
+)
+@click.option(
     "--expect-code",
     required=False,
     default=201,
@@ -63,7 +68,7 @@ def is_try(symbols_file):
 )
 @click.argument("symbolsfile")
 @click.pass_context
-def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
+def upload_symbols(ctx, expect_code, auth_token, auth_token_try, base_url, symbolsfile):
     """Upload SYM file to a host."""
 
     if not os.path.exists(symbolsfile):
@@ -94,7 +99,7 @@ def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
                 with open(symbolsfile, "rb") as fp:
                     files = {basename: fp}
                     if is_try(symbolsfile):
-                        files["try"] = 1
+                        headers["auth-token"] = auth_token_try
                     resp = requests.post(
                         api_url,
                         files=files,
