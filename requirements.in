@@ -36,5 +36,5 @@ ujson==5.8.0
 werkzeug==3.0.1
 whitenoise==6.6.0
 
-# NOTE(willkg): We stick with LTS releases.
-Django==4.2.10
+# NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
+Django==4.2.11
