@@ -14,7 +14,11 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("email")
         parser.add_argument("token_key", default=None, nargs="?")
-        parser.add_argument("try_upload", default=False, nargs="?")
+        parser.add_argument(
+            "--try-upload",
+            action="store_true",
+            help="If true, create the token with Upload Try Symbols",
+        )
 
     def handle(self, *args, **options):
         email = options["email"]

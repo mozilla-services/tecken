@@ -50,20 +50,17 @@ def test_env(ctx, env):
     bad_token_test = 0
     tecken_host = ""
     auth_token = ""
-    auth_token_try = ""
 
     if env == "local":
         destructive_tests = 1
         bad_token_test = 1
         tecken_host = "http://web:8000/"
         auth_token = os.environ["LOCAL_AUTH_TOKEN"]
-        auth_token_try = os.environ["LOCAL_AUTH_TOKEN_TRY"]
     elif env == "stage":
         destructive_tests = 1
         bad_token_test = 1
         tecken_host = "https://symbols.stage.mozaws.net/"
         auth_token = os.environ["STAGE_AUTH_TOKEN"]
-        auth_token_try = os.environ["STAGE_AUTH_TOKEN_TRY"]
     elif env == "prod":
         click.echo(
             click.style(
@@ -85,11 +82,15 @@ def test_env(ctx, env):
             for name in os.listdir(f"{ZIPS_DIR}")
             if os.path.isfile(f"{ZIPS_DIR}{name}")
         ]:
+            # Use the try upload API token when needed
+            if fn.endswith("__try.zip"):
+                auth_token = os.environ[f"{env.upper()}_AUTH_TOKEN_TRY"]
+            else:
+                auth_token = os.environ[f"{env.upper()}_AUTH_TOKEN"]
             ctx.invoke(
                 upload_symbols,
                 expect_code=201,
                 auth_token=f"{auth_token}",
-                auth_token_try=f"{auth_token_try}",
                 base_url=f"{tecken_host}",
                 symbolsfile=f"{ZIPS_DIR}{fn}",
             )
@@ -126,7 +127,6 @@ def test_env(ctx, env):
             upload_symbols,
             expect_code=403,
             auth_token="badtoken",
-            auth_token_try=f"{auth_token_try}",
             base_url=f"{tecken_host}",
             symbolsfile=f"{ZIPS_DIR}{first_file}",
         )
