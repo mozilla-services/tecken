@@ -26,7 +26,7 @@ def setup_tests(ctx):
         # Create the zip output directory if it doesn't exist
         os.makedirs(ZIPS_DIR)
 
-    print("Generating systemtest data files ...")
+    click.echo("Generating systemtest data files ...")
     try:
         zips_count = len(
             [
@@ -62,9 +62,9 @@ def setup_tests(ctx):
                 outputdir=f"{ZIPS_DIR}",
             )
         else:
-            print(f"Already have ${zips_count} zip files.")
+            click.echo(f"Already have {zips_count} zip files.")
     except Exception as exc:
-        print(f"Unexpected error: {exc}")
+        raise click.ClickException("Unexpected error") from exc
 
 
 if __name__ == "__main__":

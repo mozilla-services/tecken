@@ -3,7 +3,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
+# Usage: test_env.py [local|stage|prod]"
 import os
 
 import click
@@ -14,7 +14,6 @@ from systemtests.bin.upload_symbols import upload_symbols
 from systemtests.bin.upload_symbols_by_download import upload_symbols_by_download
 
 ZIPS_DIR = "./data/zip-files/"
-USAGE = "Usage: test_env.py [local|stage|prod]"
 
 
 @click.command()
@@ -105,7 +104,7 @@ def test_env(ctx, env):
             auth_token=f"{auth_token}",
             url=f"{URL}",
         )
-        print("\n")
+        click.echo("\n")
     else:
         click.echo(click.style(">>> SKIPPING DESTRUCTIVE TESTS\n", fg="yellow"))
 
@@ -131,7 +130,7 @@ def test_env(ctx, env):
             symbolsfile=f"{ZIPS_DIR}{first_file}",
         )
 
-    print("\n")
+    click.echo("\n")
 
     click.echo(click.style(">>> DOWNLOAD TEST", fg="yellow"))
     ctx.invoke(
@@ -139,7 +138,7 @@ def test_env(ctx, env):
         base_url=f"{tecken_host}",
         csv_file="./data/sym_files_to_download.csv",
     )
-    print("\n")
+    click.echo("\n")
 
 
 if __name__ == "__main__":
