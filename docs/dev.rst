@@ -177,7 +177,7 @@ None of these matter except that you need them to enter values into the SSO
 emulation service when you log into your Tecken local dev environment.
 
 You can use ``slick.sh`` to recreate your local dev environment, create a
-superuser account, and create an API token. This simplifies setting everything
+superuser account, and create API tokens. This simplifies setting everything
 up when you're switching contexts or testing things.
 
 .. code-block:: shell

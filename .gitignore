@@ -23,5 +23,4 @@ yarn-debug.log*
 yarn-error.log*
 
 # Ephemeral systemtest data
-systemtests/data/zip-files/
-systemtests/data/stacks/
+systemtests/data/

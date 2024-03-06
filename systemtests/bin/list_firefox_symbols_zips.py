@@ -108,7 +108,8 @@ def get_content_length(url):
     type=int,
     help="max size of files in bytes for urls to print out",
 )
-def run(number, max_size):
+def list_firefox_symbols_zips(number, max_size):
+    urls = []
     for url in get_symbols_urls():
         if number <= 0:
             break
@@ -124,8 +125,11 @@ def run(number, max_size):
             continue
 
         click.echo(url)
+        urls.append(url)
         number -= 1
+
+    return urls
 
 
 if __name__ == "__main__":
-    run()
+    list_firefox_symbols_zips()

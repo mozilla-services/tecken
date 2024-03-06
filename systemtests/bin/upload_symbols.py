@@ -59,7 +59,7 @@ METRICS = markus.get_metrics()
 )
 @click.argument("symbolsfile")
 @click.pass_context
-def upload_symbols(ctx, base_url, auth_token, symbolsfile, expect_code):
+def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
     """Upload SYM file to a host."""
 
     if not os.path.exists(symbolsfile):
@@ -88,9 +88,10 @@ def upload_symbols(ctx, base_url, auth_token, symbolsfile, expect_code):
         try:
             with METRICS.timer("upload_time"):
                 with open(symbolsfile, "rb") as fp:
+                    files = {basename: fp}
                     resp = requests.post(
                         api_url,
-                        files={basename: fp},
+                        files=files,
                         headers=headers,
                         timeout=CONNECTION_TIMEOUT,
                     )
