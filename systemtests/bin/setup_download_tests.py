@@ -117,9 +117,7 @@ def write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, outputdir):
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     csv_rows.append([f"# File built: {date}"])
     csv_rows.append(["# Format: symfile", "expected status code", "bucket"])
-    csv_rows.append(["@ECHO NOTE: None of these should take over 1000ms to download."])
-    csv_rows.append(["@ECHO"])
-    csv_rows.append(["# These are recent uploads, so they're 200s."])
+    csv_rows.append(["# These are recent uploads, so they should return HTTP 200s."])
     for file_type, sym_filename in sym_file_type_to_filename.items():
         bucket = "regular"
         if file_type == "try":
