@@ -13,7 +13,8 @@ from urllib.parse import urljoin
 import click
 import markus
 from markus.backends import BackendBase
-import requests
+
+from systemtestslib.utils import http_get_with_retry
 
 
 class StdoutMetrics(BackendBase):
@@ -72,7 +73,7 @@ def download_sym_files(base_url, csv_file):
 
             # Download the file
             headers = {"User-Agent": "tecken-systemtests"}
-            resp = requests.get(url, headers=headers, timeout=60)
+            resp = http_get_with_retry(url, headers=headers, timeout=60)
 
             for item in resp.history:
                 if item.status_code in (301, 302):

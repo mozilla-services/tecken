@@ -13,6 +13,13 @@ import datetime
 
 import click
 import requests
+import tenacity
+
+from systemtestslib.utils import (
+    http_get_with_retry,
+    http_head_with_retry,
+    http_post,
+)
 
 
 SYMBOLS_ZIP_SUFFIX = ".crashreporter-symbols.zip"
@@ -30,7 +37,7 @@ def index_namespaces(namespace, limit=1000):
     cutoff = (datetime.date.today() + datetime.timedelta(days=270)).strftime("%Y-%m-%d")
 
     url = INDEX + "namespaces/" + namespace
-    resp = requests.post(url, headers=HTTP_HEADERS, json={"limit": limit})
+    resp = http_post(url, headers=HTTP_HEADERS, json={"limit": limit})
     for namespace in resp.json()["namespaces"]:
         if namespace["expires"][0:8] < cutoff:
             continue
@@ -39,7 +46,7 @@ def index_namespaces(namespace, limit=1000):
 
 def index_tasks(namespace, limit=1000):
     url = INDEX + "tasks/" + namespace
-    r = requests.post(url, headers=HTTP_HEADERS, json={"limit": limit})
+    r = http_post(url, headers=HTTP_HEADERS, json={"limit": limit})
     for task in r.json()["tasks"]:
         yield task["taskId"]
 
@@ -56,7 +63,7 @@ def list_artifacts(taskid):
     cutoff = datetime.date.today().strftime("%Y-%m-%d")
 
     url = QUEUE + f"task/{taskid}/artifacts"
-    resp = requests.get(url, headers=HTTP_HEADERS)
+    resp = http_get_with_retry(url, headers=HTTP_HEADERS)
     if resp.status_code == 200:
         data = resp.json()
         for artifact in data["artifacts"]:
@@ -85,10 +92,11 @@ def get_content_length(url):
 
     :returns: content length as an int
 
-    :raises requests.exceptions.HTTPError: if the request is forbidden or something
+    :raises requests.exceptions.RequestError: if the request is forbidden or something
+    :raises tenacity.RetryError: if the request failed due to too many retries
 
     """
-    response = requests.head(url, headers=HTTP_HEADERS)
+    response = http_head_with_retry(url, headers=HTTP_HEADERS)
     if response.status_code > 300 and response.status_code < 400:
         return get_content_length(response.headers["location"])
     response.raise_for_status()
@@ -118,7 +126,7 @@ def list_firefox_symbols_zips(number, max_size):
         # sensible--a 22 byte zip file is just the header
         try:
             size = get_content_length(url)
-        except requests.exceptions.HTTPError:
+        except (requests.exceptions.RequestError, tenacity.RetryError):
             continue
 
         if 1_000 > size > max_size:

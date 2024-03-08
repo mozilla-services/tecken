@@ -8,9 +8,100 @@ import os
 import zipfile
 
 import requests
+import tenacity
 
-# Number of seconds to wait for a response from server
-CONNECTION_TIMEOUT = 600
+
+# Default HTTP timeout to use when not specified--this is both the connection and read
+# timeout
+HTTP_TIMEOUT = 10
+
+# Number of seconds to wait for a response from server when downloading potentially
+# large files
+HTTP_DOWNLOAD_TIMEOUT = 600
+
+
+def _is_retryable_status_code(resp):
+    return resp.status_code in (429, 500, 503)
+
+
+@tenacity.retry(
+    retry=(
+        tenacity.retry_if_exception_type(requests.RequestException)
+        | tenacity.retry_if_result(_is_retryable_status_code)
+    ),
+    wait=tenacity.wait_exponential(multiplier=1, min=1, max=5),
+    stop=tenacity.stop_after_attempt(5),
+    reraise=True,
+)
+def http_get_with_retry(*args, **kwargs):
+    """Performs a retryable requests.get
+
+    This retries on any request exception (e.g. timeout) as well as any 429, 500, or
+    503 status code.
+
+    This adds a default timeout of HTTP_TIMEOUT seconds if none is specified.
+
+    Arguments are request.get arguments.
+
+    :raises requests.exceptions.RequestException: if it run out of retry attempts
+        because an exception is thrown, the exceptions is re-raised
+    :raises tenacity.RetryError: if it runs out of retry attempts because of status code
+
+    :returns: requests.Response if successful
+
+    """
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = HTTP_TIMEOUT
+    return requests.get(*args, **kwargs)
+
+
+@tenacity.retry(
+    retry=(
+        tenacity.retry_if_exception_type(requests.RequestException)
+        | tenacity.retry_if_result(_is_retryable_status_code)
+    ),
+    wait=tenacity.wait_exponential(multiplier=1, min=1, max=5),
+    stop=tenacity.stop_after_attempt(5),
+    reraise=True,
+)
+def http_head_with_retry(*args, **kwargs):
+    """Performs a retryable requests.head
+
+    This retries on any request exception (e.g. timeout) as well as any 429, 500, or
+    503 status code.
+
+    This adds a default timeout of HTTP_TIMEOUT seconds if none is specified.
+
+    Arguments are request.head arguments.
+
+    :raises requests.exceptions.RequestException: if it run out of retry attempts
+        because an exception is thrown, the exceptions is re-raised
+    :raises tenacity.RetryError: if it runs out of retry attempts because of status code
+
+    :returns: requests.Response if successful
+
+    """
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = HTTP_TIMEOUT
+    return requests.head(*args, **kwargs)
+
+
+def http_post(*args, **kwargs):
+    """Performs a requests.post
+
+    This adds a default timeout of HTTP_TIMEOUT seconds if none is specified.
+
+    Arguments are request.post arguments.
+
+    :raises requests.exceptions.RequestException: if it run out of retry attempts
+        because an exception is thrown, the exceptions is re-raised
+
+    :returns: requests.Response if successful
+
+    """
+    if "timeout" not in kwargs:
+        kwargs["timeout"] = HTTP_TIMEOUT
+    return requests.post(*args, **kwargs)
 
 
 def get_sym_files(auth_token, url, start_page):
@@ -33,15 +124,19 @@ def get_sym_files(auth_token, url, start_page):
             yield sym_files.pop(0)
         else:
             params["page"] = page
-            resp = requests.get(
+            resp = http_get_with_retry(
                 url,
                 params=params,
                 headers=headers,
-                timeout=CONNECTION_TIMEOUT,
+                timeout=HTTP_DOWNLOAD_TIMEOUT,
             )
             resp.raise_for_status()
             data = resp.json()
-            sym_files = [(record["key"], record["size"]) for record in data["files"]]
+            sym_files = [
+                (record["key"], record["size"])
+                for record in data["files"]
+                if record["completed_at"]
+            ]
             page += 1
 
 
@@ -74,10 +169,8 @@ def build_zip_file(zip_filename, sym_dir):
 def download_sym_file(url, sym_file_path):
     """Download SYM file at url into sym_file_path."""
     headers = {"User-Agent": "tecken-systemtests"}
-    resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
-    if resp.status_code != 200:
-        # FIXME: Retry request and Response.raise_for_status
-        return
+    resp = http_get_with_retry(url, headers=headers, timeout=HTTP_DOWNLOAD_TIMEOUT)
+    resp.raise_for_status()
 
     dirname = os.path.dirname(sym_file_path)
     if not os.path.exists(dirname):

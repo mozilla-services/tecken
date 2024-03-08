@@ -20,10 +20,6 @@ babel==2.13.1 \
     --hash=sha256:33e0952d7dd6374af8dbf6768cc4ddf3ccfefc244f9986d4074704f2fbd18900 \
     --hash=sha256:7077a4984b02b6727ac10f1f7294484f737443d7e2e66c5e4380e41a3ae0b4ed
     # via sphinx
-backoff==2.2.1 \
-    --hash=sha256:03f829f5bb1923180821643f8753b0502c3b682293992485b0eef2807afa5cba \
-    --hash=sha256:63579f9a0628e06278f7e47b7d7d5b6ce20dc65c5e96a6f3ca99a6adca0396e8
-    # via -r requirements.in
 boltons==23.1.1 \
     --hash=sha256:80a8cd930ff21fbf03545b9863e5799d0c3e7e0e3b2546bdaf2efccd7b3708cc \
     --hash=sha256:d2cb2fa83cf2ebe791be1e284183e8a43a1031355156a968f8e0a333ad2448fc
@@ -763,6 +759,10 @@ sqlparse==0.4.4 \
     --hash=sha256:5430a4fe2ac7d0f93e66f1efc6e1338a41884b7ddf2a350cedd20ccc4d9d28f3 \
     --hash=sha256:d446183e84b8349fa3061f0fe7f06ca94ba65b426946ffebe6e3e8295332420c
     # via django
+tenacity==8.2.3 \
+    --hash=sha256:5398ef0d78e63f40007c1fb4c0bff96e1911394d2fa8d194f77619c05ff6cc8a \
+    --hash=sha256:ce510e327a630c9e1beaf17d42e6ffacc88185044ad85cf74c0a8887c6a0f88c
+    # via -r requirements.in
 typing-extensions==4.8.0 \
     --hash=sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0 \
     --hash=sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef

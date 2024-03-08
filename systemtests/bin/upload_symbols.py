@@ -15,7 +15,8 @@ from urllib.parse import urljoin
 import click
 import markus
 from markus.backends import BackendBase
-import requests
+
+from systemtestslib.utils import http_post
 
 
 # Maximum number of retry attempts
@@ -89,7 +90,7 @@ def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
             with METRICS.timer("upload_time"):
                 with open(symbolsfile, "rb") as fp:
                     files = {basename: fp}
-                    resp = requests.post(
+                    resp = http_post(
                         api_url,
                         files=files,
                         headers=headers,
