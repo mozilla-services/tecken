@@ -18,9 +18,7 @@ import requests
 
 class StdoutMetrics(BackendBase):
     def emit(self, record):
-        click.echo(
-            f"Elapsed time: {record.stat_type} {record.key} {record.value/1000:,.2f}s"
-        )
+        click.echo(f"metric: {record.stat_type} {record.key} {record.value/1000:,.2f}s")
 
 
 markus.configure([{"class": StdoutMetrics}], raise_errors=True)
@@ -59,11 +57,6 @@ def download_sym_files(base_url, csv_file):
             # Skip commented out and blank lines
             continue
 
-        if line.startswith("@ECHO"):
-            # This lets us encode directions for the viewer in the csv files
-            click.echo(click.style(line[5:].strip(), fg="yellow"))
-            continue
-
         with METRICS.timer("download_time"):
             parts = line.split(",")
 
@@ -84,6 +77,8 @@ def download_sym_files(base_url, csv_file):
                     click.echo(f">>> redirect: {item.url}")
             click.echo(f">>> final: {resp.url}")
             click.echo(f">>> status code: {resp.status_code}")
+            if resp.status_code == 200:
+                click.echo(f">>> file size {len(resp.content):,} bytes")
 
             # Compare status code with expected status code
             if resp.status_code != int(expected_status_code):

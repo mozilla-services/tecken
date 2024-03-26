@@ -17,6 +17,8 @@ import tempfile
 from urllib.parse import urljoin
 
 import click
+import markus
+from markus.backends import BackendBase
 
 from systemtestslib.utils import build_zip_file, download_sym_file, get_sym_files
 
@@ -36,13 +38,27 @@ REQUIRED_FILE_TYPES = ["try", "regular"]
 
 
 def iterate_through_symbols_files(
+    baseurl,
     auth_token,
-    sym_files_url,
     start_page,
+    try_symbols,
     sym_file_type_to_filename,
     end_condition_num_files,
 ):
-    sym_files_generator = get_sym_files(auth_token, sym_files_url, start_page)
+    params = {
+        "page": start_page,
+        "size": "< 10mb",
+        # NOTE(willkg): this restricts the search to symbols files only; when we decide
+        # to download other kinds of files, we'll need to remove this
+        "key": [".sym"],
+    }
+    if try_symbols:
+        params["key"].append("try/")
+
+    sym_files_generator = get_sym_files(
+        baseurl=baseurl, auth_token=auth_token, params=params
+    )
+
     for sym_filename, _ in sym_files_generator:
         if sym_filename.endswith(".0"):
             # Skip these because there aren't SYM files for them.
@@ -52,18 +68,17 @@ def iterate_through_symbols_files(
             # We only test for sym files currently
             continue
 
-        is_try = False
-
         if sym_filename.startswith("try/"):
+            if not try_symbols:
+                continue
             sym_filename = sym_filename[4:]
-            is_try = True
 
         if sym_filename.startswith("v1/"):
             sym_filename = sym_filename[3:]
 
         build_list_of_sym_filenames(
             sym_filename,
-            is_try,
+            try_symbols,
             sym_file_type_to_filename,
         )
 
@@ -117,9 +132,7 @@ def write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, outputdir):
     date = datetime.datetime.now().strftime("%Y-%m-%d")
     csv_rows.append([f"# File built: {date}"])
     csv_rows.append(["# Format: symfile", "expected status code", "bucket"])
-    csv_rows.append(["@ECHO NOTE: None of these should take over 1000ms to download."])
-    csv_rows.append(["@ECHO"])
-    csv_rows.append(["# These are recent uploads, so they're 200s."])
+    csv_rows.append(["# These are recent uploads, so they should return HTTP 200s."])
     for file_type, sym_filename in sym_file_type_to_filename.items():
         bucket = "regular"
         if file_type == "try":
@@ -179,6 +192,15 @@ def get_subset_to_zip(is_try, sym_file_type_to_filename):
     return subset_to_zip
 
 
+class StdoutMetrics(BackendBase):
+    def emit(self, record):
+        click.echo(f"metric: {record.stat_type} {record.key} {record.value/1000:,.2f}s")
+
+
+markus.configure([{"class": StdoutMetrics}], raise_errors=True)
+METRICS = markus.get_metrics()
+
+
 @click.command()
 @click.option(
     "--auth-token",
@@ -199,6 +221,8 @@ def setup_download_tests(start_page, auth_token, csv_output_path, zip_output_dir
     them to two separate zip folders: one for try symbols files, and one for
     regular symbols files. This is used for the download system tests.
 
+    Runtime is dependent on what files have been uploaded recently.
+
     Note: This requires an auth token for symbols.mozilla.org to view files.
 
     """
@@ -206,68 +230,70 @@ def setup_download_tests(start_page, auth_token, csv_output_path, zip_output_dir
     # so initialize a map to keep track of what file types we have
     sym_file_type_to_filename = {}
 
-    click.echo("Fetching symbols files ...")
-    # Get a try symbol first. Since these are more rare, add a key filter in the URL
-    sym_files_url = urljoin(SYMBOLS_URL, "/api/uploads/files?key=try/")
-    end_condition_num_files = 1
-    iterate_through_symbols_files(
-        auth_token,
-        sym_files_url,
-        start_page,
-        sym_file_type_to_filename,
-        end_condition_num_files,
-    )
-
-    # Get regular symbols files
-    sym_files_url = urljoin(SYMBOLS_URL, "/api/uploads/files/")
-    end_condition_num_files = len(REQUIRED_FILE_TYPES)
-    iterate_through_symbols_files(
-        auth_token,
-        sym_files_url,
-        start_page,
-        sym_file_type_to_filename,
-        end_condition_num_files,
-    )
-
-    # Figure out the ZIP file names and final path
-    # Try files go into a separate zip from regular files, so they
-    # can be uploaded to the correct bucket later as part of the
-    # upload system tests.
-    zip_filename_try = datetime.datetime.now().strftime(
-        "symbols_%Y%m%d_%H%M%S__try.zip"
-    )
-    zip_filename_regular = datetime.datetime.now().strftime(
-        "symbols_%Y%m%d_%H%M%S__regular.zip"
-    )
-    zip_path_try = os.path.join(zip_output_dir, zip_filename_try)
-    zip_path_regular = os.path.join(zip_output_dir, zip_filename_regular)
-
-    # Download the list of sym files to a temporary directory and then zip them
-    # to the specified zip output directory.
-    subset_to_zip_try = get_subset_to_zip(True, sym_file_type_to_filename)
-    subset_to_zip_regular = get_subset_to_zip(False, sym_file_type_to_filename)
-    download_and_zip_files(zip_path_try, subset_to_zip_try)
-    click.echo(
-        click.style(
-            f"Zipped {subset_to_zip_try} to {zip_path_try} ...",
-            fg="yellow",
+    with METRICS.timer("elapsed_time"):
+        # Get try symbols first
+        click.echo("Fetching try symbols files ...")
+        end_condition_num_files = 1
+        iterate_through_symbols_files(
+            baseurl=SYMBOLS_URL,
+            auth_token=auth_token,
+            start_page=start_page,
+            try_symbols=True,
+            sym_file_type_to_filename=sym_file_type_to_filename,
+            end_condition_num_files=end_condition_num_files,
         )
-    )
-    download_and_zip_files(zip_path_regular, subset_to_zip_regular)
-    click.echo(
-        click.style(
-            f"Zipped {subset_to_zip_regular} to {zip_path_regular} ...",
-            fg="yellow",
-        )
-    )
 
-    write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, csv_output_path)
-    click.echo(
-        click.style(
-            f"Created {csv_output_path} with list of SYM files for download tests.",
-            fg="yellow",
+        # Get regular symbols files
+        click.echo("Fetching regular symbols files ...")
+        end_condition_num_files = len(REQUIRED_FILE_TYPES)
+        iterate_through_symbols_files(
+            baseurl=SYMBOLS_URL,
+            auth_token=auth_token,
+            start_page=start_page,
+            try_symbols=False,
+            sym_file_type_to_filename=sym_file_type_to_filename,
+            end_condition_num_files=end_condition_num_files,
         )
-    )
+
+        # Figure out the ZIP file names and final path
+        # Try files go into a separate zip from regular files, so they
+        # can be uploaded to the correct bucket later as part of the
+        # upload system tests.
+        zip_filename_try = datetime.datetime.now().strftime(
+            "symbols_%Y%m%d_%H%M%S__try.zip"
+        )
+        zip_filename_regular = datetime.datetime.now().strftime(
+            "symbols_%Y%m%d_%H%M%S__regular.zip"
+        )
+        zip_path_try = os.path.join(zip_output_dir, zip_filename_try)
+        zip_path_regular = os.path.join(zip_output_dir, zip_filename_regular)
+
+        # Download the list of sym files to a temporary directory and then zip them to
+        # the specified zip output directory.
+        subset_to_zip_try = get_subset_to_zip(True, sym_file_type_to_filename)
+        subset_to_zip_regular = get_subset_to_zip(False, sym_file_type_to_filename)
+        download_and_zip_files(zip_path_try, subset_to_zip_try)
+        click.echo(
+            click.style(
+                f"Zipped {subset_to_zip_try} to {zip_path_try} ...",
+                fg="yellow",
+            )
+        )
+        download_and_zip_files(zip_path_regular, subset_to_zip_regular)
+        click.echo(
+            click.style(
+                f"Zipped {subset_to_zip_regular} to {zip_path_regular} ...",
+                fg="yellow",
+            )
+        )
+
+        write_list_of_sym_filenames_to_csv(sym_file_type_to_filename, csv_output_path)
+        click.echo(
+            click.style(
+                f"Created {csv_output_path} with list of SYM files for download tests.",
+                fg="yellow",
+            )
+        )
 
 
 if __name__ == "__main__":

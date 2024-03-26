@@ -27,44 +27,38 @@ def setup_tests(ctx):
         os.makedirs(ZIPS_DIR)
 
     click.echo("Generating systemtest data files ...")
-    try:
-        zips_count = len(
-            [
-                name
-                for name in os.listdir(f"{ZIPS_DIR}")
-                if os.path.isfile(f"{ZIPS_DIR}/{name}")
-            ]
+    zips_count = len(
+        [name for name in os.listdir(ZIPS_DIR) if os.path.isfile(f"{ZIPS_DIR}/{name}")]
+    )
+    if zips_count < 4:
+        # Generate some symbols ZIP files to upload, and a CSV
+        # of those symbols files to download
+        ctx.invoke(
+            setup_download_tests,
+            start_page=1,
+            auth_token=PROD_AUTH_TOKEN,
+            csv_output_path="./data/sym_files_to_download.csv",
+            zip_output_dir=ZIPS_DIR,
         )
-        if zips_count < 4:
-            # Generate some symbols ZIP files to upload, and a CSV
-            # of those symbols files to download
-            ctx.invoke(
-                setup_download_tests,
-                start_page=1,
-                auth_token=f"{PROD_AUTH_TOKEN}",
-                csv_output_path="./data/sym_files_to_download.csv",
-                zip_output_dir=f"{ZIPS_DIR}",
-            )
+        click.echo("")
 
-            # Generate some symbols ZIP files to upload
-            ctx.invoke(
-                setup_upload_tests,
-                max_size=10000000,
-                start_page=1,
-                auth_token=f"{PROD_AUTH_TOKEN}",
-                outputdir=f"{ZIPS_DIR}",
-            )
-            ctx.invoke(
-                setup_upload_tests,
-                max_size=50000000,
-                start_page=10,
-                auth_token=f"{PROD_AUTH_TOKEN}",
-                outputdir=f"{ZIPS_DIR}",
-            )
-        else:
-            click.echo(f"Already have {zips_count} zip files.")
-    except Exception as exc:
-        raise click.ClickException("Unexpected error") from exc
+        # Generate some symbols ZIP files to upload
+        ctx.invoke(
+            setup_upload_tests,
+            max_size=2_000_000,
+            start_page=1,
+            auth_token=PROD_AUTH_TOKEN,
+            outputdir=ZIPS_DIR,
+        )
+        ctx.invoke(
+            setup_upload_tests,
+            max_size=4_000_000,
+            start_page=10,
+            auth_token=PROD_AUTH_TOKEN,
+            outputdir=ZIPS_DIR,
+        )
+    else:
+        click.echo(f"Already have {zips_count} zip files.")
 
 
 if __name__ == "__main__":

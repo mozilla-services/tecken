@@ -30,9 +30,7 @@ SLEEP_TIMEOUT = 15
 
 class StdoutMetrics(BackendBase):
     def emit(self, record):
-        click.echo(
-            f"Elapsed time: {record.stat_type} {record.key} {record.value/1000:,.2f}s"
-        )
+        click.echo(f"metric: {record.stat_type} {record.key} {record.value/1000:,.2f}s")
 
 
 markus.configure([{"class": StdoutMetrics}], raise_errors=True)
@@ -85,8 +83,8 @@ def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
                 fg="yellow",
             )
         )
-        try:
-            with METRICS.timer("upload_time"):
+        with METRICS.timer("upload_time"):
+            try:
                 with open(symbolsfile, "rb") as fp:
                     files = {basename: fp}
                     resp = requests.post(
@@ -103,33 +101,32 @@ def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
                     )
                 )
 
+                # 403 means the auth token is bad which is not a retryable error
                 if resp.status_code == 403:
-                    # 403 means the auth token is bad which is not a retryable error
                     if resp.status_code == expect_code:
                         click.echo(click.style(f"Success! {resp.json()!r}", fg="green"))
                         return
                     else:
                         ctx.exit(1)
-                elif resp.status_code == 429:
+
+                if resp.status_code == 429:
                     # 429 means we've been rate-limited, so wait and retry
                     click.echo(
                         click.style(f"429--sleeping for {SLEEP_TIMEOUT}", fg="yellow")
                     )
                     time.sleep(SLEEP_TIMEOUT)
-                else:
-                    if resp.status_code == expect_code:
-                        # This is the expected status code, so this is a success
-                        click.echo(click.style("Success!", fg="green"))
-                        return
-
-                    click.echo(
-                        click.style(
-                            f"Error: {resp.status_code} {resp.content}", fg="red"
-                        )
-                    )
                     continue
-        except Exception as exc:
-            click.echo(click.style(f"Unexpected error: {exc}", fg="red"))
+
+                if resp.status_code == expect_code:
+                    # This is the expected status code, so this is a success
+                    click.echo(click.style("Success!", fg="green"))
+                    return
+
+                click.echo(
+                    click.style(f"Error: {resp.status_code} {resp.content}", fg="red")
+                )
+            except Exception as exc:
+                click.echo(click.style(f"Unexpected error: {exc}", fg="red"))
 
     # We've retried multiple times and never hit the expected status code, so
     # this is a fail

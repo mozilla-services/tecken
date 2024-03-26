@@ -67,13 +67,21 @@ def list_artifacts(taskid):
 
 
 def get_symbols_urls():
-    for taskid in tasks_by_changeset(10):
+    for taskid in tasks_by_changeset(revisions_limit=10):
         artifacts = list(list_artifacts(taskid))
-        full_zip = [a for a in artifacts if a.endswith(SYMBOLS_FULL_ZIP_SUFFIX)]
+        full_zip = [
+            artifact
+            for artifact in artifacts
+            if artifact.endswith(SYMBOLS_FULL_ZIP_SUFFIX)
+        ]
         if full_zip:
             yield QUEUE + f"task/{taskid}/artifacts/{full_zip[0]}"
         else:
-            nonfull_zip = [a for a in artifacts if a.endswith(SYMBOLS_ZIP_SUFFIX)]
+            nonfull_zip = [
+                artifact
+                for artifact in artifacts
+                if artifact.endswith(SYMBOLS_ZIP_SUFFIX)
+            ]
             if nonfull_zip:
                 yield QUEUE + f"task/{taskid}/artifacts/{nonfull_zip[0]}"
 
