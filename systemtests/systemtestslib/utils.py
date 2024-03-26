@@ -5,6 +5,7 @@
 # Utilities used to setup upload and download system tests.
 
 import os
+from urllib.parse import urljoin
 import zipfile
 
 import requests
@@ -13,36 +14,51 @@ import requests
 CONNECTION_TIMEOUT = 600
 
 
-def get_sym_files(auth_token, url, start_page):
+def get_sym_files(baseurl, auth_token, params):
     """Given an auth token, generates filenames and sizes for SYM files.
 
-    :param auth_token: auth token for symbols.mozilla.org
-    :param url: url for file uploads
-    :param start_page: the page of files to start with
+    :param baseurl: a base url
+    :param auth_token: an auth token
+    :param params: a dict of parameters to pass by querystring.
 
     :returns: generator of (key, size) typles
 
     """
-    sym_files = []
-    page = start_page
-    params = {"page": start_page}
+    url = urljoin(baseurl.rstrip("/"), "/api/uploads/files")
     headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
+    params = params or {}
+
+    sym_files = []
+    page = params.get("page", 1)
 
     while True:
-        if sym_files:
-            yield sym_files.pop(0)
-        else:
-            params["page"] = page
-            resp = requests.get(
-                url,
-                params=params,
-                headers=headers,
-                timeout=CONNECTION_TIMEOUT,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            sym_files = [(record["key"], record["size"]) for record in data["files"]]
+        params["page"] = page
+        resp = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=CONNECTION_TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        sym_files = [
+            (record["key"], record["size"])
+            for record in data["files"]
+            if record["completed_at"]
+        ]
+        yield from sym_files
+
+        # NOTE(willkg): sometimes a whole bunch of try uploads happen at the same
+        # time and since there's no way to filter for just regular symbols files (as
+        # opposed to try symbols files), this code ends up spending 30s per GET
+        # request for 10-20 pages which takes a long time.
+        #
+        # Instead of doing that, we do this thing where we change the increment
+        # to move through pages faster in hopes it results in fewer GET requests.
+        if page < 3:
             page += 1
+        else:
+            page += 5
 
 
 def build_zip_file(zip_filename, sym_dir):
@@ -75,9 +91,7 @@ def download_sym_file(url, sym_file_path):
     """Download SYM file at url into sym_file_path."""
     headers = {"User-Agent": "tecken-systemtests"}
     resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
-    if resp.status_code != 200:
-        # FIXME: Retry request and Response.raise_for_status
-        return
+    resp.raise_for_status()
 
     dirname = os.path.dirname(sym_file_path)
     if not os.path.exists(dirname):
