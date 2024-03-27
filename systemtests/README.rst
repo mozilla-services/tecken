@@ -14,7 +14,10 @@ Contents of this directory::
 Setting up tests
 ================
 
-Set up the tests this way::
+Before running the systemtests, you need to `build a local dev environment
+<https://tecken.readthedocs.io/en/latest/dev.html>`__.
+
+Then set up the tests this way::
 
     $ make shell
     root@e62fb7ae586f:/app# cd systemtests
