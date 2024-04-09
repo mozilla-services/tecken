@@ -25,6 +25,21 @@ import click
 import sentry_sdk
 from sentry_sdk import capture_exception, capture_message
 
+from tecken.libdockerflow import get_release_name
+
+
+def set_up_sentry():
+    sentry_dsn = os.environ.get("SENTRY_DSN")
+
+    if not sentry_dsn:
+        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
+        sys.exit(1)
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(current_dir)
+    release = get_release_name(basedir=base_dir)
+    sentry_sdk.init(dsn=sentry_dsn, release=release)
+
 
 @click.group()
 def cli_main():
@@ -34,13 +49,8 @@ def cli_main():
 @cli_main.command()
 @click.pass_context
 def test_sentry(ctx):
-    sentry_dsn = os.environ.get("SENTRY_DSN")
+    set_up_sentry()
 
-    if not sentry_dsn:
-        click.echo("SENTRY_DSN is not defined. Exiting.")
-        sys.exit(1)
-
-    sentry_sdk.init(sentry_dsn)
     capture_message("Sentry test")
     click.echo("Success. Check Sentry.")
 
@@ -59,18 +69,12 @@ def test_sentry(ctx):
 @click.argument("cmd", nargs=-1)
 @click.pass_context
 def wrap_process(ctx, timeout, verbose, cmd):
-    sentry_dsn = os.environ.get("SENTRY_DSN")
-
-    if not sentry_dsn:
-        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
-        sys.exit(1)
-
     if not cmd:
         raise click.UsageError("CMD required")
 
-    start_time = time.time()
+    set_up_sentry()
 
-    sentry_sdk.init(sentry_dsn)
+    start_time = time.time()
 
     cmd = " ".join(cmd)
     cmd_args = shlex.split(cmd)
