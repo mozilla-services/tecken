@@ -4,7 +4,7 @@
 #
 
 # This should match what we have in the Node section of the main Dockerfile.
-FROM node:16.19.1-slim@sha256:1417528032837e47462ea8cfe983108b0152f989e95cba2ddfbe0f0ddc2dcfbd as frontend
+FROM --platform=linux/amd64 node:16.19.1-slim@sha256:1417528032837e47462ea8cfe983108b0152f989e95cba2ddfbe0f0ddc2dcfbd as frontend
 
 ARG userid=10001
 ARG groupid=10001
