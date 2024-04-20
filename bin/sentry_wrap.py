@@ -7,10 +7,10 @@
 # Wraps a command such that if it fails, an error report is sent to the Sentry service
 # specified by SENTRY_DSN in the environment.
 #
-# Usage: python bin/sentry-wrap.py wrap-process -- [CMD]
+# Usage: python bin/sentry_wrap.py wrap-process -- [CMD]
 #    Wraps a process in error-reporting Sentry goodness.
 #
-# Usage: python bin/sentry-wrap.py test-sentry
+# Usage: python bin/sentry_wrap.py test-sentry
 #    Tests Sentry configuration and connection.
 
 

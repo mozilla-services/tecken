@@ -2,9 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from unittest.mock import ANY
+import os
+import time
+from unittest.mock import ANY, patch
 
 from fillmore.test import diff_event
+import requests
 from werkzeug.test import Client
 
 from django.contrib.auth.models import User
@@ -12,6 +15,7 @@ from django.contrib.auth.models import User
 from tecken.apps import count_sentry_scrub_error
 from tecken.tokens.models import Token
 from tecken.wsgi import application
+from bin.sentry_wrap import wrap_process
 
 
 # NOTE(willkg): If this changes, we should update it and look for new things that should
@@ -226,3 +230,31 @@ def test_count_sentry_scrub_error(metricsmock):
     metricsmock.assert_incr(
         "tecken.sentry_scrub_error", value=1, tags=["host:testnode"]
     )
+
+
+@patch("bin.sentry_wrap.get_release_name")
+def test_sentry_wrap_non_app_error_has_release(mock_get_release_name):
+    port = os.environ.get("EXPOSE_SENTRY_PORT", 8090)
+
+    # Flush fakesentry to ensure we fetch only the desired error downstream
+    requests.post(f"http://fakesentry:{port}/api/flush/")
+
+    release = "123:456"
+    mock_get_release_name.return_value = release
+
+    expected_event = {"release": release}
+
+    # Pass a non-Django command that will error to sentry_wrap
+    cmd = "ls -2"
+    wrap_process([cmd], standalone_mode=False)
+
+    # TODO: Wait until condition: the next request has non-empty `errors` in resp.json()
+    time.sleep(1)
+    errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
+    errors_resp.raise_for_status()
+    error_id = errors_resp.json()["errors"][0]
+    error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
+    error_resp.raise_for_status()
+    actual_event = error_resp.json()["payload"]
+
+    assert actual_event["release"] == expected_event["release"]
