@@ -11,7 +11,7 @@ encore==0.8.0
 everett==3.2.0
 fillmore==1.1.0
 google-cloud-storage==2.14.0
-gunicorn==21.2.0
+gunicorn==22.0.0
 honcho==1.1.0
 markus[datadog]==4.2.0
 mock==5.1.0
