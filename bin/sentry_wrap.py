@@ -14,7 +14,9 @@
 #    Tests Sentry configuration and connection.
 
 
+import json
 import os
+from pathlib import Path
 import shlex
 import subprocess
 import sys
@@ -25,7 +27,40 @@ import click
 import sentry_sdk
 from sentry_sdk import capture_exception, capture_message
 
-from tecken.libdockerflow import get_release_name
+
+# get_version_info and get_release_name are copied from
+# tecken/libdockerflow.py. We can't use them directly,
+# because libdockerflow.py loads modules from tecken, and
+# sentry_wrap needs to be independent from tecken (i.e.
+# any Django app context) to ensure it continues to work
+# outside of the app context (e.g. to run cron jobs).
+def get_version_info(basedir):
+    """Returns version.json data from deploys"""
+    path = Path(basedir) / "version.json"
+    if not path.exists():
+        return {}
+
+    try:
+        data = path.read_text()
+        return json.loads(data)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def get_release_name(basedir):
+    """Return a friendly name for the release that is running
+
+    This pulls version data and then returns the best version-y thing available: the
+    version, the commit, or "unknown" if there's no version data.
+
+    :returns: string
+
+    """
+    version_info = get_version_info(basedir)
+    version = version_info.get("version", "none")
+    commit = version_info.get("commit")
+    commit = commit[:8] if commit else "unknown"
+    return f"{version}:{commit}"
 
 
 def set_up_sentry():
@@ -37,7 +72,7 @@ def set_up_sentry():
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.dirname(current_dir)
-    release = get_release_name(basedir=base_dir)
+    release = get_release_name(base_dir)
     sentry_sdk.init(dsn=sentry_dsn, release=release)
 
 

@@ -3,8 +3,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import os
+import shlex
+import subprocess
 import time
-from unittest.mock import ANY, patch
+from unittest.mock import ANY
 
 from fillmore.test import diff_event
 import requests
@@ -12,10 +14,10 @@ from werkzeug.test import Client
 
 from django.contrib.auth.models import User
 
+from bin.sentry_wrap import get_release_name
 from tecken.apps import count_sentry_scrub_error
 from tecken.tokens.models import Token
 from tecken.wsgi import application
-from bin.sentry_wrap import wrap_process
 
 
 # NOTE(willkg): If this changes, we should update it and look for new things that should
@@ -232,29 +234,36 @@ def test_count_sentry_scrub_error(metricsmock):
     )
 
 
-@patch("bin.sentry_wrap.get_release_name")
-def test_sentry_wrap_non_app_error_has_release(mock_get_release_name):
+def test_sentry_wrap_non_app_error_has_release():
     port = os.environ.get("EXPOSE_SENTRY_PORT", 8090)
 
     # Flush fakesentry to ensure we fetch only the desired error downstream
     requests.post(f"http://fakesentry:{port}/api/flush/")
 
-    release = "123:456"
-    mock_get_release_name.return_value = release
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.join(os.path.dirname(current_dir), "..")
+    release = get_release_name(base_dir)
 
     expected_event = {"release": release}
 
     # Pass a non-Django command that will error to sentry_wrap
-    cmd = "ls -2"
-    wrap_process([cmd], standalone_mode=False)
+    non_app_command = "ls -2"
+    sentry_wrap_command = f"python bin/sentry_wrap.py wrap-process -- {non_app_command}"
+    cmd_args = shlex.split(sentry_wrap_command)
+    subprocess.run(cmd_args, timeout=10)
 
-    # TODO: Wait until condition: the next request has non-empty `errors` in resp.json()
-    time.sleep(1)
-    errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
-    errors_resp.raise_for_status()
-    error_id = errors_resp.json()["errors"][0]
-    error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
-    error_resp.raise_for_status()
-    actual_event = error_resp.json()["payload"]
+    # Avoid a race condition where fakesentry hasn't processed the event yet.
+    actual_event = {}
+    is_condition_met = False
+    while not is_condition_met:
+        time.sleep(1)
+        errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
+        errors_resp.raise_for_status()
+        if len(errors_resp.json()) > 0:
+            error_id = errors_resp.json()["errors"][0]
+            error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
+            error_resp.raise_for_status()
+            actual_event = error_resp.json()["payload"]
+            is_condition_met = True
 
     assert actual_event["release"] == expected_event["release"]

@@ -45,6 +45,7 @@ def check_storage_urls(app_configs, **kwargs):
     return errors
 
 
+# Please update bin/sentry_wrap.py when updating this function.
 def get_version_info(basedir):
     """Returns version.json data from deploys"""
     path = Path(basedir) / "version.json"
@@ -58,6 +59,7 @@ def get_version_info(basedir):
         return {}
 
 
+# Please update bin/sentry_wrap.py when updating this function.
 def get_release_name(basedir):
     """Return a friendly name for the release that is running
 
