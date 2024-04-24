@@ -5,7 +5,6 @@
 import os
 import shlex
 import subprocess
-import time
 from unittest.mock import ANY
 
 from fillmore.test import diff_event
@@ -252,18 +251,14 @@ def test_sentry_wrap_non_app_error_has_release():
     cmd_args = shlex.split(sentry_wrap_command)
     subprocess.run(cmd_args, timeout=10)
 
-    # Avoid a race condition where fakesentry hasn't processed the event yet.
-    actual_event = {}
-    is_condition_met = False
-    while not is_condition_met:
-        time.sleep(1)
-        errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
-        errors_resp.raise_for_status()
-        if len(errors_resp.json()) > 0:
-            error_id = errors_resp.json()["errors"][0]
-            error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
-            error_resp.raise_for_status()
-            actual_event = error_resp.json()["payload"]
-            is_condition_met = True
+    # We don't have to worry about a race condition here, because when the
+    # subprocess exits, we know the sentry_sdk sent the event, and it has
+    # been processed successfully by fakesentry.
+    errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
+    errors_resp.raise_for_status()
+    error_id = errors_resp.json()["errors"][0]
+    error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
+    error_resp.raise_for_status()
+    actual_event = error_resp.json()["payload"]
 
     assert actual_event["release"] == expected_event["release"]

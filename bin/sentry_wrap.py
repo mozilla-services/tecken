@@ -19,7 +19,6 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
-import sys
 import time
 import traceback
 
@@ -63,13 +62,7 @@ def get_release_name(basedir):
     return f"{version}:{commit}"
 
 
-def set_up_sentry():
-    sentry_dsn = os.environ.get("SENTRY_DSN")
-
-    if not sentry_dsn:
-        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
-        sys.exit(1)
-
+def set_up_sentry(sentry_dsn):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.dirname(current_dir)
     release = get_release_name(base_dir)
@@ -84,7 +77,13 @@ def cli_main():
 @cli_main.command()
 @click.pass_context
 def test_sentry(ctx):
-    set_up_sentry()
+    sentry_dsn = os.environ.get("SENTRY_DSN")
+
+    if not sentry_dsn:
+        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
+        ctx.exit(1)
+
+    set_up_sentry(sentry_dsn)
 
     capture_message("Sentry test")
     click.echo("Success. Check Sentry.")
@@ -107,9 +106,15 @@ def wrap_process(ctx, timeout, verbose, cmd):
     if not cmd:
         raise click.UsageError("CMD required")
 
-    set_up_sentry()
+    sentry_dsn = os.environ.get("SENTRY_DSN")
+
+    if not sentry_dsn:
+        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
+        ctx.exit(1)
 
     start_time = time.time()
+
+    set_up_sentry(sentry_dsn)
 
     cmd = " ".join(cmd)
     cmd_args = shlex.split(cmd)
