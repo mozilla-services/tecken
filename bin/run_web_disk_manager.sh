@@ -20,10 +20,10 @@ SLEEP_SECONDS=60
 PROCESS_TIMEOUT_SECONDS=120
 
 # Run disk manager in a loop sleeping SLEEP_SECONDS between rounds. Wrap in
-# sentry-wrap so it sends errors to Sentry.
+# sentry_wrap so it sends errors to Sentry.
 while true
 do
-    python /app/bin/sentry-wrap.py wrap-process --timeout="${PROCESS_TIMEOUT_SECONDS}" -- \
+    python /app/bin/sentry_wrap.py wrap-process --timeout="${PROCESS_TIMEOUT_SECONDS}" -- \
         python /app/manage.py remove_orphaned_files --skip-checks
     sleep "${SLEEP_SECONDS}"
 done

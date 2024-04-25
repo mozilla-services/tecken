@@ -7,23 +7,66 @@
 # Wraps a command such that if it fails, an error report is sent to the Sentry service
 # specified by SENTRY_DSN in the environment.
 #
-# Usage: python bin/sentry-wrap.py wrap-process -- [CMD]
+# Usage: python bin/sentry_wrap.py wrap-process -- [CMD]
 #    Wraps a process in error-reporting Sentry goodness.
 #
-# Usage: python bin/sentry-wrap.py test-sentry
+# Usage: python bin/sentry_wrap.py test-sentry
 #    Tests Sentry configuration and connection.
 
 
+import json
 import os
+from pathlib import Path
 import shlex
 import subprocess
-import sys
 import time
 import traceback
 
 import click
 import sentry_sdk
 from sentry_sdk import capture_exception, capture_message
+
+
+# get_version_info and get_release_name are copied from
+# tecken/libdockerflow.py. We can't use them directly,
+# because libdockerflow.py loads modules from tecken, and
+# sentry_wrap needs to be independent from tecken (i.e.
+# any Django app context) to ensure it continues to work
+# outside of the app context (e.g. to run cron jobs).
+def get_version_info(basedir):
+    """Returns version.json data from deploys"""
+    path = Path(basedir) / "version.json"
+    if not path.exists():
+        return {}
+
+    try:
+        data = path.read_text()
+        return json.loads(data)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def get_release_name(basedir):
+    """Return a friendly name for the release that is running
+
+    This pulls version data and then returns the best version-y thing available: the
+    version, the commit, or "unknown" if there's no version data.
+
+    :returns: string
+
+    """
+    version_info = get_version_info(basedir)
+    version = version_info.get("version", "none")
+    commit = version_info.get("commit")
+    commit = commit[:8] if commit else "unknown"
+    return f"{version}:{commit}"
+
+
+def set_up_sentry(sentry_dsn):
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.dirname(current_dir)
+    release = get_release_name(base_dir)
+    sentry_sdk.init(dsn=sentry_dsn, release=release)
 
 
 @click.group()
@@ -37,10 +80,11 @@ def test_sentry(ctx):
     sentry_dsn = os.environ.get("SENTRY_DSN")
 
     if not sentry_dsn:
-        click.echo("SENTRY_DSN is not defined. Exiting.")
-        sys.exit(1)
+        click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
+        ctx.exit(1)
 
-    sentry_sdk.init(sentry_dsn)
+    set_up_sentry(sentry_dsn)
+
     capture_message("Sentry test")
     click.echo("Success. Check Sentry.")
 
@@ -59,18 +103,18 @@ def test_sentry(ctx):
 @click.argument("cmd", nargs=-1)
 @click.pass_context
 def wrap_process(ctx, timeout, verbose, cmd):
+    if not cmd:
+        raise click.UsageError("CMD required")
+
     sentry_dsn = os.environ.get("SENTRY_DSN")
 
     if not sentry_dsn:
         click.echo("SENTRY_DSN is not defined. Exiting.", err=True)
-        sys.exit(1)
-
-    if not cmd:
-        raise click.UsageError("CMD required")
+        ctx.exit(1)
 
     start_time = time.time()
 
-    sentry_sdk.init(sentry_dsn)
+    set_up_sentry(sentry_dsn)
 
     cmd = " ".join(cmd)
     cmd_args = shlex.split(cmd)

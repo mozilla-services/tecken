@@ -2,13 +2,18 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import os
+import shlex
+import subprocess
 from unittest.mock import ANY
 
 from fillmore.test import diff_event
+import requests
 from werkzeug.test import Client
 
 from django.contrib.auth.models import User
 
+from bin.sentry_wrap import get_release_name
 from tecken.apps import count_sentry_scrub_error
 from tecken.tokens.models import Token
 from tecken.wsgi import application
@@ -226,3 +231,34 @@ def test_count_sentry_scrub_error(metricsmock):
     metricsmock.assert_incr(
         "tecken.sentry_scrub_error", value=1, tags=["host:testnode"]
     )
+
+
+def test_sentry_wrap_non_app_error_has_release():
+    port = os.environ.get("EXPOSE_SENTRY_PORT", 8090)
+
+    # Flush fakesentry to ensure we fetch only the desired error downstream
+    requests.post(f"http://fakesentry:{port}/api/flush/")
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.join(os.path.dirname(current_dir), "..")
+    release = get_release_name(base_dir)
+
+    expected_event = {"release": release}
+
+    # Pass a non-Django command that will error to sentry_wrap
+    non_app_command = "ls -2"
+    sentry_wrap_command = f"python bin/sentry_wrap.py wrap-process -- {non_app_command}"
+    cmd_args = shlex.split(sentry_wrap_command)
+    subprocess.run(cmd_args, timeout=10)
+
+    # We don't have to worry about a race condition here, because when the
+    # subprocess exits, we know the sentry_sdk sent the event, and it has
+    # been processed successfully by fakesentry.
+    errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
+    errors_resp.raise_for_status()
+    error_id = errors_resp.json()["errors"][0]
+    error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
+    error_resp.raise_for_status()
+    actual_event = error_resp.json()["payload"]
+
+    assert actual_event["release"] == expected_event["release"]
