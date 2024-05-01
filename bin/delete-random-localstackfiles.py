@@ -13,7 +13,6 @@ Usually, when you do a load test or sample upload of a zip file, *all* files it 
 scenario where in a given .zip upload only some of the files already exists.
 """
 
-
 import os
 import random
 import boto3

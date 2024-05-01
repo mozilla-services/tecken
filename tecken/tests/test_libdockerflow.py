@@ -59,9 +59,10 @@ def test_check_storage_urls_other_error(settings):
         "http://s3.example.com/other-bucket",
     ]
     exception = RuntimeError("A different error")
-    with patch(
-        "tecken.storage.StorageBucket.exists", side_effect=exception
-    ), pytest.raises(RuntimeError):
+    with (
+        patch("tecken.storage.StorageBucket.exists", side_effect=exception),
+        pytest.raises(RuntimeError),
+    ):
         libdockerflow.check_storage_urls(None)
 
 
