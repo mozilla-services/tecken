@@ -32,7 +32,7 @@ Sphinx==7.3.7
 sphinx-rtd-theme==2.0.0
 sphinxcontrib-httpdomain==1.8.1
 ujson==5.9.0
-werkzeug==3.0.2
+werkzeug==3.0.3
 whitenoise==6.6.0
 
 # NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
