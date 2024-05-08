@@ -17,7 +17,7 @@ cd /app/
 export PROCESS_NAME=disk_manager
 
 SLEEP_SECONDS=60
-PROCESS_TIMEOUT_SECONDS=120
+PROCESS_TIMEOUT_SECONDS=240
 
 # Run disk manager in a loop sleeping SLEEP_SECONDS between rounds. Wrap in
 # sentry_wrap so it sends errors to Sentry.
