@@ -28,5 +28,6 @@ class TokenAdmin(admin.ModelAdmin):
     def get_permissions(self, obj):
         return ", ".join(perm.codename for perm in obj.permissions.all())
 
+    @admin.display(description="Email")
     def get_user_email(self, obj):
         return obj.user.email
