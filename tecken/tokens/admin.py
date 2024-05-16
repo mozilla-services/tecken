@@ -24,6 +24,7 @@ class TokenAdmin(admin.ModelAdmin):
     def key_truncated(self, obj):
         return obj.key[:12] + "..."
 
+    @admin.display(description="Permissions")
     def get_permissions(self, obj):
         return ", ".join(perm.codename for perm in obj.permissions.all())
 
