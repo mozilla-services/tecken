@@ -9,12 +9,25 @@ from tecken.tokens.models import Token
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
-    date_hierarchy = "created_at"
     list_display = [
-        "user_email",
+        "key_truncated",
+        "get_user_email",
+        "get_permissions",
         "expires_at",
-        "created_at",
+        "notes",
     ]
 
-    def user_email(self, obj):
+    list_filter = ["permissions"]
+    search_fields = ["user__email", "notes"]
+
+    @admin.display(description="Key")
+    def key_truncated(self, obj):
+        return obj.key[:12] + "..."
+
+    @admin.display(description="Permissions")
+    def get_permissions(self, obj):
+        return ", ".join(perm.codename for perm in obj.permissions.all())
+
+    @admin.display(description="Email")
+    def get_user_email(self, obj):
         return obj.user.email
