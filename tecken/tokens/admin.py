@@ -20,6 +20,7 @@ class TokenAdmin(admin.ModelAdmin):
     list_filter = ["permissions"]
     search_fields = ["user__email", "notes"]
 
+    @admin.display(description="Key")
     def key_truncated(self, obj):
         return obj.key[:12] + "..."
 
