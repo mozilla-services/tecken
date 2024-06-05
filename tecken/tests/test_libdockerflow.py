@@ -7,7 +7,8 @@ import pytest
 from botocore.exceptions import ClientError, EndpointConnectionError
 
 from tecken import libdockerflow
-from tecken.storage import StorageBucket, StorageError
+from tecken.base.symbolstorage import SymbolStorage
+from tecken.storage import StorageError
 from tecken.libdockerflow import get_version_info, get_release_name
 
 
@@ -17,11 +18,15 @@ def test_check_storage_urls_happy_path():
 
 
 def test_check_storage_urls_missing(settings):
-    settings.SYMBOL_URLS = [
+    symbol_urls = [
         "http://s3.example.com/public",
         "http://s3.example.com/other-bucket",
     ]
-    with patch("tecken.storage.StorageBucket.exists", return_value=False):
+    normal_storage = SymbolStorage(symbol_urls)
+    with (
+        patch("tecken.storage.StorageBucket.exists", return_value=False),
+        patch("tecken.base.symbolstorage._normal_storage", normal_storage),
+    ):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
     assert "public" in errors[0].msg
@@ -39,13 +44,16 @@ def test_check_storage_urls_missing(settings):
     ),
 )
 def test_check_storage_urls_storageerror(exception, settings):
-    settings.SYMBOL_URLS = [
+    symbol_urls = [
         "http://s3.example.com/public",
         "http://s3.example.com/other-bucket",
     ]
-    fake_bucket = StorageBucket(url=settings.SYMBOL_URLS[0])
-    error = StorageError(bucket=fake_bucket, backend_error=exception)
-    with patch("tecken.storage.StorageBucket.exists", side_effect=error):
+    normal_storage = SymbolStorage(symbol_urls)
+    error = StorageError(bucket=normal_storage.sources[0], backend_error=exception)
+    with (
+        patch("tecken.storage.StorageBucket.exists", side_effect=error),
+        patch("tecken.base.symbolstorage._normal_storage", normal_storage),
+    ):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
     for error in errors:
