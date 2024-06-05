@@ -60,7 +60,7 @@ class StorageBucket:
         "test-s3": "s3.example.com",
     }
 
-    def __init__(self, url, try_symbols=False, file_prefix=""):
+    def __init__(self, url, try_symbols=False, file_prefix=settings.SYMBOL_FILE_PREFIX):
         self.url = url
         parsed = urlparse(url)
         self.scheme = parsed.scheme

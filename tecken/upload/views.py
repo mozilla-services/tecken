@@ -331,12 +331,6 @@ def upload_archive(request, upload_workspace):
         connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
     )
 
-    # Every key has a prefix. If the StorageBucket instance has it's own prefix
-    # prefix that first :)
-    prefix = settings.SYMBOL_FILE_PREFIX
-    if bucket_info.prefix:
-        prefix = f"{bucket_info.prefix}/{prefix}"
-
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
 
@@ -381,7 +375,7 @@ def upload_archive(request, upload_workspace):
             if _ignore_member_file(member.name):
                 ignored_keys.append(member.name)
                 continue
-            key_name = os.path.join(prefix, member.name)
+            key_name = os.path.join(bucket_info.prefix, member.name)
             # We need to know and remember, for every file attempted,
             # what that name corresponds to as a "symbol key".
             # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')

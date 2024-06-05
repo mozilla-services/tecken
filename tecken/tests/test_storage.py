@@ -16,7 +16,7 @@ INIT_CASES = {
         "base_url": "https://s3.amazonaws.com/some-bucket",
         "endpoint_url": None,
         "name": "some-bucket",
-        "prefix": "",
+        "prefix": "v1",
         "region": None,
     },
     "https://s3.amazonaws.com/some-bucket?access=public": {
@@ -24,7 +24,7 @@ INIT_CASES = {
         "base_url": "https://s3.amazonaws.com/some-bucket",
         "endpoint_url": None,
         "name": "some-bucket",
-        "prefix": "",
+        "prefix": "v1",
         "region": None,
     },
     "https://s3-eu-west-2.amazonaws.com/some-bucket": {
@@ -32,7 +32,7 @@ INIT_CASES = {
         "base_url": "https://s3-eu-west-2.amazonaws.com/some-bucket",
         "endpoint_url": None,
         "name": "some-bucket",
-        "prefix": "",
+        "prefix": "v1",
         "region": "eu-west-2",
     },
     "http://s3.example.com/buck/prfx": {
@@ -40,7 +40,7 @@ INIT_CASES = {
         "base_url": "http://s3.example.com/buck",
         "endpoint_url": "http://s3.example.com",
         "name": "buck",
-        "prefix": "prfx",
+        "prefix": "prfx/v1",
         "region": None,
     },
     "http://localstack:4566/publicbucket": {
@@ -48,7 +48,7 @@ INIT_CASES = {
         "base_url": "http://localstack:4566/publicbucket",
         "endpoint_url": "http://localstack:4566",
         "name": "publicbucket",
-        "prefix": "",
+        "prefix": "v1",
         "region": None,
     },
 }

@@ -82,11 +82,12 @@ class SymbolStorage:
 
     """
 
-    def __init__(
-        self, urls, file_prefix=settings.SYMBOL_FILE_PREFIX, try_url_index=None
-    ):
+    def __init__(self, urls, try_url_index=None):
         self.urls = urls
-        self.sources = [StorageBucket(url, file_prefix=file_prefix) for url in urls]
+        self.sources = [
+            StorageBucket(url, try_symbols=(i == try_url_index))
+            for i, url in enumerate(urls)
+        ]
         self.try_url_index = try_url_index
 
     def __repr__(self):
@@ -118,7 +119,7 @@ class SymbolStorage:
         was returned as an indication that the symbol actually exists.
 
         """
-        for i, source in enumerate(self.sources):
+        for source in self.sources:
             prefix = source.prefix
             assert prefix
 
@@ -129,7 +130,7 @@ class SymbolStorage:
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
             if last_modified := get_last_modified(file_url):
                 age_days = int(time.time() - last_modified) // 86_400  # seconds per day
-                if i == self.try_url_index:
+                if source.try_symbols:
                     tags = ["storage:try"]
                 else:
                     tags = ["storage:regular"]
