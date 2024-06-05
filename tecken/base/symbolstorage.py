@@ -86,25 +86,11 @@ class SymbolStorage:
         self, urls, file_prefix=settings.SYMBOL_FILE_PREFIX, try_url_index=None
     ):
         self.urls = urls
-        self._sources = None
-        self.file_prefix = file_prefix
+        self.sources = [StorageBucket(url, file_prefix=file_prefix) for url in urls]
         self.try_url_index = try_url_index
 
     def __repr__(self):
         return f"<{self.__class__.__name__} urls={self.urls}>"
-
-    def _get_sources(self):
-        for url in self.urls:
-            # The URL is expected to have the bucket name as the first
-            # part of the pathname.
-            # In the future we might expand to a more elaborate scheme.
-            yield StorageBucket(url, file_prefix=self.file_prefix)
-
-    @property
-    def sources(self):
-        if self._sources is None:
-            self._sources = list(self._get_sources())
-        return self._sources
 
     @staticmethod
     def make_url_path(prefix, symbol, debugid, filename):
