@@ -77,7 +77,7 @@ def test_has_symbol(s3_helper):
         data=b"abc123",
     )
     urls = ("http://localstack:4566/publicbucket/",)
-    storage = SymbolStorage(urls, file_prefix="v1")
+    storage = SymbolStorage(urls)
     assert storage.has_symbol("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym")
     assert not storage.has_symbol(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
@@ -126,7 +126,7 @@ def test_public_default_file_prefix():
         # No prefix!
         "http://localstack:4566/publicbucket",
     )
-    storage = SymbolStorage(urls, file_prefix="myprfx")
+    storage = SymbolStorage(urls)
     assert not storage.has_symbol(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
