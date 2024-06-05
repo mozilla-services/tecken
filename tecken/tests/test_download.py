@@ -26,9 +26,9 @@ def reload_symbol_storage(urls, try_storage=None):
     """
     if isinstance(urls, str):
         urls = tuple([urls])
-    symbolstorage.normal_storage = SymbolStorage(urls)
+    symbolstorage._normal_storage = SymbolStorage(urls)
     if try_storage:
-        symbolstorage.try_storage = SymbolStorage([try_storage], try_url_index=0)
+        symbolstorage._try_storage = SymbolStorage([try_storage], try_url_index=0)
 
 
 def test_client_happy_path(client, db, s3_helper, metricsmock):

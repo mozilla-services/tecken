@@ -143,9 +143,9 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
     refresh_cache = "_refresh" in request.GET
 
     if "try" in request.GET or try_symbols:
-        storage = try_storage
+        storage = try_storage()
     else:
-        storage = normal_storage
+        storage = normal_storage()
 
     if request.method == "HEAD":
         if storage.has_symbol(debugfilename, debugid, filename):
