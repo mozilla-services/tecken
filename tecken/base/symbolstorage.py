@@ -157,11 +157,20 @@ class SymbolStorage:
             return found["url"]
 
 
-normal_storage = SymbolStorage(
-    settings.SYMBOL_URLS, file_prefix=settings.SYMBOL_FILE_PREFIX
-)
-try_storage = SymbolStorage(
+_normal_storage = SymbolStorage(settings.SYMBOL_URLS)
+_try_storage = SymbolStorage(
     settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
-    file_prefix=settings.SYMBOL_FILE_PREFIX,
     try_url_index=len(settings.SYMBOL_URLS),
 )
+
+
+def normal_storage():
+    """Return the global SymbolStorage instance for regular storage."""
+    # This function exists to make it easier to patch the SymbolStorage instance in tests.
+    return _normal_storage
+
+
+def try_storage():
+    """Return the global SymbolStorage instance for try storage."""
+    # This function exists to make it easier to patch the SymbolStorage instance in tests.
+    return _try_storage
