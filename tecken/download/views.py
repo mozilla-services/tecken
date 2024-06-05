@@ -15,7 +15,8 @@ from tecken.base.decorators import (
     api_require_http_methods,
     set_cors_headers,
 )
-from tecken.base.symboldownloader import SymbolDownloader
+from tecken.base.symbolstorage import normal_storage
+from tecken.base.symbolstorage import try_storage
 from tecken.base.utils import invalid_key_name_characters
 from tecken.upload.models import FileUpload
 from tecken.storage import StorageBucket
@@ -26,16 +27,6 @@ logger = logging.getLogger("tecken")
 
 
 BOGUS_DEBUG_ID = "000000000000000000000000000000000"
-
-
-normal_downloader = SymbolDownloader(
-    settings.SYMBOL_URLS, file_prefix=settings.SYMBOL_FILE_PREFIX
-)
-try_downloader = SymbolDownloader(
-    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
-    file_prefix=settings.SYMBOL_FILE_PREFIX,
-    try_url_index=len(settings.SYMBOL_URLS),
-)
 
 
 def _ignore_symbol(debugfilename, debugid, filename):
@@ -131,7 +122,7 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
     # debugid, and filename parameters to determine if we can, with confidence, simply
     # ignore it.
     #
-    # Not only can we avoid doing a SymbolDownloader call, we also don't have to bother
+    # Not only can we avoid doing a SymbolStorage call, we also don't have to bother
     # logging that it could not be found.
     if _ignore_symbol(debugfilename, debugid, filename):
         logger.debug(f"Ignoring symbol {debugfilename}/{debugid}/{filename}")
@@ -152,19 +143,19 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
     refresh_cache = "_refresh" in request.GET
 
     if "try" in request.GET or try_symbols:
-        downloader = try_downloader
+        storage = try_storage
     else:
-        downloader = normal_downloader
+        storage = normal_storage
 
     if request.method == "HEAD":
-        if downloader.has_symbol(debugfilename, debugid, filename):
+        if storage.has_symbol(debugfilename, debugid, filename):
             response = http.HttpResponse()
             if request._request_debug:
-                response["Debug-Time"] = downloader.time_took
+                response["Debug-Time"] = storage.time_took
             return response
 
     else:
-        url = downloader.get_symbol_url(debugfilename, debugid, filename)
+        url = storage.get_symbol_url(debugfilename, debugid, filename)
         if url:
             # If doing local development, with Docker, you're most likely running
             # localstack as a fake S3. It runs on its own hostname that is only
@@ -180,7 +171,7 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
                 url = url.replace("localstack:4566", "localhost:4566")
             response = http.HttpResponseRedirect(url)
             if request._request_debug:
-                response["Debug-Time"] = downloader.time_took
+                response["Debug-Time"] = storage.time_took
             return response
 
     if is_maybe_codeinfo(debugfilename, debugid, filename):
@@ -205,5 +196,5 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
 
     response = http.HttpResponseNotFound("Symbol Not Found")
     if request._request_debug:
-        response["Debug-Time"] = downloader.time_took
+        response["Debug-Time"] = storage.time_took
     return response

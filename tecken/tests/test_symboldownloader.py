@@ -4,8 +4,8 @@
 
 import pytest
 
-from tecken.base.symboldownloader import (
-    SymbolDownloader,
+from tecken.base.symbolstorage import (
+    SymbolStorage,
     get_last_modified,
 )
 
@@ -30,7 +30,7 @@ from tecken.base.symboldownloader import (
     ],
 )
 def test_make_url_path(prefix, symbol, debugid, filename, expected):
-    path = SymbolDownloader.make_url_path(
+    path = SymbolStorage.make_url_path(
         prefix=prefix, symbol=symbol, debugid=debugid, filename=filename
     )
     assert path == expected
@@ -50,13 +50,13 @@ def test_get_last_modified(s3_helper, settings):
         data=b"abc123",
     )
 
-    good_key = SymbolDownloader.make_url_path(
+    good_key = SymbolStorage.make_url_path(
         prefix="v1",
         symbol=module,
         debugid=debugid,
         filename=debugfn,
     )
-    bad_key = SymbolDownloader.make_url_path(
+    bad_key = SymbolStorage.make_url_path(
         prefix="v1",
         symbol="XUL",
         debugid="4C4C445955553144A1984A09D6A8D6930",
@@ -77,11 +77,9 @@ def test_has_symbol(s3_helper):
         data=b"abc123",
     )
     urls = ("http://localstack:4566/publicbucket/",)
-    downloader = SymbolDownloader(urls, file_prefix="v1")
-    assert downloader.has_symbol(
-        "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
-    )
-    assert not downloader.has_symbol(
+    storage = SymbolStorage(urls, file_prefix="v1")
+    assert storage.has_symbol("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym")
+    assert not storage.has_symbol(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
 
@@ -94,15 +92,15 @@ def test_get_url_public(s3_helper):
         data=b"abc123",
     )
     urls = ("http://localstack:4566/publicbucket/",)
-    downloader = SymbolDownloader(urls)
-    url = downloader.get_symbol_url(
+    storage = SymbolStorage(urls)
+    url = storage.get_symbol_url(
         "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
     )
     assert url == (
         "http://localstack:4566/publicbucket/v1/xul.pdb/"
         + "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
-    url = downloader.get_symbol_url(
+    url = storage.get_symbol_url(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
     assert url is None
@@ -128,8 +126,8 @@ def test_public_default_file_prefix():
         # No prefix!
         "http://localstack:4566/publicbucket",
     )
-    downloader = SymbolDownloader(urls, file_prefix="myprfx")
-    assert not downloader.has_symbol(
+    storage = SymbolStorage(urls, file_prefix="myprfx")
+    assert not storage.has_symbol(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
 
@@ -142,7 +140,5 @@ def test_has_public_case_insensitive_debugid(s3_helper):
         data=b"abc123",
     )
     urls = ("http://localstack:4566/publicbucket/",)
-    downloader = SymbolDownloader(urls)
-    assert downloader.has_symbol(
-        "xul.pdb", "44e4ec8c2f41492b9369d6b9a059577c2", "xul.sym"
-    )
+    storage = SymbolStorage(urls)
+    assert storage.has_symbol("xul.pdb", "44e4ec8c2f41492b9369d6b9a059577c2", "xul.sym")
