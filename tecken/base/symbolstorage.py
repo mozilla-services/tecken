@@ -71,7 +71,7 @@ def get_last_modified(url: str) -> Optional[int]:
             return int(time.time())
 
 
-class SymbolDownloader:
+class SymbolStorage:
     """
     Class for the following S3 tasks:
 
@@ -169,3 +169,13 @@ class SymbolDownloader:
         found = self._get(symbol, debugid, filename)
         if found:
             return found["url"]
+
+
+normal_storage = SymbolStorage(
+    settings.SYMBOL_URLS, file_prefix=settings.SYMBOL_FILE_PREFIX
+)
+try_storage = SymbolStorage(
+    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
+    file_prefix=settings.SYMBOL_FILE_PREFIX,
+    try_url_index=len(settings.SYMBOL_URLS),
+)

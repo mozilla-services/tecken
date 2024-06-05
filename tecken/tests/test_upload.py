@@ -18,7 +18,7 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
-from tecken.base.symboldownloader import SymbolDownloader
+from tecken.base.symbolstorage import SymbolStorage
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -417,8 +417,8 @@ def test_upload_archive_with_cache_invalidation(
     uploaderuser,
     settings,
 ):
-    downloader = SymbolDownloader(settings.SYMBOL_URLS)
-    utils.downloader = downloader
+    storage = SymbolStorage(settings.SYMBOL_URLS)
+    utils.storage = storage
 
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
@@ -433,14 +433,14 @@ def test_upload_archive_with_cache_invalidation(
 
     with open(ZIP_FILE, "rb") as fp:
         # First time -- not there
-        assert not downloader.has_symbol(module, debugid, debugfn)
+        assert not storage.has_symbol(module, debugid, debugfn)
 
         url = reverse("upload:upload_archive")
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
         # Second time is there
-        assert downloader.has_symbol(module, debugid, debugfn)
+        assert storage.has_symbol(module, debugid, debugfn)
 
 
 def test_upload_archive_by_url(
