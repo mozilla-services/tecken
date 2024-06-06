@@ -22,11 +22,10 @@ from tecken.base.decorators import (
     set_cors_headers,
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
+from tecken.base.symbolstorage import symbol_storage
 from tecken.download.views import cached_lookup_by_syminfo
-from tecken.storage import StorageBucket
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload.views import get_upload_bucket_urls
 from tecken.libmarkus import METRICS
 
 logger = logging.getLogger("tecken")
@@ -93,22 +92,16 @@ def auth(request):
 @api_login_required
 @METRICS.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
 def possible_upload_urls(request):
-    context = {"urls": []}
-    seen = set()
-    for url in get_upload_bucket_urls():
-        bucket_info = StorageBucket(url)
-
-        if bucket_info.name in seen:
-            continue
-        seen.add(bucket_info.name)
-        context["urls"].append(
+    upload_backend = symbol_storage().upload_backend
+    context = {
+        "urls": [
             {
-                "url": url,
-                "bucket_name": bucket_info.name,
-                "default": url == settings.UPLOAD_DEFAULT_URL,
+                "url": upload_backend.url,
+                "bucket_name": upload_backend.name,
+                "default": True,
             }
-        )
-        context["urls"].reverse()  # Default first
+        ]
+    }
     return http.JsonResponse(context)
 
 
