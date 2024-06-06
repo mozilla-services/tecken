@@ -4,6 +4,7 @@
 
 import hashlib
 import os
+from typing import Optional
 import zipfile
 import gzip
 import shutil
@@ -16,7 +17,8 @@ from botocore.vendored.requests.exceptions import ReadTimeout
 from django.conf import settings
 from django.utils import timezone
 
-from tecken.upload.models import FileUpload
+from tecken.storage import StorageBucket
+from tecken.upload.models import FileUpload, Upload
 from tecken.libmarkus import METRICS
 
 logger = logging.getLogger("tecken")
@@ -196,13 +198,11 @@ def get_key_content_type(key_name):
 
 @METRICS.timer_decorator("upload_file_upload")
 def upload_file_upload(
-    client,
-    bucket_name,
-    key_name,
-    file_path,
-    upload=None,
-    client_lookup=None,
-):
+    backend: StorageBucket,
+    key_name: str,
+    file_path: str,
+    upload: Upload,
+) -> Optional[FileUpload]:
     # The reason you might want to pass a different client for
     # looking up existing sizes is because you perhaps want to use
     # a client that is configured to be a LOT less patient.
@@ -214,8 +214,11 @@ def upload_file_upload(
     # assume the file doesn't already exist.
     # TODO(jwhitlock): Create StorageBucket API rather than directly use
     # backend clients.
+    client = backend.get_storage_client()
+    client_lookup = backend.get_lookup_client()
+
     existing_size, existing_metadata = key_existing(
-        client_lookup or client, bucket_name, key_name
+        client_lookup, backend.name, key_name
     )
 
     size = os.stat(file_path).st_size
@@ -288,7 +291,7 @@ def upload_file_upload(
 
     file_upload = FileUpload.objects.create(
         upload=upload,
-        bucket_name=bucket_name,
+        bucket_name=backend.name,
         key=key_name,
         update=update,
         compressed=compressed,
@@ -320,10 +323,10 @@ def upload_file_upload(
     if metadata:
         extras["Metadata"] = metadata
 
-    logger.debug(f"Uploading file {key_name!r} into {bucket_name!r}")
+    logger.debug(f"Uploading file {key_name!r} into {backend.name!r}")
     with METRICS.timer("upload_put_object"):
         with open(file_path, "rb") as f:
-            client.put_object(Bucket=bucket_name, Key=key_name, Body=f, **extras)
+            client.put_object(Bucket=backend.name, Key=key_name, Body=f, **extras)
     FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
     logger.info(f"Uploaded key {key_name}")
     METRICS.incr("upload_file_upload_upload", 1)

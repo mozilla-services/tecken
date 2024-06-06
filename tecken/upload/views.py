@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import concurrent.futures
+from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import hashlib
 import logging
@@ -141,6 +142,23 @@ def make_tempdir(tempdir_root, suffix=None):
     return decorator
 
 
+_EXECUTOR = None
+
+
+def get_executor() -> SynchronousExecutor | ThreadPoolExecutor:
+    """Retrieve the global thread pool executor instance."""
+    global _EXECUTOR
+    if _EXECUTOR is None:
+        if settings.SYNCHRONOUS_UPLOAD_FILE_UPLOAD:
+            # This is only applicable when running unit tests
+            _EXECUTOR = SynchronousExecutor()
+        else:
+            _EXECUTOR = ThreadPoolExecutor(
+                max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
+            )
+    return _EXECUTOR
+
+
 @METRICS.timer_decorator("upload_archive")
 @api_require_POST
 @csrf_exempt
@@ -271,23 +289,6 @@ def upload_archive(request, upload_workspace):
     if not bucket_info.exists():
         raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
 
-    # Create the client for upload_file_upload
-    # TODO(jwhitlock): implement backend details in StorageBucket API
-    client = bucket_info.get_storage_client(
-        read_timeout=settings.S3_PUT_READ_TIMEOUT,
-        connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
-    )
-    # Use a different client for doing the lookups.
-    # That's because we don't want the size lookup to severly accumulate
-    # in the case of there being some unpredictable slowness.
-    # When that happens the lookup is quickly cancelled and it assumes
-    # the file does not exist.
-    # See http://botocore.readthedocs.io/en/latest/reference/config.html#botocore.config.Config  # noqa
-    lookup_client = bucket_info.get_storage_client(
-        read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
-        connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
-    )
-
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
 
@@ -316,49 +317,40 @@ def upload_archive(request, upload_workspace):
     ignored_keys = []
     skipped_keys = []
 
-    if settings.SYNCHRONOUS_UPLOAD_FILE_UPLOAD:
-        # This is only applicable when running unit tests
-        thread_pool = SynchronousExecutor()
-    else:
-        thread_pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
-        )
     file_uploads_created = 0
     uploaded_symbol_keys = []
     key_to_symbol_keys = {}
-    with thread_pool as executor:
-        future_to_key = {}
-        for member in file_listing:
-            if _ignore_member_file(member.name):
-                ignored_keys.append(member.name)
-                continue
-            key_name = os.path.join(bucket_info.prefix, member.name)
-            # We need to know and remember, for every file attempted,
-            # what that name corresponds to as a "symbol key".
-            # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
-            symbol_key = tuple(member.name.split("/")[:2])
-            key_to_symbol_keys[key_name] = symbol_key
-            future_to_key[
-                executor.submit(
-                    upload_file_upload,
-                    client,
-                    bucket_info.name,
-                    key_name,
-                    member.path,
-                    upload=upload_obj,
-                    client_lookup=lookup_client,
-                )
-            ] = key_name
-        # Now lets wait for them all to finish and we'll see which ones
-        # were skipped and which ones were created.
-        for future in concurrent.futures.as_completed(future_to_key):
-            file_upload = future.result()
-            if file_upload:
-                file_uploads_created += 1
-                uploaded_symbol_keys.append(key_to_symbol_keys[file_upload.key])
-            else:
-                skipped_keys.append(future_to_key[future])
-                METRICS.incr("upload_file_upload_skip", 1)
+    executor = get_executor()
+    future_to_key = {}
+    for member in file_listing:
+        if _ignore_member_file(member.name):
+            ignored_keys.append(member.name)
+            continue
+        key_name = os.path.join(bucket_info.prefix, member.name)
+        # We need to know and remember, for every file attempted,
+        # what that name corresponds to as a "symbol key".
+        # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
+        symbol_key = tuple(member.name.split("/")[:2])
+        key_to_symbol_keys[key_name] = symbol_key
+        future_to_key[
+            executor.submit(
+                upload_file_upload,
+                bucket_info,
+                key_name,
+                member.path,
+                upload_obj,
+            )
+        ] = key_name
+    # Now lets wait for them all to finish and we'll see which ones
+    # were skipped and which ones were created.
+    for future in concurrent.futures.as_completed(future_to_key):
+        file_upload = future.result()
+        if file_upload:
+            file_uploads_created += 1
+            uploaded_symbol_keys.append(key_to_symbol_keys[file_upload.key])
+        else:
+            skipped_keys.append(future_to_key[future])
+            METRICS.incr("upload_file_upload_skip", 1)
 
     if file_uploads_created:
         logger.info(f"Created {file_uploads_created} FileUpload objects")
