@@ -84,7 +84,7 @@ class SymbolStorage:
 
     def __init__(self, urls, try_url_index=None):
         self.urls = urls
-        self.sources = [
+        self.backends = [
             StorageBucket(url, try_symbols=(i == try_url_index))
             for i, url in enumerate(urls)
         ]
@@ -119,25 +119,25 @@ class SymbolStorage:
         was returned as an indication that the symbol actually exists.
 
         """
-        for source in self.sources:
-            prefix = source.prefix
+        for backend in self.backends:
+            prefix = backend.prefix
             assert prefix
 
             # We'll put together the URL manually
             file_url = "{}/{}".format(
-                source.base_url, self.make_url_path(prefix, symbol, debugid, filename)
+                backend.base_url, self.make_url_path(prefix, symbol, debugid, filename)
             )
             logger.debug(f"Looking for symbol file by URL {file_url!r}")
             if last_modified := get_last_modified(file_url):
                 age_days = int(time.time() - last_modified) // 86_400  # seconds per day
-                if source.try_symbols:
+                if backend.try_symbols:
                     tags = ["storage:try"]
                 else:
                     tags = ["storage:regular"]
                 METRICS.histogram("symboldownloader.file_age_days", age_days, tags)
                 return {
                     "url": file_url,
-                    "source": source,
+                    "backend": backend,
                 }
 
     @set_time_took
