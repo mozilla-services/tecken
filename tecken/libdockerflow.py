@@ -13,12 +13,12 @@ from tecken.base.symbolstorage import normal_storage
 
 def check_storage_urls(app_configs, **kwargs):
     errors = []
-    for source in normal_storage().sources:
+    for backend in normal_storage().backends:
         try:
-            if not source.exists():
+            if not backend.exists():
                 errors.append(
                     checks.Error(
-                        f"Unable to connect to source {source.name!r}, "
+                        f"Unable to connect to backend {backend.name!r}, "
                         f"because bucket not found",
                         id="tecken.health.E001",
                     )
@@ -26,7 +26,7 @@ def check_storage_urls(app_configs, **kwargs):
         except StorageError as error:
             errors.append(
                 checks.Error(
-                    f"Unable to connect to source {source.name!r}, "
+                    f"Unable to connect to backend {backend.name!r}, "
                     f"due to {error.backend_msg}",
                     id="tecken.health.E002",
                 )

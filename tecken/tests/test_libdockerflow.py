@@ -49,7 +49,7 @@ def test_check_storage_urls_storageerror(exception, settings):
         "http://s3.example.com/other-bucket",
     ]
     normal_storage = SymbolStorage(symbol_urls)
-    error = StorageError(bucket=normal_storage.sources[0], backend_error=exception)
+    error = StorageError(bucket=normal_storage.backends[0], backend_error=exception)
     with (
         patch("tecken.storage.StorageBucket.exists", side_effect=error),
         patch("tecken.base.symbolstorage._normal_storage", normal_storage),
