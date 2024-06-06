@@ -7,8 +7,7 @@ from urllib.parse import urlparse
 
 from django.urls import reverse
 
-from tecken.base.symbolstorage import SymbolStorage
-from tecken.base import symbolstorage
+from tecken.base.symbolstorage import symbol_storage
 from tecken.download import views
 from tecken.upload.models import FileUpload
 
@@ -18,24 +17,8 @@ import pytest
 _here = os.path.dirname(__file__)
 
 
-def reload_symbol_storage(urls, try_storage=None):
-    """Because the tecken.download.views module has a global instance
-    of SymbolStorage created at start-up, it's impossible to easily
-    change the URL if you want to test clients with a different URL.
-    This function hotfixes that instance to use a different URL(s).
-    """
-    if isinstance(urls, str):
-        urls = tuple([urls])
-    symbolstorage._normal_storage = SymbolStorage(urls)
-    if try_storage:
-        symbolstorage._try_storage = SymbolStorage([try_storage], try_url_index=0)
-
-
 def test_client_happy_path(client, db, s3_helper, metricsmock):
-    reload_symbol_storage(
-        os.environ["UPLOAD_DEFAULT_URL"],
-        try_storage=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
-    )
+    symbol_storage(force_recreate=True)
 
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
@@ -78,10 +61,7 @@ def test_client_try_download(client, db, s3_helper, metricsmock):
     then to reach that file you need to use ?try on the URL.
 
     """
-    reload_symbol_storage(
-        os.environ["UPLOAD_DEFAULT_URL"],
-        try_storage=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
-    )
+    symbol_storage(force_recreate=True)
 
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
@@ -128,7 +108,7 @@ def test_client_try_download(client, db, s3_helper, metricsmock):
 
 
 def test_client_with_debug(client, db, s3_helper):
-    reload_symbol_storage(os.environ["UPLOAD_DEFAULT_URL"])
+    symbol_storage(force_recreate=True)
 
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
@@ -196,7 +176,7 @@ def test_client_with_ignorable_file_extensions(client, db, s3_helper):
 
 
 def test_client_with_debug_with_cache(client, db, s3_helper):
-    reload_symbol_storage(os.environ["UPLOAD_DEFAULT_URL"])
+    symbol_storage(force_recreate=True)
 
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
@@ -227,7 +207,7 @@ def test_client_with_debug_with_cache(client, db, s3_helper):
 
 
 def test_client_with_cache_refreshed(client, db, s3_helper):
-    reload_symbol_storage(os.environ["UPLOAD_DEFAULT_URL"])
+    symbol_storage(force_recreate=True)
 
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
@@ -254,7 +234,7 @@ def test_client_with_cache_refreshed(client, db, s3_helper):
 
 
 def test_client_404(client, db, s3_helper):
-    reload_symbol_storage(os.environ["UPLOAD_DEFAULT_URL"])
+    symbol_storage(force_recreate=True)
 
     url = reverse(
         "download:download_symbol",
@@ -269,7 +249,7 @@ def test_client_404(client, db, s3_helper):
 
 
 def test_client_with_bad_filenames(client, db):
-    reload_symbol_storage(os.environ["UPLOAD_DEFAULT_URL"])
+    symbol_storage(force_recreate=True)
 
     url = reverse(
         "download:download_symbol",
@@ -345,10 +325,7 @@ def test_client_with_bad_filenames(client, db):
 
 
 def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
-    reload_symbol_storage(
-        os.environ["UPLOAD_DEFAULT_URL"],
-        try_storage=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
-    )
+    symbol_storage(force_recreate=True)
 
     sym_file = "xul.sym"
     debug_filename = "xul.pdb"
@@ -413,10 +390,7 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
 
 
 def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
-    reload_symbol_storage(
-        os.environ["UPLOAD_DEFAULT_URL"],
-        try_storage=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
-    )
+    symbol_storage(force_recreate=True)
 
     sym_file = "xul.sym"
     debug_filename = "xul.pdb"
@@ -461,10 +435,7 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
 
 
 def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
-    reload_symbol_storage(
-        os.environ["UPLOAD_DEFAULT_URL"],
-        try_storage=os.environ["UPLOAD_TRY_SYMBOLS_URL"],
-    )
+    symbol_storage(force_recreate=True)
 
     sym_file = "xul.sym"
     debug_filename = "xul.pdb"

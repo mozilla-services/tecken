@@ -15,8 +15,7 @@ from tecken.base.decorators import (
     api_require_http_methods,
     set_cors_headers,
 )
-from tecken.base.symbolstorage import normal_storage
-from tecken.base.symbolstorage import try_storage
+from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import invalid_key_name_characters
 from tecken.upload.models import FileUpload
 from tecken.storage import StorageBucket
@@ -142,20 +141,18 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
 
     refresh_cache = "_refresh" in request.GET
 
-    if "try" in request.GET or try_symbols:
-        storage = try_storage()
-    else:
-        storage = normal_storage()
+    try_symbols = "try" in request.GET or try_symbols
+    storage = symbol_storage()
 
     if request.method == "HEAD":
-        if storage.has_symbol(debugfilename, debugid, filename):
+        if storage.has_symbol(debugfilename, debugid, filename, try_symbols):
             response = http.HttpResponse()
             if request._request_debug:
                 response["Debug-Time"] = storage.time_took
             return response
 
     else:
-        url = storage.get_symbol_url(debugfilename, debugid, filename)
+        url = storage.get_symbol_url(debugfilename, debugid, filename, try_symbols)
         if url:
             # If doing local development, with Docker, you're most likely running
             # localstack as a fake S3. It runs on its own hostname that is only
@@ -180,7 +177,7 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
         )
         if ret:
             # Redirect to the correct debuginfo download url
-            if "try" in request.GET or try_symbols:
+            if try_symbols:
                 view_to_use = "download:download_symbol_try"
             else:
                 view_to_use = "download:download_symbol"

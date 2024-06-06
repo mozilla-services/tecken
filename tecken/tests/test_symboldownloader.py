@@ -76,8 +76,9 @@ def test_has_symbol(s3_helper):
         key="v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
         data=b"abc123",
     )
-    urls = ("http://localstack:4566/publicbucket/",)
-    storage = SymbolStorage(urls)
+    storage = SymbolStorage(
+        upload_url="http://localstack:4566/publicbucket/", download_urls=[]
+    )
     assert storage.has_symbol("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym")
     assert not storage.has_symbol(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
@@ -91,8 +92,9 @@ def test_get_url_public(s3_helper):
         key="v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
         data=b"abc123",
     )
-    urls = ("http://localstack:4566/publicbucket/",)
-    storage = SymbolStorage(urls)
+    storage = SymbolStorage(
+        upload_url="http://localstack:4566/publicbucket/", download_urls=[]
+    )
     url = storage.get_symbol_url(
         "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
     )
@@ -119,14 +121,15 @@ def test_public_default_file_prefix():
     it on a *per URL* basis.
     """
 
-    urls = (
-        "http://localstack:4566/publicbucket/start/",
-        # No trailing / in the path part
-        "http://localstack:4566/publicbucket/prrffxx",
-        # No prefix!
-        "http://localstack:4566/publicbucket",
+    storage = SymbolStorage(
+        upload_url="http://localstack:4566/publicbucket/start/",
+        download_urls=[
+            # No trailing / in the path part
+            "http://localstack:4566/publicbucket/prrffxx",
+            # No prefix!
+            "http://localstack:4566/publicbucket",
+        ],
     )
-    storage = SymbolStorage(urls)
     assert not storage.has_symbol(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
@@ -139,6 +142,7 @@ def test_has_public_case_insensitive_debugid(s3_helper):
         key="v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
         data=b"abc123",
     )
-    urls = ("http://localstack:4566/publicbucket/",)
-    storage = SymbolStorage(urls)
+    storage = SymbolStorage(
+        upload_url="http://localstack:4566/publicbucket/", download_urls=[]
+    )
     assert storage.has_symbol("xul.pdb", "44e4ec8c2f41492b9369d6b9a059577c2", "xul.sym")

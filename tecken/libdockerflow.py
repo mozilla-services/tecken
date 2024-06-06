@@ -8,12 +8,12 @@ from pathlib import Path
 from django.core import checks
 
 from tecken.storage import StorageError
-from tecken.base.symbolstorage import normal_storage
+from tecken.base.symbolstorage import symbol_storage
 
 
 def check_storage_urls(app_configs, **kwargs):
     errors = []
-    for backend in normal_storage().backends:
+    for backend in symbol_storage().backends:
         try:
             if not backend.exists():
                 errors.append(

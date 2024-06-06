@@ -18,14 +18,13 @@ def test_check_storage_urls_happy_path():
 
 
 def test_check_storage_urls_missing(settings):
-    symbol_urls = [
-        "http://s3.example.com/public",
-        "http://s3.example.com/other-bucket",
-    ]
-    normal_storage = SymbolStorage(symbol_urls)
+    symbol_storage = SymbolStorage(
+        upload_url="http://s3.example.com/public",
+        download_urls=["http://s3.example.com/other-bucket"],
+    )
     with (
         patch("tecken.storage.StorageBucket.exists", return_value=False),
-        patch("tecken.base.symbolstorage._normal_storage", normal_storage),
+        patch("tecken.base.symbolstorage._symbol_storage", symbol_storage),
     ):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
@@ -44,15 +43,14 @@ def test_check_storage_urls_missing(settings):
     ),
 )
 def test_check_storage_urls_storageerror(exception, settings):
-    symbol_urls = [
-        "http://s3.example.com/public",
-        "http://s3.example.com/other-bucket",
-    ]
-    normal_storage = SymbolStorage(symbol_urls)
-    error = StorageError(bucket=normal_storage.backends[0], backend_error=exception)
+    symbol_storage = SymbolStorage(
+        upload_url="http://s3.example.com/public",
+        download_urls=["http://s3.example.com/other-bucket"],
+    )
+    error = StorageError(bucket=symbol_storage.backends[0], backend_error=exception)
     with (
         patch("tecken.storage.StorageBucket.exists", side_effect=error),
-        patch("tecken.base.symbolstorage._normal_storage", normal_storage),
+        patch("tecken.base.symbolstorage._symbol_storage", symbol_storage),
     ):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2

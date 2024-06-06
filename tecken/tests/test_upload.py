@@ -18,7 +18,7 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
-from tecken.base.symbolstorage import normal_storage
+from tecken.base.symbolstorage import symbol_storage
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -417,7 +417,7 @@ def test_upload_archive_with_cache_invalidation(
     uploaderuser,
     settings,
 ):
-    storage = normal_storage()
+    storage = symbol_storage()
 
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
