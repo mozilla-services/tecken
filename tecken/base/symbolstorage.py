@@ -82,16 +82,22 @@ class SymbolStorage:
 
     """
 
-    def __init__(self, urls, try_url_index=None):
-        self.urls = urls
-        self.backends = [
-            StorageBucket(url, try_symbols=(i == try_url_index))
-            for i, url in enumerate(urls)
+    def __init__(
+        self, upload_url: str, download_urls: list[str], try_url: Optional[str] = None
+    ):
+        self.upload_backend = StorageBucket(upload_url)
+        self.download_backends = [
+            StorageBucket(url) for url in download_urls if url != upload_url
         ]
-        self.try_url_index = try_url_index
+        if try_url is None:
+            self.try_backend = None
+        else:
+            self.try_backend = StorageBucket(try_url, try_symbols=True)
+        self.backends = [self.upload_backend, *self.download_backends]
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} urls={self.urls}>"
+        urls = [backend.url for backend in self.backends]
+        return f"<{self.__class__.__name__} urls={urls}>"
 
     @staticmethod
     def make_url_path(prefix, symbol, debugid, filename):
@@ -110,7 +116,7 @@ class SymbolStorage:
         # uppercased. If so, we override it. Every debug ID is always in uppercase.
         return quote(f"{prefix}/{symbol}/{debugid.upper()}/{filename}")
 
-    def _get(self, symbol, debugid, filename):
+    def _get(self, symbol: str, debugid: str, filename: str, try_storage: bool) -> dict:
         """Return a dict if the symbol can be found.
 
         Dict includes a "url" key.
@@ -119,7 +125,12 @@ class SymbolStorage:
         was returned as an indication that the symbol actually exists.
 
         """
-        for backend in self.backends:
+        if try_storage:
+            assert self.try_backend is not None
+            backends = [*self.backends, self.try_backend]
+        else:
+            backends = self.backends
+        for backend in backends:
             prefix = backend.prefix
             assert prefix
 
@@ -141,37 +152,39 @@ class SymbolStorage:
                 }
 
     @set_time_took
-    def has_symbol(self, symbol, debugid, filename):
+    def has_symbol(
+        self, symbol: str, debugid: str, filename: str, try_storage: bool = False
+    ) -> bool:
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
-        return bool(self._get(symbol, debugid, filename))
+        return bool(self._get(symbol, debugid, filename, try_storage))
 
     @set_time_took
-    def get_symbol_url(self, symbol, debugid, filename):
+    def get_symbol_url(
+        self, symbol: str, debugid: str, filename: str, try_storage: bool = False
+    ) -> str:
         """Return the redirect URL or None.
 
         If we return None it means we can't find the object in any of the URLs provided.
 
         """
-        found = self._get(symbol, debugid, filename)
+        found = self._get(symbol, debugid, filename, try_storage)
         if found:
             return found["url"]
 
 
-_normal_storage = SymbolStorage(settings.SYMBOL_URLS)
-_try_storage = SymbolStorage(
-    settings.SYMBOL_URLS + [settings.UPLOAD_TRY_SYMBOLS_URL],
-    try_url_index=len(settings.SYMBOL_URLS),
-)
+# Global SymbolStorage instance, eventually used for all interactions with storage backends.
+_symbol_storage = None
 
 
-def normal_storage():
+def symbol_storage(force_recreate: bool = False) -> SymbolStorage:
     """Return the global SymbolStorage instance for regular storage."""
+    global _symbol_storage
     # This function exists to make it easier to patch the SymbolStorage instance in tests.
-    return _normal_storage
-
-
-def try_storage():
-    """Return the global SymbolStorage instance for try storage."""
-    # This function exists to make it easier to patch the SymbolStorage instance in tests.
-    return _try_storage
+    if _symbol_storage is None or force_recreate:
+        _symbol_storage = SymbolStorage(
+            upload_url=settings.UPLOAD_DEFAULT_URL,
+            download_urls=settings.SYMBOL_URLS,
+            try_url=settings.UPLOAD_TRY_SYMBOLS_URL,
+        )
+    return _symbol_storage
