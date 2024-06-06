@@ -25,6 +25,7 @@ from tecken.base.decorators import (
     api_any_permission_required,
     api_require_POST,
 )
+from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import Upload
@@ -35,7 +36,6 @@ from tecken.upload.utils import (
     upload_file_upload,
 )
 from tecken.librequests import session_with_retries
-from tecken.storage import StorageBucket
 from tecken.libmarkus import METRICS
 
 
@@ -93,57 +93,6 @@ def check_symbols_archive_file_listing(file_listings):
             "or <name>-symbols.txt and nothing else. "
             f"(First unrecognized pattern was {file_listing.name})"
         )
-
-
-def get_bucket_info(user, try_symbols=None, preferred_bucket_name=None):
-    """return an object that has 'bucket', 'endpoint_url',
-    'region'.
-    Only 'bucket' is mandatory in the response object.
-    """
-
-    if try_symbols is None:
-        # If it wasn't explicitly passed, we need to figure this out by
-        # looking at the user who uploads.
-        # Namely, we're going to see if the user has the permission
-        # 'upload.upload_symbols'. If the user does, it means the user intends
-        # to *not* upload Try build symbols.
-        # This is based on the axiom that, if the upload is made with an
-        # API token, that API token can't have *both* the
-        # 'upload.upload_symbols' permission *and* the
-        # 'upload.upload_try_symbols' permission.
-        # If the user uploads via the web the user has a choice to check
-        # a checkbox that is off by default. If doing so, the user isn't
-        # using an API token, so the user might have BOTH permissions.
-        # Then the default falls on this NOT being a Try upload.
-        try_symbols = not user.has_perm("upload.upload_symbols")
-
-    if try_symbols:
-        url = settings.UPLOAD_TRY_SYMBOLS_URL
-    else:
-        url = settings.UPLOAD_DEFAULT_URL
-
-    if preferred_bucket_name:
-        # If the user has indicated a preferred bucket name, check that they have
-        # permission to use it.
-        for url in get_upload_bucket_urls():
-            if preferred_bucket_name in url:
-                return StorageBucket(url, try_symbols=try_symbols)
-        raise NoPossibleBucketName(preferred_bucket_name)
-
-    return StorageBucket(url, try_symbols=try_symbols)
-
-
-def get_upload_bucket_urls():
-    """Return list of upload bucket urls.
-
-    :return: list of urls
-
-    """
-
-    # NOTE(willkg): This used to handle UPLOAD_URL_EXCEPTIONS, but we took that out. Now
-    # it does nothing interesting. We should rework the structure of all this when we
-    # rewrite the storage API.
-    return [settings.UPLOAD_DEFAULT_URL]
 
 
 def _ignore_member_file(filename):
@@ -289,27 +238,35 @@ def upload_archive(request, upload_workspace):
     # If you pass an extract argument, independent of value, with key 'try'
     # then we definitely knows this is a Try symbols upload.
     is_try_upload = request.POST.get("try")
-
-    # If you have special permission, you can affect which bucket to upload to.
-    preferred_bucket_name = request.POST.get("bucket_name")
-    try:
-        bucket_info = get_bucket_info(
-            request.user,
-            try_symbols=is_try_upload,
-            preferred_bucket_name=preferred_bucket_name,
-        )
-    except NoPossibleBucketName as exception:
-        logger.warning(f"No possible bucket for {request.user!r} ({exception})")
-        return http.JsonResponse({"error": "No valid bucket"}, status=403)
-
     if is_try_upload is None:
-        # If 'is_try_upload' isn't immediately true by looking at the
-        # request.POST parameters, the get_bucket_info() function can
-        # figure it out too.
-        is_try_upload = bucket_info.try_symbols
+        # If it wasn't explicitly passed, we need to figure this out by
+        # looking at the user who uploads.
+        # Namely, we're going to see if the user has the permission
+        # 'upload.upload_symbols'. If the user does, it means the user intends
+        # to *not* upload Try build symbols.
+        # This is based on the axiom that, if the upload is made with an
+        # API token, that API token can't have *both* the
+        # 'upload.upload_symbols' permission *and* the
+        # 'upload.upload_try_symbols' permission.
+        # If the user uploads via the web the user has a choice to check
+        # a checkbox that is off by default. If doing so, the user isn't
+        # using an API token, so the user might have BOTH permissions.
+        # Then the default falls on this NOT being a Try upload.
+        is_try_upload = not request.user.has_perm("upload.upload_symbols")
     else:
         # In case it's passed in as a string
         is_try_upload = bool(is_try_upload)
+
+    if is_try_upload:
+        bucket_info = symbol_storage().try_backend
+    else:
+        bucket_info = symbol_storage().upload_backend
+
+    # If you have special permission, you can affect which bucket to upload to.
+    preferred_bucket_name = request.POST.get("bucket_name")
+    if preferred_bucket_name and preferred_bucket_name != bucket_info.name:
+        logger.warning("Cannot upload to bucket %s", preferred_bucket_name)
+        return http.JsonResponse({"error": "No valid bucket"}, status=403)
 
     if not bucket_info.exists():
         raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")

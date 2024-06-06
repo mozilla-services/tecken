@@ -23,7 +23,6 @@ from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import Upload, FileUpload
-from tecken.upload.views import get_bucket_info
 
 
 def _join(x):
@@ -667,27 +666,6 @@ def test_upload_client_unrecognized_bucket(client, db, s3_helper, uploaderuser):
 
     with open(ZIP_FILE, "rb") as fp, pytest.raises(ImproperlyConfigured):
         client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
-
-
-def test_get_bucket_info(settings, uploaderuser):
-    settings.UPLOAD_DEFAULT_URL = "http://s3.amazonaws.com/some-bucket"
-    bucket_info = get_bucket_info(uploaderuser)
-    assert bucket_info.name == "some-bucket"
-    assert bucket_info.endpoint_url is None
-    assert bucket_info.region is None
-    assert not bucket_info.try_symbols
-
-    settings.UPLOAD_DEFAULT_URL = "http://s3-eu-west-2.amazonaws.com/some-bucket"
-    bucket_info = get_bucket_info(uploaderuser)
-    assert bucket_info.name == "some-bucket"
-    assert bucket_info.endpoint_url is None
-    assert bucket_info.region == "eu-west-2"
-
-    settings.UPLOAD_DEFAULT_URL = "http://s3.example.com/buck/prefix"
-    bucket_info = get_bucket_info(uploaderuser)
-    assert bucket_info.name == "buck"
-    assert bucket_info.endpoint_url == "http://s3.example.com"
-    assert bucket_info.region is None
 
 
 def test_UploadByDownloadForm_happy_path(requestsmock, settings):
