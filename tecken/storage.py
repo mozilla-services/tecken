@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import re
+import threading
 from urllib.parse import urlparse
 
 from botocore.exceptions import BotoCoreError, ClientError
@@ -100,6 +101,7 @@ class StorageBucket:
             if region[0] not in ALL_POSSIBLE_S3_REGIONS:
                 raise ValueError(f"Not valid S3 region {region[0]}")
             self.region = region[0]
+        self.clients = threading.local()
 
     @property
     def base_url(self):
@@ -113,15 +115,31 @@ class StorageBucket:
             f"backend={self.backend!r}>"
         )
 
-    def get_storage_client(self, **config_params):
-        """Return a backend-specific client, overriding default config parameters.
+    def get_storage_client(self):
+        """Return a backend-specific client with timeouts suitable for uploads.
 
         TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
         the backend-specific clients (bug 1564452).
         """
-        return get_storage_client(
-            endpoint_url=self.endpoint_url, region_name=self.region, **config_params
-        )
+        if not hasattr(self.clients, "storage"):
+            self.clients.storage = get_storage_client(
+                endpoint_url=self.endpoint_url,
+                region_name=self.region,
+                read_timeout=settings.S3_PUT_READ_TIMEOUT,
+                connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
+            )
+        return self.clients.storage
+
+    def get_lookup_client(self):
+        """Return a backend-specific client with timeouts suitable for lookups."""
+        if not hasattr(self.clients, "lookup"):
+            self.clients.lookup = get_storage_client(
+                endpoint_url=self.endpoint_url,
+                region_name=self.region,
+                read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
+                connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
+            )
+        return self.clients.lookup
 
     def exists(self):
         """Check that the bucket exists in the backend.
@@ -130,10 +148,7 @@ class StorageBucket:
         :returns: True if the bucket exists, False if it does not
         """
         # Use lower lookup timeouts on S3, to fail quickly when there are network issues
-        client = self.get_storage_client(
-            read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
-            connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
-        )
+        client = self.get_lookup_client()
 
         try:
             client.head_bucket(Bucket=self.name)
@@ -152,6 +167,16 @@ class StorageBucket:
             return True
 
 
+_SESSION_CACHE = threading.local()
+
+
+def _get_boto3_session():
+    """Return the boto3 session for the current thread."""
+    if not hasattr(_SESSION_CACHE, "session"):
+        _SESSION_CACHE.session = boto3.session.Session()
+    return _SESSION_CACHE.session
+
+
 def get_storage_client(endpoint_url=None, region_name=None, **config_params):
     options = {"config": Config(**config_params)}
     if endpoint_url:
@@ -163,5 +188,4 @@ def get_storage_client(endpoint_url=None, region_name=None, **config_params):
         options["endpoint_url"] = endpoint_url
     if region_name:
         options["region_name"] = region_name
-    session = boto3.session.Session()
-    return session.client("s3", **options)
+    return _get_boto3_session().client("s3", **options)
