@@ -86,14 +86,14 @@ class SymbolStorage:
         self, upload_url: str, download_urls: list[str], try_url: Optional[str] = None
     ):
         self.upload_backend = StorageBucket(upload_url)
-        self.download_backends = [
+        download_backends = [
             StorageBucket(url) for url in download_urls if url != upload_url
         ]
         if try_url is None:
             self.try_backend = None
         else:
             self.try_backend = StorageBucket(try_url, try_symbols=True)
-        self.backends = [self.upload_backend, *self.download_backends]
+        self.backends = [self.upload_backend, *download_backends]
 
     def __repr__(self):
         urls = [backend.url for backend in self.backends]
