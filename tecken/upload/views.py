@@ -209,12 +209,12 @@ def upload_archive(request, upload_workspace):
                             chunk_size = 1024 * 1024
                             stream = response_stream.iter_content(chunk_size=chunk_size)
                             count_chunks = 0
-                            start = time.time()
+                            start = time.perf_counter()
                             for chunk in stream:
                                 if chunk:  # filter out keep-alive new chunks
                                     f.write(chunk)
                                 count_chunks += 1
-                            end = time.time()
+                            end = time.perf_counter()
                             total_size = chunk_size * count_chunks
                             download_speed = size / (end - start)
                             logger.info(
