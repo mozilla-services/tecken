@@ -167,14 +167,14 @@ class StorageBucket:
             return True
 
 
-_SESSION_CACHE = threading.local()
+_BOTO3_SESSION_CACHE = threading.local()
 
 
 def _get_boto3_session():
     """Return the boto3 session for the current thread."""
-    if not hasattr(_SESSION_CACHE, "session"):
-        _SESSION_CACHE.session = boto3.session.Session()
-    return _SESSION_CACHE.session
+    if not hasattr(_BOTO3_SESSION_CACHE, "session"):
+        _BOTO3_SESSION_CACHE.session = boto3.session.Session()
+    return _BOTO3_SESSION_CACHE.session
 
 
 def get_storage_client(endpoint_url=None, region_name=None, **config_params):

@@ -125,8 +125,7 @@ class SymbolStorage:
         was returned as an indication that the symbol actually exists.
 
         """
-        if try_storage:
-            assert self.try_backend is not None
+        if try_storage and self.try_backend:
             backends = [*self.backends, self.try_backend]
         else:
             backends = self.backends
@@ -157,7 +156,14 @@ class SymbolStorage:
     ) -> bool:
         """return True if the symbol can be found, False if not
         found in any of the URLs provided."""
-        return bool(self._get(symbol, debugid, filename, try_storage))
+        return bool(
+            self._get(
+                symbol=symbol,
+                debugid=debugid,
+                filename=filename,
+                try_storage=try_storage,
+            )
+        )
 
     @set_time_took
     def get_symbol_url(
@@ -168,7 +174,9 @@ class SymbolStorage:
         If we return None it means we can't find the object in any of the URLs provided.
 
         """
-        found = self._get(symbol, debugid, filename, try_storage)
+        found = self._get(
+            symbol=symbol, debugid=debugid, filename=filename, try_storage=try_storage
+        )
         if found:
             return found["url"]
 

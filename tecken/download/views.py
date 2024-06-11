@@ -145,14 +145,24 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
     storage = symbol_storage()
 
     if request.method == "HEAD":
-        if storage.has_symbol(debugfilename, debugid, filename, try_symbols):
+        if storage.has_symbol(
+            symbol=debugfilename,
+            debugid=debugid,
+            filename=filename,
+            try_storage=try_symbols,
+        ):
             response = http.HttpResponse()
             if request._request_debug:
                 response["Debug-Time"] = storage.time_took
             return response
 
     else:
-        url = storage.get_symbol_url(debugfilename, debugid, filename, try_symbols)
+        url = storage.get_symbol_url(
+            symbol=debugfilename,
+            debugid=debugid,
+            filename=filename,
+            try_storage=try_symbols,
+        )
         if url:
             # If doing local development, with Docker, you're most likely running
             # localstack as a fake S3. It runs on its own hostname that is only
