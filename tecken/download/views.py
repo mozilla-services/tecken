@@ -17,6 +17,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import invalid_key_name_characters
+from tecken.libtiming import measure_time
 from tecken.upload.models import FileUpload
 from tecken.storage import StorageBucket
 from tecken.libmarkus import METRICS
@@ -145,19 +146,22 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
     storage = symbol_storage()
 
     if request.method == "HEAD":
-        if storage.has_symbol(
+        has_symbol, elapsed_time = measure_time(
+            storage.has_symbol,
             symbol=debugfilename,
             debugid=debugid,
             filename=filename,
             try_storage=try_symbols,
-        ):
+        )
+        if has_symbol:
             response = http.HttpResponse()
             if request._request_debug:
-                response["Debug-Time"] = storage.time_took
+                response["Debug-Time"] = elapsed_time
             return response
 
     else:
-        url = storage.get_symbol_url(
+        url, elapsed_time = measure_time(
+            storage.get_symbol_url,
             symbol=debugfilename,
             debugid=debugid,
             filename=filename,
@@ -178,7 +182,7 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
                 url = url.replace("localstack:4566", "localhost:4566")
             response = http.HttpResponseRedirect(url)
             if request._request_debug:
-                response["Debug-Time"] = storage.time_took
+                response["Debug-Time"] = elapsed_time
             return response
 
     if is_maybe_codeinfo(debugfilename, debugid, filename):
@@ -203,5 +207,5 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
 
     response = http.HttpResponseNotFound("Symbol Not Found")
     if request._request_debug:
-        response["Debug-Time"] = storage.time_took
+        response["Debug-Time"] = elapsed_time
     return response

@@ -146,12 +146,12 @@ def site_status(request):
     ]
     context["table_counts"] = []
     for table_name in tables:
-        start_time = time.time()
+        start_time = time.perf_counter()
         with connection.cursor() as cursor:
             cursor.execute("select count(*) from %s" % table_name)
             row = cursor.fetchone()
             (value,) = row
-        timing = time.time() - start_time
+        timing = time.perf_counter() - start_time
         context["table_counts"].append(
             {
                 "key": table_name,

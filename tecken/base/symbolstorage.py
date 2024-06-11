@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from email.utils import parsedate_to_datetime
-from functools import wraps
 import time
 from typing import Optional
 from urllib.parse import quote
@@ -18,18 +17,6 @@ from tecken.storage import StorageBucket
 
 
 logger = logging.getLogger("tecken")
-
-
-def set_time_took(method):
-    @wraps(method)
-    def wrapper(self, *args, **kwargs):
-        t0 = time.time()
-        result = method(self, *args, **kwargs)
-        t1 = time.time()
-        self.time_took = t1 - t0
-        return result
-
-    return wrapper
 
 
 @METRICS.timer_decorator("symboldownloader_exists")
@@ -150,7 +137,6 @@ class SymbolStorage:
                     "backend": backend,
                 }
 
-    @set_time_took
     def has_symbol(
         self, symbol: str, debugid: str, filename: str, try_storage: bool = False
     ) -> bool:
@@ -165,7 +151,6 @@ class SymbolStorage:
             )
         )
 
-    @set_time_took
     def get_symbol_url(
         self, symbol: str, debugid: str, filename: str, try_storage: bool = False
     ) -> str:
