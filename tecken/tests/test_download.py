@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 
 from django.urls import reverse
 
-from tecken.base.symbolstorage import symbol_storage
 from tecken.download import views
 from tecken.upload.models import FileUpload
 
@@ -18,8 +17,6 @@ _here = os.path.dirname(__file__)
 
 
 def test_client_happy_path(client, db, s3_helper, metricsmock):
-    symbol_storage(force_recreate=True)
-
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     symfile = "xul.sym"
@@ -61,8 +58,6 @@ def test_client_try_download(client, db, s3_helper, metricsmock):
     then to reach that file you need to use ?try on the URL.
 
     """
-    symbol_storage(force_recreate=True)
-
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     symfile = "xul.sym"
@@ -108,8 +103,6 @@ def test_client_try_download(client, db, s3_helper, metricsmock):
 
 
 def test_client_with_debug(client, db, s3_helper):
-    symbol_storage(force_recreate=True)
-
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     symfile = "xul.sym"
@@ -176,8 +169,6 @@ def test_client_with_ignorable_file_extensions(client, db, s3_helper):
 
 
 def test_client_with_debug_with_cache(client, db, s3_helper):
-    symbol_storage(force_recreate=True)
-
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     symfile = "xul.sym"
@@ -207,8 +198,6 @@ def test_client_with_debug_with_cache(client, db, s3_helper):
 
 
 def test_client_with_cache_refreshed(client, db, s3_helper):
-    symbol_storage(force_recreate=True)
-
     debugfilename = "xul.pdb"
     debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
     symfile = "xul.sym"
@@ -234,8 +223,6 @@ def test_client_with_cache_refreshed(client, db, s3_helper):
 
 
 def test_client_404(client, db, s3_helper):
-    symbol_storage(force_recreate=True)
-
     url = reverse(
         "download:download_symbol",
         args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
@@ -249,8 +236,6 @@ def test_client_404(client, db, s3_helper):
 
 
 def test_client_with_bad_filenames(client, db):
-    symbol_storage(force_recreate=True)
-
     url = reverse(
         "download:download_symbol",
         args=(
@@ -325,8 +310,6 @@ def test_client_with_bad_filenames(client, db):
 
 
 def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
-    symbol_storage(force_recreate=True)
-
     sym_file = "xul.sym"
     debug_filename = "xul.pdb"
     debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
@@ -390,8 +373,6 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
 
 
 def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
-    symbol_storage(force_recreate=True)
-
     sym_file = "xul.sym"
     debug_filename = "xul.pdb"
     debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
@@ -435,8 +416,6 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
 
 
 def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
-    symbol_storage(force_recreate=True)
-
     sym_file = "xul.sym"
     debug_filename = "xul.pdb"
     debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
