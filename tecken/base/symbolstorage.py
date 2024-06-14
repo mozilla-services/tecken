@@ -167,17 +167,17 @@ class SymbolStorage:
 
 
 # Global SymbolStorage instance, eventually used for all interactions with storage backends.
-_symbol_storage = None
+SYMBOL_STORAGE = None
 
 
 def symbol_storage(force_recreate: bool = False) -> SymbolStorage:
     """Return the global SymbolStorage instance for regular storage."""
-    global _symbol_storage
+    global SYMBOL_STORAGE
     # This function exists to make it easier to patch the SymbolStorage instance in tests.
-    if _symbol_storage is None or force_recreate:
-        _symbol_storage = SymbolStorage(
+    if SYMBOL_STORAGE is None or force_recreate:
+        SYMBOL_STORAGE = SymbolStorage(
             upload_url=settings.UPLOAD_DEFAULT_URL,
             download_urls=settings.SYMBOL_URLS,
             try_url=settings.UPLOAD_TRY_SYMBOLS_URL,
         )
-    return _symbol_storage
+    return SYMBOL_STORAGE

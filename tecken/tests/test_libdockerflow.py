@@ -24,7 +24,7 @@ def test_check_storage_urls_missing(settings):
     )
     with (
         patch("tecken.storage.StorageBucket.exists", return_value=False),
-        patch("tecken.base.symbolstorage._symbol_storage", symbol_storage),
+        patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage),
     ):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
@@ -50,7 +50,7 @@ def test_check_storage_urls_storageerror(exception, settings):
     error = StorageError(bucket=symbol_storage.backends[0], backend_error=exception)
     with (
         patch("tecken.storage.StorageBucket.exists", side_effect=error),
-        patch("tecken.base.symbolstorage._symbol_storage", symbol_storage),
+        patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage),
     ):
         errors = libdockerflow.check_storage_urls(None)
     assert len(errors) == 2
