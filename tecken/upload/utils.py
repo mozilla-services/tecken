@@ -203,23 +203,11 @@ def upload_file_upload(
     file_path: str,
     upload: Upload,
 ) -> Optional[FileUpload]:
-    # The reason you might want to pass a different client for
-    # looking up existing sizes is because you perhaps want to use
-    # a client that is configured to be a LOT less patient.
-    # If there's every a ReadTimeout or ConnectionTimeout in the
-    # existing size lookup, that's probably OK and worth ignoring.
-    # However, when we have to look up the size of 100 different
-    # files, we don't want this rather simple operation to be allowed
-    # to take too long. Because if it times out, it's safe to just
-    # assume the file doesn't already exist.
     # TODO(jwhitlock): Create StorageBucket API rather than directly use
     # backend clients.
     client = backend.get_storage_client()
-    client_lookup = backend.get_lookup_client()
 
-    existing_size, existing_metadata = key_existing(
-        client_lookup, backend.name, key_name
-    )
+    existing_size, existing_metadata = key_existing(client, backend.name, key_name)
 
     size = os.stat(file_path).st_size
 

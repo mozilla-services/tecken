@@ -116,7 +116,7 @@ class StorageBucket:
         )
 
     def get_storage_client(self):
-        """Return a backend-specific client with timeouts suitable for uploads.
+        """Return a backend-specific client.
 
         TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
         the backend-specific clients (bug 1564452).
@@ -125,21 +125,10 @@ class StorageBucket:
             self.clients.storage = get_storage_client(
                 endpoint_url=self.endpoint_url,
                 region_name=self.region,
-                read_timeout=settings.S3_PUT_READ_TIMEOUT,
-                connect_timeout=settings.S3_PUT_CONNECT_TIMEOUT,
+                read_timeout=settings.S3_READ_TIMEOUT,
+                connect_timeout=settings.S3_CONNECT_TIMEOUT,
             )
         return self.clients.storage
-
-    def get_lookup_client(self):
-        """Return a backend-specific client with timeouts suitable for lookups."""
-        if not hasattr(self.clients, "lookup"):
-            self.clients.lookup = get_storage_client(
-                endpoint_url=self.endpoint_url,
-                region_name=self.region,
-                read_timeout=settings.S3_LOOKUP_READ_TIMEOUT,
-                connect_timeout=settings.S3_LOOKUP_CONNECT_TIMEOUT,
-            )
-        return self.clients.lookup
 
     def exists(self):
         """Check that the bucket exists in the backend.
@@ -147,8 +136,7 @@ class StorageBucket:
         :raises StorageError: An unexpected backed-specific error was raised.
         :returns: True if the bucket exists, False if it does not
         """
-        # Use lower lookup timeouts on S3, to fail quickly when there are network issues
-        client = self.get_lookup_client()
+        client = self.get_storage_client()
 
         try:
             client.head_bucket(Bucket=self.name)
