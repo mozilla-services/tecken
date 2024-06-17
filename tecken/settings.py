@@ -70,9 +70,9 @@ if TOOL_ENV:
         ("OIDC_OP_USER_ENDPOINT", "http://example.com/"),
         ("DATABASE_URL", "postgresql://postgres:postgres@db/tecken"),
         ("REDIS_URL", "redis://redis-cache:6379/0"),
-        ("SYMBOL_URLS", "https://example.com/"),
-        ("UPLOAD_DEFAULT_URL", "https://example.com/"),
-        ("UPLOAD_TRY_SYMBOLS_URL", "https://example.com/try/"),
+        ("SYMBOL_URLS", "https://s3.example.com/bucket"),
+        ("UPLOAD_DEFAULT_URL", "https://s3.example.com/bucket"),
+        ("UPLOAD_TRY_SYMBOLS_URL", "https://s3.example.com/bucket/try/"),
     ]
     for key, val in fake_values:
         os.environ[key] = val
