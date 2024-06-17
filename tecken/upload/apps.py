@@ -5,7 +5,10 @@
 import logging
 
 from django.apps import AppConfig
+from django.conf import settings
 from django.db.models.signals import post_migrate
+
+from tecken.upload import executor
 
 logger = logging.getLogger("django")
 
@@ -44,3 +47,7 @@ class UploadAppConfig(AppConfig):
 
     def ready(self):
         post_migrate.connect(create_default_groups, sender=self)
+        executor.init(
+            settings.SYNCHRONOUS_UPLOAD_FILE_UPLOAD,
+            settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None,
+        )
