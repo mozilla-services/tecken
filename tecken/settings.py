@@ -440,33 +440,17 @@ AWS_DEFAULT_REGION = _config(
     "AWS_DEFAULT_REGION", default="", doc="AWS default region."
 )
 
-S3_LOOKUP_CONNECT_TIMEOUT = _config(
+S3_CONNECT_TIMEOUT = _config(
     "S3_LOOKUP_CONNECT_TIMEOUT",
-    default="2",
+    default="5",
     parser=int,
-    doc="S3 lookup connection timeout in seconds.",
+    doc="S3 connection timeout in seconds.",
 )
-S3_LOOKUP_READ_TIMEOUT = _config(
+S3_READ_TIMEOUT = _config(
     "S3_LOOKUP_READ_TIMEOUT",
-    default="4",
+    default="5",
     parser=int,
-    doc="S3 lookup read timeout in seconds.",
-)
-
-# When testing S3 PUT in Stage, the longest PUTs take 20 seconds.
-S3_PUT_CONNECT_TIMEOUT = _config(
-    "S3_PUT_CONNECT_TIMEOUT",
-    default="10",
-    parser=int,
-    doc="S3 put connection timeout for uploads in seconds.",
-)
-# If upload takes longer than this it's probably best to back off.
-# The client will likely get a 504 error and will retry soon again.
-S3_PUT_READ_TIMEOUT = _config(
-    "S3_PUT_READ_TIMEOUT",
-    default="30",
-    parser=int,
-    doc="S3 put read timeout in seconds.",
+    doc="S3 read timeout in seconds.",
 )
 
 
