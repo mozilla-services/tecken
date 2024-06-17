@@ -273,9 +273,9 @@ everett==3.3.0 \
     --hash=sha256:acb7b8f3c5fc9692a8ba14fb257e4649f87bea4856e7406c2e9b6c2cab889105 \
     --hash=sha256:d3ecc55cc1bdf2408ca82bc8db5a3fc588fc4c0f236a6ab9599938f41970b814
     # via -r requirements.in
-fillmore==1.2.0 \
-    --hash=sha256:1968a2ba5adc17ebef362df51ec958c3d78427a77d2218a2709aabc3598eeceb \
-    --hash=sha256:c95f7172614c256fe162e93ae6d5beb07e45e1fe7f71b94f5a08eab45dc58a40
+fillmore==2.0.0 \
+    --hash=sha256:840901d80799ce50db49c3e377815424a356c3e81c6cea5111684c58113d7ad1 \
+    --hash=sha256:fd1a2c2e829073cef3d49f032033d78dbee48f377eb4b915f29084e76f6facb4
     # via -r requirements.in
 google-api-core==2.15.0 \
     --hash=sha256:2aa56d2be495551e66bbff7f729b790546f87d5c90e74781aa77233bcb395a8a \
@@ -689,9 +689,9 @@ s3transfer==0.10.1 \
     --hash=sha256:5683916b4c724f799e600f41dd9e10a9ff19871bf87623cc8f491cb4f5fa0a19 \
     --hash=sha256:ceb252b11bcf87080fb7850a224fb6e05c8a776bab8f2b64b7f25b969464839d
     # via boto3
-sentry-sdk==1.45.0 \
-    --hash=sha256:1ce29e30240cc289a027011103a8c83885b15ef2f316a60bcc7c5300afa144f1 \
-    --hash=sha256:509aa9678c0512344ca886281766c2e538682f8acfa50fd8d405f8c417ad0625
+sentry-sdk==2.5.1 \
+    --hash=sha256:1f87acdce4a43a523ae5aa21a3fc37522d73ebd9ec04b1dbf01aa3d173852def \
+    --hash=sha256:fbc40a78a8a9c6675133031116144f0d0940376fa6e4e1acd5624c90b0aaf58b
     # via
     #   -r requirements.in
     #   fillmore

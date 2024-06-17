@@ -1094,7 +1094,7 @@ class Test_remove_orphaned_files:
             assert "OSError" in caplog.text
 
             # Assert a Sentry event was emitted
-            event = sentry_client.events[0]
+            (event,) = sentry_client.envelope_payloads
             assert event["logentry"]["message"] == "error getting size: %s"
             assert event["logger"] == "tecken.remove_orphaned_files"
 
@@ -1143,7 +1143,7 @@ class Test_remove_orphaned_files:
             assert "FileNotFoundError" not in caplog.text
 
             # Assert a Sentry event was emitted
-            assert [] == sentry_client.events
+            assert sentry_client.envelopes == []
 
             # Assert metric is emitted
             metricsmock.assert_not_incr(
