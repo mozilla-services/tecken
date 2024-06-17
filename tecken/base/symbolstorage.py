@@ -116,7 +116,6 @@ class SymbolStorage:
             backends = self.backends
         for backend in backends:
             prefix = backend.prefix
-            assert prefix
 
             # We'll put together the URL manually
             file_url = "{}/{}".format(
