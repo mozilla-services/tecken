@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor
 from functools import wraps
 import hashlib
 import logging
@@ -12,8 +11,6 @@ import re
 from tempfile import TemporaryDirectory
 import time
 import zipfile
-
-from encore.concurrent.futures.synchronous import SynchronousExecutor
 
 from django import http
 from django.conf import settings
@@ -28,6 +25,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
+from tecken.upload import executor
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import Upload
 from tecken.upload.utils import (
@@ -140,23 +138,6 @@ def make_tempdir(tempdir_root, suffix=None):
         return inner
 
     return decorator
-
-
-_EXECUTOR = None
-
-
-def get_executor() -> SynchronousExecutor | ThreadPoolExecutor:
-    """Retrieve the global thread pool executor instance."""
-    global _EXECUTOR
-    if _EXECUTOR is None:
-        if settings.SYNCHRONOUS_UPLOAD_FILE_UPLOAD:
-            # This is only applicable when running unit tests
-            _EXECUTOR = SynchronousExecutor()
-        else:
-            _EXECUTOR = ThreadPoolExecutor(
-                max_workers=settings.UPLOAD_FILE_UPLOAD_MAX_WORKERS or None
-            )
-    return _EXECUTOR
 
 
 @METRICS.timer_decorator("upload_archive")
@@ -320,7 +301,6 @@ def upload_archive(request, upload_workspace):
     file_uploads_created = 0
     uploaded_symbol_keys = []
     key_to_symbol_keys = {}
-    executor = get_executor()
     future_to_key = {}
     for member in file_listing:
         if _ignore_member_file(member.name):
