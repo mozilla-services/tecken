@@ -9,8 +9,6 @@ from urllib.parse import quote
 
 import logging
 
-from django.conf import settings
-
 from tecken.libmarkus import METRICS
 from tecken.librequests import session_with_retries
 from tecken.storage import StorageBucket
@@ -167,17 +165,10 @@ class SymbolStorage:
 
 
 # Global SymbolStorage instance, eventually used for all interactions with storage backends.
-SYMBOL_STORAGE = None
+SYMBOL_STORAGE: Optional[SymbolStorage] = None
 
 
-def symbol_storage(force_recreate: bool = False) -> SymbolStorage:
+def symbol_storage() -> Optional[SymbolStorage]:
     """Return the global SymbolStorage instance for regular storage."""
-    global SYMBOL_STORAGE
-    # This function exists to make it easier to patch the SymbolStorage instance in tests.
-    if SYMBOL_STORAGE is None or force_recreate:
-        SYMBOL_STORAGE = SymbolStorage(
-            upload_url=settings.UPLOAD_DEFAULT_URL,
-            download_urls=settings.SYMBOL_URLS,
-            try_url=settings.UPLOAD_TRY_SYMBOLS_URL,
-        )
+    # This function exists to make it easier to patch the SymbolStorage singleton in tests.
     return SYMBOL_STORAGE
