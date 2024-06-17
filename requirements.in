@@ -9,7 +9,7 @@ django-redis==5.4.0
 dockerflow==2024.4.2
 encore==0.8.0
 everett==3.3.0
-fillmore==1.2.0
+fillmore==2.0.0
 google-cloud-storage==2.16.0
 gunicorn==22.0.0
 honcho==1.1.0
@@ -27,7 +27,7 @@ redis==5.0.4
 requests-mock==1.12.1
 requests==2.32.3
 ruff==0.4.7
-sentry-sdk==1.45.0
+sentry-sdk==2.5.1
 Sphinx==7.3.7
 sphinx-rtd-theme==2.0.0
 sphinxcontrib-httpdomain==1.8.1

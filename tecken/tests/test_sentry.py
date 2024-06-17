@@ -7,7 +7,7 @@ import shlex
 import subprocess
 from unittest.mock import ANY
 
-from fillmore.test import diff_event
+from fillmore.test import diff_structure
 import requests
 from werkzeug.test import Client
 
@@ -216,12 +216,12 @@ def test_sentry_scrubbing(sentry_helper, transactional_db):
         )
         assert resp.status_code == 500
 
-        (event,) = sentry_client.events
+        (event,) = sentry_client.envelope_payloads
 
         # Drop the "_meta" bit because we don't want to compare that.
         del event["_meta"]
 
-        differences = diff_event(event, BROKEN_EVENT)
+        differences = diff_structure(event, BROKEN_EVENT)
         assert differences == []
 
 
@@ -235,15 +235,14 @@ def test_count_sentry_scrub_error(metricsmock):
 
 def test_sentry_wrap_non_app_error_has_release():
     port = os.environ.get("EXPOSE_SENTRY_PORT", 8090)
+    fakesentry_url = f"http://fakesentry:{port}/"
 
     # Flush fakesentry to ensure we fetch only the desired error downstream
-    requests.post(f"http://fakesentry:{port}/api/flush/")
+    requests.post(f"{fakesentry_url}api/flush/")
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.join(os.path.dirname(current_dir), "..")
-    release = get_release_name(base_dir)
-
-    expected_event = {"release": release}
+    expected_release = get_release_name(base_dir)
 
     # Pass a non-Django command that will error to sentry_wrap
     non_app_command = "ls -2"
@@ -254,11 +253,12 @@ def test_sentry_wrap_non_app_error_has_release():
     # We don't have to worry about a race condition here, because when the
     # subprocess exits, we know the sentry_sdk sent the event, and it has
     # been processed successfully by fakesentry.
-    errors_resp = requests.get(f"http://fakesentry:{port}/api/errorlist/")
-    errors_resp.raise_for_status()
-    error_id = errors_resp.json()["errors"][0]
-    error_resp = requests.get(f"http://fakesentry:{port}/api/error/{error_id}")
-    error_resp.raise_for_status()
-    actual_event = error_resp.json()["payload"]
+    events_resp = requests.get(f"{fakesentry_url}api/eventlist/")
+    events_resp.raise_for_status()
+    event_id = events_resp.json()["events"][0]["event_id"]
+    event_resp = requests.get(f"{fakesentry_url}api/event/{event_id}")
+    event_resp.raise_for_status()
 
-    assert actual_event["release"] == expected_event["release"]
+    release = event_resp.json()["payload"]["envelope_header"]["trace"]["release"]
+
+    assert release == expected_release
