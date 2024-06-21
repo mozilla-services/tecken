@@ -11,7 +11,7 @@ import logging
 
 from tecken.libmarkus import METRICS
 from tecken.librequests import session_with_retries
-from tecken.ext.s3.storage import StorageBucket
+from tecken.ext.s3.storage import S3Storage
 
 
 logger = logging.getLogger("tecken")
@@ -70,14 +70,14 @@ class SymbolStorage:
     def __init__(
         self, upload_url: str, download_urls: list[str], try_url: Optional[str] = None
     ):
-        self.upload_backend = StorageBucket(upload_url)
+        self.upload_backend = S3Storage(upload_url)
         download_backends = [
-            StorageBucket(url) for url in download_urls if url != upload_url
+            S3Storage(url) for url in download_urls if url != upload_url
         ]
         if try_url is None:
             self.try_backend = None
         else:
-            self.try_backend = StorageBucket(try_url, try_symbols=True)
+            self.try_backend = S3Storage(try_url, try_symbols=True)
         self.backends = [self.upload_backend, *download_backends]
 
     def __repr__(self):
