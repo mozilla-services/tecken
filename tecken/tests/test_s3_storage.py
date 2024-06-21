@@ -8,7 +8,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from tecken.libstorage import StorageError
-from tecken.ext.s3.storage import StorageBucket
+from tecken.ext.s3.storage import S3Storage
 
 
 INIT_CASES = {
@@ -60,7 +60,7 @@ INIT_CASES = {
 )
 def test_init(url, expected):
     """The URL is processed during initialization."""
-    bucket = StorageBucket(url)
+    bucket = S3Storage(url)
     assert bucket.backend == expected["backend"]
     assert bucket.base_url == expected["base_url"]
     assert bucket.endpoint_url == expected["endpoint_url"]
@@ -73,13 +73,13 @@ def test_init(url, expected):
 def test_init_unknown_region_raises():
     """An exception is raised by a S3 URL with an unknown region."""
     with pytest.raises(ValueError):
-        StorageBucket("https://s3-unheardof.amazonaws.com/some-bucket")
+        S3Storage("https://s3-unheardof.amazonaws.com/some-bucket")
 
 
 def test_init_unknown_backend_raises():
     """An exception is raised if the backend can't be determined from the URL."""
     with pytest.raises(ValueError):
-        StorageBucket("https://unknown-backend.example.com/some-bucket")
+        S3Storage("https://unknown-backend.example.com/some-bucket")
 
 
 @pytest.mark.parametrize(
@@ -92,20 +92,20 @@ def test_init_unknown_backend_raises():
 )
 def test_init_file_prefix(url, file_prefix, prefix):
     """A file_prefix is optionally combined with the URL prefix."""
-    bucket = StorageBucket(url, file_prefix=file_prefix)
+    bucket = S3Storage(url, file_prefix=file_prefix)
     assert bucket.prefix == prefix
 
 
 def test_exists_s3(s3_helper):
     """exists() returns True when then S3 API returns 200."""
-    bucket = StorageBucket(os.environ["UPLOAD_DEFAULT_URL"])
+    bucket = S3Storage(os.environ["UPLOAD_DEFAULT_URL"])
     s3_helper.create_bucket("publicbucket")
     assert bucket.exists()
 
 
 def test_exists_s3_not_found(s3_helper):
     """exists() returns False when the S3 API raises a 404 ClientError."""
-    bucket = StorageBucket(os.environ["UPLOAD_DEFAULT_URL"])
+    bucket = S3Storage(os.environ["UPLOAD_DEFAULT_URL"])
     assert not bucket.exists()
 
 
@@ -119,7 +119,7 @@ def test_exists_s3_not_found(s3_helper):
 #         parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
 #         raise ClientError(parsed_response, operation_name)
 #
-#     bucket = StorageBucket("https://s3.amazonaws.com/some-bucket")
+#     bucket = S3Storage("https://s3.amazonaws.com/some-bucket")
 #     with botomock(raise_forbidden), pytest.raises(StorageError):
 #         bucket.exists()
 
@@ -128,14 +128,14 @@ def test_exists_s3_non_client_error_raises(s3_helper):
     """exists() raises StorageError when the S3 API raises a non-client error."""
 
     # NOTE(willkg): nothing is listening at that port, so it kicks up a connection error
-    bucket = StorageBucket("http://localstack:5000/publicbucket/")
+    bucket = S3Storage("http://localstack:5000/publicbucket/")
     with pytest.raises(StorageError):
         bucket.exists()
 
 
 def test_storageerror_msg():
     """The StorageError message includes the URL and the backend error message."""
-    bucket = StorageBucket("https://s3.amazonaws.com/some-bucket?access=public")
+    bucket = S3Storage("https://s3.amazonaws.com/some-bucket?access=public")
     parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
     backend_error = ClientError(parsed_response, "HeadBucket")
     error = StorageError(backend=bucket.backend, url=bucket.url, error=backend_error)
