@@ -18,7 +18,7 @@ from tecken.libstorage import StorageError
 ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
 
 
-class StorageBucket:
+class S3Storage:
     """
     Deconstructs a URL about an S3 bucket and breaks it into parts that
     can be used for various purposes. Also, contains a convenient method
@@ -26,7 +26,7 @@ class StorageBucket:
 
     Usage::
 
-        >>> s = StorageBucket(
+        >>> s = S3Storage(
         ...    'https://s3-us-west-2.amazonaws.com/bucky/prfx'
         )
         >>> s.netloc
@@ -108,7 +108,7 @@ class StorageBucket:
     def get_storage_client(self):
         """Return a backend-specific client.
 
-        TODO(jwhitlock): Build up StorageBucket API so users don't work directly with
+        TODO(jwhitlock): Build up S3Storage API so users don't work directly with
         the backend-specific clients (bug 1564452).
         """
         if not hasattr(self.clients, "storage"):

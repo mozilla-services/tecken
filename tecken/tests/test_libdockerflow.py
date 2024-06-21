@@ -13,7 +13,7 @@ from tecken.libdockerflow import get_version_info, get_release_name
 
 
 def test_check_storage_urls_happy_path():
-    with patch("tecken.ext.s3.storage.StorageBucket.exists", return_value=True):
+    with patch("tecken.ext.s3.storage.S3Storage.exists", return_value=True):
         assert not libdockerflow.check_storage_urls(None)
 
 
@@ -23,7 +23,7 @@ def test_check_storage_urls_missing(settings):
         download_urls=["http://s3.example.com/other-bucket"],
     )
     with (
-        patch("tecken.ext.s3.storage.StorageBucket.exists", return_value=False),
+        patch("tecken.ext.s3.storage.S3Storage.exists", return_value=False),
         patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage),
     ):
         errors = libdockerflow.check_storage_urls(None)
@@ -51,7 +51,7 @@ def test_check_storage_urls_storageerror(exception, settings):
         backend="test-s3", url="http://s3.example.com/public", error=exception
     )
     with (
-        patch("tecken.ext.s3.storage.StorageBucket.exists", side_effect=error),
+        patch("tecken.ext.s3.storage.S3Storage.exists", side_effect=error),
         patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage),
     ):
         errors = libdockerflow.check_storage_urls(None)
@@ -68,7 +68,7 @@ def test_check_storage_urls_other_error(settings):
     ]
     exception = RuntimeError("A different error")
     with (
-        patch("tecken.ext.s3.storage.StorageBucket.exists", side_effect=exception),
+        patch("tecken.ext.s3.storage.S3Storage.exists", side_effect=exception),
         pytest.raises(RuntimeError),
     ):
         libdockerflow.check_storage_urls(None)

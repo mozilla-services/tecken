@@ -17,7 +17,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import invalid_key_name_characters
-from tecken.ext.s3.storage import StorageBucket
+from tecken.ext.s3.storage import S3Storage
 from tecken.libtiming import measure_time
 from tecken.upload.models import FileUpload
 from tecken.libmarkus import METRICS
@@ -175,7 +175,7 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
             # to reach from the host.
             if (
                 settings.DEBUG
-                and StorageBucket(url).backend == "emulated-s3"
+                and S3Storage(url).backend == "emulated-s3"
                 and "http://localstack:4566" in url
                 and request.get_host() == "localhost:8000"
             ):  # pragma: no cover
