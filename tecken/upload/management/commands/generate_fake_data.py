@@ -67,7 +67,6 @@ class Command(BaseCommand):
                     user=user,
                     filename="target.crashreporter.zip",
                     bucket_name="publicbucket",
-                    bucket_region="foo",
                     bucket_endpoint_url="foo",
                     skipped_keys=[],
                     ignored_keys=[],

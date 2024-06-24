@@ -97,7 +97,6 @@ def test_upload_archive_happy_path(
     # This is predictable and shouldn't change unless the fixture file used changes.
     assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
     assert upload.bucket_name == "publicbucket"
-    assert upload.bucket_region is None
     assert upload.bucket_endpoint_url == "http://localstack:4566"
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ["build-symbols.txt"]
@@ -177,7 +176,6 @@ def test_upload_try_symbols_happy_path(
     # This is predictable and shouldn't change unless the fixture file used changes.
     assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
     assert upload.bucket_name == "publicbucket"
-    assert upload.bucket_region is None
     assert upload.bucket_endpoint_url == "http://localstack:4566"
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ["build-symbols.txt"]
@@ -246,7 +244,6 @@ def test_upload_archive_one_uploaded_one_skipped(
     # based on `ls -l tests/sample.zip` knowledge
     assert upload.size == 70398
     assert upload.bucket_name == "publicbucket"
-    assert upload.bucket_region is None
     assert upload.bucket_endpoint_url == "http://localstack:4566"
     assert upload.skipped_keys == ["v1/flag/deadbeef/flag.jpeg"]
     assert upload.ignored_keys == ["build-symbols.txt"]

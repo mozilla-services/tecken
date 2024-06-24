@@ -564,7 +564,6 @@ def test_uploads_count(client):
         {
             "bucket_endpoint_url": None,
             "bucket_name": "",
-            "bucket_region": None,
             "completed_at": None,
             "created_at": ANY,
             "download_url": None,
@@ -593,7 +592,6 @@ def test_uploads_count(client):
         {
             "bucket_endpoint_url": None,
             "bucket_name": "",
-            "bucket_region": None,
             "completed_at": None,
             "created_at": ANY,
             "download_url": None,
