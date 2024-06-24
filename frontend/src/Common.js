@@ -338,10 +338,6 @@ export const ShowUploadMetadata = ({ upload }) => {
           <td>{upload.bucket_name}</td>
         </tr>
         <tr>
-          <th>Bucket Region</th>
-          <td>{upload.bucket_region ? upload.bucket_region : <i>null</i>}</td>
-        </tr>
-        <tr>
           <th>Bucket Endpoint URL</th>
           <td>
             {upload.bucket_endpoint_url ? (

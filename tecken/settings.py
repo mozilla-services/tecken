@@ -436,9 +436,6 @@ AWS_ACCESS_KEY_ID = _config("AWS_ACCESS_KEY_ID", default="", doc="AWS access key
 AWS_SECRET_ACCESS_KEY = _config(
     "AWS_SECRET_ACCESS_KEY", default="", doc="AWS secret access key."
 )
-AWS_DEFAULT_REGION = _config(
-    "AWS_DEFAULT_REGION", default="", doc="AWS default region."
-)
 
 S3_CONNECT_TIMEOUT = _config(
     "S3_LOOKUP_CONNECT_TIMEOUT",
