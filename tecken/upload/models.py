@@ -32,7 +32,6 @@ class Upload(models.Model):
     filename = models.CharField(max_length=100)
     # The name of the bucket where it was placed temporarily
     bucket_name = models.CharField(max_length=100)
-    bucket_region = models.CharField(max_length=100, null=True)
     bucket_endpoint_url = models.CharField(max_length=100, null=True)
     # When the archive contains keys we decide NOT to upload
     skipped_keys = ArrayField(models.CharField(max_length=300), null=True)
