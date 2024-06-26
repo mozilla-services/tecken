@@ -2,23 +2,27 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from io import BufferedReader
 import re
 import threading
-from urllib.parse import urlparse
+from typing import Optional
+from urllib.parse import quote, urlparse
 
-from botocore.exceptions import BotoCoreError, ClientError
-import boto3
+import boto3.session
 from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 from django.conf import settings
 
-from tecken.libstorage import StorageError
+from tecken.libstorage import ObjectMetadata, StorageBackend, StorageError
 
 
-ALL_POSSIBLE_S3_REGIONS = tuple(boto3.session.Session().get_available_regions("s3"))
+ALL_POSSIBLE_S3_REGIONS: tuple[str] = tuple(
+    boto3.session.Session().get_available_regions("s3")
+)
 
 
-class S3Storage:
+class S3Storage(StorageBackend):
     """
     Deconstructs a URL about an S3 bucket and breaks it into parts that
     can be used for various purposes. Also, contains a convenient method
@@ -42,7 +46,7 @@ class S3Storage:
     # A substring match of the domain is used to recognize storage backends.
     # For emulated backends, the name should be present in the docker compose
     # service name.
-    _URL_FINGERPRINT = {
+    _URL_FINGERPRINT: list[str] = {
         # AWS S3, like bucket-name.s3.amazonaws.com
         "s3": ".amazonaws.com",
         # Localstack S3 Emulator
@@ -51,7 +55,12 @@ class S3Storage:
         "test-s3": "s3.example.com",
     }
 
-    def __init__(self, url, try_symbols=False, file_prefix=settings.SYMBOL_FILE_PREFIX):
+    def __init__(
+        self,
+        url: str,
+        try_symbols: bool = False,
+        file_prefix: str = settings.SYMBOL_FILE_PREFIX,
+    ):
         self.url = url
         parsed = urlparse(url)
         self.scheme = parsed.scheme
@@ -120,12 +129,12 @@ class S3Storage:
             )
         return self.clients.storage
 
-    def exists(self):
-        """Check that the bucket exists in the backend.
+    def exists(self) -> bool:
+        """Check that this storage exists.
 
-        :raises StorageError: An unexpected backed-specific error was raised.
-        :returns: True if the bucket exists, False if it does not
+        :returns: True if the storage exists and False if not
 
+        :raises StorageError: an unexpected backend-specific error was raised
         """
         client = self.get_storage_client()
 
@@ -149,11 +158,86 @@ class S3Storage:
         else:
             return True
 
+    def get_object_metadata(self, key: str) -> Optional[ObjectMetadata]:
+        """Return object metadata for the object with the given key.
+
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+        ``<debug-file>/<debug-id>/<symbols-file>``.
+
+        :returns: An OjbectMetadata instance if the object exist, None otherwise.
+
+        :raises StorageError: an unexpected backend-specific error was raised
+        """
+        client = self.get_storage_client()
+        # Return 0 if the key can't be found so the memoize cache can cope
+        try:
+            response = client.head_object(Bucket=self.name, Key=f"{self.prefix}/{key}")
+        except ClientError as exception:
+            if exception.response["Error"]["Code"] == "404":
+                return None
+            raise StorageError(
+                backend=self.backend, url=self.url, error=exception
+            ) from exception
+        except BotoCoreError as exception:
+            raise StorageError(
+                backend=self.backend, url=self.url, error=exception
+            ) from exception
+        s3_metadata = response.get("Metadata", {})
+        metadata = ObjectMetadata(
+            download_url=f"{self.base_url}/{self.prefix}/{quote(key)}",
+            content_type=response["ContentType"],
+            content_length=response["ContentLength"],
+            content_encoding=response.get("ContentEncoding"),
+            original_content_length=s3_metadata.get("original_size"),
+            original_md5_sum=s3_metadata.get("original_md5_hash"),
+            last_modified=response["LastModified"],
+        )
+        return metadata
+
+    def upload(self, key: str, body: BufferedReader, metadata: ObjectMetadata):
+        """Upload the object with the given key and body to the storage backend.
+
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+        ``<debug-file>/<debug-id>/<symbols-file>``.
+        :arg body: An stream yielding the symbols file contents.
+        :arg metadata: An ObjectMetadata instance with the metadata.
+
+        :raises StorageError: an unexpected backend-specific error was raised
+        """
+        # boto3 performs strict type checking for all keyword parameters, and passing None where
+        # it expects a string doesn't work, so we need to completely remove these parameters.
+        s3_metadata = {}
+        if metadata.original_content_length:
+            # All metadata values must be strings.
+            s3_metadata["original_size"] = str(metadata.original_content_length)
+        if metadata.original_md5_sum:
+            s3_metadata["original_md5_hash"] = metadata.original_md5_sum
+        kwargs = {
+            "Bucket": self.name,
+            "Key": f"{self.prefix}/{key}",
+            "Body": body,
+            "Metadata": s3_metadata,
+        }
+        if metadata.content_type:
+            kwargs["ContentType"] = metadata.content_type
+        if metadata.content_encoding:
+            kwargs["ContentEncoding"] = metadata.content_encoding
+        if metadata.content_length:
+            kwargs["ContentLength"] = metadata.content_length
+
+        client = self.get_storage_client()
+        try:
+            client.put_object(**kwargs)
+        except (ClientError, BotoCoreError) as exception:
+            raise StorageError(
+                backend=self.backend, url=self.url, error=exception
+            ) from exception
+
 
 _BOTO3_SESSION_CACHE = threading.local()
 
 
-def _get_boto3_session():
+def _get_boto3_session() -> boto3.session.Session:
     """Return the boto3 session for the current thread."""
     if not hasattr(_BOTO3_SESSION_CACHE, "session"):
         _BOTO3_SESSION_CACHE.session = boto3.session.Session()

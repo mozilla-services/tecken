@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from dataclasses import dataclass
+import datetime
 from io import BufferedReader
 from typing import Optional
 
@@ -31,35 +32,13 @@ class ObjectMetadata:
     For use in the StorageBackend interface.
     """
 
-    content_type: str
-    content_length: int
+    content_type: Optional[str] = None
+    content_length: Optional[int] = None
     content_encoding: Optional[str] = None
     original_content_length: Optional[int] = None
-    original_md5_sum: Optional[int] = None
-    last_modified_timestamp: Optional[int] = None
-
-
-@dataclass
-class ObjectRedirect:
-    """Indicates that the app should return a redirect to the given location for the object.
-
-    For use in the StorageBackend interface.
-    """
-
-    location: str
-
-
-@dataclass
-class ObjectStream:
-    """Indicates that the app should directly stream the given file.
-
-    For use in the StorageBackend interface.
-    """
-
-    file: BufferedReader
-
-
-ObjectDownload = ObjectRedirect | ObjectStream
+    original_md5_sum: Optional[str] = None
+    last_modified: Optional[datetime.datetime] = None
+    download_url: Optional[str] = None
 
 
 class StorageBackend:
@@ -77,7 +56,10 @@ class StorageBackend:
     def get_object_metadata(self, key: str) -> Optional[ObjectMetadata]:
         """Return object metadata for the object with the given key.
 
-        :returns: And OjbectMetadata instance if the object exist, None otherwise.
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+        ``<debug-file>/<debug-id>/<symbols-file>``.
+
+        :returns: An OjbectMetadata instance if the object exist, None otherwise.
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
@@ -85,22 +67,13 @@ class StorageBackend:
             "get_object_metadta() must be implemented by the concrete class"
         )
 
-    def download(self, key: str) -> Optional[ObjectDownload]:
-        """Return how the object with the given key can be downloaded.
-
-        :returns:
-            * An ObjectRedirect instance if the app should redirect the client.
-            * An ObjectStream instance if the app should serve the object directly.
-            * None if the object does not exist in the storage backend.
-
-        :raises StorageError: an unexpected backend-specific error was raised
-        """
-        raise NotImplementedError(
-            "download() must be implemented by the concrete class"
-        )
-
     def upload(self, key: str, body: BufferedReader, metadata: ObjectMetadata):
         """Upload the object with the given key and body to the storage backend.
+
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+        ``<debug-file>/<debug-id>/<symbols-file>``.
+        :arg body: An stream yielding the symbols file contents.
+        :arg metadata: An ObjectMetadata instance with the metadata.
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
