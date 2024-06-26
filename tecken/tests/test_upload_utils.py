@@ -12,7 +12,6 @@ from tecken.upload.utils import (
     extract_sym_header_data,
     get_key_content_type,
     is_sym_file,
-    key_existing,
     should_compressed_key,
     SymParseError,
 )
@@ -172,42 +171,3 @@ def test_should_compressed_key(settings, key, expected):
 def test_get_key_content_type(settings, key, expected):
     settings.MIME_OVERRIDES = {"html": "text/html"}
     assert get_key_content_type(key) == expected
-
-
-def test_key_existing(s3_helper, metricsmock):
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="somefile.txt",
-        data=b"abc123",
-    )
-
-    client = s3_helper.conn
-
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 6
-    assert metadata == {}
-    metricsmock.assert_timing_once("tecken.upload_file_exists", tags=["host:testnode"])
-    metricsmock.clear_records()
-
-    # Change the file
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="somefile.txt",
-        data=b"abc123123",
-    )
-
-    # Make sure the size changes
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 9
-    assert metadata == {}
-    metricsmock.assert_timing_once("tecken.upload_file_exists", tags=["host:testnode"])
-
-
-def test_key_existing_not_found(s3_helper):
-    s3_helper.create_bucket("publicbucket")
-    client = s3_helper.conn
-
-    size, metadata = key_existing(client, "publicbucket", "somefile.txt")
-    assert size == 0
-    assert metadata is None
