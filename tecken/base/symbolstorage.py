@@ -2,58 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from email.utils import parsedate_to_datetime
-import time
-from typing import Optional
-from urllib.parse import quote
-
 import logging
+from typing import Optional
+
+from django.utils import timezone
 
 from tecken.libmarkus import METRICS
-from tecken.librequests import session_with_retries
 from tecken.ext.s3.storage import S3Storage
+from tecken.libstorage import ObjectMetadata
 
 
 logger = logging.getLogger("tecken")
-
-
-@METRICS.timer_decorator("symboldownloader_exists")
-def get_last_modified(url: str) -> Optional[int]:
-    """
-    Get the last modified date of the given URL.
-
-    This function performs a HEAD request to the given URL. If the status code is 200,
-    the Last-Modified header is parsed into a Unix timestamp and returned.
-    If the response does not include a Last-Modified header, or the header can't be
-    parsed, the current time is returned. If the response status code is not 200, the
-    function returns None.
-
-    :arg url: The target URL.
-    :returns: The timestamp of the last modification of the resource at the URL or `None`.
-    """
-    session = session_with_retries(status_forcelist=(429, 500, 503))
-    resp = session.head(url)
-    # NOTE(willkg): we get a 403 from S3 buckets HTTP requests, so we want to ignore
-    # those
-    if resp.status_code not in (200, 403, 404):
-        logger.error(f"get_last_modified: {url} status code is {resp.status_code}")
-    if resp.status_code == 200:
-        try:
-            last_modified = parsedate_to_datetime(resp.headers["last-modified"])
-            return int(last_modified.timestamp())
-        except (ValueError, KeyError):
-            # KeyError occurs when the response does not hav a Last-Modified header,
-            # and ValueError occurs if the Last-Modified header isn't properly
-            # RFC-5322-formatted. Neither of this should ever happen, since S3 always
-            # includes a properly formatted Last-Modified header in responses, so
-            # this code is just a fallback to avoid erroring out if something
-            # unexpected happened.
-            logger.error(
-                "get_last_modified: HEAD request to %s did not return "
-                "a valid last-modified header",
-                url,
-            )
-            return int(time.time())
 
 
 class SymbolStorage:
@@ -85,82 +44,41 @@ class SymbolStorage:
         return f"<{self.__class__.__name__} urls={urls}>"
 
     @staticmethod
-    def make_url_path(prefix, symbol, debugid, filename):
-        """Generates a url quoted path which works with HTTP requests against AWS S3
-        buckets
+    def make_key(symbol: str, debugid: str, filename: str) -> str:
+        """Generates a symbol file key for the given identifiers.
 
         :arg prefix:
         :arg symbol:
         :arg debugid:
         :arg filename:
 
-        :returns: url quoted relative path to be joined with a base url
-
+        :returns: A key suitable for use with StorageBackend methods.
         """
-        # The are some legacy use case where the debug ID might not already be
+        # There are some legacy use case where the debug ID might not already be
         # uppercased. If so, we override it. Every debug ID is always in uppercase.
-        return quote(f"{prefix}/{symbol}/{debugid.upper()}/{filename}")
+        return f"{symbol}/{debugid.upper()}/{filename}"
 
-    def _get(self, symbol: str, debugid: str, filename: str, try_storage: bool) -> dict:
-        """Return a dict if the symbol can be found.
-
-        Dict includes a "url" key.
-
-        Consumers of this method can use the fact that anything truish
-        was returned as an indication that the symbol actually exists.
-
-        """
+    def get_metadata(
+        self, symbol: str, debugid: str, filename: str, try_storage: bool = False
+    ) -> Optional[ObjectMetadata]:
+        """Return the metadata of the symbols file if it can be found, and None otherwise."""
+        key = self.make_key(symbol=symbol, debugid=debugid, filename=filename)
         if try_storage and self.try_backend:
             backends = [*self.backends, self.try_backend]
         else:
             backends = self.backends
         for backend in backends:
-            prefix = backend.prefix
-
-            # We'll put together the URL manually
-            file_url = "{}/{}".format(
-                backend.base_url, self.make_url_path(prefix, symbol, debugid, filename)
-            )
-            logger.debug(f"Looking for symbol file by URL {file_url!r}")
-            if last_modified := get_last_modified(file_url):
-                age_days = int(time.time() - last_modified) // 86_400  # seconds per day
-                if backend.try_symbols:
-                    tags = ["storage:try"]
-                else:
-                    tags = ["storage:regular"]
-                METRICS.histogram("symboldownloader.file_age_days", age_days, tags)
-                return {
-                    "url": file_url,
-                    "backend": backend,
-                }
-
-    def has_symbol(
-        self, symbol: str, debugid: str, filename: str, try_storage: bool = False
-    ) -> bool:
-        """return True if the symbol can be found, False if not
-        found in any of the URLs provided."""
-        return bool(
-            self._get(
-                symbol=symbol,
-                debugid=debugid,
-                filename=filename,
-                try_storage=try_storage,
-            )
-        )
-
-    def get_symbol_url(
-        self, symbol: str, debugid: str, filename: str, try_storage: bool = False
-    ) -> str:
-        """Return the redirect URL or None.
-
-        If we return None it means we can't find the object in any of the URLs provided.
-
-        """
-        found = self._get(
-            symbol=symbol, debugid=debugid, filename=filename, try_storage=try_storage
-        )
-        if found:
-            return found["url"]
+            with METRICS.timer("symboldownloader_exists"):
+                metadata = backend.get_object_metadata(key)
+            if metadata:
+                if metadata.last_modified:
+                    age_days = (timezone.now() - metadata.last_modified).days
+                    if backend.try_symbols:
+                        tags = ["storage:try"]
+                    else:
+                        tags = ["storage:regular"]
+                    METRICS.histogram("symboldownloader.file_age_days", age_days, tags)
+                return metadata
 
 
 # Global SymbolStorage instance, eventually used for all interactions with storage backends.
