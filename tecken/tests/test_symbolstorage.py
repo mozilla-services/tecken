@@ -6,67 +6,29 @@ import pytest
 
 from tecken.base.symbolstorage import (
     SymbolStorage,
-    get_last_modified,
 )
 
 
 @pytest.mark.parametrize(
-    "prefix, symbol, debugid, filename, expected",
+    "symbol, debugid, filename, expected",
     [
         (
-            "v1",
             "xul.pdb",
             "44E4EC8C2F41492B9369D6B9A059577C2",
             "xul.sym",
-            "v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+            "xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
         ),
         (
-            "v1",
             "libc++abi.dylib",
             "43940F08B65E38888CD3C52398EB1CA10",
             "libc++abi.dylib.sym",
-            "v1/libc%2B%2Babi.dylib/43940F08B65E38888CD3C52398EB1CA10/libc%2B%2Babi.dylib.sym",
+            "libc++abi.dylib/43940F08B65E38888CD3C52398EB1CA10/libc++abi.dylib.sym",
         ),
     ],
 )
-def test_make_url_path(prefix, symbol, debugid, filename, expected):
-    path = SymbolStorage.make_url_path(
-        prefix=prefix, symbol=symbol, debugid=debugid, filename=filename
-    )
+def test_make_url_path(symbol, debugid, filename, expected):
+    path = SymbolStorage.make_key(symbol=symbol, debugid=debugid, filename=filename)
     assert path == expected
-
-
-def test_get_last_modified(s3_helper, settings):
-    module = "xul.pdb"
-    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    debugfn = "xul.sym"
-
-    # Upload a file into the regular bucket
-    # NOTE(willkg): The information here needs to match SYMBOL_URLS[0]
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{module}/{debugid}/{debugfn}",
-        data=b"abc123",
-    )
-
-    good_key = SymbolStorage.make_url_path(
-        prefix="v1",
-        symbol=module,
-        debugid=debugid,
-        filename=debugfn,
-    )
-    bad_key = SymbolStorage.make_url_path(
-        prefix="v1",
-        symbol="XUL",
-        debugid="4C4C445955553144A1984A09D6A8D6930",
-        filename="XUL.sym",
-    )
-
-    base_url = settings.SYMBOL_URLS[0]
-
-    assert get_last_modified(f"{base_url}{good_key}")
-    assert not get_last_modified(f"{base_url}{bad_key}")
 
 
 def test_has_symbol(s3_helper):
@@ -79,8 +41,10 @@ def test_has_symbol(s3_helper):
     storage = SymbolStorage(
         upload_url="http://localstack:4566/publicbucket/", download_urls=[]
     )
-    assert storage.has_symbol("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym")
-    assert not storage.has_symbol(
+    assert storage.get_metadata(
+        "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
+    )
+    assert not storage.get_metadata(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
 
@@ -95,17 +59,17 @@ def test_get_url_public(s3_helper):
     storage = SymbolStorage(
         upload_url="http://localstack:4566/publicbucket/", download_urls=[]
     )
-    url = storage.get_symbol_url(
+    metadata = storage.get_metadata(
         "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
     )
-    assert url == (
+    assert metadata.download_url == (
         "http://localstack:4566/publicbucket/v1/xul.pdb/"
         + "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
-    url = storage.get_symbol_url(
+    metadata = storage.get_metadata(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
-    assert url is None
+    assert metadata is None
 
 
 def test_public_default_file_prefix():
@@ -130,7 +94,7 @@ def test_public_default_file_prefix():
             "http://localstack:4566/publicbucket",
         ],
     )
-    assert not storage.has_symbol(
+    assert not storage.get_metadata(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
     )
 
@@ -145,4 +109,6 @@ def test_has_public_case_insensitive_debugid(s3_helper):
     storage = SymbolStorage(
         upload_url="http://localstack:4566/publicbucket/", download_urls=[]
     )
-    assert storage.has_symbol("xul.pdb", "44e4ec8c2f41492b9369d6b9a059577c2", "xul.sym")
+    assert storage.get_metadata(
+        "xul.pdb", "44e4ec8c2f41492b9369d6b9a059577c2", "xul.sym"
+    )

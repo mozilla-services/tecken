@@ -143,47 +143,35 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
     refresh_cache = "_refresh" in request.GET
 
     try_symbols = "try" in request.GET or try_symbols
-    storage = symbol_storage()
-
-    if request.method == "HEAD":
-        has_symbol, elapsed_time = measure_time(
-            storage.has_symbol,
-            symbol=debugfilename,
-            debugid=debugid,
-            filename=filename,
-            try_storage=try_symbols,
-        )
-        if has_symbol:
-            response = http.HttpResponse()
-            if request._request_debug:
-                response["Debug-Time"] = elapsed_time
-            return response
-
-    else:
-        url, elapsed_time = measure_time(
-            storage.get_symbol_url,
-            symbol=debugfilename,
-            debugid=debugid,
-            filename=filename,
-            try_storage=try_symbols,
-        )
-        if url:
+    metadata, elapsed_time = measure_time(
+        symbol_storage().get_metadata,
+        symbol=debugfilename,
+        debugid=debugid,
+        filename=filename,
+        try_storage=try_symbols,
+    )
+    if metadata:
+        url = metadata.download_url
+        if (
+            settings.DEBUG
+            and S3Storage(url).backend == "emulated-s3"
+            and "http://localstack:4566" in url
+            and request.get_host() == "localhost:8000"
+        ):  # pragma: no cover
             # If doing local development, with Docker, you're most likely running
             # localstack as a fake S3. It runs on its own hostname that is only
             # available from other Docker containers. But to make it really convenient,
             # for testing symbol download we'll rewrite the URL to one that is possible
             # to reach from the host.
-            if (
-                settings.DEBUG
-                and S3Storage(url).backend == "emulated-s3"
-                and "http://localstack:4566" in url
-                and request.get_host() == "localhost:8000"
-            ):  # pragma: no cover
-                url = url.replace("localstack:4566", "localhost:4566")
-            response = http.HttpResponseRedirect(url)
-            if request._request_debug:
-                response["Debug-Time"] = elapsed_time
-            return response
+            url = url.replace("localstack:4566", "localhost:4566")
+        response = http.HttpResponseRedirect(url)
+        if request._request_debug:
+            response["Debug-Time"] = elapsed_time
+        if request.method == "HEAD":
+            # Tecken has the nonstandard convention of returning a 200 status code for successful
+            # HEAD requests even if the corresponding GET request returns a 302.
+            response.status_code = 200
+        return response
 
     if is_maybe_codeinfo(debugfilename, debugid, filename):
         ret = cached_lookup_by_syminfo(

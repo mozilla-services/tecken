@@ -428,14 +428,14 @@ def test_upload_archive_with_cache_invalidation(
 
     with open(ZIP_FILE, "rb") as fp:
         # First time -- not there
-        assert not storage.has_symbol(module, debugid, debugfn)
+        assert not storage.get_metadata(module, debugid, debugfn)
 
         url = reverse("upload:upload_archive")
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
         # Second time is there
-        assert storage.has_symbol(module, debugid, debugfn)
+        assert storage.get_metadata(module, debugid, debugfn)
 
 
 def test_upload_archive_by_url(
