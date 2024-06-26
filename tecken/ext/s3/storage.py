@@ -183,14 +183,20 @@ class S3Storage(StorageBackend):
                 backend=self.backend, url=self.url, error=exception
             ) from exception
         s3_metadata = response.get("Metadata", {})
+        original_content_length = s3_metadata.get("original_size")
+        if original_content_length is not None:
+            try:
+                original_content_length = int(original_content_length)
+            except ValueError:
+                original_content_length = None
         metadata = ObjectMetadata(
             download_url=f"{self.base_url}/{self.prefix}/{quote(key)}",
-            content_type=response["ContentType"],
+            content_type=response.get("ContentType"),
             content_length=response["ContentLength"],
             content_encoding=response.get("ContentEncoding"),
-            original_content_length=s3_metadata.get("original_size"),
+            original_content_length=original_content_length,
             original_md5_sum=s3_metadata.get("original_md5_hash"),
-            last_modified=response["LastModified"],
+            last_modified=response.get("LastModified"),
         )
         return metadata
 
