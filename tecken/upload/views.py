@@ -315,7 +315,7 @@ def upload_archive(request, upload_workspace):
             executor.submit(
                 upload_file_upload,
                 bucket_info,
-                key_name,
+                member.name,
                 member.path,
                 upload_obj,
             )
