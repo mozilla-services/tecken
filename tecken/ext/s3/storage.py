@@ -95,7 +95,7 @@ class S3Storage(StorageBackend):
         if not self.backend == "s3":
             # the endpoint_url will be all but the path
             self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
-        region = re.findall(r"s3-(.*)\.amazonaws\.com", parsed.netloc)
+        region = re.findall(r"s3[.-](.*)\.amazonaws\.com", parsed.netloc)
         if region:
             if region[0] not in ALL_POSSIBLE_S3_REGIONS:
                 raise ValueError(f"Not valid S3 region {region[0]}")
