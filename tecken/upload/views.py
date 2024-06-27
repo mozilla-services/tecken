@@ -41,11 +41,6 @@ from tecken.libmarkus import METRICS
 logger = logging.getLogger("tecken")
 
 
-class NoPossibleBucketName(Exception):
-    """When you tried to specify a preferred bucket name but it never
-    matched to one you can use."""
-
-
 _not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
 
 # This list of filenames is used to validate a zip and also when iterating
@@ -260,12 +255,6 @@ def upload_archive(request, upload_workspace):
         bucket_info = symbol_storage().try_backend
     else:
         bucket_info = symbol_storage().upload_backend
-
-    # If you have special permission, you can affect which bucket to upload to.
-    preferred_bucket_name = request.POST.get("bucket_name")
-    if preferred_bucket_name and preferred_bucket_name != bucket_info.name:
-        logger.warning("Cannot upload to bucket %s", preferred_bucket_name)
-        return http.JsonResponse({"error": "No valid bucket"}, status=403)
 
     if not bucket_info.exists():
         raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
