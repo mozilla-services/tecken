@@ -13,12 +13,12 @@ import pytest
 from requests.exceptions import ConnectionError, RetryError
 
 from django.contrib.auth.models import Permission
-from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
 from tecken.base.symbolstorage import symbol_storage
+from tecken.libstorage import StorageError
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -661,7 +661,7 @@ def test_upload_client_unrecognized_bucket(client, db, s3_helper, uploaderuser):
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    with open(ZIP_FILE, "rb") as fp, pytest.raises(ImproperlyConfigured):
+    with open(ZIP_FILE, "rb") as fp, pytest.raises(StorageError):
         client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
 
 

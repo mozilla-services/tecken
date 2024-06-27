@@ -15,7 +15,6 @@ import zipfile
 from django import http
 from django.conf import settings
 from django.utils import timezone
-from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 
 from tecken.base.decorators import (
@@ -255,9 +254,6 @@ def upload_archive(request, upload_workspace):
         bucket_info = symbol_storage().try_backend
     else:
         bucket_info = symbol_storage().upload_backend
-
-    if not bucket_info.exists():
-        raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
 
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
