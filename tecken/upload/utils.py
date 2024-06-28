@@ -177,6 +177,8 @@ def upload_file_upload(
     upload: Upload,
 ) -> Optional[FileUpload]:
     with METRICS.timer("upload_file_exists"):
+        # FIXME(smarnach): Use symbol_storage().get_metadata() so we don't upload a file that
+        # already exists in regular storage to try storage.
         existing_metadata = backend.get_object_metadata(key_name)
 
     size = os.stat(file_path).st_size
@@ -185,6 +187,8 @@ def upload_file_upload(
 
     if not compressed:
         # It's easy when you don't have to compare compressed files.
+        # FIXME(smarnach): Figure out why we only compare sizes for the uncompressed case,
+        # while we also compare hashes when the file is compressed.
         if existing_metadata and existing_metadata.content_length == size:
             # Then don't bother!
             METRICS.incr("upload_skip_early_uncompressed", 1)
