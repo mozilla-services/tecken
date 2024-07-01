@@ -176,7 +176,7 @@ class FileUpload(models.Model):
             "<"
             + f"{self.__class__.__name__}:{self.id} "
             + f"bucket_name={self.bucket_name!r} "
-            + f"key={self.key!r} "
+            + f"key={self.cleaned_key!r} "
             + f"size={self.size!r} "
             + f"created_at={self.created_at!r}"
             + ">"
@@ -186,3 +186,9 @@ class FileUpload(models.Model):
         # NOTE(willkg): This is a React url. This will fail in local development because
         # Django webapp runs at port 8000, but the React webapp runs at port 3000.
         return f"/uploads/files/file/{self.id}"
+
+    @property
+    def cleaned_key(self) -> str:
+        if not hasattr(self, "_key"):
+            self._cleaned_key = self.key.removeprefix("try/").removeprefix("v1/")
+        return self._cleaned_key

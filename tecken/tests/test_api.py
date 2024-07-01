@@ -875,7 +875,7 @@ def test_upload_files_count(client):
     file_upload_2 = FileUpload.objects.create(
         size=100,
         bucket_name="symbols-public",
-        key="v1/libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
+        key="libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
         compressed=True,
     )
 
@@ -886,7 +886,7 @@ def test_upload_files_count(client):
     assert data["files"] == [
         {
             "id": file_upload_2.id,
-            "key": "v1/libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
+            "key": "libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
             "update": False,
             "compressed": True,
             "size": 100,
@@ -897,7 +897,7 @@ def test_upload_files_count(client):
         },
         {
             "id": file_upload_1.id,
-            "key": "v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
+            "key": "bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
             "update": False,
             "compressed": False,
             "size": 1234,
@@ -928,7 +928,7 @@ def test_upload_files_count(client):
             "compressed": False,
             "created_at": ANY,
             "id": file_upload_1.id,
-            "key": "v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
+            "key": "bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
             "size": 1234,
             "update": False,
             "upload": {
@@ -1227,6 +1227,11 @@ class Test_syminfo:
         code_id = "64E130A115A30000"
         generator = "mozilla/dump_syms XYZ"
 
+        upload = Upload.objects.create(
+            user=User.objects.create(email="user2@example.com"),
+            size=123_456,
+            try_symbols=True,
+        )
         FileUpload.objects.create(
             bucket_name="publicbucket",
             key=f"try/v1/{debug_filename}/{debug_id}/{sym_file}",
@@ -1236,6 +1241,7 @@ class Test_syminfo:
             code_file=code_file,
             code_id=code_id,
             generator=generator,
+            upload=upload,
         )
 
         # Try syminfo with debug info
