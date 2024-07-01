@@ -105,7 +105,7 @@ def test_upload_archive_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="v1/flag/deadbeef/flag.jpeg",
+        key="flag/deadbeef/flag.jpeg",
         compressed=False,
         # This existed in the bucket before this upload, so this is an update
         update=True,
@@ -116,7 +116,7 @@ def test_upload_archive_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that it's been
@@ -185,7 +185,7 @@ def test_upload_try_symbols_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="try/v1/flag/deadbeef/flag.jpeg",
+        key="flag/deadbeef/flag.jpeg",
         compressed=False,
         update=True,
         size=69183,  # based on `unzip -l tests/sample.zip` knowledge
@@ -195,7 +195,7 @@ def test_upload_try_symbols_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="try/v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -245,14 +245,14 @@ def test_upload_archive_one_uploaded_one_skipped(
     assert upload.size == 70398
     assert upload.bucket_name == "publicbucket"
     assert upload.bucket_endpoint_url == "http://localstack:4566"
-    assert upload.skipped_keys == ["v1/flag/deadbeef/flag.jpeg"]
+    assert upload.skipped_keys == ["flag/deadbeef/flag.jpeg"]
     assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -402,7 +402,7 @@ def test_upload_archive_one_uploaded_one_errored(client, db, botomock, uploaderu
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
-        upload=upload, key="v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        upload=upload, key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
     )
 
 
