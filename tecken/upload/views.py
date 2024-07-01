@@ -250,10 +250,7 @@ def upload_archive(request, upload_workspace):
         # In case it's passed in as a string
         is_try_upload = bool(is_try_upload)
 
-    if is_try_upload:
-        bucket_info = symbol_storage().try_backend
-    else:
-        bucket_info = symbol_storage().upload_backend
+    backend = symbol_storage().get_upload_backend(is_try_upload)
 
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
@@ -270,8 +267,8 @@ def upload_archive(request, upload_workspace):
     upload_obj = Upload.objects.create(
         user=request.user,
         filename=name,
-        bucket_name=bucket_info.name,
-        bucket_endpoint_url=bucket_info.endpoint_url,
+        bucket_name=backend.name,
+        bucket_endpoint_url=backend.endpoint_url,
         size=size,
         download_url=url,
         redirect_urls=redirect_urls,
@@ -290,7 +287,7 @@ def upload_archive(request, upload_workspace):
         if _ignore_member_file(member.name):
             ignored_keys.append(member.name)
             continue
-        key_name = os.path.join(bucket_info.prefix, member.name)
+        key_name = os.path.join(backend.prefix, member.name)
         # We need to know and remember, for every file attempted,
         # what that name corresponds to as a "symbol key".
         # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
@@ -299,7 +296,7 @@ def upload_archive(request, upload_workspace):
         future_to_key[
             executor.submit(
                 upload_file_upload,
-                bucket_info,
+                backend,
                 member.name,
                 member.path,
                 upload_obj,
@@ -328,7 +325,7 @@ def upload_archive(request, upload_workspace):
     )
 
     METRICS.incr(
-        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{bucket_info.name}"]
+        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{backend.name}"]
     )
 
     return http.JsonResponse({"upload": _serialize_upload(upload_obj)}, status=201)

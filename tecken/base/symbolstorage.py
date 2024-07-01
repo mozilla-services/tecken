@@ -9,45 +9,63 @@ from django.utils import timezone
 
 from tecken.libmarkus import METRICS
 from tecken.ext.s3.storage import S3Storage
-from tecken.libstorage import ObjectMetadata
+from tecken.libstorage import ObjectMetadata, StorageBackend
 
 
 logger = logging.getLogger("tecken")
 
 
 class SymbolStorage:
-    """
-    Class for the following S3 tasks:
-
-    1. Do you have this particular symbol?
-    2. Give me the presigned URL for this particular symbol.
-
-    This class takes a list of URLs.
-
-    """
+    """Persistent wrapper around multiple StorageBackend instances."""
 
     def __init__(
         self, upload_url: str, download_urls: list[str], try_url: Optional[str] = None
     ):
-        self.upload_backend = S3Storage(upload_url)
+        # The upload backend for regular storage.
+        self.upload_backend: StorageBackend = S3Storage(upload_url)
+
+        # All additional download backends, except for the regular upload backend.
         download_backends = [
             S3Storage(url) for url in download_urls if url != upload_url
         ]
+
+        # All backends
+        self.backends: list[StorageBackend] = [self.upload_backend, *download_backends]
+
+        # The try storage backend for both upload and download, if any.
         if try_url is None:
-            self.try_backend = None
+            self.try_backend: Optional[StorageBackend] = None
         else:
-            self.try_backend = S3Storage(try_url, try_symbols=True)
-        self.backends = [self.upload_backend, *download_backends]
+            self.try_backend: Optional[StorageBackend] = S3Storage(
+                try_url, try_symbols=True
+            )
+            self.backends.append(self.try_backend)
 
     def __repr__(self):
         urls = [backend.url for backend in self.backends]
         return f"<{self.__class__.__name__} urls={urls}>"
 
+    def get_download_backends(self, try_storage: bool) -> list[StorageBackend]:
+        """Return a list of all download backends.
+
+        Includes the try backend if `try_storage` is set to `True`.
+        """
+        return [
+            backend
+            for backend in self.backends
+            if try_storage or not backend.try_symbols
+        ]
+
+    def get_upload_backend(self, try_storage: bool):
+        """Return either the regular or the try upload backends."""
+        if try_storage:
+            return self.try_backend
+        return self.upload_backend
+
     @staticmethod
     def make_key(symbol: str, debugid: str, filename: str) -> str:
         """Generates a symbol file key for the given identifiers.
 
-        :arg prefix:
         :arg symbol:
         :arg debugid:
         :arg filename:
@@ -63,11 +81,7 @@ class SymbolStorage:
     ) -> Optional[ObjectMetadata]:
         """Return the metadata of the symbols file if it can be found, and None otherwise."""
         key = self.make_key(symbol=symbol, debugid=debugid, filename=filename)
-        if try_storage and self.try_backend:
-            backends = [*self.backends, self.try_backend]
-        else:
-            backends = self.backends
-        for backend in backends:
+        for backend in self.get_download_backends(try_storage):
             with METRICS.timer("symboldownloader_exists"):
                 metadata = backend.get_object_metadata(key)
             if metadata:
