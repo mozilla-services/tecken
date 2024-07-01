@@ -9,7 +9,7 @@ WORKDIR /app
 RUN bin/build_frontend.sh
 
 
-FROM --platform=linux/amd64 python:3.11.9-slim-bullseye@sha256:320da7887b542fee80af7fac52146047a980d767abb9b8fe69d86eaa9113bcc4
+FROM --platform=linux/amd64 python:3.12.4-slim-bullseye@sha256:b46857f2a1364ff3ae277029e6d972a19bd6e8010cead7b9c0936766c58685af
 
 ARG userid=10001
 ARG groupid=10001
