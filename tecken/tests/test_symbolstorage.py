@@ -72,33 +72,6 @@ def test_get_url_public(s3_helper):
     assert metadata is None
 
 
-def test_public_default_file_prefix():
-    """The idea with settings.SYMBOL_FILE_PREFIX is to make it easier
-    to specify the settings.SYMBOL_URLS. That settings.SYMBOL_FILE_PREFIX
-    is *always* used when uploading symbols. So it's *always* useful to
-    query for symbols with a prefix. However, it's an easy mistake to make
-    that you just focus on the bucket name to say where symbols come from.
-    In those cases, the code should "protect" you can make sure we actually
-    use the prefix.
-
-    However, we don't want to lose the flexibility to actually override
-    it on a *per URL* basis.
-    """
-
-    storage = SymbolStorage(
-        upload_url="http://localstack:4566/publicbucket/start/",
-        download_urls=[
-            # No trailing / in the path part
-            "http://localstack:4566/publicbucket/prrffxx",
-            # No prefix!
-            "http://localstack:4566/publicbucket",
-        ],
-    )
-    assert not storage.get_metadata(
-        "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
-    )
-
-
 def test_has_public_case_insensitive_debugid(s3_helper):
     s3_helper.create_bucket("publicbucket")
     s3_helper.upload_fileobj(

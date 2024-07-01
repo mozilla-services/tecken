@@ -619,16 +619,6 @@ if UPLOAD_DEFAULT_URL not in SYMBOL_URLS:
         f"in SYMBOL_URLS ({SYMBOL_URLS!r})"
     )
 
-# The default prefix for locating all symbols
-SYMBOL_FILE_PREFIX = _config(
-    "SYMBOL_FILE_PREFIX",
-    default="v1",
-    doc=(
-        "Prefix in the bucket for all symbol files. This allows us to change the "
-        "file path template."
-    ),
-)
-
 COMPRESS_EXTENSIONS = _config(
     "COMPRESS_EXTENSIONS",
     default="sym",
