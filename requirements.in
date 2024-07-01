@@ -31,7 +31,7 @@ sentry-sdk==2.5.1
 Sphinx==7.3.7
 sphinx-rtd-theme==2.0.0
 sphinxcontrib-httpdomain==1.8.1
-ujson==5.9.0
+ujson==5.10.0
 werkzeug==3.0.3
 whitenoise==6.6.0
 
