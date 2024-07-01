@@ -92,7 +92,7 @@ def auth(request):
 @api_login_required
 @METRICS.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
 def possible_upload_urls(request):
-    upload_backend = symbol_storage().upload_backend
+    upload_backend = symbol_storage().get_upload_backend(False)
     context = {
         "urls": [
             {
