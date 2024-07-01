@@ -251,7 +251,7 @@ def upload_file_upload(
     file_upload = FileUpload.objects.create(
         upload=upload,
         bucket_name=backend.name,
-        key=f"{backend.prefix}/{key_name}",
+        key=key_name,
         update=bool(existing_metadata),
         compressed=compressed,
         size=size,

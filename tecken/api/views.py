@@ -359,7 +359,7 @@ def upload(request, id):
                 {
                     "id": file_upload.id,
                     "bucket_name": file_upload.bucket_name,
-                    "key": file_upload.key,
+                    "key": file_upload.cleaned_key,
                     "update": file_upload.update,
                     "compressed": file_upload.compressed,
                     "size": file_upload.size,
@@ -449,7 +449,7 @@ def _upload_files_content(request, qs):
         files.append(
             {
                 "id": file_upload.id,
-                "key": file_upload.key,
+                "key": file_upload.cleaned_key,
                 "update": file_upload.update,
                 "compressed": file_upload.compressed,
                 "size": file_upload.size,
@@ -528,7 +528,7 @@ def upload_file(request, id):
     ):
         raise PermissionDenied("Insufficient access to view this file")
 
-    symbol, debugid, filename = file_upload.key.split("/")[-3:]
+    symbol, debugid, filename = file_upload.cleaned_key.split("/")[-3:]
     url = reverse("download:download_symbol", args=(symbol, debugid, filename))
     if file_upload.upload and file_upload.upload.try_symbols:
         url += "?try"
@@ -536,7 +536,7 @@ def upload_file(request, id):
     file_dict = {
         "id": file_upload.id,
         "bucket_name": file_upload.bucket_name,
-        "key": file_upload.key,
+        "key": file_upload.cleaned_key,
         "update": file_upload.update,
         "compressed": file_upload.compressed,
         "size": file_upload.size,
@@ -630,7 +630,7 @@ def syminfo(request, some_file, some_id):
             sym_file = sym_file[:-4] + ".sym"
 
         view_name = "download:download_symbol"
-        if ret["key"].startswith("try"):
+        if ret["upload__try_symbols"]:
             view_name = "download:download_symbol_try"
 
         new_url = request.build_absolute_uri(

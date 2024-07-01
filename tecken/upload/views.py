@@ -287,21 +287,20 @@ def upload_archive(request, upload_workspace):
         if _ignore_member_file(member.name):
             ignored_keys.append(member.name)
             continue
-        key_name = os.path.join(backend.prefix, member.name)
         # We need to know and remember, for every file attempted,
         # what that name corresponds to as a "symbol key".
         # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
         symbol_key = tuple(member.name.split("/")[:2])
-        key_to_symbol_keys[key_name] = symbol_key
+        key_to_symbol_keys[member.name] = symbol_key
         future_to_key[
             executor.submit(
                 upload_file_upload,
-                backend,
-                member.name,
-                member.path,
-                upload_obj,
+                backend=backend,
+                key_name=member.name,
+                file_path=member.path,
+                upload=upload_obj,
             )
-        ] = key_name
+        ] = member.name
     # Now lets wait for them all to finish and we'll see which ones
     # were skipped and which ones were created.
     for future in concurrent.futures.as_completed(future_to_key):

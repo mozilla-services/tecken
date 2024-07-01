@@ -74,7 +74,12 @@ def cached_lookup_by_syminfo(somefile, someid, refresh_cache=False):
     if data is NO_VALUE_IN_CACHE or refresh_cache is True:
         qs = FileUpload.objects.lookup_by_syminfo(some_file=somefile, some_id=someid)
         data = qs.values(
-            "key", "debug_filename", "debug_id", "code_file", "code_id", "generator"
+            "debug_filename",
+            "debug_id",
+            "code_file",
+            "code_id",
+            "generator",
+            "upload__try_symbols",
         ).last()
 
         cache.set(key, data, SYMINFO_RESULT_CACHE_TIMEOUT)
