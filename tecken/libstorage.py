@@ -21,10 +21,6 @@ class StorageError(Exception):
         return f"{self.backend} backend ({self.url}) raised {self.backend_msg}"
 
 
-def build_storage_backend():
-    pass
-
-
 @dataclass
 class ObjectMetadata:
     """Metadata for an object in a storage.
@@ -57,22 +53,22 @@ class StorageBackend:
         """Return object metadata for the object with the given key.
 
         :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
-        ``<debug-file>/<debug-id>/<symbols-file>``.
+            ``<debug-file>/<debug-id>/<symbols-file>``.
 
         :returns: An OjbectMetadata instance if the object exist, None otherwise.
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
         raise NotImplementedError(
-            "get_object_metadta() must be implemented by the concrete class"
+            "get_object_metadata() must be implemented by the concrete class"
         )
 
     def upload(self, key: str, body: BufferedReader, metadata: ObjectMetadata):
         """Upload the object with the given key and body to the storage backend.
 
         :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
-        ``<debug-file>/<debug-id>/<symbols-file>``.
-        :arg body: An stream yielding the symbols file contents.
+            ``<debug-file>/<debug-id>/<symbols-file>``.
+        :arg body: A stream yielding the symbols file contents.
         :arg metadata: An ObjectMetadata instance with the metadata.
 
         :raises StorageError: an unexpected backend-specific error was raised

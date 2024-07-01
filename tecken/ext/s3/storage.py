@@ -104,7 +104,10 @@ class S3Storage(StorageBackend):
 
     @property
     def base_url(self):
-        """Return the URL by its domain and bucket name"""
+        """Return base url for objects managed by this storage backend
+
+        For objects in S3, this includes the domain and bucket name.
+        """
         return f"{self.scheme}://{self.netloc}/{self.name}"
 
     def __repr__(self):
@@ -115,18 +118,19 @@ class S3Storage(StorageBackend):
         )
 
     def get_storage_client(self):
-        """Return a backend-specific client.
-
-        TODO(jwhitlock): Build up S3Storage API so users don't work directly with
-        the backend-specific clients (bug 1564452).
-        """
+        """Return a backend-specific client."""
         if not hasattr(self.clients, "storage"):
-            self.clients.storage = get_storage_client(
-                endpoint_url=self.endpoint_url,
-                region_name=self.region,
-                read_timeout=settings.S3_READ_TIMEOUT,
-                connect_timeout=settings.S3_CONNECT_TIMEOUT,
-            )
+            options = {
+                "config": Config(
+                    read_timeout=settings.S3_READ_TIMEOUT,
+                    connect_timeout=settings.S3_CONNECT_TIMEOUT,
+                )
+            }
+            if self.endpoint_url:
+                options["endpoint_url"] = self.endpoint_url
+            if self.region:
+                options["region_name"] = self.region
+            self.clients.storage = _get_boto3_session().client("s3", **options)
         return self.clients.storage
 
     def exists(self) -> bool:
@@ -162,14 +166,13 @@ class S3Storage(StorageBackend):
         """Return object metadata for the object with the given key.
 
         :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
-        ``<debug-file>/<debug-id>/<symbols-file>``.
+            ``<debug-file>/<debug-id>/<symbols-file>``.
 
         :returns: An OjbectMetadata instance if the object exist, None otherwise.
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
         client = self.get_storage_client()
-        # Return 0 if the key can't be found so the memoize cache can cope
         try:
             response = client.head_object(Bucket=self.name, Key=f"{self.prefix}/{key}")
         except ClientError as exception:
@@ -204,7 +207,7 @@ class S3Storage(StorageBackend):
         """Upload the object with the given key and body to the storage backend.
 
         :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
-        ``<debug-file>/<debug-id>/<symbols-file>``.
+            ``<debug-file>/<debug-id>/<symbols-file>``.
         :arg body: An stream yielding the symbols file contents.
         :arg metadata: An ObjectMetadata instance with the metadata.
 
@@ -248,17 +251,3 @@ def _get_boto3_session() -> boto3.session.Session:
     if not hasattr(_BOTO3_SESSION_CACHE, "session"):
         _BOTO3_SESSION_CACHE.session = boto3.session.Session()
     return _BOTO3_SESSION_CACHE.session
-
-
-def get_storage_client(endpoint_url=None, region_name=None, **config_params):
-    options = {"config": Config(**config_params)}
-    if endpoint_url:
-        # By default, if you don't specify an endpoint_url
-        # boto3 will automatically assume AWS's S3.
-        # For local development we are running a local S3
-        # fake service with localstack. Then we need to
-        # specify the endpoint_url.
-        options["endpoint_url"] = endpoint_url
-    if region_name:
-        options["region_name"] = region_name
-    return _get_boto3_session().client("s3", **options)
