@@ -59,7 +59,7 @@ class S3Storage(StorageBackend):
         self,
         url: str,
         try_symbols: bool = False,
-        file_prefix: str = settings.SYMBOL_FILE_PREFIX,
+        file_prefix: str = "v1",
     ):
         self.url = url
         parsed = urlparse(url)
