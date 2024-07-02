@@ -15,7 +15,6 @@ import zipfile
 from django import http
 from django.conf import settings
 from django.utils import timezone
-from django.core.exceptions import ImproperlyConfigured
 from django.views.decorators.csrf import csrf_exempt
 
 from tecken.base.decorators import (
@@ -39,11 +38,6 @@ from tecken.libmarkus import METRICS
 
 
 logger = logging.getLogger("tecken")
-
-
-class NoPossibleBucketName(Exception):
-    """When you tried to specify a preferred bucket name but it never
-    matched to one you can use."""
 
 
 _not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
@@ -256,19 +250,7 @@ def upload_archive(request, upload_workspace):
         # In case it's passed in as a string
         is_try_upload = bool(is_try_upload)
 
-    if is_try_upload:
-        bucket_info = symbol_storage().try_backend
-    else:
-        bucket_info = symbol_storage().upload_backend
-
-    # If you have special permission, you can affect which bucket to upload to.
-    preferred_bucket_name = request.POST.get("bucket_name")
-    if preferred_bucket_name and preferred_bucket_name != bucket_info.name:
-        logger.warning("Cannot upload to bucket %s", preferred_bucket_name)
-        return http.JsonResponse({"error": "No valid bucket"}, status=403)
-
-    if not bucket_info.exists():
-        raise ImproperlyConfigured(f"Bucket does not exist: {bucket_info!r}")
+    backend = symbol_storage().get_upload_backend(is_try_upload)
 
     # Make a hash string that represents every file listing in the archive.
     # Do this by making a string first out of all files listed.
@@ -285,8 +267,8 @@ def upload_archive(request, upload_workspace):
     upload_obj = Upload.objects.create(
         user=request.user,
         filename=name,
-        bucket_name=bucket_info.name,
-        bucket_endpoint_url=bucket_info.endpoint_url,
+        bucket_name=backend.name,
+        bucket_endpoint_url=backend.endpoint_url,
         size=size,
         download_url=url,
         redirect_urls=redirect_urls,
@@ -305,21 +287,20 @@ def upload_archive(request, upload_workspace):
         if _ignore_member_file(member.name):
             ignored_keys.append(member.name)
             continue
-        key_name = os.path.join(bucket_info.prefix, member.name)
         # We need to know and remember, for every file attempted,
         # what that name corresponds to as a "symbol key".
         # A symbol key is, for example, ('xul.pdb', 'A7D6F1BBA7D6F1BB1')
         symbol_key = tuple(member.name.split("/")[:2])
-        key_to_symbol_keys[key_name] = symbol_key
+        key_to_symbol_keys[member.name] = symbol_key
         future_to_key[
             executor.submit(
                 upload_file_upload,
-                bucket_info,
-                key_name,
-                member.path,
-                upload_obj,
+                backend=backend,
+                key_name=member.name,
+                file_path=member.path,
+                upload=upload_obj,
             )
-        ] = key_name
+        ] = member.name
     # Now lets wait for them all to finish and we'll see which ones
     # were skipped and which ones were created.
     for future in concurrent.futures.as_completed(future_to_key):
@@ -343,7 +324,7 @@ def upload_archive(request, upload_workspace):
     )
 
     METRICS.incr(
-        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{bucket_info.name}"]
+        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{backend.name}"]
     )
 
     return http.JsonResponse({"upload": _serialize_upload(upload_obj)}, status=201)

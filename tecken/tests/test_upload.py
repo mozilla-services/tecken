@@ -13,12 +13,12 @@ import pytest
 from requests.exceptions import ConnectionError, RetryError
 
 from django.contrib.auth.models import Permission
-from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
 from tecken.base.symbolstorage import symbol_storage
+from tecken.libstorage import StorageError
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -105,7 +105,7 @@ def test_upload_archive_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="v1/flag/deadbeef/flag.jpeg",
+        key="flag/deadbeef/flag.jpeg",
         compressed=False,
         # This existed in the bucket before this upload, so this is an update
         update=True,
@@ -116,7 +116,7 @@ def test_upload_archive_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that it's been
@@ -185,7 +185,7 @@ def test_upload_try_symbols_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="try/v1/flag/deadbeef/flag.jpeg",
+        key="flag/deadbeef/flag.jpeg",
         compressed=False,
         update=True,
         size=69183,  # based on `unzip -l tests/sample.zip` knowledge
@@ -195,7 +195,7 @@ def test_upload_try_symbols_happy_path(
     file_upload = FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="try/v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -245,14 +245,14 @@ def test_upload_archive_one_uploaded_one_skipped(
     assert upload.size == 70398
     assert upload.bucket_name == "publicbucket"
     assert upload.bucket_endpoint_url == "http://localstack:4566"
-    assert upload.skipped_keys == ["v1/flag/deadbeef/flag.jpeg"]
+    assert upload.skipped_keys == ["flag/deadbeef/flag.jpeg"]
     assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
         upload=upload,
         bucket_name="publicbucket",
-        key="v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that
@@ -402,7 +402,7 @@ def test_upload_archive_one_uploaded_one_errored(client, db, botomock, uploaderu
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
-        upload=upload, key="v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
+        upload=upload, key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
     )
 
 
@@ -428,14 +428,14 @@ def test_upload_archive_with_cache_invalidation(
 
     with open(ZIP_FILE, "rb") as fp:
         # First time -- not there
-        assert not storage.has_symbol(module, debugid, debugfn)
+        assert not storage.get_metadata(module, debugid, debugfn)
 
         url = reverse("upload:upload_archive")
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
         # Second time is there
-        assert storage.has_symbol(module, debugid, debugfn)
+        assert storage.get_metadata(module, debugid, debugfn)
 
 
 def test_upload_archive_by_url(
@@ -661,7 +661,7 @@ def test_upload_client_unrecognized_bucket(client, db, s3_helper, uploaderuser):
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    with open(ZIP_FILE, "rb") as fp, pytest.raises(ImproperlyConfigured):
+    with open(ZIP_FILE, "rb") as fp, pytest.raises(StorageError):
         client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
 
 

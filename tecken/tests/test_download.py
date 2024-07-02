@@ -325,7 +325,7 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
     )
     FileUpload.objects.create(
         bucket_name="publicbucket",
-        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+        key=f"{debug_filename}/{debug_id}/{sym_file}",
         size=100,
         debug_filename=debug_filename,
         debug_id=debug_id,
