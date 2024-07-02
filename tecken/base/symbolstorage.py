@@ -56,7 +56,7 @@ class SymbolStorage:
             if try_storage or not backend.try_symbols
         ]
 
-    def get_upload_backend(self, try_storage: bool):
+    def get_upload_backend(self, try_storage: bool) -> StorageBackend:
         """Return either the regular or the try upload backends."""
         if try_storage:
             return self.try_backend
