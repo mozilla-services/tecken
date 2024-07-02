@@ -40,6 +40,15 @@ class ObjectMetadata:
 class StorageBackend:
     """Interface for storage backends."""
 
+    # The bucket name for this backend
+    name: str
+
+    # Configured backend URL
+    url: str
+
+    # Whether the backend handles try symboles
+    try_symbols: bool
+
     def exists(self) -> bool:
         """Check that this storage exists.
 
