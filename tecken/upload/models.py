@@ -189,6 +189,6 @@ class FileUpload(models.Model):
 
     @property
     def cleaned_key(self) -> str:
-        if not hasattr(self, "_key"):
+        if not hasattr(self, "_cleaned_key"):
             self._cleaned_key = self.key.removeprefix("try/").removeprefix("v1/")
         return self._cleaned_key
