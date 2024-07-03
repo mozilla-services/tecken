@@ -5,7 +5,6 @@
 import os
 
 import pytest
-from botocore.exceptions import ClientError
 
 from tecken.libstorage import StorageError
 from tecken.ext.s3.storage import S3Storage
@@ -134,14 +133,7 @@ def test_exists_s3_non_client_error_raises(s3_helper):
 
 
 def test_storageerror_msg():
-    """The StorageError message includes the URL and the backend error message."""
-    bucket = S3Storage("https://s3.amazonaws.com/some-bucket?access=public")
-    parsed_response = {"Error": {"Code": "403", "Message": "Forbidden"}}
-    backend_error = ClientError(parsed_response, "HeadBucket")
-    error = StorageError(backend=bucket.backend, url=bucket.url, error=backend_error)
-    expected = (
-        "s3 backend (https://s3.amazonaws.com/some-bucket?access=public)"
-        " raised ClientError: An error occurred (403) when calling the HeadBucket"
-        " operation: Forbidden"
-    )
-    assert str(error) == expected
+    """The StorageError message includes the representation of the backend."""
+    backend = S3Storage("https://s3.amazonaws.com/some-bucket?access=public")
+    error = StorageError(backend)
+    assert repr(backend) in str(error)

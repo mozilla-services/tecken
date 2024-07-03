@@ -4,11 +4,9 @@
 
 from unittest.mock import patch
 import pytest
-from botocore.exceptions import ClientError, EndpointConnectionError
 
 from tecken import libdockerflow
 from tecken.base.symbolstorage import SymbolStorage
-from tecken.libstorage import StorageError
 from tecken.libdockerflow import get_version_info, get_release_name
 
 
@@ -33,32 +31,6 @@ def test_check_storage_urls_missing(settings):
     for error in errors:
         assert "bucket not found" in error.msg
         assert error.id == "tecken.health.E001"
-
-
-@pytest.mark.parametrize(
-    "exception",
-    (
-        ClientError({"Error": {"Code": "403", "Message": "Not allowed"}}, "HeadBucket"),
-        EndpointConnectionError(endpoint_url="http://s3.example.com"),
-    ),
-)
-def test_check_storage_urls_storageerror(exception, settings):
-    symbol_storage = SymbolStorage(
-        upload_url="http://s3.example.com/public",
-        download_urls=["http://s3.example.com/other-bucket"],
-    )
-    error = StorageError(
-        backend="test-s3", url="http://s3.example.com/public", error=exception
-    )
-    with (
-        patch("tecken.ext.s3.storage.S3Storage.exists", side_effect=error),
-        patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage),
-    ):
-        errors = libdockerflow.check_storage_urls(None)
-    assert len(errors) == 2
-    for error in errors:
-        assert str(exception) in error.msg
-        assert error.id == "tecken.health.E002"
 
 
 def test_check_storage_urls_other_error(settings):
