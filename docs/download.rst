@@ -106,9 +106,10 @@ Downloading API
 
    :statuscode 200: symbol file exists
    :statuscode 404: symbol file does not exist
+   :statuscode 429: your request has been rate-limited; sleep for a bit and retry
    :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
        file a bug report
-   :statuscode 503: sleep for a bit and retry
+   :statuscode 502: sleep for a bit and retry
 
 
 .. http:get:: /(str:debug_filename)/(hex:debug_id)/(str:symbol_file)
@@ -173,15 +174,20 @@ Downloading API
 
    :query _refresh: use ``_refresh=1`` to force Tecken to update cache
 
+   :resheader Location: redirect location for the file
+   :resheader Content-Length: length in bytes for the file
+   :resheader Content-Encoding: (optional) content encoding for the file; note
+       that ``.sym`` files are compressed even thought he file extension doesn't
+       indicate that
+
    :statuscode 302: symbol file was found--follow redirect url in ``Location`` header in
        the response to get to the final url
-   :statuscode 400: requested symbol file has bad characters
+   :statuscode 400: param values have bad characters in them or are otherwise invalid
    :statuscode 404: symbol file was not found
-   :statuscode 429: sleep for a bit and retry
-   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
-       file a bug report
-   :statuscode 503: sleep for a bit and retry; if retrying doesn't work, then please
-       file a bug report
+   :statuscode 429: your request has been rate-limited; sleep for a bit and retry
+   :statuscode 500: there's an error with the server; sleep for a bit and
+       retry; if retrying doesn't work, then please file a bug report
+   :statuscode 502: sleep for a bit and retry
 
 
 .. http:get:: /(str:code_filename)/(hex:code_id)/(str:symbol_file)
