@@ -562,7 +562,6 @@ def test_uploads_count(client):
     data = response.json()
     assert data["uploads"] == [
         {
-            "bucket_endpoint_url": None,
             "bucket_name": "",
             "completed_at": None,
             "created_at": ANY,
@@ -590,7 +589,6 @@ def test_uploads_count(client):
     data = response.json()
     assert data["uploads"] == [
         {
-            "bucket_endpoint_url": None,
             "bucket_name": "",
             "completed_at": None,
             "created_at": ANY,

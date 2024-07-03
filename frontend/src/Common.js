@@ -338,16 +338,6 @@ export const ShowUploadMetadata = ({ upload }) => {
           <td>{upload.bucket_name}</td>
         </tr>
         <tr>
-          <th>Bucket Endpoint URL</th>
-          <td>
-            {upload.bucket_endpoint_url ? (
-              upload.bucket_endpoint_url
-            ) : (
-              <i>null</i>
-            )}
-          </td>
-        </tr>
-        <tr>
           <th>Uploaded</th>
           <td>
             <DisplayDate date={upload.created_at} />

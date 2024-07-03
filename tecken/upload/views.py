@@ -268,7 +268,6 @@ def upload_archive(request, upload_workspace):
         user=request.user,
         filename=name,
         bucket_name=backend.name,
-        bucket_endpoint_url=backend.endpoint_url,
         size=size,
         download_url=url,
         redirect_urls=redirect_urls,
