@@ -8,19 +8,6 @@ from io import BufferedReader
 from typing import Optional
 
 
-class StorageError(Exception):
-    """A backend-specific client reported an error."""
-
-    # FIXME(willkg): this is unhelpful and drops a lot of exception magic
-    def __init__(self, backend, url, error):
-        self.backend = backend
-        self.url = url
-        self.backend_msg = f"{type(error).__name__}: {error}"
-
-    def __str__(self):
-        return f"{self.backend} backend ({self.url}) raised {self.backend_msg}"
-
-
 @dataclass
 class ObjectMetadata:
     """Metadata for an object in a storage.
@@ -83,3 +70,10 @@ class StorageBackend:
         :raises StorageError: an unexpected backend-specific error was raised
         """
         raise NotImplementedError("upload() must be implemented by the concrete class")
+
+
+class StorageError(Exception):
+    """A backend-specific client reported an error."""
+
+    def __init__(self, backend: StorageBackend):
+        super().__init__(f"Error in backend {backend!r}")
