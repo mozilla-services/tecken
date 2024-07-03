@@ -144,21 +144,17 @@ class S3Storage(StorageBackend):
 
         try:
             client.head_bucket(Bucket=self.name)
-        except ClientError as error:
+        except ClientError as exc:
             # A generic ClientError can be raised if:
             # - The bucket doesn't exist (code 404)
             # - The user doesn't have s3:ListBucket perm (code 403)
             # - Other credential issues (code 403, maybe others)
-            if error.response["Error"]["Code"] == "404":
+            if exc.response["Error"]["Code"] == "404":
                 return False
             else:
-                raise StorageError(
-                    backend=self.backend, url=self.url, error=error
-                ) from error
-        except BotoCoreError as error:
-            raise StorageError(
-                backend=self.backend, url=self.url, error=error
-            ) from error
+                raise StorageError(self) from exc
+        except BotoCoreError as exc:
+            raise StorageError(self) from exc
         else:
             return True
 
@@ -175,16 +171,12 @@ class S3Storage(StorageBackend):
         client = self.get_storage_client()
         try:
             response = client.head_object(Bucket=self.name, Key=f"{self.prefix}/{key}")
-        except ClientError as exception:
-            if exception.response["Error"]["Code"] == "404":
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] == "404":
                 return None
-            raise StorageError(
-                backend=self.backend, url=self.url, error=exception
-            ) from exception
-        except BotoCoreError as exception:
-            raise StorageError(
-                backend=self.backend, url=self.url, error=exception
-            ) from exception
+            raise StorageError(self) from exc
+        except BotoCoreError as exc:
+            raise StorageError(self) from exc
         s3_metadata = response.get("Metadata", {})
         original_content_length = s3_metadata.get("original_size")
         if original_content_length is not None:
@@ -237,10 +229,8 @@ class S3Storage(StorageBackend):
         client = self.get_storage_client()
         try:
             client.put_object(**kwargs)
-        except (ClientError, BotoCoreError) as exception:
-            raise StorageError(
-                backend=self.backend, url=self.url, error=exception
-            ) from exception
+        except (ClientError, BotoCoreError) as exc:
+            raise StorageError(self) from exc
 
 
 _BOTO3_SESSION_CACHE = threading.local()
