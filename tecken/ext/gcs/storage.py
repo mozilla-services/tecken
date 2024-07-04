@@ -21,11 +21,9 @@ class GCSStorage(StorageBackend):
     An implementation of the StorageBackend interface for Google Cloud Storage.
     """
 
-    def __init__(
-        self,
-        url: str,
-        try_symbols: bool = False,
-    ):
+    accepted_hostnames = (".googleapis.com", "gcs-emulator", "gcs.example.com")
+
+    def __init__(self, url: str, try_symbols: bool = False):
         url = url.removesuffix("/")
         self.url = url
         parsed_url = urlparse(url)

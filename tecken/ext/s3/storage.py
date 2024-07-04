@@ -24,24 +24,10 @@ ALL_POSSIBLE_S3_REGIONS: tuple[str] = tuple(
 
 class S3Storage(StorageBackend):
     """
-    Deconstructs a URL about an S3 bucket and breaks it into parts that
-    can be used for various purposes. Also, contains a convenient method
-    for getting a boto3 s3 client instance ultimately based on the URL.
-
-    Usage::
-
-        >>> s = S3Storage(
-        ...    'https://s3-us-west-2.amazonaws.com/bucky/prfx'
-        )
-        >>> s.netloc
-        's3-us-west-2.amazonaws.com'
-        >>> s.name
-        'bucky'
-        >>> s.prefix
-        'prfx'
-        >>> s.client.list_objects_v2(Bucket=s.name, Prefix='some/key.ext')
-
+    An implementation of the StorageBackend interface for Amazon S3.
     """
+
+    accepted_hostnames = (".amazonaws.com", "localstack", "s3.example.com")
 
     # A substring match of the domain is used to recognize storage backends.
     # For emulated backends, the name should be present in the docker compose
@@ -55,12 +41,7 @@ class S3Storage(StorageBackend):
         "test-s3": "s3.example.com",
     }
 
-    def __init__(
-        self,
-        url: str,
-        try_symbols: bool = False,
-        file_prefix: str = "v1",
-    ):
+    def __init__(self, url: str, try_symbols: bool = False, file_prefix: str = "v1"):
         self.url = url
         parsed = urlparse(url)
         self.scheme = parsed.scheme
