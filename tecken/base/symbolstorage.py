@@ -8,7 +8,6 @@ from typing import Optional
 from django.utils import timezone
 
 from tecken.libmarkus import METRICS
-from tecken.ext.s3.storage import S3Storage
 from tecken.libstorage import ObjectMetadata, StorageBackend
 
 
@@ -22,11 +21,11 @@ class SymbolStorage:
         self, upload_url: str, download_urls: list[str], try_url: Optional[str] = None
     ):
         # The upload backend for regular storage.
-        self.upload_backend: StorageBackend = S3Storage(upload_url)
+        self.upload_backend: StorageBackend = StorageBackend.new(upload_url)
 
         # All additional download backends, except for the regular upload backend.
         download_backends = [
-            S3Storage(url) for url in download_urls if url != upload_url
+            StorageBackend.new(url) for url in download_urls if url != upload_url
         ]
 
         # All backends
@@ -36,7 +35,7 @@ class SymbolStorage:
         if try_url is None:
             self.try_backend: Optional[StorageBackend] = None
         else:
-            self.try_backend: Optional[StorageBackend] = S3Storage(
+            self.try_backend: Optional[StorageBackend] = StorageBackend.new(
                 try_url, try_symbols=True
             )
             self.backends.append(self.try_backend)
