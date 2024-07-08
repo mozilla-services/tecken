@@ -117,6 +117,8 @@ def test_upload_archive_happy_path(
         upload=upload,
         bucket_name="publicbucket",
         key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
+        debug_filename="xpcshell",
+        debug_id="BBACA09FD1C13F6C84254BFD8732AF400",
         compressed=True,
         update=False,
         # Based on `unzip -l tests/sample.zip` knowledge, but note that it's been

@@ -181,6 +181,7 @@ def upload_file_upload(
         # already exists in regular storage to try storage.
         existing_metadata = backend.get_object_metadata(key_name)
 
+    original_file_path = file_path
     size = os.stat(file_path).st_size
     compressed = should_compressed_key(key_name)
     metadata = ObjectMetadata(content_type=get_key_content_type(key_name))
@@ -244,7 +245,7 @@ def upload_file_upload(
         # debug id, code file, and code id to store in the db. We do this before we
         # compress the file.
         try:
-            sym_data = extract_sym_header_data(file_path)
+            sym_data = extract_sym_header_data(original_file_path)
         except SymParseError as exc:
             logging.debug("symparseerror: %s", exc)
 
