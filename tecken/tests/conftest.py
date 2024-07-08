@@ -20,6 +20,7 @@ import requests_mock
 from django.contrib.auth.models import Group
 from django.core.cache import caches
 
+from tecken.base.symbolstorage import SymbolStorage
 from tecken.libstorage import StorageBackend
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
@@ -339,3 +340,20 @@ def create_storage_backend(get_test_storage_url):
         return backend
 
     return _create_storage_backend
+
+
+@pytest.fixture(params=["gcs", "s3"])
+def symbol_storage(request, settings, get_test_storage_url):
+    """Replace the global SymbolStorage instance with a new instance with empty backends"""
+
+    settings.UPLOAD_DEFAULT_URL = get_test_storage_url(request.param)
+    settings.SYMBOL_URLS = []
+    settings.UPLOAD_TRY_SYMBOLS_URL = get_test_storage_url(
+        request.param, try_symbols=True
+    )
+    symbol_storage = SymbolStorage.from_settings()
+    for backend in symbol_storage.backends:
+        backend.clear()
+
+    with mock.patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage):
+        yield symbol_storage
