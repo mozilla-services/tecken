@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from django.urls import reverse
 
 from tecken.download import views
+from tecken.tests.utils import UPLOADS
 from tecken.upload.models import FileUpload
 
 import pytest
@@ -16,28 +17,19 @@ import pytest
 _here = os.path.dirname(__file__)
 
 
-def test_client_happy_path(client, db, s3_helper, metricsmock):
-    debugfilename = "xul.pdb"
-    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    symfile = "xul.sym"
-
-    # Upload a file into the regular bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{debugfilename}/{debugid}/{symfile}",
-        data=b"abc123",
+def test_client_happy_path(client, db, symbol_storage, metricsmock):
+    upload = UPLOADS["compressed"]
+    upload.upload(symbol_storage)
+    url = reverse(
+        "download:download_symbol",
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
-
-    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
 
     response = client.get(url)
     assert response.status_code == 302
-    parsed = urlparse(response["location"])
-    assert parsed.netloc == "localstack:4566"
-
-    assert parsed.path == (
-        "/publicbucket/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
+    assert (
+        response.headers["location"]
+        == f"{upload.backend.url}/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
     metricsmock.assert_histogram_once(
         "tecken.symboldownloader.file_age_days",
@@ -47,35 +39,29 @@ def test_client_happy_path(client, db, s3_helper, metricsmock):
 
     response = client.head(url)
     assert response.status_code == 200
-
     assert response["Access-Control-Allow-Origin"] == "*"
     assert response["Access-Control-Allow-Methods"] == "GET"
 
 
-def test_client_try_download(client, db, s3_helper, metricsmock):
+def test_client_try_download(client, db, symbol_storage, metricsmock):
     """Suppose there's a file that doesn't exist in any of the
     settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
     then to reach that file you need to use ?try on the URL.
 
     """
-    debugfilename = "xul.pdb"
-    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    symfile = "xul.sym"
+    upload = UPLOADS["compressed"]
+    upload.upload(symbol_storage, try_storage=True)
 
-    # Upload a file into the try bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"try/v1/{debugfilename}/{debugid}/{symfile}",
-        data=b"abc123",
+    url = reverse(
+        "download:download_symbol",
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
-
-    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
     response = client.get(url)
     assert response.status_code == 404
 
     try_url = reverse(
-        "download:download_symbol_try", args=(debugfilename, debugid, symfile)
+        "download:download_symbol_try",
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
     response = client.get(try_url)
     assert response.status_code == 302
@@ -102,29 +88,17 @@ def test_client_try_download(client, db, s3_helper, metricsmock):
     assert response.status_code == 302
 
 
-def test_client_with_debug(client, db, s3_helper):
-    debugfilename = "xul.pdb"
-    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    symfile = "xul.sym"
-
-    # Upload a file into the regular bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{debugfilename}/{debugid}/{symfile}",
-        data=b"abc123",
+def test_client_with_debug(client, db, symbol_storage):
+    upload = UPLOADS["compressed"]
+    upload.upload(symbol_storage)
+    url = reverse(
+        "download:download_symbol",
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
 
-    # Do a GET request which returns the redirect url
-    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
     response = client.get(url, HTTP_DEBUG="true")
     assert response.status_code == 302
-    parsed = urlparse(response["location"])
     assert float(response["debug-time"]) > 0
-    assert parsed.netloc == "localstack:4566"
-    assert parsed.path == (
-        "/publicbucket/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
-    )
 
     # Try a HEAD request
     response = client.head(url, HTTP_DEBUG="true")
@@ -152,7 +126,7 @@ def test_client_with_debug(client, db, s3_helper):
     assert float(response["debug-time"]) > 0
 
 
-def test_client_with_ignorable_file_extensions(client, db, s3_helper):
+def test_client_with_ignorable_file_extensions(client, db):
     url = reverse(
         "download:download_symbol",
         args=(
@@ -168,61 +142,7 @@ def test_client_with_ignorable_file_extensions(client, db, s3_helper):
     assert response.status_code == 404
 
 
-def test_client_with_debug_with_cache(client, db, s3_helper):
-    debugfilename = "xul.pdb"
-    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    symfile = "xul.sym"
-
-    # Upload a file into the regular bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{debugfilename}/{debugid}/{symfile}",
-        data=b"abc123",
-    )
-
-    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
-
-    response = client.get(url, HTTP_DEBUG="true")
-    assert response.status_code == 302
-    assert float(response["debug-time"]) > 0
-
-    # FIXME(willkg): this doesn't verify that it came from cache
-    response = client.get(url, HTTP_DEBUG="true")
-    assert response.status_code == 302
-    assert float(response["debug-time"]) > 0
-
-    response = client.head(url, HTTP_DEBUG="true")
-    assert response.status_code == 200
-    assert float(response["debug-time"]) > 0
-
-
-def test_client_with_cache_refreshed(client, db, s3_helper):
-    debugfilename = "xul.pdb"
-    debugid = "44E4EC8C2F41492B9369D6B9A059577C2"
-    symfile = "xul.sym"
-
-    # Upload a file into the regular bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{debugfilename}/{debugid}/{symfile}",
-        data=b"abc123",
-    )
-
-    url = reverse("download:download_symbol", args=(debugfilename, debugid, symfile))
-    response = client.get(url)
-    assert response.status_code == 302
-
-    # FIXME(willkg): this doesn't verify that it came from cache
-    response = client.get(url)
-    assert response.status_code == 302
-
-    response = client.get(url, {"_refresh": 1})
-    assert response.status_code == 302
-
-
-def test_client_404(client, db, s3_helper):
+def test_client_404(client, db, symbol_storage):
     url = reverse(
         "download:download_symbol",
         args=("xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"),
@@ -235,7 +155,7 @@ def test_client_404(client, db, s3_helper):
     assert response.status_code == 404
 
 
-def test_client_with_bad_filenames(client, db):
+def test_client_with_bad_filenames(client, db, symbol_storage):
     url = reverse(
         "download:download_symbol",
         args=(
@@ -309,34 +229,26 @@ def test_client_with_bad_filenames(client, db):
     assert response.status_code == 404
 
 
-def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
-    sym_file = "xul.sym"
-    debug_filename = "xul.pdb"
-    debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
+def test_get_code_id_lookup(client, db, metricsmock, symbol_storage):
     code_file = "xul.dll"
     code_id = "651C9AF99241000"
+    upload = UPLOADS["compressed"]
+    upload.upload(symbol_storage)
 
     # Upload a file into the regular bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
-        data=b"abc123",
-    )
     FileUpload.objects.create(
         bucket_name="publicbucket",
-        key=f"{debug_filename}/{debug_id}/{sym_file}",
+        key=upload.key,
         size=100,
-        debug_filename=debug_filename,
-        debug_id=debug_id,
+        debug_filename=upload.debug_file,
+        debug_id=upload.debug_id,
         code_file=code_file,
         code_id=code_id,
     )
 
-    # Try normal download API url
     url = reverse(
         "download:download_symbol",
-        args=(debug_filename, debug_id, sym_file),
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
     response = client.get(url)
     assert response.status_code == 302
@@ -347,12 +259,12 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
     # Try with code_file/code_id
     url = reverse(
         "download:download_symbol",
-        args=(code_file, code_id, sym_file),
+        args=(code_file, code_id, upload.sym_file),
     )
     response = client.get(url)
     assert response.status_code == 302
     parsed = urlparse(response["location"])
-    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.path == f"/{upload.debug_file}/{upload.debug_id}/{upload.sym_file}"
     metricsmock.assert_timing("tecken.syminfo.lookup.timing")
     metricsmock.assert_incr(
         "tecken.syminfo.lookup.cached", tags=["result:false", "host:testnode"]
@@ -362,7 +274,7 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
     response = client.get(url, {"code_file": code_file, "code_id": code_id})
     assert response.status_code == 302
     parsed = urlparse(response["location"])
-    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.path == f"/{upload.debug_file}/{upload.debug_id}/{upload.sym_file}"
     assert parsed.query in [
         f"code_file={code_file}&code_id={code_id}",
         f"code_id={code_id}&code_file={code_file}",
@@ -372,19 +284,15 @@ def test_get_code_id_lookup(client, db, metricsmock, s3_helper):
     )
 
 
-def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
-    sym_file = "xul.sym"
-    debug_filename = "xul.pdb"
-    debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
+def test_get_code_id_lookup_fail(client, db, metricsmock, symbol_storage):
     code_file = "xul.dll"
     code_id = "651C9AF99241000"
-
-    s3_helper.create_bucket("publicbucket")
+    upload = UPLOADS["compressed"]
 
     # Try normal download API url
     url = reverse(
         "download:download_symbol",
-        args=(debug_filename, debug_id, sym_file),
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
     response = client.get(url)
     assert response.status_code == 404
@@ -395,7 +303,7 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
     # Try with code_file/code_id
     url = reverse(
         "download:download_symbol",
-        args=(code_file, code_id, sym_file),
+        args=(code_file, code_id, upload.sym_file),
     )
     response = client.get(url)
     assert response.status_code == 404
@@ -415,26 +323,19 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, s3_helper):
     )
 
 
-def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
-    sym_file = "xul.sym"
-    debug_filename = "xul.pdb"
-    debug_id = "5B5C0C57EAA2E4164C4C44205044422E1"
+def test_head_code_id_lookup(client, db, metricsmock, symbol_storage):
     code_file = "xul.dll"
     code_id = "651C9AF99241000"
+    upload = UPLOADS["compressed"]
+    upload.upload(symbol_storage)
 
     # Upload a file into the regular bucket
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
-        data=b"abc123",
-    )
     FileUpload.objects.create(
         bucket_name="publicbucket",
-        key=f"v1/{debug_filename}/{debug_id}/{sym_file}",
+        key=upload.key,
         size=100,
-        debug_filename=debug_filename,
-        debug_id=debug_id,
+        debug_filename=upload.debug_file,
+        debug_id=upload.debug_id,
         code_file=code_file,
         code_id=code_id,
     )
@@ -442,7 +343,7 @@ def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
     # Try regular download API returns 200
     url = reverse(
         "download:download_symbol",
-        args=(debug_filename, debug_id, sym_file),
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
     )
     response = client.head(url)
     assert response.status_code == 200
@@ -452,12 +353,12 @@ def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
     # Try with code_file/code_id returns 302 redirect
     url = reverse(
         "download:download_symbol",
-        args=(code_file, code_id, sym_file),
+        args=(code_file, code_id, upload.sym_file),
     )
     response = client.head(url)
     assert response.status_code == 302
     parsed = urlparse(response["location"])
-    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.path == f"/{upload.debug_file}/{upload.debug_id}/{upload.sym_file}"
     metricsmock.assert_timing("tecken.syminfo.lookup.timing", tags=["host:testnode"])
     metricsmock.assert_incr(
         "tecken.syminfo.lookup.cached", tags=["result:false", "host:testnode"]
@@ -466,12 +367,12 @@ def test_head_code_id_lookup(client, db, metricsmock, s3_helper):
     # Try with querystring
     url = reverse(
         "download:download_symbol",
-        args=(code_file, code_id, sym_file),
+        args=(code_file, code_id, upload.sym_file),
     )
     response = client.head(url, {"code_file": code_file, "code_id": code_id})
     assert response.status_code == 302
     parsed = urlparse(response["location"])
-    assert parsed.path == f"/{debug_filename}/{debug_id}/{sym_file}"
+    assert parsed.path == f"/{upload.debug_file}/{upload.debug_id}/{upload.sym_file}"
     assert parsed.query in [
         f"code_file={code_file}&code_id={code_id}",
         f"code_id={code_id}&code_file={code_file}",
