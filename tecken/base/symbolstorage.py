@@ -5,6 +5,7 @@
 import logging
 from typing import Optional
 
+from django.conf import settings
 from django.utils import timezone
 
 from tecken.libmarkus import METRICS
@@ -39,6 +40,14 @@ class SymbolStorage:
                 try_url, try_symbols=True
             )
             self.backends.append(self.try_backend)
+
+    @classmethod
+    def from_settings(cls):
+        return cls(
+            upload_url=settings.UPLOAD_DEFAULT_URL,
+            download_urls=settings.SYMBOL_URLS,
+            try_url=settings.UPLOAD_TRY_SYMBOLS_URL,
+        )
 
     def __repr__(self):
         urls = [backend.url for backend in self.backends]
@@ -99,6 +108,6 @@ SYMBOL_STORAGE: Optional[SymbolStorage] = None
 
 
 def symbol_storage() -> Optional[SymbolStorage]:
-    """Return the global SymbolStorage instance for regular storage."""
+    """Return the global SymbolStorage instance."""
     # This function exists to make it easier to patch the SymbolStorage singleton in tests.
     return SYMBOL_STORAGE

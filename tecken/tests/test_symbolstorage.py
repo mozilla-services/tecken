@@ -4,9 +4,8 @@
 
 import pytest
 
-from tecken.base.symbolstorage import (
-    SymbolStorage,
-)
+from tecken.base.symbolstorage import SymbolStorage
+from tecken.tests.utils import Upload
 
 
 @pytest.mark.parametrize(
@@ -31,57 +30,20 @@ def test_make_url_path(symbol, debugid, filename, expected):
     assert path == expected
 
 
-def test_has_symbol(s3_helper):
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
-        data=b"abc123",
+@pytest.mark.parametrize("lower_case_debug_id", [False, True])
+def test_get_metadata(symbol_storage, lower_case_debug_id):
+    backend = symbol_storage.get_upload_backend(False)
+    upload = Upload.uncompressed(
+        key="xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym", body=b"abc123"
     )
-    storage = SymbolStorage(
-        upload_url="http://localstack:4566/publicbucket/", download_urls=[]
-    )
-    assert storage.get_metadata(
-        "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
-    )
-    assert not storage.get_metadata(
-        "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
-    )
-
-
-def test_get_url_public(s3_helper):
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
-        data=b"abc123",
-    )
-    storage = SymbolStorage(
-        upload_url="http://localstack:4566/publicbucket/", download_urls=[]
-    )
-    metadata = storage.get_metadata(
-        "xul.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xul.sym"
-    )
+    upload.upload(backend)
+    debug_id = "44E4EC8C2F41492B9369D6B9A059577C2"
+    if lower_case_debug_id:
+        debug_id = debug_id.lower()
+    metadata = symbol_storage.get_metadata("xul.pdb", debug_id, "xul.sym")
     assert metadata.download_url == (
-        "http://localstack:4566/publicbucket/v1/xul.pdb/"
-        + "44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
+        f"{backend.url}/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
     )
-    metadata = storage.get_metadata(
+    assert not symbol_storage.get_metadata(
         "xxx.pdb", "44E4EC8C2F41492B9369D6B9A059577C2", "xxx.sym"
-    )
-    assert metadata is None
-
-
-def test_has_public_case_insensitive_debugid(s3_helper):
-    s3_helper.create_bucket("publicbucket")
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
-        data=b"abc123",
-    )
-    storage = SymbolStorage(
-        upload_url="http://localstack:4566/publicbucket/", download_urls=[]
-    )
-    assert storage.get_metadata(
-        "xul.pdb", "44e4ec8c2f41492b9369d6b9a059577c2", "xul.sym"
     )

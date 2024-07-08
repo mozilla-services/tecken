@@ -2,49 +2,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from dataclasses import dataclass
 from datetime import datetime
-import gzip
-from hashlib import md5
-from io import BytesIO
-from typing import Optional
 
 import pytest
 import requests
 
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
-from tecken.libstorage import (
-    NoMatchingBackend,
-    ObjectMetadata,
-    StorageBackend,
-    StorageError,
-)
-
-
-@dataclass
-class Upload:
-    key: str
-    body: bytes
-    metadata: ObjectMetadata
-    original_body: Optional[bytes] = None
-
-    @classmethod
-    def uncompressed(cls, key: str, body: bytes) -> "Upload":
-        metadata = ObjectMetadata(content_length=len(body))
-        return cls(key=key, body=body, metadata=metadata)
-
-    @classmethod
-    def compressed(cls, key: str, body: bytes) -> "Upload":
-        compressed_body = gzip.compress(body)
-        metadata = ObjectMetadata(
-            content_type="text/plain",
-            content_length=len(compressed_body),
-            content_encoding="gzip",
-            original_content_length=len(body),
-            original_md5_sum=md5(body).hexdigest(),
-        )
-        return cls(key=key, body=compressed_body, metadata=metadata, original_body=body)
+from tecken.libstorage import NoMatchingBackend, StorageBackend, StorageError
+from tecken.tests.utils import Upload
 
 
 UPLOADS = [
@@ -61,7 +27,7 @@ UPLOADS = [
 def test_upload_and_download(create_storage_backend, storage_kind: str, upload: Upload):
     backend: StorageBackend = create_storage_backend(storage_kind)
     assert backend.exists()
-    backend.upload(upload.key, BytesIO(upload.body), upload.metadata)
+    upload.upload(backend)
     metadata = backend.get_object_metadata(upload.key)
     response = requests.get(metadata.download_url)
     response.raise_for_status()
