@@ -10,24 +10,15 @@ import requests
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
 from tecken.libstorage import NoMatchingBackend, StorageBackend, StorageError
-from tecken.tests.utils import Upload
+from tecken.tests.utils import Upload, UPLOADS
 
 
-UPLOADS = [
-    Upload.uncompressed(key="a/b/c", body=b"test"),
-    Upload.compressed(
-        key="libc++abi.dylib/43940F08B65E38888CD3C52398EB1CA10/libc++abi.dylib.sym",
-        body=b"symbols file contents",
-    ),
-]
-
-
-@pytest.mark.parametrize("upload", UPLOADS)
+@pytest.mark.parametrize("upload", UPLOADS.values(), ids=UPLOADS.keys())
 @pytest.mark.parametrize("storage_kind", ["gcs", "s3"])
 def test_upload_and_download(create_storage_backend, storage_kind: str, upload: Upload):
     backend: StorageBackend = create_storage_backend(storage_kind)
     assert backend.exists()
-    upload.upload(backend)
+    upload.upload_to_backend(backend)
     metadata = backend.get_object_metadata(upload.key)
     response = requests.get(metadata.download_url)
     response.raise_for_status()

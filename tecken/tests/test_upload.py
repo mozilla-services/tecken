@@ -652,7 +652,7 @@ def test_upload_duplicate_files_in_zip_different_name(client, db, uploaderuser):
         assert response.json()["error"] == error_msg
 
 
-def test_upload_client_unrecognized_bucket(client, db, s3_helper, uploaderuser):
+def test_upload_client_unrecognized_bucket(client, db, uploaderuser):
     """The upload view raises an error if you try to upload into a bucket
     that doesn't exist."""
     token = Token.objects.create(user=uploaderuser)
