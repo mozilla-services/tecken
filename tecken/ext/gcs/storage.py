@@ -40,11 +40,17 @@ class GCSStorage(StorageBackend):
     def __repr__(self):
         return f"<{self.__class__.__name__} url={self.url!r} try_symbols={self.try_symbols}"
 
+    def _get_client(self) -> storage.Client:
+        """Return a thread-local low-level storage client."""
+        if not hasattr(self.clients, "client"):
+            options = ClientOptions(api_endpoint=self.endpoint_url)
+            self.clients.client = storage.Client(client_options=options)
+        return self.clients.client
+
     def _get_bucket(self) -> storage.Bucket:
         """Return a thread-local low-level storage bucket client."""
         if not hasattr(self.clients, "bucket"):
-            options = ClientOptions(api_endpoint=self.endpoint_url)
-            client = storage.Client(client_options=options)
+            client = self._get_client()
             self.clients.bucket = client.get_bucket(self.name, timeout=self.timeout)
         return self.clients.bucket
 
