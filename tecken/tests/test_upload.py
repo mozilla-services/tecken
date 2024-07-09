@@ -3,12 +3,11 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import datetime
-from io import BytesIO, StringIO
+from io import BufferedReader, BytesIO, StringIO
 import logging
 import os
 from unittest import mock
 
-from botocore.exceptions import ClientError
 import pytest
 from requests.exceptions import ConnectionError, RetryError
 
@@ -17,8 +16,7 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
-from tecken.base.symbolstorage import symbol_storage
-from tecken.libstorage import StorageError
+from tecken.libstorage import ObjectMetadata, StorageBackend, StorageError
 from tecken.tokens.models import Token
 from tecken.upload import utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -38,16 +36,10 @@ DUPLICATED_SAME_SIZE_ZIP_FILE = _join("duplicated-same-size.zip")
 DUPLICATED_DIFFERENT_SIZE_ZIP_FILE = _join("duplicated-different-size.zip")
 
 
-def test_upload_archive_with_ignorable_files(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
-):
+def test_upload_archive_with_ignorable_files(client, db, symbol_storage, uploaderuser):
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     url = reverse("upload:upload_archive")
     with open(ZIP_FILE_WITH_IGNORABLE_FILES, "rb") as fp:
@@ -65,22 +57,17 @@ def test_upload_archive_with_ignorable_files(
 
 
 def test_upload_archive_happy_path(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
-    metricsmock,
+    client, db, symbol_storage, bucket_name, uploaderuser, metricsmock
 ):
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     # Upload one of the files so that when the upload happens, it's an update.
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="v1/flag/deadbeef/flag.jpeg",
-        data=b"abc123",
+    symbol_storage.upload_backend.upload(
+        key="flag/deadbeef/flag.jpeg",
+        body=BytesIO(b"abc123"),
+        metadata=ObjectMetadata(),
     )
 
     url = reverse("upload:upload_archive")
@@ -96,14 +83,14 @@ def test_upload_archive_happy_path(
     assert upload.size == 70398
     # This is predictable and shouldn't change unless the fixture file used changes.
     assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
-    assert upload.bucket_name == "publicbucket"
+    assert upload.bucket_name == bucket_name
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name="publicbucket",
+        bucket_name=bucket_name,
         key="flag/deadbeef/flag.jpeg",
         compressed=False,
         # This existed in the bucket before this upload, so this is an update
@@ -114,7 +101,7 @@ def test_upload_archive_happy_path(
 
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name="publicbucket",
+        bucket_name=bucket_name,
         key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         debug_filename="xpcshell",
         debug_id="BBACA09FD1C13F6C84254BFD8732AF400",
@@ -145,21 +132,17 @@ def test_upload_archive_happy_path(
 
 
 def test_upload_try_symbols_happy_path(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
+    client, db, symbol_storage, bucket_name, uploaderuser
 ):
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_try_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     # Upload one of the files so that when the upload happens, it's an update.
-    s3_helper.upload_fileobj(
-        bucket_name="publicbucket",
-        key="try/v1/flag/deadbeef/flag.jpeg",
-        data=b"abc123",
+    symbol_storage.try_backend.upload(
+        key="flag/deadbeef/flag.jpeg",
+        body=BytesIO(b"abc123"),
+        metadata=ObjectMetadata(),
     )
 
     url = reverse("upload:upload_archive")
@@ -176,7 +159,7 @@ def test_upload_try_symbols_happy_path(
     assert upload.size == 70398
     # This is predictable and shouldn't change unless the fixture file used changes.
     assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
-    assert upload.bucket_name == "publicbucket"
+    assert upload.bucket_name == bucket_name
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ["build-symbols.txt"]
     assert upload.try_symbols is True
@@ -184,7 +167,7 @@ def test_upload_try_symbols_happy_path(
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name="publicbucket",
+        bucket_name=bucket_name,
         key="flag/deadbeef/flag.jpeg",
         compressed=False,
         update=True,
@@ -194,7 +177,7 @@ def test_upload_try_symbols_happy_path(
 
     file_upload = FileUpload.objects.get(
         upload=upload,
-        bucket_name="publicbucket",
+        bucket_name=bucket_name,
         key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
@@ -206,16 +189,11 @@ def test_upload_try_symbols_happy_path(
 
 
 def test_upload_archive_one_uploaded_one_skipped(
-    client,
-    db,
-    s3_helper,
-    tmp_path,
-    uploaderuser,
+    client, db, symbol_storage, bucket_name, tmp_path, uploaderuser
 ):
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     # Upload flag.jpeg from the zip file into the bucket so it's already there
     # and gets ignored when it's uploaded
@@ -224,10 +202,10 @@ def test_upload_archive_one_uploaded_one_skipped(
         utils.dump_and_extract(rootdir, fp, ZIP_FILE)
     flag_jpeg_path = tmp_path / "flag/deadbeef/flag.jpeg"
     with open(flag_jpeg_path, "rb") as fp:
-        s3_helper.upload_fileobj(
-            bucket_name="publicbucket",
-            key="v1/flag/deadbeef/flag.jpeg",
-            data=fp.read(),
+        symbol_storage.upload_backend.upload(
+            key="flag/deadbeef/flag.jpeg",
+            body=fp,
+            metadata=ObjectMetadata(),
         )
 
     url = reverse("upload:upload_archive")
@@ -243,14 +221,14 @@ def test_upload_archive_one_uploaded_one_skipped(
     assert upload.completed_at
     # based on `ls -l tests/sample.zip` knowledge
     assert upload.size == 70398
-    assert upload.bucket_name == "publicbucket"
+    assert upload.bucket_name == bucket_name
     assert upload.skipped_keys == ["flag/deadbeef/flag.jpeg"]
     assert upload.ignored_keys == ["build-symbols.txt"]
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
         upload=upload,
-        bucket_name="publicbucket",
+        bucket_name=bucket_name,
         key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
@@ -261,16 +239,10 @@ def test_upload_archive_one_uploaded_one_skipped(
     )
 
 
-def test_upload_archive_key_lookup_cached(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
-):
+def test_upload_archive_key_lookup_cached(client, db, symbol_storage, uploaderuser):
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     url = reverse("upload:upload_archive")
 
@@ -307,10 +279,7 @@ def test_upload_archive_key_lookup_cached(
 
 
 def test_upload_archive_key_lookup_cached_without_metadata(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
+    client, db, symbol_storage, uploaderuser
 ):
     """Same as test_upload_archive_key_lookup_cached() but without
     any metadata."""
@@ -318,7 +287,6 @@ def test_upload_archive_key_lookup_cached_without_metadata(
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     url = reverse("upload:upload_archive")
 
@@ -352,9 +320,9 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         assert FileUpload.objects.all().count() == 2
 
 
-def test_upload_archive_one_uploaded_one_errored(client, db, botomock, uploaderuser):
-    # NOTE(willkg): keeping botomock here because it tests a very specific situation
-    # where one of the uploaded files fails to upload to S3
+def test_upload_archive_one_uploaded_one_errored(
+    client, db, symbol_storage, uploaderuser
+):
     class AnyUnrecognizedError(Exception):
         """Doesn't matter much what the exception is. What matters is that
         it happens during a boto call."""
@@ -364,40 +332,36 @@ def test_upload_archive_one_uploaded_one_errored(client, db, botomock, uploaderu
     token.permissions.add(permission)
     url = reverse("upload:upload_archive")
 
-    def mock_api_call(self, operation_name, api_params):
-        # This comes for the setting UPLOAD_DEFAULT_URL specifically
-        # for tests.
-        assert api_params["Bucket"] == "publicbucket"
-        if operation_name == "HeadBucket":
-            # yep, bucket exists
-            return {}
+    backend = symbol_storage.upload_backend
+    orig_get_object_metadata = backend.get_object_metadata.__func__
+    orig_upload = backend.upload.__func__
 
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v1/flag/deadbeef/flag.jpeg"
-        ):
-            return {"ContentLength": 69183}
+    def mock_get_object_metadata(self: StorageBackend, key: str) -> ObjectMetadata:
+        if key == "flag/deadbeef/flag.jpeg":
+            return ObjectMetadata(content_length=69183)
+        return orig_get_object_metadata(self, key)
 
-        if operation_name == "HeadObject" and api_params["Key"] == (
-            "v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
-        ):
-            # Not found at all
-            parsed_response = {"Error": {"Code": "404", "Message": "Not found"}}
-            raise ClientError(parsed_response, operation_name)
-
-        if operation_name == "PutObject" and api_params["Key"] == (
-            "v1/xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
-        ):
+    def mock_upload(
+        self: StorageBackend, key: str, body: BufferedReader, metadata: ObjectMetadata
+    ):
+        if key == "xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym":
             raise AnyUnrecognizedError("stop!")
+        orig_upload(self, key, body, metadata)
 
-        raise NotImplementedError((operation_name, api_params))
-
-    with botomock(mock_api_call), open(ZIP_FILE, "rb") as f:
+    with (
+        mock.patch.multiple(
+            backend.__class__,
+            get_object_metadata=mock_get_object_metadata,
+            upload=mock_upload,
+        ),
+        open(ZIP_FILE, "rb") as f,
+    ):
         with pytest.raises(AnyUnrecognizedError):
             client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
 
-        (upload,) = Upload.objects.all()
-        assert upload.user == uploaderuser
-        assert not upload.completed_at
+    (upload,) = Upload.objects.all()
+    assert upload.user == uploaderuser
+    assert not upload.completed_at
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(
@@ -406,19 +370,11 @@ def test_upload_archive_one_uploaded_one_errored(client, db, botomock, uploaderu
 
 
 def test_upload_archive_with_cache_invalidation(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
-    settings,
+    client, db, symbol_storage, uploaderuser
 ):
-    storage = symbol_storage()
-
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-
-    s3_helper.create_bucket("publicbucket")
 
     # NOTE(willkg): this is a file in ZIP_FILE
     module = "xpcshell.dbg"
@@ -427,23 +383,18 @@ def test_upload_archive_with_cache_invalidation(
 
     with open(ZIP_FILE, "rb") as fp:
         # First time -- not there
-        assert not storage.get_metadata(module, debugid, debugfn)
+        assert not symbol_storage.get_metadata(module, debugid, debugfn)
 
         url = reverse("upload:upload_archive")
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
         # Second time is there
-        assert storage.get_metadata(module, debugid, debugfn)
+        assert symbol_storage.get_metadata(module, debugid, debugfn)
 
 
 def test_upload_archive_by_url(
-    client,
-    db,
-    s3_helper,
-    uploaderuser,
-    settings,
-    requestsmock,
+    client, db, symbol_storage, uploaderuser, settings, requestsmock
 ):
     settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = [
         "allowed.example.com",
@@ -452,7 +403,6 @@ def test_upload_archive_by_url(
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")
     token.permissions.add(permission)
-    s3_helper.create_bucket("publicbucket")
 
     url = reverse("upload:upload_archive")
 
@@ -479,30 +429,31 @@ def test_upload_archive_by_url(
     with open(ZIP_FILE, "rb") as fp:
         # Lastly, the happy path
         zip_file_content = fp.read()
-        requestsmock.head(
-            "https://allowed.example.com/symbols.zip",
-            text="Found",
-            status_code=302,
-            headers={"Location": "https://download.example.com/symbols.zip"},
-        )
-        requestsmock.head(
-            "https://download.example.com/symbols.zip",
-            content=b"",
-            status_code=200,
-            headers={"Content-Length": str(len(zip_file_content))},
-        )
 
-        requestsmock.head(
-            "https://allowed.example.com/bad.zip",
-            text="Found",
-            status_code=302,
-            headers={"Location": "https://bad.example.com/symbols.zip"},
-        )
-        requestsmock.get(
-            "https://allowed.example.com/symbols.zip",
-            content=zip_file_content,
-            status_code=200,
-        )
+    requestsmock.head(
+        "https://allowed.example.com/symbols.zip",
+        text="Found",
+        status_code=302,
+        headers={"Location": "https://download.example.com/symbols.zip"},
+    )
+    requestsmock.head(
+        "https://download.example.com/symbols.zip",
+        content=b"",
+        status_code=200,
+        headers={"Content-Length": str(len(zip_file_content))},
+    )
+
+    requestsmock.head(
+        "https://allowed.example.com/bad.zip",
+        text="Found",
+        status_code=302,
+        headers={"Location": "https://bad.example.com/symbols.zip"},
+    )
+    requestsmock.get(
+        "https://allowed.example.com/symbols.zip",
+        content=zip_file_content,
+        status_code=200,
+    )
 
     response = client.post(
         url,
@@ -652,7 +603,9 @@ def test_upload_duplicate_files_in_zip_different_name(client, db, uploaderuser):
         assert response.json()["error"] == error_msg
 
 
-def test_upload_client_unrecognized_bucket(client, db, uploaderuser):
+def test_upload_client_unrecognized_bucket(
+    client, db, symbol_storage_no_create, uploaderuser
+):
     """The upload view raises an error if you try to upload into a bucket
     that doesn't exist."""
     token = Token.objects.create(user=uploaderuser)
