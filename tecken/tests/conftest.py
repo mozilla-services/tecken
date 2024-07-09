@@ -21,7 +21,6 @@ from django.contrib.auth.models import Group
 from django.core.cache import caches
 
 from tecken.base.symbolstorage import SymbolStorage
-from tecken.libstorage import StorageBackend
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
 
@@ -321,25 +320,6 @@ def get_test_storage_url(bucket_name):
         return url
 
     return _get_test_storage_url
-
-
-@pytest.fixture
-def create_storage_backend(get_test_storage_url):
-    """Return a function to create storage backends."""
-    # NOTE(smarnach): This fixture is meant to replace S3Helper for backend-agnostic tests.
-    # We don't need to delete buckets after running tests. Each test gets a unique bucket that's
-    # cleared before running the test.
-
-    def _create_storage_backend(
-        kind: Literal["gcs", "s3"], try_symbols: bool = False
-    ) -> StorageBackend:
-        """Create a new StorageBackend instance and make sure the underlying storage exists."""
-        url = get_test_storage_url(kind, try_symbols)
-        backend = StorageBackend.new(url, try_symbols)
-        backend.clear()
-        return backend
-
-    return _create_storage_backend
 
 
 @pytest.fixture(params=["gcs", "s3"])
