@@ -51,7 +51,10 @@ class GCSStorage(StorageBackend):
         """Return a thread-local low-level storage bucket client."""
         if not hasattr(self.clients, "bucket"):
             client = self._get_client()
-            self.clients.bucket = client.get_bucket(self.name, timeout=self.timeout)
+            try:
+                self.clients.bucket = client.get_bucket(self.name, timeout=self.timeout)
+            except NotFound as exc:
+                raise StorageError(self) from exc
         return self.clients.bucket
 
     def exists(self) -> bool:
@@ -63,7 +66,7 @@ class GCSStorage(StorageBackend):
         """
         try:
             self._get_bucket()
-        except NotFound:
+        except StorageError:
             return False
         except ClientError as exc:
             raise StorageError(self) from exc
