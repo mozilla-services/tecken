@@ -577,6 +577,10 @@ if CLOUD_SERVICE_PROVIDER == "GCS":
         "UPLOAD_GCS_BUCKET",
         doc="The GCS bucket name for uploads and downloads.",
     )
+    UPLOAD_GCS_PUBLIC_URL = _config(
+        "UPLOAD_GCS_PUBLIC_URL",
+        doc="The base URL for downloading files from the upload bucket.",
+    )
     DOWNLOAD_S3_BUCKET = _config(
         "DOWNLOAD_S3_BUCKET",
         raise_error=False,
@@ -596,6 +600,7 @@ if CLOUD_SERVICE_PROVIDER == "GCS":
             "bucket": UPLOAD_GCS_BUCKET,
             "prefix": "v1",
             "try_symbols": False,
+            "public_url": UPLOAD_GCS_PUBLIC_URL,
         },
     }
     TRY_UPLOAD_BACKEND = {
@@ -604,6 +609,7 @@ if CLOUD_SERVICE_PROVIDER == "GCS":
             "bucket": UPLOAD_GCS_BUCKET,
             "prefix": "try/v1",
             "try_symbols": True,
+            "public_url": UPLOAD_GCS_PUBLIC_URL,
         },
     }
     DOWNLOAD_BACKENDS = []
