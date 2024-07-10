@@ -35,7 +35,7 @@ class Upload:
     backend: Optional[StorageBackend] = None
 
     @property
-    def key(self):
+    def key(self) -> str:
         return SymbolStorage.make_key(self.debug_file, self.debug_id, self.sym_file)
 
     @classmethod
