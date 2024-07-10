@@ -151,19 +151,24 @@ def get_storage_backend(bucket_name):
     """Return a function to create a unique storage backend for the current test."""
 
     def _get_storage_backend(
-        kind: Literal["gcs", "s3"], try_symbols: bool = False
+        kind: Literal["gcs", "gcs-cdn", "s3"], try_symbols: bool = False
     ) -> StorageBackend:
         prefix = "try/" * try_symbols + "v1"
         match kind:
             case "gcs":
                 return GCSStorage(bucket_name, prefix, try_symbols)
+            case "gcs-cdn":
+                public_url = f"http://gcs-cdn:8002/{bucket_name}"
+                return GCSStorage(
+                    bucket_name, prefix, try_symbols, public_url=public_url
+                )
             case "s3":
                 return S3Storage(bucket_name, prefix, try_symbols)
 
     return _get_storage_backend
 
 
-@pytest.fixture(params=["gcs", "s3"])
+@pytest.fixture(params=["gcs", "gcs-cdn", "s3"])
 def symbol_storage_no_create(request, get_storage_backend):
     """Replace the global SymbolStorage instance with a new instance.
 

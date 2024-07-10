@@ -168,6 +168,16 @@ services:
       interval: 1s
       timeout: 3s
       retries: 5
+    depends_on:
+      - gcs-cdn
+
+  # nginx as a reverse proxy simulating a CDN in front of the GCS emulator.
+  gcs-cdn:
+    build:
+      context: docker/images/gcs-cdn
+    image: local/tecken_gcs_cdn
+    ports:
+      - "${EXPOSE_CDN_PORT:-8002}:8002"
 
   # https://hub.docker.com/r/localstack/localstack/
   # localstack running a fake AWS S3

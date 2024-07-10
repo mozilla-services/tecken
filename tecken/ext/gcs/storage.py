@@ -27,11 +27,16 @@ class GCSStorage(StorageBackend):
         prefix: str,
         try_symbols: bool = False,
         endpoint_url: Optional[str] = None,
+        public_url: Optional[str] = None,
     ):
         self.bucket = bucket
         self.prefix = prefix
         self.try_symbols = try_symbols
         self.endpoint_url = endpoint_url
+        if public_url:
+            self.public_url = public_url.removesuffix("/")
+        else:
+            self.public_url = None
         self.clients = threading.local()
         # The Cloud Storage client doesn't support setting global timeouts for all requests, so we
         # need to pass the timeout for every single request. the default timeout is 60 seconds for
@@ -106,8 +111,12 @@ class GCSStorage(StorageBackend):
                 original_content_length = int(original_content_length)
             except ValueError:
                 original_content_length = None
+        if self.public_url:
+            download_url = f"{self.public_url}/{quote(gcs_key)}"
+        else:
+            download_url = blob.public_url
         metadata = ObjectMetadata(
-            download_url=blob.public_url,
+            download_url=download_url,
             content_type=blob.content_type,
             content_length=blob.size,
             content_encoding=blob.content_encoding,
