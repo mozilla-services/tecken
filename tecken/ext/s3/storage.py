@@ -8,6 +8,7 @@ from typing import Optional
 from urllib.parse import quote
 
 import boto3.session
+from botocore import UNSIGNED
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 from django.conf import settings
@@ -27,12 +28,14 @@ class S3Storage(StorageBackend):
         try_symbols: bool = False,
         endpoint_url: Optional[str] = None,
         region: Optional[str] = None,
+        anonymous: bool = False,
     ):
         self.bucket = bucket
         self.prefix = prefix
         self.try_symbols = try_symbols
         self.endpoint_url = endpoint_url
         self.region = region
+        self.anonymous = anonymous
         self.clients = threading.local()
 
     def __repr__(self):
@@ -45,6 +48,7 @@ class S3Storage(StorageBackend):
                 "config": Config(
                     read_timeout=settings.S3_READ_TIMEOUT,
                     connect_timeout=settings.S3_CONNECT_TIMEOUT,
+                    signature_version=UNSIGNED if self.anonymous else None,
                 )
             }
             if self.endpoint_url:
