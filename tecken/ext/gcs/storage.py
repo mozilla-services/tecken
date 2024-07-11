@@ -8,11 +8,12 @@ from typing import Optional
 from urllib.parse import quote
 
 from django.conf import settings
-
 from google.api_core.client_options import ClientOptions
-from google.api_core.exceptions import ClientError, NotFound
+from google.api_core.exceptions import ClientError
 from google.cloud import storage
+from requests.exceptions import RequestException
 
+from tecken.librequests import session_with_retries
 from tecken.libstorage import ObjectMetadata, StorageBackend, StorageError
 
 
@@ -55,15 +56,7 @@ class GCSStorage(StorageBackend):
 
     def _get_bucket(self) -> storage.Bucket:
         """Return a thread-local low-level storage bucket client."""
-        if not hasattr(self.clients, "bucket"):
-            client = self._get_client()
-            try:
-                self.clients.bucket = client.get_bucket(
-                    self.bucket, timeout=self.timeout
-                )
-            except NotFound as exc:
-                raise StorageError(str(exc), backend=self) from exc
-        return self.clients.bucket
+        return self._get_client().bucket(self.bucket)
 
     def exists(self) -> bool:
         """Check that this storage exists.
@@ -72,13 +65,24 @@ class GCSStorage(StorageBackend):
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
+        endpoint_url = self.endpoint_url or self._get_client().api_endpoint
+        if endpoint_url.startswith("http://gcs-emulator"):
+            # NOTE(smarnach): The GCS emulator does not support HEAD requests. Moreover, the
+            # simpler public endpoint used below will throw 500s if the bucket doesn't exists,
+            # tripping up the retry behaviour. We can't use this endpoint for Google's API,
+            # since it requires authentication, and we want to be able to detect the existence
+            # of public buckets anonymously (bug 1905455).
+            method = "GET"
+            url = f"{endpoint_url}/storage/v1/b/{self.bucket}"
+        else:
+            method = "HEAD"
+            url = f"{endpoint_url}/{self.bucket}"
         try:
-            self._get_bucket()
-        except StorageError:
-            return False
-        except ClientError as exc:
+            session = session_with_retries()
+            response = session.request(method, url)
+        except RequestException as exc:
             raise StorageError(str(exc), backend=self) from exc
-        return True
+        return response.status_code == 200
 
     def get_download_url(self, key: str) -> str:
         """Return the download URL for the given key."""
