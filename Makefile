@@ -60,12 +60,12 @@ run: .env .docker-build  ## | Run the web app and services.
 		web frontend fakesentry
 
 .PHONY: devcontainerbuild
-devcontainerbuild: .env .docker-build .devcontainer-build  ## | Build VS Code development container.
+devcontainerbuild: .env .docker-build  ## | Build VS Code development container.
 	${DC} build devcontainer
 	touch .devcontainer-build
 
 .PHONY: devcontainer
-devcontainer: .env .docker-build  ## | Run VS Code development container.
+devcontainer: .env .docker-build .devcontainer-build ## | Run VS Code development container.
 	${DC} up --detach devcontainer
 
 .PHONY: stop
