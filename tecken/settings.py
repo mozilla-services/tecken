@@ -394,6 +394,12 @@ TOKENS_DEFAULT_EXPIRATION_DAYS = _config(
 )
 
 REDIS_URL = _config("REDIS_URL", doc="URL for Redis.")
+REDIS_PASSWORD = (
+    _config(
+        "REDIS_PASSWORD", doc="Password for the Redis AUTH command.", raise_error=False
+    )
+    or None
+)
 REDIS_SOCKET_CONNECT_TIMEOUT = 2
 REDIS_SOCKET_TIMEOUT = 2
 
@@ -417,6 +423,7 @@ else:
             "BACKEND": "django_redis.cache.RedisCache",
             "LOCATION": REDIS_URL,
             "OPTIONS": {
+                "PASSWORD": REDIS_PASSWORD,
                 "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
                 "SERIALIZER": "django_redis.serializers.msgpack.MSGPackSerializer",
                 "SOCKET_CONNECT_TIMEOUT": REDIS_SOCKET_CONNECT_TIMEOUT,
