@@ -1,0 +1,82 @@
+name: Build, test and push a Docker image
+
+on:
+  push:
+    branches:
+      - main
+      - build-test-image
+    tags:
+      - v20[0-9][0-9].[01][0-9].[0-3][0-9]  # e.g. v2023.12.04
+      - v20[0-9][0-9].[01][0-9].[0-3][0-9]-[0-9]  # e.g. v2023.12.04-2
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get info
+        run: |
+          uname -v
+          docker info
+      - name: Create version.json
+        run: |
+          # create a version.json per
+          # https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+          printf '{"commit":"%s","version":"%s","source":"%s","build":"%s"}\n' \
+          "$GITHUB_SHA" \
+          "$GITHUB_REF_NAME" \
+          "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+          "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > version.json
+      - name: Output version.json
+        run: cat version.json
+      - name: Build Docker images
+        run: make build
+      - name: Verify requirements.txt contains correct dependencies
+        run: |
+          docker compose run --rm --no-deps test-ci bash ./bin/run_verify_reqs.sh
+      - name: Run lint check
+        run: |
+          make .env
+          docker compose run --rm --no-deps test-ci bash ./bin/run_lint.sh
+          docker compose run --rm --no-deps frontend-ci lint
+      - name: Run tests
+        run: |
+          docker compose run --rm test-ci bash ./bin/run_test.sh
+      - name: Build docs
+        run: |
+          docker compose run --rm --no-deps test-ci bash make -C docs/ html
+
+      - name: Set Docker image tag to "latest" for updates of the main branch
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo IMAGE_TAG=latest >> "$GITHUB_ENV"
+          # Updates to the main branch are deployed to stage.
+          echo DEPLOYMENT_ENV=stage >> "$GITHUB_ENV"
+        if: github.ref == 'refs/heads/build-test-image'
+        run: |
+          # Pushing to the "build-test-image" branch builds an image tagged "test" that's not
+          # deployed to any environment.
+          echo IMAGE_TAG=test >> "$GITHUB_ENV"
+      - name: Set Docker image tag to the git tag for tagged builds
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo IMAGE_TAG="$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+          # Version tags are deployed to prod.
+          echo DEPLOYMENT_ENV=prod >> "$GITHUB_ENV"
+      - name: Push the Docker image to GAR
+        if: env.IMAGE_TAG != ''
+        uses: mozilla-it/deploy-actions/docker-push@v3.11.2
+        with:
+          local_image: tecken:build
+          image_repo_path: ${{ secrets.DOCKER_IMAGE_PATH }}
+          image_tag: ${{ env.IMAGE_TAG }}
+          workload_identity_pool_project_number: ${{ secrets.WORKLOAD_IDENTITY_POOL_PROJECT_NUMBER }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          deployment_env: ${{ env.DEPLOYMENT_ENV }}
