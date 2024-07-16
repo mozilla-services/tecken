@@ -439,11 +439,6 @@ CLOUD_SERVICE_PROVIDER = _config(
     doc="The cloud service provider Tecken is using. Either AWS or GCP.",
 )
 
-AWS_ACCESS_KEY_ID = _config("AWS_ACCESS_KEY_ID", default="", doc="AWS access key id.")
-AWS_SECRET_ACCESS_KEY = _config(
-    "AWS_SECRET_ACCESS_KEY", default="", doc="AWS secret access key."
-)
-
 S3_CONNECT_TIMEOUT = _config(
     "S3_LOOKUP_CONNECT_TIMEOUT",
     default="5",
@@ -457,16 +452,6 @@ S3_READ_TIMEOUT = _config(
     doc="S3 read timeout in seconds.",
 )
 
-
-MEMOIZE_KEY_EXISTING_SIZE_SECONDS = _config(
-    "MEMOIZE_KEY_EXISTING_SIZE_SECONDS",
-    default=str(60 * 60 * 24),
-    parser=int,
-    doc=(
-        "When we ask S3 for the size (if it exists) of a symbol already in S3 "
-        "this can be cached. This value determines how long we do that caching."
-    ),
-)
 
 UPLOAD_FILE_UPLOAD_MAX_WORKERS = _config(
     "UPLOAD_FILE_UPLOAD_MAX_WORKERS",
@@ -661,22 +646,7 @@ DISALLOWED_SYMBOLS_SNIPPETS = _config(
 # How many uploads to display per page when paginating through
 # past uploads.
 API_UPLOADS_BATCH_SIZE = 20
-API_UPLOADS_CREATED_BATCH_SIZE = 20
 API_FILES_BATCH_SIZE = 40
-
-UPLOAD_REATTEMPT_LIMIT_SECONDS = _config(
-    "UPLOAD_REATTEMPT_LIMIT_SECONDS",
-    default=str(60 * 60 * 12),
-    parser=int,
-    doc=(
-        "Every time we do a symbol upload, we also take a look to see if there "
-        "are incomplete uploads that could have failed due to some unlucky "
-        "temporary glitch.\n\n"
-        "When we do the reattempt, we need to wait sufficiently long because "
-        "the upload might just be incomplete because it's in the queue, not "
-        "because it failed."
-    ),
-)
 
 ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = _config(
     "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
