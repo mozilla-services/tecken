@@ -4,6 +4,7 @@ all-metrics-keys.json
 coverage
 coverage.xml
 *.db
+.devcontainer-build
 dist/
 .docker-build
 docs/_build
