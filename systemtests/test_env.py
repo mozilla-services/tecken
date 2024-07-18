@@ -4,7 +4,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 # Usage: test_env.py [local|stage|prod]"
+from dataclasses import dataclass
 import os
+from pathlib import Path
 
 import click
 
@@ -13,13 +15,60 @@ from systemtests.bin.list_firefox_symbols_zips import list_firefox_symbols_zips
 from systemtests.bin.upload_symbols import upload_symbols
 from systemtests.bin.upload_symbols_by_download import upload_symbols_by_download
 
-ZIPS_DIR = "./data/zip-files/"
+ZIP_FILES = list(Path("./data/zip-files").glob("*.zip"))
+
+
+@dataclass
+class Environment:
+    # The base URL of the Tecken instance to test.
+    base_url: str
+
+    # Whether to perform the destructive upload tests.
+    destructive_tests: bool
+
+    # Whether to perform the bad token test.
+    bad_token_test: bool
+
+    def auth_token(self, env_name: str, try_storage: bool) -> str:
+        env_var_name = env_name.upper() + "_AUTH_TOKEN"
+        if try_storage:
+            env_var_name += "_TRY"
+        return os.environ[env_var_name]
+
+
+ENVIRONMENTS = {
+    "local": Environment(
+        base_url="http://web:8000/",
+        destructive_tests=True,
+        bad_token_test=True,
+    ),
+    "stage": Environment(
+        base_url="https://symbols.stage.mozaws.net/",
+        destructive_tests=True,
+        bad_token_test=True,
+    ),
+    "prod": Environment(
+        base_url="https://symbols.mozilla.org/",
+        destructive_tests=False,
+        bad_token_test=False,
+    ),
+    "gcp_stage": Environment(
+        base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
+        destructive_tests=True,
+        bad_token_test=True,
+    ),
+    "gcp_prod": Environment(
+        base_url="https://tecken-prod.symbols.prod.webservices.mozgcp.net/",
+        destructive_tests=False,
+        bad_token_test=False,
+    ),
+}
 
 
 @click.command()
-@click.argument("env")
+@click.argument("env_name")
 @click.pass_context
-def test_env(ctx, env):
+def test_env(ctx, env_name):
     """
     Runs through downloading and uploading tests.
 
@@ -40,67 +89,43 @@ def test_env(ctx, env):
     * STAGE_AUTH_TOKEN
     * STAGE_AUTH_TOKEN_TRY
     * PROD_AUTH_TOKEN
+    * GCP_STAGE_AUTH_TOKEN
+    * GCP_STAGE_AUTH_TOKEN_TRY
+    * GCP_PROD_AUTH_TOKEN
 
     \b
     Note: Due to Bug 1759740, we need separate auth tokens
     for try uploads with "Upload Try Symbols Files" permissions.
     """
-    destructive_tests = False
-    bad_token_test = False
-    tecken_host = ""
-    auth_token = ""
+    try:
+        env = ENVIRONMENTS[env_name]
+    except KeyError:
+        env_names = ", ".join(f"'{name}'" for name in ENVIRONMENTS)
+        raise click.UsageError(f"ENV_NAME must be one of {env_names}.") from None
 
-    if env == "local":
-        destructive_tests = True
-        bad_token_test = True
-        tecken_host = "http://web:8000/"
-        auth_token = os.environ["LOCAL_AUTH_TOKEN"]
-    elif env == "stage":
-        destructive_tests = True
-        bad_token_test = True
-        tecken_host = "https://symbols.stage.mozaws.net/"
-        auth_token = os.environ["STAGE_AUTH_TOKEN"]
-    elif env == "prod":
-        click.echo(
-            click.style(
-                "Running tests in prod--skipping destructive tests!", fg="yellow"
-            )
-        )
-        tecken_host = "https://symbols.mozilla.org/"
-        auth_token = os.environ["PROD_AUTH_TOKEN"]
-    else:
-        raise click.UsageError("ENV must be one of 'local', 'stage', or 'prod'.")
+    click.echo(click.style(f"Tecken base URL: {env.base_url}\n", fg="yellow"))
 
-    click.echo(click.style(f"tecken_host: {tecken_host}\n", fg="yellow"))
-
-    if destructive_tests:
+    if env.destructive_tests:
         click.echo(click.style(">>> UPLOAD TEST (DESTRUCTIVE)", fg="yellow"))
-        for fn in [
-            name
-            for name in os.listdir(f"{ZIPS_DIR}")
-            if os.path.isfile(f"{ZIPS_DIR}{name}")
-        ]:
-            # Use the try upload API token when needed
-            if fn.endswith("__try.zip"):
-                auth_token = os.environ[f"{env.upper()}_AUTH_TOKEN_TRY"]
-            else:
-                auth_token = os.environ[f"{env.upper()}_AUTH_TOKEN"]
+        for path in ZIP_FILES:
+            try_storage = path.stem.endswith("__try")
+            auth_token = env.auth_token(env_name, try_storage)
             ctx.invoke(
                 upload_symbols,
                 expect_code=201,
                 auth_token=auth_token,
-                base_url=tecken_host,
-                symbolsfile=f"{ZIPS_DIR}{fn}",
+                base_url=env.base_url,
+                symbolsfile=str(path),
             )
         click.echo("")
 
         click.echo(
             click.style(">>> UPLOAD BY DOWNLOAD TEST (DESTRUCTIVE)", fg="yellow")
         )
-        url = ctx.invoke(list_firefox_symbols_zips, number=1, max_size=1000000000)[0]
+        url = ctx.invoke(list_firefox_symbols_zips, number=1, max_size=1_000_000_000)[0]
         ctx.invoke(
             upload_symbols_by_download,
-            base_url=tecken_host,
+            base_url=env.base_url,
             auth_token=auth_token,
             url=url,
         )
@@ -108,7 +133,7 @@ def test_env(ctx, env):
         click.echo(click.style(">>> SKIPPING DESTRUCTIVE TESTS", fg="yellow"))
     click.echo("")
 
-    if bad_token_test:
+    if env.bad_token_test:
         # Pick a zip file that's > 120kb and upload it with a bad token. This tests a
         # situation that occurs when nginx is a reverse-proxy to Tecken and doesn't
         # correctly return a response if the stream isn't exhausted. This doesn't work
@@ -122,35 +147,28 @@ def test_env(ctx, env):
                 fg="yellow",
             )
         )
-        zip_files = [
-            f"{ZIPS_DIR}{name}"
-            for name in os.listdir(f"{ZIPS_DIR}")
-            if (
-                os.path.isfile(f"{ZIPS_DIR}{name}")
-                and os.path.getsize(f"{ZIPS_DIR}{name}") > 120_000
-            )
-        ]
-
-        if not zip_files:
+        for path in ZIP_FILES:
+            if path.stat().st_size > 120_000:
+                ctx.invoke(
+                    upload_symbols,
+                    expect_code=403,
+                    auth_token="badtoken",
+                    base_url=env.base_url,
+                    symbolsfile=str(path),
+                )
+                click.echo("")
+                break
+        else:
             click.echo(
                 click.style(
                     ">>> No zip files > 120kb; skipping bad token test", fg="red"
                 )
             )
-        else:
-            ctx.invoke(
-                upload_symbols,
-                expect_code=403,
-                auth_token="badtoken",
-                base_url=tecken_host,
-                symbolsfile=zip_files[0],
-            )
-            click.echo("")
 
     click.echo(click.style(">>> DOWNLOAD TEST", fg="yellow"))
     ctx.invoke(
         download_sym_files,
-        base_url=tecken_host,
+        base_url=env.base_url,
         csv_file="./data/sym_files_to_download.csv",
     )
 
