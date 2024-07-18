@@ -59,6 +59,7 @@ jobs:
           echo IMAGE_TAG=latest >> "$GITHUB_ENV"
           # Updates to the main branch are deployed to stage.
           echo DEPLOYMENT_ENV=stage >> "$GITHUB_ENV"
+      - name: Set Docker image tag to "test" for updates of the build-test-image branch
         if: github.ref == 'refs/heads/build-test-image'
         run: |
           # Pushing to the "build-test-image" branch builds an image tagged "test" that's not
