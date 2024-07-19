@@ -5,7 +5,7 @@
 from io import BufferedReader
 import threading
 from typing import Optional
-from urllib.parse import urlparse
+from urllib.parse import quote
 
 from django.conf import settings
 
@@ -21,16 +21,17 @@ class GCSStorage(StorageBackend):
     An implementation of the StorageBackend interface for Google Cloud Storage.
     """
 
-    accepted_hostnames = (".googleapis.com", "gcs-emulator", "gcs.example.com")
-
-    def __init__(self, url: str, try_symbols: bool = False):
-        url = url.removesuffix("/")
-        self.url = url
-        parsed_url = urlparse(url)
-        self.endpoint_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-        self.name, _, self.prefix = parsed_url.path[1:].partition("/")
-        self.prefix = (self.prefix + "/v1").removeprefix("/")
+    def __init__(
+        self,
+        bucket: str,
+        prefix: str,
+        try_symbols: bool = False,
+        endpoint_url: Optional[str] = None,
+    ):
+        self.bucket = bucket
+        self.prefix = prefix
         self.try_symbols = try_symbols
+        self.endpoint_url = endpoint_url
         self.clients = threading.local()
         # The Cloud Storage client doesn't support setting global timeouts for all requests, so we
         # need to pass the timeout for every single request. the default timeout is 60 seconds for
@@ -38,7 +39,7 @@ class GCSStorage(StorageBackend):
         self.timeout = (settings.S3_CONNECT_TIMEOUT, settings.S3_READ_TIMEOUT)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} url={self.url!r} try_symbols={self.try_symbols}"
+        return f"<{self.__class__.__name__} gs://{self.bucket}/{self.prefix}>"
 
     def _get_client(self) -> storage.Client:
         """Return a thread-local low-level storage client."""
@@ -52,7 +53,9 @@ class GCSStorage(StorageBackend):
         if not hasattr(self.clients, "bucket"):
             client = self._get_client()
             try:
-                self.clients.bucket = client.get_bucket(self.name, timeout=self.timeout)
+                self.clients.bucket = client.get_bucket(
+                    self.bucket, timeout=self.timeout
+                )
             except NotFound as exc:
                 raise StorageError(self) from exc
         return self.clients.bucket
@@ -72,6 +75,12 @@ class GCSStorage(StorageBackend):
             raise StorageError(self) from exc
         return True
 
+    def get_download_url(self, key: str) -> str:
+        """Return the download URL for the given key."""
+        endpoint_url = self.endpoint_url or self._get_client().meta.endpoint_url
+        endpoint_url = endpoint_url.removesuffix("/")
+        return f"{endpoint_url}/{self.bucket}/{self.prefix}/{quote(key)}"
+
     def get_object_metadata(self, key: str) -> Optional[ObjectMetadata]:
         """Return object metadata for the object with the given key.
 
@@ -83,8 +92,9 @@ class GCSStorage(StorageBackend):
         :raises StorageError: an unexpected backend-specific error was raised
         """
         bucket = self._get_bucket()
+        gcs_key = f"{self.prefix}/{key}"
         try:
-            blob = bucket.get_blob(f"{self.prefix}/{key}", timeout=self.timeout)
+            blob = bucket.get_blob(gcs_key, timeout=self.timeout)
             if not blob:
                 return None
         except ClientError as exc:

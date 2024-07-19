@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import json
 import time
 from urllib.parse import urlparse, urlunparse
 
@@ -21,6 +20,8 @@ from django.urls import reverse, NoReverseMatch
 from django.utils.html import format_html
 
 import redis.exceptions
+
+from tecken.base import symbolstorage
 
 
 ACTION_TO_NAME = {ADDITION: "add", CHANGE: "change", DELETION: "delete"}
@@ -117,24 +118,9 @@ def site_status(request):
     for key in keys:
         value = getattr(settings, key)
         context["settings"].append({"key": key, "value": value})
-
-    # Now for some oddballs
-    context["settings"].append(
-        {"key": "UPLOAD_DEFAULT_URL", "value": clean_url(settings.UPLOAD_DEFAULT_URL)}
-    )
-    context["settings"].append(
-        {
-            "key": "UPLOAD_TRY_SYMBOLS_URL",
-            "value": clean_url(settings.UPLOAD_TRY_SYMBOLS_URL),
-        }
-    )
-    context["settings"].append(
-        {
-            "key": "SYMBOL_URLS",
-            "value": json.dumps([clean_url(x) for x in settings.SYMBOL_URLS]),
-        }
-    )
     context["settings"].sort(key=lambda x: x["key"])
+
+    context["backends"] = symbolstorage.SYMBOL_STORAGE.get_download_backends(True)
 
     # Get some table counts
     tables = [

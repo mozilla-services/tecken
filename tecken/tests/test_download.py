@@ -6,6 +6,7 @@ import os
 from urllib.parse import urlparse
 
 from django.urls import reverse
+import requests
 
 from tecken.download import views
 from tecken.tests.utils import UPLOADS
@@ -27,15 +28,15 @@ def test_client_happy_path(client, db, symbol_storage, metricsmock):
 
     response = client.get(url)
     assert response.status_code == 302
-    assert (
-        response.headers["location"]
-        == f"{upload.backend.url}/v1/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym"
-    )
     metricsmock.assert_histogram_once(
         "tecken.symboldownloader.file_age_days",
         value=0,
         tags=["storage:regular", "host:testnode"],
     )
+
+    response = requests.get(response.headers["location"])
+    assert response.status_code == 200
+    assert response.content == upload.original_body
 
     response = client.head(url)
     assert response.status_code == 200
@@ -44,10 +45,9 @@ def test_client_happy_path(client, db, symbol_storage, metricsmock):
 
 
 def test_client_try_download(client, db, symbol_storage, metricsmock):
-    """Suppose there's a file that doesn't exist in any of the
-    settings.SYMBOL_URLS but does exist in settings.UPLOAD_TRY_SYMBOLS_URL,
-    then to reach that file you need to use ?try on the URL.
-
+    """
+    Suppose there's a file that doesn't exist in any of the regular storage backends but does
+    exist in try storage, then to reach that file you need to use ?try on the URL.
     """
     upload = UPLOADS["compressed"]
     upload.upload(symbol_storage, try_storage=True)
@@ -72,6 +72,10 @@ def test_client_try_download(client, db, symbol_storage, metricsmock):
         value=0,
         tags=["storage:try", "host:testnode"],
     )
+
+    response = requests.get(response.headers["location"])
+    assert response.status_code == 200
+    assert response.content == upload.original_body
 
     # And like regular download, you're only allowed to use GET or HEAD
     response = client.put(try_url)

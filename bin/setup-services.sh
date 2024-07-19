@@ -7,14 +7,12 @@
 set -eo pipefail
 
 # Set up S3
-python bin/s3_cli.py delete "${UPLOAD_DEFAULT_URL}"
-python bin/s3_cli.py create "${UPLOAD_DEFAULT_URL}"
+python bin/s3_cli.py delete "${UPLOAD_S3_BUCKET}"
+python bin/s3_cli.py create "${UPLOAD_S3_BUCKET}"
 
 # Set up GCS
-# FIXME bug 1827506: update argument as needed once GCS is
-# implemented in the source code.
-python bin/gcs_cli.py delete publicbucket
-python bin/gcs_cli.py create publicbucket
+python bin/gcs_cli.py delete "${UPLOAD_GCS_BUCKET}"
+python bin/gcs_cli.py create "${UPLOAD_GCS_BUCKET}"
 
 # Set up db
 python bin/db.py drop || true

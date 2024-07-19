@@ -96,8 +96,8 @@ def possible_upload_urls(request):
     context = {
         "urls": [
             {
-                "url": upload_backend.url,
-                "bucket_name": upload_backend.name,
+                "bucket_name": upload_backend.bucket,
+                "prefix": upload_backend.prefix,
                 "default": True,
             }
         ]

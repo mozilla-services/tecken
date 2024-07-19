@@ -3,23 +3,16 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from io import BufferedReader
-import re
 import threading
 from typing import Optional
-from urllib.parse import quote, urlparse
+from urllib.parse import quote
 
 import boto3.session
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
-
 from django.conf import settings
 
 from tecken.libstorage import ObjectMetadata, StorageBackend, StorageError
-
-
-ALL_POSSIBLE_S3_REGIONS: tuple[str] = tuple(
-    boto3.session.Session().get_available_regions("s3")
-)
 
 
 class S3Storage(StorageBackend):
@@ -27,78 +20,25 @@ class S3Storage(StorageBackend):
     An implementation of the StorageBackend interface for Amazon S3.
     """
 
-    accepted_hostnames = (".amazonaws.com", "localstack", "s3.example.com")
-
-    # A substring match of the domain is used to recognize storage backends.
-    # For emulated backends, the name should be present in the docker compose
-    # service name.
-    _URL_FINGERPRINT: list[str] = {
-        # AWS S3, like bucket-name.s3.amazonaws.com
-        "s3": ".amazonaws.com",
-        # Localstack S3 Emulator
-        "emulated-s3": "localstack",
-        # S3 test domain
-        "test-s3": "s3.example.com",
-    }
-
-    def __init__(self, url: str, try_symbols: bool = False, file_prefix: str = "v1"):
-        self.url = url
-        parsed = urlparse(url)
-        self.scheme = parsed.scheme
-        self.netloc = parsed.netloc
-
-        # Determine the backend from the netloc (domain plus port)
-        self.backend = None
-        for backend, fingerprint in self._URL_FINGERPRINT.items():
-            if fingerprint in self.netloc:
-                self.backend = backend
-                break
-        if self.backend is None:
-            raise ValueError(f"Storage backend not recognized in {url!r}")
-
-        try:
-            name, prefix = parsed.path[1:].split("/", 1)
-            if prefix.endswith("/"):
-                prefix = prefix[:-1]
-        except ValueError:
-            prefix = ""
-            name = parsed.path[1:]
-        self.name = name
-        if file_prefix:
-            if prefix:
-                prefix += f"/{file_prefix}"
-            else:
-                prefix = file_prefix
+    def __init__(
+        self,
+        bucket: str,
+        prefix: str,
+        try_symbols: bool = False,
+        endpoint_url: Optional[str] = None,
+        region: Optional[str] = None,
+    ):
+        self.bucket = bucket
         self.prefix = prefix
         self.try_symbols = try_symbols
-        self.endpoint_url = None
-        self.region = None
-        if not self.backend == "s3":
-            # the endpoint_url will be all but the path
-            self.endpoint_url = f"{parsed.scheme}://{parsed.netloc}"
-        region = re.findall(r"s3[.-](.*)\.amazonaws\.com", parsed.netloc)
-        if region:
-            if region[0] not in ALL_POSSIBLE_S3_REGIONS:
-                raise ValueError(f"Not valid S3 region {region[0]}")
-            self.region = region[0]
+        self.endpoint_url = endpoint_url
+        self.region = region
         self.clients = threading.local()
 
-    @property
-    def base_url(self):
-        """Return base url for objects managed by this storage backend
-
-        For objects in S3, this includes the domain and bucket name.
-        """
-        return f"{self.scheme}://{self.netloc}/{self.name}"
-
     def __repr__(self):
-        return (
-            f"<{self.__class__.__name__} name={self.name!r} "
-            + f"endpoint_url={self.endpoint_url!r} region={self.region!r} "
-            + f"backend={self.backend!r}>"
-        )
+        return f"<{self.__class__.__name__} s3://{self.bucket}/{self.prefix}>"
 
-    def get_storage_client(self):
+    def _get_client(self):
         """Return a backend-specific client."""
         if not hasattr(self.clients, "storage"):
             options = {
@@ -121,10 +61,10 @@ class S3Storage(StorageBackend):
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
-        client = self.get_storage_client()
+        client = self._get_client()
 
         try:
-            client.head_bucket(Bucket=self.name)
+            client.head_bucket(Bucket=self.bucket)
         except ClientError as exc:
             # A generic ClientError can be raised if:
             # - The bucket doesn't exist (code 404)
@@ -149,9 +89,10 @@ class S3Storage(StorageBackend):
 
         :raises StorageError: an unexpected backend-specific error was raised
         """
-        client = self.get_storage_client()
+        client = self._get_client()
+        s3_key = f"{self.prefix}/{key}"
         try:
-            response = client.head_object(Bucket=self.name, Key=f"{self.prefix}/{key}")
+            response = client.head_object(Bucket=self.bucket, Key=s3_key)
         except ClientError as exc:
             if exc.response["Error"]["Code"] == "404":
                 return None
@@ -165,8 +106,9 @@ class S3Storage(StorageBackend):
                 original_content_length = int(original_content_length)
             except ValueError:
                 original_content_length = None
+        endpoint_url = client.meta.endpoint_url.removesuffix("/")
         metadata = ObjectMetadata(
-            download_url=f"{self.base_url}/{self.prefix}/{quote(key)}",
+            download_url=f"{endpoint_url}/{self.bucket}/{quote(s3_key)}",
             content_type=response.get("ContentType"),
             content_length=response["ContentLength"],
             content_encoding=response.get("ContentEncoding"),
@@ -195,7 +137,7 @@ class S3Storage(StorageBackend):
         if metadata.original_md5_sum:
             s3_metadata["original_md5_hash"] = metadata.original_md5_sum
         kwargs = {
-            "Bucket": self.name,
+            "Bucket": self.bucket,
             "Key": f"{self.prefix}/{key}",
             "Body": body,
             "Metadata": s3_metadata,
@@ -207,7 +149,7 @@ class S3Storage(StorageBackend):
         if metadata.content_length:
             kwargs["ContentLength"] = metadata.content_length
 
-        client = self.get_storage_client()
+        client = self._get_client()
         try:
             client.put_object(**kwargs)
         except (ClientError, BotoCoreError) as exc:
