@@ -18,16 +18,14 @@ def check_storage_urls(app_configs, **kwargs):
             if not backend.exists():
                 errors.append(
                     checks.Error(
-                        f"Unable to connect to {backend.url} (bucket={backend.name!r}), "
-                        f"because bucket not found",
+                        f"Unable to connect to {backend!r}), because bucket not found",
                         id="tecken.health.E001",
                     )
                 )
         except StorageError as error:
             errors.append(
                 checks.Error(
-                    f"Unable to connect to {backend.url} (bucket={backend.name!r}), "
-                    f"due to {error.backend_msg}",
+                    f"Unable to connect to {backend!r}), due to {error}",
                     id="tecken.health.E002",
                 )
             )

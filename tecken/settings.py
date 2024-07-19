@@ -12,6 +12,7 @@ import os
 import socket
 
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 from dockerflow.version import get_version
 from everett.manager import ConfigManager, ListOf
 
@@ -70,9 +71,7 @@ if TOOL_ENV:
         ("OIDC_OP_USER_ENDPOINT", "http://example.com/"),
         ("DATABASE_URL", "postgresql://postgres:postgres@db/tecken"),
         ("REDIS_URL", "redis://redis-cache:6379/0"),
-        ("SYMBOL_URLS", "https://s3.example.com/bucket"),
-        ("UPLOAD_DEFAULT_URL", "https://s3.example.com/bucket"),
-        ("UPLOAD_TRY_SYMBOLS_URL", "https://s3.example.com/bucket/try/"),
+        ("UPLOAD_S3_BUCKET", "bucket"),
     ]
     for key, val in fake_values:
         os.environ[key] = val
@@ -433,12 +432,6 @@ else:
         },
     }
 
-CLOUD_SERVICE_PROVIDER = _config(
-    "CLOUD_SERVICE_PROVIDER",
-    default="AWS",
-    doc="The cloud service provider Tecken is using. Either AWS or GCP.",
-)
-
 S3_CONNECT_TIMEOUT = _config(
     "S3_LOOKUP_CONNECT_TIMEOUT",
     default="5",
@@ -573,42 +566,95 @@ DOCKERFLOW_CHECKS = [
 ]
 
 
-SYMBOL_URLS = _config(
-    "SYMBOL_URLS",
-    parser=ListOf(str),
-    doc=(
-        "Comma-separated list of urls for symbol downloads.\n\n"
-        "Lookups are performed in list order."
-    ),
-)
+CLOUD_SERVICE_PROVIDER = _config(
+    "CLOUD_SERVICE_PROVIDER",
+    default="AWS",
+    doc="The cloud service provider Tecken is using. Either AWS or GCP.",
+).upper()
 
-UPLOAD_DEFAULT_URL = _config(
-    "UPLOAD_DEFAULT_URL",
-    doc=(
-        "The default url to use for symbol uploads. This must be an item in "
-        "SYMBOL_URLS."
-    ),
-)
-
-UPLOAD_TRY_SYMBOLS_URL = _config(
-    "UPLOAD_TRY_SYMBOLS_URL",
-    doc=(
-        "When an upload comes in with symbols from a Try build, these symbols "
-        "mustn't be uploaded with the regular symbols.\n\n"
-        "You could set this to UPLOAD_DEFAULT_URL with a '/try' prefix.\n\n"
-        "For example::\n\n"
-        "    UPLOAD_DEFAULT_URL=http://s3.example.com/publicbucket/\n"
-        "    UPLOAD_TRY_SYMBOLS_URL=http://s3.example.com/publicbucket/try/"
-    ),
-)
-
-# If UPLOAD_DEFAULT_URL is not in SYMBOL_URLS it's just too weird. It means we'd upload
-# to a S3 bucket we'd never read from and thus it'd be impossible to know the upload
-# worked.
-if UPLOAD_DEFAULT_URL not in SYMBOL_URLS:
-    raise ValueError(
-        f"The UPLOAD_DEFAULT_URL ({UPLOAD_DEFAULT_URL!r}) has to be one of the URLs "
-        f"in SYMBOL_URLS ({SYMBOL_URLS!r})"
+if CLOUD_SERVICE_PROVIDER == "GCS":
+    UPLOAD_GCS_BUCKET = _config(
+        "UPLOAD_GCS_BUCKET",
+        doc="The GCS bucket name for uploads and downloads.",
+    )
+    DOWNLOAD_S3_BUCKET = _config(
+        "DOWNLOAD_S3_BUCKET",
+        raise_error=False,
+        doc="The S3 bucket name for downloads.",
+    )
+    DOWNLOAD_S3_REGION = (
+        _config(
+            "DOWNLOAD_S3_BUCKET",
+            raise_error=False,
+            doc="The region of the S3 download bucket.",
+        )
+        or None
+    )
+    UPLOAD_BACKEND = {
+        "class": "tecken.ext.gcs.storage.GCSStorage",
+        "options": {
+            "bucket": UPLOAD_GCS_BUCKET,
+            "prefix": "v1",
+            "try_symbols": False,
+        },
+    }
+    TRY_UPLOAD_BACKEND = {
+        "class": "tecken.ext.gcs.storage.GCSStorage",
+        "options": {
+            "bucket": UPLOAD_GCS_BUCKET,
+            "prefix": "try/v1",
+            "try_symbols": True,
+        },
+    }
+    DOWNLOAD_BACKENDS = []
+    if DOWNLOAD_S3_BUCKET:
+        DOWNLOAD_BACKENDS = [
+            {
+                "class": "tecken.ext.s3.storage.S3Storage",
+                "options": {
+                    "bucket": DOWNLOAD_S3_BUCKET,
+                    "prefix": "v1",
+                    "try_symbols": False,
+                    "anonymous": True,
+                    "region": DOWNLOAD_S3_REGION,
+                },
+            },
+            {
+                "class": "tecken.ext.s3.storage.S3Storage",
+                "options": {
+                    "bucket": DOWNLOAD_S3_BUCKET,
+                    "prefix": "try/v1",
+                    "try_symbols": True,
+                    "anonymous": True,
+                    "region": DOWNLOAD_S3_REGION,
+                },
+            },
+        ]
+elif CLOUD_SERVICE_PROVIDER == "AWS":
+    UPLOAD_S3_BUCKET = _config(
+        "UPLOAD_S3_BUCKET",
+        doc="The S3 bucket name for uploads and downloads.",
+    )
+    UPLOAD_BACKEND = {
+        "class": "tecken.ext.s3.storage.S3Storage",
+        "options": {
+            "bucket": UPLOAD_S3_BUCKET,
+            "prefix": "v1",
+            "try_symbols": False,
+        },
+    }
+    TRY_UPLOAD_BACKEND = {
+        "class": "tecken.ext.s3.storage.S3Storage",
+        "options": {
+            "bucket": UPLOAD_S3_BUCKET,
+            "prefix": "try/v1",
+            "try_symbols": True,
+        },
+    }
+    DOWNLOAD_BACKENDS = []
+else:
+    raise ImproperlyConfigured(
+        f"invalid value for CLOUD_SERVICE_PROVIDER: {CLOUD_SERVICE_PROVIDER}"
     )
 
 COMPRESS_EXTENSIONS = _config(

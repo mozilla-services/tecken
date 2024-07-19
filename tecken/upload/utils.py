@@ -251,7 +251,7 @@ def upload_file_upload(
 
     file_upload = FileUpload.objects.create(
         upload=upload,
-        bucket_name=backend.name,
+        bucket_name=backend.bucket,
         key=key_name,
         update=bool(existing_metadata),
         compressed=compressed,
@@ -265,7 +265,7 @@ def upload_file_upload(
     )
 
     metadata.content_length = size
-    logger.debug(f"Uploading file {key_name!r} into {backend.name!r}")
+    logger.debug(f"Uploading file {key_name!r} into {backend.bucket!r}")
     with METRICS.timer("upload_put_object"):
         with open(file_path, "rb") as f:
             backend.upload(key_name, f, metadata)

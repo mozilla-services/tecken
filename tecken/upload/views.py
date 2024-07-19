@@ -267,7 +267,7 @@ def upload_archive(request, upload_workspace):
     upload_obj = Upload.objects.create(
         user=request.user,
         filename=name,
-        bucket_name=backend.name,
+        bucket_name=backend.bucket,
         size=size,
         download_url=url,
         redirect_urls=redirect_urls,
@@ -323,7 +323,7 @@ def upload_archive(request, upload_workspace):
     )
 
     METRICS.incr(
-        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{backend.name}"]
+        "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{backend.bucket}"]
     )
 
     return http.JsonResponse({"upload": _serialize_upload(upload_obj)}, status=201)

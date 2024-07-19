@@ -18,6 +18,7 @@ from django.core.cache import caches
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
+from tecken.libstorage import StorageBackend
 
 
 @pytest.fixture(autouse=True)
@@ -106,11 +107,11 @@ def clear_s3_storage(self: S3Storage):
     """Make sure the S3 bucket exists and delete all files under the prefix."""
     # NOTE(smarnach): This gets patched into S3Storage as a method. I don't want this to exist in
     # production code, since it should never get called there.
-    client = self.get_storage_client()
-    client.create_bucket(Bucket=self.name)
-    response = client.list_objects_v2(Bucket=self.name, Prefix=self.prefix)
+    client = self._get_client()
+    client.create_bucket(Bucket=self.bucket)
+    response = client.list_objects_v2(Bucket=self.bucket, Prefix=self.prefix)
     for object in response.get("Contents", []):
-        client.delete_object(Bucket=self.name, Key=object["Key"])
+        client.delete_object(Bucket=self.bucket, Key=object["Key"])
 
 
 S3Storage.clear = clear_s3_storage
@@ -122,7 +123,7 @@ def clear_gcs_storage(self: GCSStorage):
     # production code, since it should never get called there.
     client = self._get_client()
     try:
-        client.create_bucket(self.name)
+        client.create_bucket(self.bucket)
     except Conflict:
         # Bucket already exists.
         pass
@@ -146,37 +147,31 @@ def bucket_name(request):
 
 
 @pytest.fixture
-def get_test_storage_url(bucket_name):
-    """Return a function to generate unique test storage URLs for the current test."""
+def get_storage_backend(bucket_name):
+    """Return a function to create a unique storage backend for the current test."""
 
-    def _get_test_storage_url(
+    def _get_storage_backend(
         kind: Literal["gcs", "s3"], try_symbols: bool = False
-    ) -> str:
+    ) -> StorageBackend:
+        prefix = "try/" * try_symbols + "v1"
         match kind:
             case "gcs":
-                url = f"http://gcs-emulator:8001/{bucket_name}"
+                return GCSStorage(bucket_name, prefix, try_symbols)
             case "s3":
-                url = f"http://localstack:4566/{bucket_name}"
-        if try_symbols:
-            url += "/try"
-        return url
+                return S3Storage(bucket_name, prefix, try_symbols)
 
-    return _get_test_storage_url
+    return _get_storage_backend
 
 
 @pytest.fixture(params=["gcs", "s3"])
-def symbol_storage_no_create(request, settings, get_test_storage_url):
+def symbol_storage_no_create(request, get_storage_backend):
     """Replace the global SymbolStorage instance with a new instance.
 
     This fixture does not create and clean the storage buckets.
     """
-
-    settings.UPLOAD_DEFAULT_URL = get_test_storage_url(request.param)
-    settings.SYMBOL_URLS = []
-    settings.UPLOAD_TRY_SYMBOLS_URL = get_test_storage_url(
-        request.param, try_symbols=True
-    )
-    symbol_storage = SymbolStorage.from_settings()
+    upload_backend = get_storage_backend(request.param)
+    try_upload_backend = get_storage_backend(request.param, try_symbols=True)
+    symbol_storage = SymbolStorage(upload_backend, try_upload_backend, [])
 
     with mock.patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage):
         yield symbol_storage
