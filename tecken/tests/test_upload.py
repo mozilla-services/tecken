@@ -139,7 +139,7 @@ def test_upload_try_symbols_happy_path(
     token.permissions.add(permission)
 
     # Upload one of the files so that when the upload happens, it's an update.
-    symbol_storage.try_backend.upload(
+    symbol_storage.try_upload_backend.upload(
         key="flag/deadbeef/flag.jpeg",
         body=BytesIO(b"abc123"),
         metadata=ObjectMetadata(),

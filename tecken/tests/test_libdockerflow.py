@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from tecken import libdockerflow
-from tecken.base.symbolstorage import symbol_storage, SymbolStorage
+from tecken.base.symbolstorage import symbol_storage
 from tecken.libdockerflow import get_version_info, get_release_name
 
 
@@ -15,18 +15,10 @@ def test_check_storage_urls_happy_path(symbol_storage):
     assert not errors
 
 
-def test_check_storage_urls_missing(get_test_storage_url):
-    # NOTE(smarnach): We don't use the symbol_storage fixture here since it creates the backend
-    # buckets, and we want the buckets to be missing in this test.
-    symbol_storage = SymbolStorage(
-        upload_url=get_test_storage_url("gcs"),
-        download_urls=[get_test_storage_url("s3")],
-    )
-    with patch("tecken.base.symbolstorage.SYMBOL_STORAGE", symbol_storage):
-        errors = libdockerflow.check_storage_urls(None)
-    assert len(errors) == 2
-    assert symbol_storage.backends[0].name in errors[0].msg
-    assert symbol_storage.backends[1].name in errors[1].msg
+def test_check_storage_urls_missing(symbol_storage_no_create):
+    errors = libdockerflow.check_storage_urls(None)
+    assert len(errors) == 1
+    assert symbol_storage_no_create.get_upload_backend(False).bucket in errors[0].msg
     for error in errors:
         assert "bucket not found" in error.msg
         assert error.id == "tecken.health.E001"

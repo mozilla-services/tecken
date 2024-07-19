@@ -9,65 +9,54 @@ from django.conf import settings
 from django.utils import timezone
 
 from tecken.libmarkus import METRICS
-from tecken.libstorage import ObjectMetadata, StorageBackend
+from tecken.libstorage import ObjectMetadata, StorageBackend, backend_from_config
 
 
 logger = logging.getLogger("tecken")
 
 
 class SymbolStorage:
-    """Persistent wrapper around multiple StorageBackend instances."""
+    """Persistent wrapper around multiple StorageBackend instances.
+
+    :arg upload_backend: The upload and download backend for regular storage.
+    :arg try_upload_backend: The upload and download backend for try storage.
+    :arg download_backends: Additional download backends.
+    """
 
     def __init__(
-        self, upload_url: str, download_urls: list[str], try_url: Optional[str] = None
+        self,
+        upload_backend: StorageBackend,
+        try_upload_backend: StorageBackend,
+        download_backends: list[StorageBackend],
     ):
-        # The upload backend for regular storage.
-        self.upload_backend: StorageBackend = StorageBackend.new(upload_url)
-
-        # All additional download backends, except for the regular upload backend.
-        download_backends = [
-            StorageBackend.new(url) for url in download_urls if url != upload_url
-        ]
-
-        # All backends
-        self.backends: list[StorageBackend] = [self.upload_backend, *download_backends]
-
-        # The try storage backend for both upload and download, if any.
-        if try_url is None:
-            self.try_backend: Optional[StorageBackend] = None
-        else:
-            self.try_backend: Optional[StorageBackend] = StorageBackend.new(
-                try_url, try_symbols=True
-            )
-            self.backends.append(self.try_backend)
+        self.upload_backend = upload_backend
+        self.try_upload_backend = try_upload_backend
+        self.backends = [upload_backend, try_upload_backend, *download_backends]
 
     @classmethod
     def from_settings(cls):
-        return cls(
-            upload_url=settings.UPLOAD_DEFAULT_URL,
-            download_urls=settings.SYMBOL_URLS,
-            try_url=settings.UPLOAD_TRY_SYMBOLS_URL,
-        )
+        upload_backend = backend_from_config(settings.UPLOAD_BACKEND)
+        try_upload_backend = backend_from_config(settings.TRY_UPLOAD_BACKEND)
+        download_backends = list(map(backend_from_config, settings.DOWNLOAD_BACKENDS))
+        return cls(upload_backend, try_upload_backend, download_backends)
 
     def __repr__(self):
-        urls = [backend.url for backend in self.backends]
-        return f"<{self.__class__.__name__} urls={urls}>"
+        backend_reprs = " ".join(map(repr, self.backends))
+        return f"<{self.__class__.__name__} backends: {backend_reprs}>"
 
     def get_download_backends(self, try_storage: bool) -> list[StorageBackend]:
         """Return a list of all download backends.
 
         Includes the try backend if `try_storage` is set to `True`.
         """
-        return [
-            backend
-            for backend in self.backends
-            if try_storage or not backend.try_symbols
-        ]
+        if try_storage:
+            return self.backends
+        return [backend for backend in self.backends if not backend.try_symbols]
 
     def get_upload_backend(self, try_storage: bool) -> StorageBackend:
         """Return either the regular or the try upload backends."""
         if try_storage:
-            return self.try_backend
+            return self.try_upload_backend
         return self.upload_backend
 
     @staticmethod

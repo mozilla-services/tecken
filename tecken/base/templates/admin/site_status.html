@@ -31,6 +31,26 @@
       </tbody>
     </table>
 
+    <h2>Backends</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>bucket</th>
+          <th>prefix</th>
+          <th>try_symbols</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in backends %}
+          <tr>
+            <td>{{ item.bucket }}</td>
+            <td>{{ item.prefix }}</td>
+            <td>{{ item.try_symbols }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
     <h2>Table counts</h2>
     <table>
       <thead>

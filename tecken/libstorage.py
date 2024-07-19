@@ -5,8 +5,9 @@
 from dataclasses import dataclass
 import datetime
 from io import BufferedReader
-from typing import Optional
-from urllib.parse import urlparse
+from typing import Any, Optional
+
+from django.utils.module_loading import import_string
 
 
 @dataclass
@@ -29,48 +30,13 @@ class StorageBackend:
     """Interface for storage backends."""
 
     # The bucket name for this backend
-    name: str
+    bucket: str
 
-    # Configured backend URL
-    url: str
+    # The prefix for object keys in the bucket
+    prefix: str
 
     # Whether the backend handles try symboles
     try_symbols: bool
-
-    # Class attribute that lists the accepted hostnames.
-    accepted_hostnames: tuple[str, ...]
-
-    def __init_subclass__(cls):
-        assert hasattr(cls, "accepted_hostnames")
-        _BACKEND_CLASSES.append(cls)
-
-    @classmethod
-    def new(cls, url: str, try_symbols: bool = False) -> "StorageBackend":
-        """Create an instance of a StorageBackend subclass.
-
-        The hostname part of the given URL is checked against the ``acepted_hostnames`` list of all
-        implementations of ``StorageBackend``. If the URL hostname ends with any of the accepted
-        hostnames, the corresponding class is instantiated.
-
-        :returns: A new instance of a StorageBackend subclass.
-
-        :raises: NoMatchingBackend id no subclass accepts the URL.
-        """
-        # The modules in the ext package are not explicitly imported anywhere. We need to make sure
-        # _BACKEND_CLASSES is fully populated before proceeding. The redundant alias pacifies ruff.
-        from tecken import ext as ext
-
-        hostname = urlparse(url).hostname.lower().removesuffix(".")
-        for backend_class in _BACKEND_CLASSES:
-            if hostname.endswith(backend_class.accepted_hostnames):
-                return backend_class(url, try_symbols)
-        raise NoMatchingBackend(url)
-
-    def __repr__(self):
-        return (
-            f"<{self.__class__.__name__} name={self.name} url={self.url} "
-            + f"try_symbols={self.try_symbols}"
-        )
 
     def exists(self) -> bool:
         """Check that this storage exists.
@@ -115,12 +81,6 @@ class StorageError(Exception):
         super().__init__(f"Error in backend {backend!r}")
 
 
-class NoMatchingBackend(Exception):
-    """No backend class accepts the given URL."""
-
-    def __init__(self, url: str):
-        super().__init__(f"No backend class accepts URL {url}")
-
-
-# List of all classes implementing StorageBackend
-_BACKEND_CLASSES: list[type[StorageBackend]] = []
+def backend_from_config(config: dict[str, Any]) -> StorageBackend:
+    cls = import_string(config["class"])
+    return cls(**config["options"])
