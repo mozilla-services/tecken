@@ -33,6 +33,9 @@ class Environment:
     # Whether to perform the bad token test.
     bad_token_test: bool
 
+    # Whether to test response headers for the download tests.
+    test_headers: bool
+
     def env_var_name(self, try_storage: bool) -> str:
         env_var_name = self.name.upper() + "_AUTH_TOKEN"
         if try_storage:
@@ -62,30 +65,35 @@ ENVIRONMENTS = {
         base_url="http://web:8000/",
         destructive_tests=True,
         bad_token_test=True,
+        test_headers=False,
     ),
     "stage": Environment(
         name="stage",
         base_url="https://symbols.stage.mozaws.net/",
         destructive_tests=True,
         bad_token_test=True,
+        test_headers=True,
     ),
     "prod": Environment(
         name="prod",
         base_url="https://symbols.mozilla.org/",
         destructive_tests=False,
         bad_token_test=False,
+        test_headers=True,
     ),
     "gcp_stage": Environment(
         name="gcp_stage",
         base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
         destructive_tests=True,
         bad_token_test=True,
+        test_headers=True,
     ),
     "gcp_prod": Environment(
         name="gcp_prod",
         base_url="https://tecken-prod.symbols.prod.webservices.mozgcp.net/",
         destructive_tests=False,
         bad_token_test=False,
+        test_headers=True,
     ),
 }
 
@@ -186,6 +194,7 @@ def test_env(ctx, env_name):
     ctx.invoke(
         download_sym_files,
         base_url=env.base_url,
+        test_headers=env.test_headers,
         csv_file="./data/sym_files_to_download.csv",
     )
 
