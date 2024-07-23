@@ -143,7 +143,7 @@ def test_env(ctx, env_name):
         ctx.invoke(
             upload_symbols_by_download,
             base_url=env.base_url,
-            auth_token=auth_token,
+            auth_token=env.auth_token(False),
             url=url,
         )
     else:
