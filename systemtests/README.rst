@@ -32,31 +32,26 @@ environments.
 Running tests
 =============
 
-First, make sure you have valid, unexpired API tokens for the environment
-you're testing.
+The system tests are run using the ``test_env.py`` Python script. You can get
+help about the command-line invocation of that script using::
+
+    $ make shell
+    root@e62fb7ae586f:/app# cd systemtests
+    root@e62fb7ae586f:/app/systemtests# ./test_env.py --help
+
+The help includes a list of available environments.
+
+You need to make sure you have valid, unexpired API tokens for the environment
+you're testing. Add these tokens to your ``.env`` file using the environment
+variable names in the help output, e.g. ``STAGE_AUTH_TOKEN`` and
+``STAGE_AUTH_TOKEN_TRY`` for the stage environment.
 
 For destructive tests run in local and stage, you need separate auth tokens for
 try uploads with "Upload Try Symbols Files" permissions. See Bug 1759740.
 
-To set auth tokens, add these to your .env file:
-
-* `LOCAL_AUTH_TOKEN`
-* `LOCAL_AUTH_TOKEN_TRY`
-* `STAGE_AUTH_TOKEN`
-* `STAGE_AUTH_TOKEN_TRY`
-* `PROD_AUTH_TOKEN`
-
 To run the systemtests, do::
 
-   $ make shell
-   root@f09b3cdf8570:/app# cd systemtests/
-   root@e62fb7ae586f:/app/systemtests# ./test_env.py ENVIRONMENT
-
-where ``ENVIRONMENT`` is one of the following:
-
-* ``local``: run all tests against your local dev environment
-* ``stage``: run all tests against stage
-* ``prod``: run non-destructive tests against prod
+    root@e62fb7ae586f:/app/systemtests# ./test_env.py <ENV_NAME>
 
 
 Rules of systemtest
