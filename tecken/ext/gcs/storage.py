@@ -138,6 +138,8 @@ class GCSStorage(StorageBackend):
         blob.metadata = gcs_metadata
         blob.content_type = metadata.content_type
         blob.content_encoding = metadata.content_encoding
+        # Prevent "decompressive transcoding" on download. See bug 1827506.
+        blob.cache_control = "no-transform"
         try:
             blob.upload_from_file(
                 body, size=metadata.content_length, timeout=self.timeout
