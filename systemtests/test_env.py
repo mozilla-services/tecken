@@ -7,6 +7,7 @@
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import textwrap
 
 import click
 
@@ -20,6 +21,9 @@ ZIP_FILES = list(Path("./data/zip-files").glob("*.zip"))
 
 @dataclass
 class Environment:
+    # The name of the environment
+    name: str
+
     # The base URL of the Tecken instance to test.
     base_url: str
 
@@ -29,74 +33,87 @@ class Environment:
     # Whether to perform the bad token test.
     bad_token_test: bool
 
-    def auth_token(self, env_name: str, try_storage: bool) -> str:
-        env_var_name = env_name.upper() + "_AUTH_TOKEN"
+    def env_var_name(self, try_storage: bool) -> str:
+        env_var_name = self.name.upper() + "_AUTH_TOKEN"
         if try_storage:
             env_var_name += "_TRY"
-        return os.environ[env_var_name]
+        return env_var_name
+
+    def help(self) -> str:
+        text = textwrap.dedent(f"""
+            \b
+            {self.name}
+            ====
+              Base URL: {self.base_url}
+              Environment variables:
+                * {self.env_var_name(False)}
+            """)
+        if self.destructive_tests:
+            text += f"    * {self.env_var_name(True)}\n"
+        return text
+
+    def auth_token(self, try_storage: bool) -> str:
+        return os.environ[self.env_var_name(try_storage)]
 
 
 ENVIRONMENTS = {
     "local": Environment(
+        name="local",
         base_url="http://web:8000/",
         destructive_tests=True,
         bad_token_test=True,
     ),
     "stage": Environment(
+        name="stage",
         base_url="https://symbols.stage.mozaws.net/",
         destructive_tests=True,
         bad_token_test=True,
     ),
     "prod": Environment(
+        name="prod",
         base_url="https://symbols.mozilla.org/",
         destructive_tests=False,
         bad_token_test=False,
     ),
     "gcp_stage": Environment(
+        name="gcp_stage",
         base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
         destructive_tests=True,
         bad_token_test=True,
     ),
     "gcp_prod": Environment(
+        name="gcp_prod",
         base_url="https://tecken-prod.symbols.prod.webservices.mozgcp.net/",
         destructive_tests=False,
         bad_token_test=False,
     ),
 }
 
+ENV_HELP = "\n".join(env.help() for env in ENVIRONMENTS.values())
 
-@click.command()
+CLI_HELP = f"""
+Runs upload and download tests against the environment specified in ENV_NAME.
+
+Available environments:
+
+{ENV_HELP}
+
+\b
+Usage:
+1. run "make shell" to get a shell in the container
+2. then do "cd systemtests"
+3. run "./setup_tests.py" if you are running the tests for the first time.
+4. run "./test_env.py [{"|".join(ENVIRONMENTS)}]"
+
+Note: Due to Bug 1759740, we need separate auth tokens
+for try uploads with "Upload Try Symbols Files" permissions.
+"""
+
+
+@click.command(help=CLI_HELP)
 @click.argument("env_name")
 @click.pass_context
 def test_env(ctx, env_name):
-    """
-    Runs through downloading and uploading tests.
-
-    \b
-    ENV is the environment to run the tests against;
-    one of [local|stage|prod].
-
-    \b
-    To use:
-    1. run "make shell" to get a shell in the container
-    2. then do "cd systemtests"
-    3. run "./test_env.py [local|stage|prod]"
-
-    \b
-    To set auth tokens, add these to your .env file:
-    * LOCAL_AUTH_TOKEN
-    * LOCAL_AUTH_TOKEN_TRY
-    * STAGE_AUTH_TOKEN
-    * STAGE_AUTH_TOKEN_TRY
-    * PROD_AUTH_TOKEN
-    * GCP_STAGE_AUTH_TOKEN
-    * GCP_STAGE_AUTH_TOKEN_TRY
-    * GCP_PROD_AUTH_TOKEN
-
-    \b
-    Note: Due to Bug 1759740, we need separate auth tokens
-    for try uploads with "Upload Try Symbols Files" permissions.
-    """
     try:
         env = ENVIRONMENTS[env_name]
     except KeyError:
@@ -109,7 +126,7 @@ def test_env(ctx, env_name):
         click.echo(click.style(">>> UPLOAD TEST (DESTRUCTIVE)", fg="yellow"))
         for path in ZIP_FILES:
             try_storage = path.stem.endswith("__try")
-            auth_token = env.auth_token(env_name, try_storage)
+            auth_token = env.auth_token(try_storage)
             ctx.invoke(
                 upload_symbols,
                 expect_code=201,
