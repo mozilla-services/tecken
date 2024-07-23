@@ -584,7 +584,7 @@ if CLOUD_SERVICE_PROVIDER == "GCS":
     )
     DOWNLOAD_S3_REGION = (
         _config(
-            "DOWNLOAD_S3_BUCKET",
+            "DOWNLOAD_S3_REGION",
             raise_error=False,
             doc="The region of the S3 download bucket.",
         )
