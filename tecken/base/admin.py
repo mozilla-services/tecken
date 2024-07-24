@@ -120,7 +120,10 @@ def site_status(request):
         context["settings"].append({"key": key, "value": value})
     context["settings"].sort(key=lambda x: x["key"])
 
-    context["backends"] = symbolstorage.SYMBOL_STORAGE.get_download_backends(True)
+    context["backends"] = [
+        (backend.__class__.__name__, backend)
+        for backend in symbolstorage.SYMBOL_STORAGE.get_download_backends(True)
+    ]
 
     # Get some table counts
     tables = [
