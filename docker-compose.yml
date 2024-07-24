@@ -159,8 +159,8 @@ services:
     command: >-
       -port 8001
       -scheme http
-      -external-url http://gcs-emulator:"${EXPOSE_GCS_EMULATOR_PORT:-8001}"
-      -public-host gcs-emulator:"${EXPOSE_GCS_EMULATOR_PORT:-8001}"
+      -external-url http://gcs-emulator:8001
+      -public-host gcs-emulator:8001
     ports:
       - "${EXPOSE_GCS_EMULATOR_PORT:-8001}:8001"
     healthcheck:
