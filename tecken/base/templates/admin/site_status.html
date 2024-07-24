@@ -35,14 +35,16 @@
     <table>
       <thead>
         <tr>
+          <th>class</th>
           <th>bucket</th>
           <th>prefix</th>
           <th>try_symbols</th>
         </tr>
       </thead>
       <tbody>
-        {% for item in backends %}
+        {% for class_name, item in backends %}
           <tr>
+            <td>{{ class_name }}</td>
             <td>{{ item.bucket }}</td>
             <td>{{ item.prefix }}</td>
             <td>{{ item.try_symbols }}</td>
