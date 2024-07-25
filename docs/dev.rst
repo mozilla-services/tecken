@@ -634,19 +634,19 @@ this code and it has to be tested manually. You can do something like this:
 11. click on "Sign out"
 
 
-System tests
-------------
+Smoke tests
+-----------
 
-System tests are located in the repository in ``systemtests/``. See the
+Smoke tests are located in the repository in ``smoketests/``. See the
 ``README.rst`` there for usage.
 
-System tests can be run against any running environment:
+Smoke tests can be run against any running environment:
 
 * local: local dev environment
 * stage: the stage server environment
 * prod: the prod server environment--will not run destructive tests
 
-System tests can help verify that upload API and download API work. They
+Smoke tests can help verify that upload API and download API work. They
 periodically need to be updated as symbols files expire out of the systems.
 
 

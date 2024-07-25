@@ -157,7 +157,7 @@ def download_sym_files(base_url, test_headers, csv_file):
             click.echo(click.style(f"Working on {url} ...", fg="yellow"))
 
             headers = {
-                "User-Agent": "tecken-systemtests",
+                "User-Agent": "tecken-smoketests",
                 # We know storage backends will honor "Accept-Encoding": "gzip",
                 # so we test the unusual case only to ensure the response is
                 # still gzipped.

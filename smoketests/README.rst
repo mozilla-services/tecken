@@ -1,6 +1,6 @@
-=================
-Systemtest README
-=================
+==================
+Smoke tests README
+==================
 
 These test Tecken stage and prod environments.
 
@@ -14,30 +14,30 @@ Contents of this directory::
 Setting up tests
 ================
 
-Before running the systemtests, you need to `build a local dev environment
+Before running the smoke tests, you need to `build a local dev environment
 <https://tecken.readthedocs.io/en/latest/dev.html>`__.
 
 Then set up the tests this way::
 
     $ make shell
-    root@e62fb7ae586f:/app# cd systemtests
-    root@e62fb7ae586f:/app/systemtests# ./setup_tests.py
+    root@e62fb7ae586f:/app# cd smoketests
+    root@e62fb7ae586f:/app/smoketests# ./setup_tests.py
 
 That creates files in directories under ``data/``.
 
-You only need to set up the tests once to run the system tests against all
+You only need to set up the tests once to run the smoke tests against all
 environments.
 
 
 Running tests
 =============
 
-The system tests are run using the ``test_env.py`` Python script. You can get
+The smoke tests are run using the ``test_env.py`` Python script. You can get
 help about the command-line invocation of that script using::
 
     $ make shell
-    root@e62fb7ae586f:/app# cd systemtests
-    root@e62fb7ae586f:/app/systemtests# ./test_env.py --help
+    root@e62fb7ae586f:/app# cd smoketests
+    root@e62fb7ae586f:/app/smoketests# ./test_env.py --help
 
 The help includes a list of available environments.
 
@@ -49,13 +49,13 @@ variable names in the help output, e.g. ``STAGE_AUTH_TOKEN`` and
 For destructive tests run in local and stage, you need separate auth tokens for
 try uploads with "Upload Try Symbols Files" permissions. See Bug 1759740.
 
-To run the systemtests, do::
+To run the smoke tests, do::
 
-    root@e62fb7ae586f:/app/systemtests# ./test_env.py <ENV_NAME>
+    root@e62fb7ae586f:/app/smoketests# ./test_env.py <ENV_NAME>
 
 
-Rules of systemtest
-===================
+Rules of smoke tests
+====================
 
 1. Don't run destructive tests against the prod server environment.
 
