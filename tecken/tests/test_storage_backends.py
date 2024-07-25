@@ -44,7 +44,7 @@ def test_non_exsiting_bucket(get_storage_backend, storage_kind: str):
 @pytest.mark.parametrize("storage_kind", ["gcs", "s3"])
 def test_storageerror_msg(get_storage_backend, storage_kind: str):
     backend = get_storage_backend(storage_kind)
-    error = StorageError(backend)
+    error = StorageError("storage error message", backend=backend)
     assert repr(backend) in str(error)
 
 

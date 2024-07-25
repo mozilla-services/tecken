@@ -73,9 +73,9 @@ class S3Storage(StorageBackend):
             if exc.response["Error"]["Code"] == "404":
                 return False
             else:
-                raise StorageError(self) from exc
+                raise StorageError(str(exc), backend=self) from exc
         except BotoCoreError as exc:
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
         else:
             return True
 
@@ -96,9 +96,9 @@ class S3Storage(StorageBackend):
         except ClientError as exc:
             if exc.response["Error"]["Code"] == "404":
                 return None
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
         except BotoCoreError as exc:
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
         s3_metadata = response.get("Metadata", {})
         original_content_length = s3_metadata.get("original_size")
         if original_content_length is not None:
@@ -153,7 +153,7 @@ class S3Storage(StorageBackend):
         try:
             client.put_object(**kwargs)
         except (ClientError, BotoCoreError) as exc:
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
 
 
 _BOTO3_SESSION_CACHE = threading.local()

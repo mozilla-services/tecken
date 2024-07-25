@@ -25,7 +25,7 @@ def check_storage_urls(app_configs, **kwargs):
         except StorageError as error:
             errors.append(
                 checks.Error(
-                    f"Unable to connect to {backend!r}), due to {error}",
+                    f"Connection error: {error}",
                     id="tecken.health.E002",
                 )
             )

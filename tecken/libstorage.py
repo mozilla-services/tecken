@@ -77,8 +77,8 @@ class StorageBackend:
 class StorageError(Exception):
     """A backend-specific client reported an error."""
 
-    def __init__(self, backend: StorageBackend):
-        super().__init__(f"Error in backend {backend!r}")
+    def __init__(self, msg: str, backend: StorageBackend):
+        super().__init__(f"Error: backend {backend!r}: {msg}")
 
 
 def backend_from_config(config: dict[str, Any]) -> StorageBackend:
