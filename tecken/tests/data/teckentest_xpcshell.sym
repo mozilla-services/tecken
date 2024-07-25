@@ -1,0 +1,72 @@
+MODULE Linux x86_64 BAB710EA2FE8C809A3806AFD7981FDEC0 tecken_xpcshell
+INFO CODE_ID EA10B7BAE82F09C8A3806AFD7981FDEC568D55C1
+INFO RELEASECHANNEL beta
+INFO VERSION 129.0
+INFO VENDOR Mozilla
+INFO PRODUCTNAME TeckenTest
+INFO BUILDID 20240723121505
+INFO GENERATOR mozilla/dump_syms 2.3.3
+FILE 0 hg:hg.mozilla.org/releases/mozilla-beta:mfbt/CompactPair.h:f33b63ccd482794d7516576938830c468039dc53
+FILE 1 hg:hg.mozilla.org/releases/mozilla-beta:mfbt/UniquePtr.h:f33b63ccd482794d7516576938830c468039dc53
+FILE 2 hg:hg.mozilla.org/releases/mozilla-beta:mfbt/Variant.h:f33b63ccd482794d7516576938830c468039dc53
+FILE 3 hg:hg.mozilla.org/releases/mozilla-beta:mfbt/ResultVariant.h:f33b63ccd482794d7516576938830c468039dc53
+FILE 4 hg:hg.mozilla.org/releases/mozilla-beta:mfbt/Result.h:f33b63ccd482794d7516576938830c468039dc53
+FILE 5 hg:hg.mozilla.org/releases/mozilla-beta:toolkit/xre/Bootstrap.h:f33b63ccd482794d7516576938830c468039dc53
+FILE 6 hg:hg.mozilla.org/releases/mozilla-beta:js/xpconnect/shell/xpcshell.cpp:f33b63ccd482794d7516576938830c468039dc53
+INLINE_ORIGIN 0 mozilla::GetBootstrap(char const*, mozilla::LibLoadingStrategy)
+INLINE_ORIGIN 1 mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>::UniquePtr()
+INLINE_ORIGIN 2 mozilla::CompactPair<mozilla::Bootstrap*, mozilla::Bootstrap::BootstrapDelete>::CompactPairHelper<mozilla::Bootstrap*, mozilla::Bootstrap::BootstrapDelete>(mozilla::Bootstrap&&::BootstrapDelete)
+INLINE_ORIGIN 3 mozilla::detail::CompactPairHelper<mozilla::Bootstrap*, mozilla::Bootstrap::BootstrapDelete, (mozilla::detail::StorageType)1, (mozilla::detail::StorageType)0>::CompactPairHelper<mozilla::Bootstrap*, mozilla::Bootstrap::BootstrapDelete>(mozilla::Bootstrap&&::BootstrapDelete)
+INLINE_ORIGIN 4 mozilla::Result<mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>, mozilla::Variant<nsresult, mozilla::UniquePtr<char, mozilla::detail::FreePolicy<char> > > >::Result(mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>&&)
+INLINE_ORIGIN 5 mozilla::detail::ResultImplementation<mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>, mozilla::Variant<nsresult, mozilla::UniquePtr<char, mozilla::detail::FreePolicy<char> > >, (mozilla::detail::PackingStrategy)0>::ResultImplementation(mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>&&)
+INLINE_ORIGIN 6 mozilla::Variant<mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>, mozilla::Variant<nsresult, mozilla::UniquePtr<char, mozilla::detail::FreePolicy<char> > > >::Variant<mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>, mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete> >()
+INLINE_ORIGIN 7 mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>::UniquePtr(mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>&&)
+INLINE_ORIGIN 8 mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>::release()
+INLINE_ORIGIN 9 mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>::~UniquePtr()
+INLINE_ORIGIN 10 mozilla::UniquePtr<mozilla::Bootstrap, mozilla::Bootstrap::BootstrapDelete>::reset(mozilla::Bootstrap*)
+INLINE_ORIGIN 11 mozilla::Bootstrap::BootstrapDelete::operator()(mozilla::Bootstrap*) const
+PUBLIC 1d30 0 _start
+PUBLIC 1d40 0 _start_main
+PUBLIC 1d80 0 __atexit_handler_wrapper
+PUBLIC 1d90 0 atexit
+PUBLIC m 1db0 0 std::__ndk1::__shared_mutex_base::__shared_mutex_base()
+PUBLIC 1de0 0 std::__ndk1::__shared_mutex_base::lock()
+PUBLIC 1e80 0 std::__ndk1::__shared_mutex_base::try_lock()
+PUBLIC 1ec0 0 std::__ndk1::__shared_mutex_base::unlock()
+PUBLIC 1ef0 0 std::__ndk1::__shared_mutex_base::lock_shared()
+PUBLIC 1f70 0 std::__ndk1::__shared_mutex_base::try_lock_shared()
+PUBLIC 1fc0 0 std::__ndk1::__shared_mutex_base::unlock_shared()
+PUBLIC m 2020 0 std::__ndk1::shared_timed_mutex::shared_timed_mutex()
+PUBLIC m 2030 0 std::__ndk1::shared_timed_mutex::lock()
+PUBLIC 20d0 0 std::__ndk1::shared_timed_mutex::try_lock()
+PUBLIC m 2110 0 std::__ndk1::shared_timed_mutex::unlock()
+PUBLIC 2140 0 std::__ndk1::shared_timed_mutex::lock_shared()
+PUBLIC 21c0 0 std::__ndk1::shared_timed_mutex::try_lock_shared()
+PUBLIC 2210 0 std::__ndk1::shared_timed_mutex::unlock_shared()
+FUNC 2270 9c 0 main
+INLINE 0 70 6 0 22b2 12
+INLINE 1 170 5 1 22b2 7
+INLINE 2 209 1 2 22b2 7
+INLINE 3 185 0 3 22b2 7
+INLINE 1 172 5 4 22c1 3
+INLINE 2 539 4 5 22c1 3
+INLINE 3 30 3 6 22c1 3
+INLINE 4 607 2 7 22c1 3
+INLINE 5 233 1 8 22c1 3
+INLINE 0 97 6 9 22e1 9
+INLINE 1 250 1 10 22e1 9
+INLINE 2 302 1 11 22e1 9
+2270 25 41 6
+2295 e 55 6
+22a3 5 0 6
+22a8 5 62 6
+22ad 5 0 6
+22b2 7 88 0
+22b9 8 171 5
+22c1 3 293 1
+22c4 18 84 6
+22dc 5 86 6
+22e1 9 83 5
+22ea 1d 97 6
+2307 5 0 6
+PUBLIC 2310 0 <.plt ELF section in xpcshell>

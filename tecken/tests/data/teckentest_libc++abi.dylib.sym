@@ -1,0 +1,32 @@
+MODULE Mac x86_64 995DEDE6493B3509A47C85D8BD0AE52B0 teckentest_libc++abi.dylib
+INFO CODE_ID 995DEDE6493B3509A47C85D8BD0AE52B
+INFO GENERATOR mozilla/dump_syms 2.3.3
+PUBLIC 1f30 0 __cxa_bad_cast
+PUBLIC 1f61 0 __cxa_bad_typeid
+PUBLIC 1f92 0 __cxa_throw_bad_array_new_length
+PUBLIC 1fc4 0 demangling_terminate_handler()
+PUBLIC 20f0 0 demangling_unexpected_handler()
+PUBLIC 2107 0 std::set_unexpected(void (*)())
+PUBLIC 2122 0 std::set_terminate(void (*)())
+PUBLIC 213d 0 std::set_new_handler(void (*)())
+PUBLIC 214e 0 demangle(char const*)::$_0::__invoke(char const*)
+PUBLIC 2158 0 demangle(char const*)::$_1::__invoke(char const*)
+PUBLIC 2160 0 __cxa_demangle
+PUBLIC 274a 0 (anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>::~ManglingParser()
+PUBLIC 2822 0 (anonymous namespace)::itanium_demangle::OutputBuffer::grow(unsigned long)
+PUBLIC 2870 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseEncoding(bool)
+PUBLIC 3414 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseNumber(bool)
+PUBLIC 348a 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::make<(anonymous namespace)::itanium_demangle::SpecialName, char const (&) [34], (anonymous namespace)::itanium_demangle::Node*&>(char const (&) [34], (anonymous namespace)::itanium_demangle::Node*&)
+PUBLIC 34f8 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseType()
+PUBLIC 43d4 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::SaveTemplateParams::SaveTemplateParams((anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>*)
+PUBLIC 446e 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseName((anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::NameState*)
+PUBLIC 49f0 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseTemplateArg()
+PUBLIC 4c00 0 (anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::Node*, (unsigned long)32>::push_back((anonymous namespace)::itanium_demangle::Node* const&)
+PUBLIC 4cb8 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::popTrailingNodeArray(unsigned long)
+PUBLIC 4d82 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::SaveTemplateParams::~SaveTemplateParams()
+PUBLIC 4dda 0 (anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::Node*, (unsigned long)8>*, (unsigned long)4>::operator=((anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::Node*, (unsigned long)8>*, (unsigned long)4>&&)
+PUBLIC 4ea0 0 (anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::Node*, (unsigned long)8>::operator=((anonymous namespace)::itanium_demangle::PODSmallVector<(anonymous namespace)::itanium_demangle::Node*, (unsigned long)8>&&)
+PUBLIC 4f66 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseCallOffset()
+PUBLIC 4fe6 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseSeqId(unsigned long*)
+PUBLIC 5058 0 (anonymous namespace)::itanium_demangle::AbstractManglingParser<(anonymous namespace)::itanium_demangle::ManglingParser<(anonymous namespace)::DefaultAllocator>, (anonymous namespace)::DefaultAllocator>::parseModuleNameOpt((anonymous namespace)::itanium_demangle::ModuleName*&)
+PUBLIC 5142 0 (anonymous namespace)::BumpPointerAllocator::allocate(unsigned long)
