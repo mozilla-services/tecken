@@ -52,12 +52,11 @@ Here's a bunch of top-level directories and what's in them::
     docs/                   -- documentation
     favicons/               -- favicons used by Symbols webapp
     frontend/               -- Symbols webapp JavaScript frontend
-    schemas/                -- API schemas
     tecken/                 -- Symbols service unit tests and code
 
 These directories have test stuff in them::
 
-    systemtests/            -- systemtests for Symbols Server
+    smoketests/             -- smoke tests for Symbols Server
 
 
 .. Note::

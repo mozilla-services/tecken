@@ -8,8 +8,8 @@ import os
 
 import click
 
-from systemtests.bin.setup_download_tests import setup_download_tests
-from systemtests.bin.setup_upload_tests import setup_upload_tests
+from smoketests.bin.setup_download_tests import setup_download_tests
+from smoketests.bin.setup_upload_tests import setup_upload_tests
 
 # Usage: ./setup-tests.py
 # This setup is only for non-prod envs (local and stage), as it uploads
@@ -26,7 +26,7 @@ def setup_tests(ctx):
         # Create the zip output directory if it doesn't exist
         os.makedirs(ZIPS_DIR)
 
-    click.echo("Generating systemtest data files ...")
+    click.echo("Generating smoketest data files ...")
     zips_count = len(
         [name for name in os.listdir(ZIPS_DIR) if os.path.isfile(f"{ZIPS_DIR}/{name}")]
     )

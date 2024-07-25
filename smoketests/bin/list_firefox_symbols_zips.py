@@ -21,7 +21,7 @@ INDEX = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/"
 QUEUE = "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/"
 NAMESPACE = "gecko.v2.mozilla-central.revision.REV.firefox"
 
-HTTP_HEADERS = {"User-Agent": "tecken-systemtests"}
+HTTP_HEADERS = {"User-Agent": "tecken-smoketests"}
 
 
 def index_namespaces(namespace, limit=1000):

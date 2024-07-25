@@ -11,10 +11,10 @@ import textwrap
 
 import click
 
-from systemtests.bin.download_sym_files import download_sym_files
-from systemtests.bin.list_firefox_symbols_zips import list_firefox_symbols_zips
-from systemtests.bin.upload_symbols import upload_symbols
-from systemtests.bin.upload_symbols_by_download import upload_symbols_by_download
+from smoketests.bin.download_sym_files import download_sym_files
+from smoketests.bin.list_firefox_symbols_zips import list_firefox_symbols_zips
+from smoketests.bin.upload_symbols import upload_symbols
+from smoketests.bin.upload_symbols_by_download import upload_symbols_by_download
 
 ZIP_FILES = list(Path("./data/zip-files").glob("*.zip"))
 
@@ -109,7 +109,7 @@ Available environments:
 \b
 Usage:
 1. run "make shell" to get a shell in the container
-2. then do "cd systemtests"
+2. then do "cd smoketests"
 3. run "./setup_tests.py" if you are running the tests for the first time.
 4. run "./test_env.py [{"|".join(ENVIRONMENTS)}]"
 

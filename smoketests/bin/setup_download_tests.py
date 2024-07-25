@@ -20,7 +20,7 @@ import click
 import markus
 from markus.backends import BackendBase
 
-from systemtestslib.utils import build_zip_file, download_sym_file, get_sym_files
+from smoketestslib.utils import build_zip_file, download_sym_file, get_sym_files
 
 
 # Number of seconds to wait for a response from server
@@ -219,7 +219,7 @@ def setup_download_tests(start_page, auth_token, csv_output_path, zip_output_dir
     """
     Generates a list of sym files, writes them to a CSV, and downloads
     them to two separate zip folders: one for try symbols files, and one for
-    regular symbols files. This is used for the download system tests.
+    regular symbols files. This is used for the download smoke tests.
 
     Runtime is dependent on what files have been uploaded recently.
 
@@ -258,7 +258,7 @@ def setup_download_tests(start_page, auth_token, csv_output_path, zip_output_dir
         # Figure out the ZIP file names and final path
         # Try files go into a separate zip from regular files, so they
         # can be uploaded to the correct bucket later as part of the
-        # upload system tests.
+        # upload smoke tests.
         zip_filename_try = datetime.datetime.now().strftime(
             "symbols_%Y%m%d_%H%M%S__try.zip"
         )

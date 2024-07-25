@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# Utilities used to setup upload and download system tests.
+# Utilities used to setup upload and download smoke tests.
 
 import os
 from urllib.parse import urljoin
@@ -25,7 +25,7 @@ def get_sym_files(baseurl, auth_token, params):
 
     """
     url = urljoin(baseurl.rstrip("/"), "/api/uploads/files")
-    headers = {"auth-token": auth_token, "User-Agent": "tecken-systemtests"}
+    headers = {"auth-token": auth_token, "User-Agent": "tecken-smoketests"}
     params = params or {}
 
     sym_files = []
@@ -89,7 +89,7 @@ def build_zip_file(zip_filename, sym_dir):
 
 def download_sym_file(url, sym_file_path):
     """Download SYM file at url into sym_file_path."""
-    headers = {"User-Agent": "tecken-systemtests"}
+    headers = {"User-Agent": "tecken-smoketests"}
     resp = requests.get(url, headers=headers, timeout=CONNECTION_TIMEOUT)
     resp.raise_for_status()
 

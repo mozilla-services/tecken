@@ -23,5 +23,5 @@ version.json
 yarn-debug.log*
 yarn-error.log*
 
-# Ephemeral systemtest data
-systemtests/data/
+# Ephemeral smoke test data
+smoketests/data/

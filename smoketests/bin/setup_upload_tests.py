@@ -18,7 +18,7 @@ import click
 import markus
 from markus.backends import BackendBase
 
-from systemtestslib.utils import build_zip_file, download_sym_file, get_sym_files
+from smoketestslib.utils import build_zip_file, download_sym_file, get_sym_files
 
 
 # Number of seconds to wait for a response from server
