@@ -57,7 +57,7 @@ class GCSStorage(StorageBackend):
                     self.bucket, timeout=self.timeout
                 )
             except NotFound as exc:
-                raise StorageError(self) from exc
+                raise StorageError(str(exc), backend=self) from exc
         return self.clients.bucket
 
     def exists(self) -> bool:
@@ -72,7 +72,7 @@ class GCSStorage(StorageBackend):
         except StorageError:
             return False
         except ClientError as exc:
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
         return True
 
     def get_download_url(self, key: str) -> str:
@@ -98,7 +98,7 @@ class GCSStorage(StorageBackend):
             if not blob:
                 return None
         except ClientError as exc:
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
         gcs_metadata = blob.metadata or {}
         original_content_length = gcs_metadata.get("original_size")
         if original_content_length is not None:
@@ -145,4 +145,4 @@ class GCSStorage(StorageBackend):
                 body, size=metadata.content_length, timeout=self.timeout
             )
         except ClientError as exc:
-            raise StorageError(self) from exc
+            raise StorageError(str(exc), backend=self) from exc
