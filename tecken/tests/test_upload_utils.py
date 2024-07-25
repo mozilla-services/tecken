@@ -17,12 +17,12 @@ from tecken.upload.utils import (
 )
 
 
-def _join(x):
+def get_path(x):
     return os.path.join(os.path.dirname(__file__), x)
 
 
-ZIP_FILE = _join("sample.zip")
-DUPLICATED_SAME_SIZE_ZIP_FILE = _join("duplicated-same-size.zip")
+ZIP_FILE = get_path("data/sample.zip")
+DUPLICATED_SAME_SIZE_ZIP_FILE = get_path("data/duplicated-same-size.zip")
 
 
 def test_dump_and_extract(tmpdir):

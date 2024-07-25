@@ -23,17 +23,17 @@ from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteErro
 from tecken.upload.models import Upload, FileUpload
 
 
-def _join(x):
+def get_path(x):
     return os.path.join(os.path.dirname(__file__), x)
 
 
-ZIP_FILE = _join("sample.zip")
-ZIP_FILE_WITH_IGNORABLE_FILES = _join("sample-with-ignorable-files.zip")
-INVALID_ZIP_FILE = _join("invalid.zip")
-INVALID_CHARACTERS_ZIP_FILE = _join("invalid-characters.zip")
-ACTUALLY_NOT_ZIP_FILE = _join("notazipdespiteitsname.zip")
-DUPLICATED_SAME_SIZE_ZIP_FILE = _join("duplicated-same-size.zip")
-DUPLICATED_DIFFERENT_SIZE_ZIP_FILE = _join("duplicated-different-size.zip")
+ZIP_FILE = get_path("data/sample.zip")
+ZIP_FILE_WITH_IGNORABLE_FILES = get_path("data/sample-with-ignorable-files.zip")
+INVALID_ZIP_FILE = get_path("data/invalid.zip")
+INVALID_CHARACTERS_ZIP_FILE = get_path("data/invalid-characters.zip")
+ACTUALLY_NOT_ZIP_FILE = get_path("data/notazipdespiteitsname.zip")
+DUPLICATED_SAME_SIZE_ZIP_FILE = get_path("data/duplicated-same-size.zip")
+DUPLICATED_DIFFERENT_SIZE_ZIP_FILE = get_path("data/duplicated-different-size.zip")
 
 
 def test_upload_archive_with_ignorable_files(client, db, symbol_storage, uploaderuser):
@@ -79,7 +79,7 @@ def test_upload_archive_happy_path(
     assert upload.user == uploaderuser
     assert upload.filename == "file.zip"
     assert upload.completed_at
-    # Based on `ls -l tests/sample.zip` knowledge
+    # Based on `ls -l tests/data/sample.zip` knowledge
     assert upload.size == 70398
     # This is predictable and shouldn't change unless the fixture file used changes.
     assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
@@ -95,7 +95,7 @@ def test_upload_archive_happy_path(
         compressed=False,
         # This existed in the bucket before this upload, so this is an update
         update=True,
-        size=69183,  # based on `unzip -l tests/sample.zip` knowledge
+        size=69183,  # based on `unzip -l tests/data/sample.zip` knowledge
     )
     assert file_upload.completed_at
 
@@ -107,7 +107,7 @@ def test_upload_archive_happy_path(
         debug_id="BBACA09FD1C13F6C84254BFD8732AF400",
         compressed=True,
         update=False,
-        # Based on `unzip -l tests/sample.zip` knowledge, but note that it's been
+        # Based on `unzip -l tests/data/sample.zip` knowledge, but note that it's been
         # compressed.
         size__lt=1156,
         completed_at__isnull=False,
@@ -155,7 +155,7 @@ def test_upload_try_symbols_happy_path(
     assert upload.user == uploaderuser
     assert upload.filename == "file.zip"
     assert upload.completed_at
-    # Based on `ls -l tests/sample.zip` knowledge
+    # Based on `ls -l tests/data/sample.zip` knowledge
     assert upload.size == 70398
     # This is predictable and shouldn't change unless the fixture file used changes.
     assert upload.content_hash == "984270ef458d9d1e27e8d844ad52a9"
@@ -171,7 +171,7 @@ def test_upload_try_symbols_happy_path(
         key="flag/deadbeef/flag.jpeg",
         compressed=False,
         update=True,
-        size=69183,  # based on `unzip -l tests/sample.zip` knowledge
+        size=69183,  # based on `unzip -l tests/data/sample.zip` knowledge
     )
     assert file_upload.completed_at
 
@@ -181,7 +181,7 @@ def test_upload_try_symbols_happy_path(
         key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
-        # Based on `unzip -l tests/sample.zip` knowledge, but note that
+        # Based on `unzip -l tests/data/sample.zip` knowledge, but note that
         # it's been compressed.
         size__lt=1156,
         completed_at__isnull=False,
@@ -219,7 +219,7 @@ def test_upload_archive_one_uploaded_one_skipped(
     # assert expected_inbox_key_name_regex.findall(upload.inbox_filepath)
     assert upload.filename == "file.zip"
     assert upload.completed_at
-    # based on `ls -l tests/sample.zip` knowledge
+    # based on `ls -l tests/data/sample.zip` knowledge
     assert upload.size == 70398
     assert upload.bucket_name == bucket_name
     assert upload.skipped_keys == ["flag/deadbeef/flag.jpeg"]
@@ -232,7 +232,7 @@ def test_upload_archive_one_uploaded_one_skipped(
         key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym",
         compressed=True,
         update=False,
-        # Based on `unzip -l tests/sample.zip` knowledge, but note that
+        # Based on `unzip -l tests/data/sample.zip` knowledge, but note that
         # it's been compressed.
         size__lt=1156,
         completed_at__isnull=False,
