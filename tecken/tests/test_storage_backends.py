@@ -60,5 +60,5 @@ def test_s3_download_url(bucket_name: str, get_storage_backend, storage_kind: st
     assert bucket == bucket_name
     assert (
         key
-        == "v1/libc%2B%2Babi.dylib/43940F08B65E38888CD3C52398EB1CA10/libc%2B%2Babi.dylib.sym"
+        == "v1/teckentest_libc%2B%2Babi.dylib/995DEDE6493B3509A47C85D8BD0AE52B0/teckentest_libc%2B%2Babi.dylib.sym"  # noqa
     )

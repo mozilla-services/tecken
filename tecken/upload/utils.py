@@ -17,6 +17,8 @@ from tecken.ext.s3.storage import S3Storage
 from tecken.libstorage import ObjectMetadata
 from tecken.upload.models import FileUpload, Upload
 from tecken.libmarkus import METRICS
+from tecken.libsym import extract_sym_header_data, SymParseError
+
 
 logger = logging.getLogger("tecken")
 
@@ -31,10 +33,6 @@ class DuplicateFileDifferentSize(ValueError):
     different."""
 
 
-class SymParseError(Exception):
-    """Any kind of error when parsing a sym file."""
-
-
 def get_file_md5_hash(fn, blocksize=65536):
     hasher = hashlib.md5()
     with open(fn, "rb") as f:
@@ -43,58 +41,6 @@ def get_file_md5_hash(fn, blocksize=65536):
             hasher.update(buf)
             buf = f.read(blocksize)
     return hasher.hexdigest()
-
-
-def extract_sym_header_data(file_path):
-    """Returns header data from thh sym file header.
-
-    :arg file_path: the path to the sym file
-
-    :returns: sym info as a dict
-
-    :raises SymParseError: any kind of sym parse error
-
-    """
-    data = {
-        "debug_filename": "",
-        "debug_id": "",
-        "code_file": "",
-        "code_id": "",
-        "generator": "",
-    }
-    with open(file_path, "r") as fp:
-        line = "no line yet"
-        try:
-            for line in fp:
-                if line.startswith("MODULE"):
-                    parts = line.strip().split()
-                    _, opsys, arch, debug_id, debug_filename = parts
-                    data["debug_filename"] = debug_filename
-                    data["debug_id"] = debug_id.upper()
-
-                elif line.startswith("INFO CODE_ID"):
-                    parts = line.strip().split()
-                    # NOTE(willkg): Non-Windows module sym files don't have a code_file
-                    if len(parts) == 3:
-                        _, _, code_id = parts
-                        code_file = ""
-                    elif len(parts) == 4:
-                        _, _, code_id, code_file = parts
-
-                    data["code_file"] = code_file
-                    data["code_id"] = code_id.upper()
-
-                elif line.startswith("INFO GENERATOR"):
-                    _, _, generator = line.strip().split(maxsplit=2)
-                    data["generator"] = generator
-
-                else:
-                    break
-
-        except Exception as exc:
-            raise SymParseError(f"sym parse error {exc!r} with {line!r}") from exc
-
-    return data
 
 
 @METRICS.timer_decorator("upload_dump_and_extract")

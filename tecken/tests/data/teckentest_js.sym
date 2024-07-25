@@ -1,0 +1,30 @@
+MODULE windows x86_64 011702B673B8C2B54C4C44205044422E1 teckentest_js.pdb
+INFO CODE_ID 66A2BFC820C6000 teckentest_js.exe
+INFO RELEASECHANNEL esr
+INFO VERSION 128.1.0
+INFO VENDOR Mozilla
+INFO PRODUCTNAME TeckenTest
+INFO BUILDID 20240725163759
+INFO GENERATOR mozilla/dump_syms 2.3.3
+FILE 0 hg:hg.mozilla.org/releases/mozilla-esr128:build/pure_virtual/pure_virtual.c:b42bd2daa7feb5f12f89337b0ddd4c7380b64d60
+FILE 1 hg:hg.mozilla.org/releases/mozilla-esr128:mfbt/Assertions.h:b42bd2daa7feb5f12f89337b0ddd4c7380b64d60
+FILE 2 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/tls/tlsdyn.cpp
+FILE 3 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/ExternalAPIs/WindowsSDKInc/c/Include/10.0.22000.0/um/winnt.h
+FILE 4 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/utility.cpp
+FILE 5 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/thread_safe_statics.cpp
+FILE 6 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/heap/delete_scalar_align.cpp
+FILE 7 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/vctools/crt/github/stl/src/vector_algorithms.cpp
+FILE 8 /builds/worker/workspace/obj-build/js/src/shell/D:/a/_work/1/s/src/vctools/crt/github/stl/src/sharedmutex.cpp
+FILE 9 git:github.com/rust-lang/rust:library/core/src/ptr/mod.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 10 git:github.com/rust-lang/rust:library/core/src/fmt/rt.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 11 git:github.com/rust-lang/rust:library/core/src/ops/function.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 12 git:github.com/rust-lang/rust:library/core/src/cmp.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 13 git:github.com/rust-lang/rust:library/core/src/iter/range.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 14 git:github.com/rust-lang/rust:library/core/src/num/dec2flt/decimal.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 15 git:github.com/rust-lang/rust:library/core/src/slice/index.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 16 git:github.com/rust-lang/rust:library/core/src/array/mod.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 17 git:github.com/rust-lang/rust:library/core/src/ptr/non_null.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 18 git:github.com/rust-lang/rust:library/core/src/slice/iter/macros.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 19 git:github.com/rust-lang/rust:library/core/src/iter/adapters/enumerate.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 20 git:github.com/rust-lang/rust:library/core/src/iter/adapters/take.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
+FILE 21 git:github.com/rust-lang/rust:library/core/src/slice/mod.rs:9b00956e56009bab2aa15d7bff10916599e3d6d6
