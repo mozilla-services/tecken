@@ -36,7 +36,7 @@ class S3Storage(StorageBackend):
         self.clients = threading.local()
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} s3://{self.bucket}/{self.prefix}>"
+        return f"<{self.__class__.__name__} s3://{self.bucket}/{self.prefix} try:{self.try_symbols}>"
 
     def _get_client(self):
         """Return a backend-specific client."""
