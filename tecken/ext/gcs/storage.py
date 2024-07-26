@@ -39,7 +39,7 @@ class GCSStorage(StorageBackend):
         self.timeout = (settings.S3_CONNECT_TIMEOUT, settings.S3_READ_TIMEOUT)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} gs://{self.bucket}/{self.prefix}>"
+        return f"<{self.__class__.__name__} gs://{self.bucket}/{self.prefix}> try:{self.try_symbols}"
 
     def _get_client(self) -> storage.Client:
         """Return a thread-local low-level storage client."""
