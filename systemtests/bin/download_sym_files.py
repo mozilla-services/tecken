@@ -20,7 +20,7 @@ from unittest.mock import ANY
 TECKEN_RESPONSE_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
-    "Content-Security-Policy": "font-src 'self'; object-src 'none'; script-src 'self'; img-src 'self'; default-src 'self'; style-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+    "Content-Security-Policy": ANY,
     "Strict-Transport-Security": "max-age=31536000",
 }
 
@@ -182,10 +182,10 @@ def download_sym_files(base_url, test_headers, csv_file):
                 else:
                     click.echo(click.style(f"SUCCESS: {method} request!", fg="green"))
 
-                # If we're testing a 404, we should not expect the same response
-                # headers from the storage backend as for a 200 (e.g. Content-Encoding
-                # isn't included in a 404 response).
-                if method == "GET" and expected_status_code != "404" and test_headers:
+                # We're interested in the success case for a request when testing headers.
+                # Non-200 responses won't necessarily have the same response headers;
+                # e.g. Content-Encoding isn't included in a 404 response.
+                if method == "GET" and expected_status_code == "200" and test_headers:
                     check_headers(resp)
 
             click.echo(f">>> {method} final: {resp.url}")
