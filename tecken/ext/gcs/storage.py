@@ -36,7 +36,7 @@ class GCSStorage(StorageBackend):
         # The Cloud Storage client doesn't support setting global timeouts for all requests, so we
         # need to pass the timeout for every single request. the default timeout is 60 seconds for
         # both connecting and reading from the socket.
-        self.timeout = (settings.S3_CONNECT_TIMEOUT, settings.S3_READ_TIMEOUT)
+        self.timeout = (settings.STORAGE_CONNECT_TIMEOUT, settings.STORAGE_READ_TIMEOUT)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} gs://{self.bucket}/{self.prefix}> try:{self.try_symbols}"

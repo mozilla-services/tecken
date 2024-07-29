@@ -432,13 +432,13 @@ else:
         },
     }
 
-S3_CONNECT_TIMEOUT = _config(
+STORAGE_CONNECT_TIMEOUT = _config(
     "S3_LOOKUP_CONNECT_TIMEOUT",
     default="5",
     parser=int,
     doc="S3 connection timeout in seconds.",
 )
-S3_READ_TIMEOUT = _config(
+STORAGE_READ_TIMEOUT = _config(
     "S3_LOOKUP_READ_TIMEOUT",
     default="5",
     parser=int,

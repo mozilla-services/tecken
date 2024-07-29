@@ -43,8 +43,8 @@ class S3Storage(StorageBackend):
         if not hasattr(self.clients, "storage"):
             options = {
                 "config": Config(
-                    read_timeout=settings.S3_READ_TIMEOUT,
-                    connect_timeout=settings.S3_CONNECT_TIMEOUT,
+                    read_timeout=settings.STORAGE_READ_TIMEOUT,
+                    connect_timeout=settings.STORAGE_CONNECT_TIMEOUT,
                 )
             }
             if self.endpoint_url:
