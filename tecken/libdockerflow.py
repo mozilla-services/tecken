@@ -3,12 +3,16 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import json
+import logging
 from pathlib import Path
 
 from django.core import checks
 
 from tecken.base.symbolstorage import symbol_storage
 from tecken.libstorage import StorageError
+
+
+logger = logging.getLogger("tecken")
 
 
 def check_storage_urls(app_configs, **kwargs):
@@ -23,6 +27,7 @@ def check_storage_urls(app_configs, **kwargs):
                     )
                 )
         except StorageError as error:
+            logger.exception("Error when testing whether storage backend exists")
             errors.append(
                 checks.Error(
                     f"Connection error: {error}",
