@@ -635,12 +635,21 @@ elif CLOUD_SERVICE_PROVIDER == "AWS":
         "UPLOAD_S3_BUCKET",
         doc="The S3 bucket name for uploads and downloads.",
     )
+    UPLOAD_S3_REGION = (
+        _config(
+            "UPLOAD_S3_REGION",
+            raise_error=False,
+            doc="The region of the S3 download bucket.",
+        )
+        or None
+    )
     UPLOAD_BACKEND = {
         "class": "tecken.ext.s3.storage.S3Storage",
         "options": {
             "bucket": UPLOAD_S3_BUCKET,
             "prefix": "v1",
             "try_symbols": False,
+            "region": UPLOAD_S3_REGION,
         },
     }
     TRY_UPLOAD_BACKEND = {
@@ -649,6 +658,7 @@ elif CLOUD_SERVICE_PROVIDER == "AWS":
             "bucket": UPLOAD_S3_BUCKET,
             "prefix": "try/v1",
             "try_symbols": True,
+            "region": UPLOAD_S3_REGION,
         },
     }
     DOWNLOAD_BACKENDS = []
