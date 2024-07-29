@@ -712,9 +712,13 @@ API_FILES_BATCH_SIZE = 40
 
 ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = _config(
     "ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS",
-    default=(
-        "queue.taskcluster.net,firefox-ci-tc.services.mozilla.com,"
-        "stage.taskcluster.nonprod.cloudops.mozgcp.net"
+    default=",".join(
+        [
+            "queue.taskcluster.net",
+            "firefox-ci-tc.services.mozilla.com",
+            "stage.taskcluster.nonprod.cloudops.mozgcp.net",
+            "tecken-system-tests.symbols.nonprod.webservices.mozgcp.net",
+        ]
     ),
     parser=ListOf(str),
     doc=(
