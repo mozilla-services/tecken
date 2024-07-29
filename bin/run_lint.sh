@@ -12,7 +12,7 @@
 
 set -e
 
-FILES="bin tecken smoketests"
+FILES="bin tecken smoketests systemtests"
 PYTHON_VERSION=$(python --version)
 
 
