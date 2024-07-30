@@ -31,27 +31,17 @@ ENVIRONMENTS = [
     Environment(
         name="local",
         base_url="http://web:8000/",
-        include_marks={"bad_token", "upload"},
+        include_marks={"upload"},
     ),
     Environment(
         name="stage",
         base_url="https://symbols.stage.mozaws.net/",
-        include_marks={"bad_token", "upload", "nginx"},
-    ),
-    Environment(
-        name="prod",
-        base_url="https://symbols.mozilla.org/",
-        include_marks={"nginx"},
+        include_marks={"upload", "nginx"},
     ),
     Environment(
         name="gcp_stage",
         base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
-        include_marks={"bad_token", "upload", "nginx"},
-    ),
-    Environment(
-        name="gcp_prod",
-        base_url="https://tecken-prod.symbols.prod.webservices.mozgcp.net/",
-        include_marks={"nginx"},
+        include_marks={"upload", "nginx"},
     ),
 ]
 
@@ -62,7 +52,7 @@ def pytest_addoption(parser: pytest.Parser):
         action="store",
         choices=[env.name for env in ENVIRONMENTS],
         default="local",
-        help="the target environment to run the tests against",
+        help="the target environment to run the tests against (default: local)",
     )
     parser.addoption(
         "--with-large-files",
