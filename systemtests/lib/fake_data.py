@@ -13,6 +13,8 @@ from urllib.parse import quote
 import zipfile
 
 from google.auth import load_credentials_from_file
+from google.auth.credentials import AnonymousCredentials
+from google.api_core.client_options import ClientOptions
 from google.cloud import storage
 
 
@@ -146,13 +148,13 @@ class FakeDataBucket:
         credentials_path: Optional[os.PathLike] = None,
     ):
         # We want to talk to Google's Cloud storage endpoint, not the emulator
-        del os.environ["STORAGE_EMULATOR_HOST"]
+        options = ClientOptions(api_endpoint="https://storage.googleapis.com/")
 
         if credentials_path and os.path.exists(credentials_path):
             credentials, _ = load_credentials_from_file(credentials_path)
-            client = storage.Client(credentials=credentials)
         else:
-            client = storage.Client.create_anonymous_client()
+            credentials = AnonymousCredentials()
+        client = storage.Client(client_options=options, credentials=credentials)
         self.bucket = client.bucket(bucket_name)
         self.public_url = public_url
 
