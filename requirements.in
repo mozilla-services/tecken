@@ -16,13 +16,13 @@ mozilla-django-oidc==4.0.1
 msgpack==1.0.8
 pip-tools==7.4.1
 psycopg2==2.9.9
-pytest==8.2.1
+pytest==8.3.2
 pytest-django==4.8.0
 python-dateutil==2.9.0.post0
 redis==5.0.4
 requests-mock==1.12.1
 requests==2.32.3
-ruff==0.4.7
+ruff==0.5.5
 sentry-sdk==2.10.0
 Sphinx==7.3.7
 sphinx-rtd-theme==2.0.0
