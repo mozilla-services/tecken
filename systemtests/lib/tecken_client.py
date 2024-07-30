@@ -15,6 +15,10 @@ from requests.adapters import HTTPAdapter, Retry
 LOGGER = logging.getLogger(__name__)
 
 
+class AuthTokenMissing(Exception):
+    pass
+
+
 @dataclass
 class Environment:
     """A target environment specification."""
@@ -35,7 +39,14 @@ class Environment:
         return env_var_name
 
     def auth_token(self, try_storage: bool) -> str:
-        return os.environ.get(self.env_var_name(try_storage), None)
+        env_var_name = self.env_var_name(try_storage)
+        try:
+            return os.environ[env_var_name]
+        except KeyError:
+            kind = "try" if try_storage else "regular"
+            raise AuthTokenMissing(
+                f"environment variable {env_var_name} for {kind} uploads not set"
+            ) from None
 
 
 class TeckenRetry(Retry):
@@ -80,7 +91,6 @@ class TeckenClient:
     ) -> Response:
         if not auth_token:
             auth_token = self.target_env.auth_token(try_storage)
-        assert auth_token, f"authentication token missing for {self.target_env.name}"
         headers = {"Auth-Token": auth_token}
         url = f"{self.base_url}{path}"
         return self.session.request(method, url, headers=headers, **kwargs)
