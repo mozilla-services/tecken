@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class Environment:
-    """A target environment spefication."""
+    """A target environment specification."""
 
     # The name of the environment
     name: str
@@ -39,7 +39,7 @@ class Environment:
 
 
 class TeckenRetry(Retry):
-    """Retry class with customised backoff behaviour and logging."""
+    """Retry class with customized backoff behavior and logging."""
 
     def get_backoff_time(self) -> float:
         # The standard Retry class uses a delay of 0 between the first and second attempt,
