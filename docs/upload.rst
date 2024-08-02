@@ -116,8 +116,8 @@ symbols.
    that URL in the HTTP POST.
 
 
-Upload by HTTP POST (payload < 2gb size)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Upload by HTTP POST
+~~~~~~~~~~~~~~~~~~~
 
 Include the ZIP file in the HTTP POST to ``/upload/`` as a
 ``multipart/form-data`` payload.
@@ -142,16 +142,29 @@ Here's a Python example using the ``requests`` library:
     >>> response.status_code
     201
 
-This works if the HTTP POST is less than 2gb. If the HTTP POST request is
-larger than 2gb, then you'll need to use upload by download url.
+
+.. Note::
+
+   If the HTTP POST payload is > 1.5gb, we suggest splitting the symbols up
+   across multiple HTTP POST requests.
+
+   The system has a maximum payload size of 2gb.
+
+   The larger the payload, the longer it takes to process and the more likely
+   that the HTTP POST fails.
+
+   If an HTTP POST fails, whatever work that was finished sticks--future
+   attempts will skip redoing that work.
 
 
-Upload by download url (payload > 2gb size)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Upload by download url
+~~~~~~~~~~~~~~~~~~~~~~
 
-Upload the symbols file to some publicly available URL at an approved domain.
+If your symbols zip archive is already available at a publicly available URL at
+an approved domain, then you can do an upload-by-download where the payload of
+the HTTP POST is a url to the symbols zip archive.
 
-Then do an HTTP POST to ``/upload/`` as a ``application/x-www-form-urlencoded``
+Do an HTTP POST to ``/upload/`` as a ``application/x-www-form-urlencoded``
 payload and specify the url to the symbols file as a value to ``url``.
 
 Domains that Tecken will download from is specified in the
@@ -159,7 +172,8 @@ Domains that Tecken will download from is specified in the
 time of this writing is set to::
 
     queue.taskcluster.net
-    public-artifacts.taskcluster.net
+    firefox-ci-tc.services.mozilla.com
+
 
 If you need another domain supported,
 `file a bug <https://bugzilla.mozilla.org/enter_bug.cgi?product=Tecken&component=General>`_.
@@ -187,6 +201,20 @@ An example with ``Python`` and the ``requests`` library:
     >>> response = requests.post(url, data=data, headers=headers)
     >>> response.status_code
     201
+
+
+.. Note::
+
+   If the HTTP POST payload is > 1.5gb, we suggest splitting the symbols up
+   across multiple HTTP POST requests.
+
+   The system has a maximum payload size of 2gb.
+
+   The larger the payload, the longer it takes to process and the more likely
+   that the HTTP POST fails.
+
+   If an HTTP POST fails, whatever work that was finished sticks--future
+   attempts will skip redoing that work.
 
 
 Permissions and auth tokens
@@ -314,10 +342,16 @@ Upload: /upload/
    :statuscode 403: your auth token is invalid and you need to get a new one
    :statuscode 413: your upload is too large; split it into smaller files or switch to
        upload by download url
-   :statuscode 429: sleep for a bit and retry
-   :statuscode 500: sleep for a bit and retry; if retrying doesn't work, then please
+   :statuscode 429: wait and retry
+   :statuscode 500: wait and retry; if retrying continues to fail, then please
        file a bug report
-   :statuscode 503: sleep for a bit and retry
+   :statuscode 503: wait and retry
+
+
+.. Note::
+
+   For retrying, we suggest waiting 15 seconds between retry attempts. This
+   gives the service time to scale up and recover from ephemeral issues.
 
 
 Symbols processing
@@ -332,12 +366,6 @@ files that are already in AWS S3, it skips the uploading step and just logs the
 filename.
 
 Records of the upload and what files were in it are available on the website.
-
-.. Note::
-
-   Symbols files can not be overwritten. Once a file is uploaded, any future
-   upload attempts for that debug_filename/debug_id combination will be
-   skipped.
 
 
 Which S3 Bucket
