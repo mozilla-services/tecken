@@ -8,6 +8,7 @@ import logging
 import os
 from unittest import mock
 
+from markus.testing import AnyTagValue
 import pytest
 from requests.exceptions import ConnectionError, RetryError
 
@@ -114,21 +115,31 @@ def test_upload_archive_happy_path(
     )
 
     # Check that markus caught timings of the individual file processing
-    records = metricsmock.get_records()
-    assert len(records) == 12
-    # It's impossible to predict, the order of some metrics records because of the use
-    # of ThreadPoolExecutor. So we can't look at them in the exact order.
-    all_keys = [x.key for x in records]
-    assert all_keys.count("tecken.upload_file_exists") == 2
-    assert all_keys.count("tecken.upload_gzip_payload") == 1  # only 1 .sym
-    assert all_keys.count("tecken.upload_put_object") == 2
-    assert all_keys.count("tecken.upload_dump_and_extract") == 1
-    assert all_keys.count("tecken.upload_file_upload_upload") == 2
-    assert all_keys.count("tecken.upload_file_upload") == 2
-    assert all_keys.count("tecken.upload_uploads") == 1
-    assert all_keys.count("tecken.upload_archive") == 1
-    # check that all metrics have the correct host tag
-    assert all("host:testnode" in record.tags for record in records)
+    assert len(metricsmock.filter_records(
+        "timing", stat="tecken.upload_file_exists", tags=["host:testnode"]
+    )) == 2
+    # There's only one .sym file
+    assert len(metricsmock.filter_records(
+        "timing", stat="tecken.upload_gzip_payload", tags=["host:testnode"]
+    )) == 1
+    assert len(metricsmock.filter_records(
+        "timing", stat="tecken.upload_put_object", tags=["host:testnode"]
+    )) == 2
+    assert len(metricsmock.filter_records(
+        "timing", stat="tecken.upload_dump_and_extract", tags=["host:testnode"]
+    )) == 1
+    assert len(metricsmock.filter_records(
+        "incr", stat="tecken.upload_file_upload_upload", tags=["host:testnode"]
+    )) == 2
+    assert len(metricsmock.filter_records(
+        "timing", stat="tecken.upload_file_upload", tags=["host:testnode"]
+    )) == 2
+    assert len(metricsmock.filter_records(
+        "incr", stat="tecken.upload_uploads", tags=["try:False", AnyTagValue("bucket"), "host:testnode"]
+    )) == 1
+    assert len(metricsmock.filter_records(
+        "timing", stat="tecken.upload_archive", tags=["host:testnode"]
+    )) == 1
 
 
 def test_upload_try_symbols_happy_path(
@@ -997,12 +1008,10 @@ class Test_remove_orphaned_files:
         assert "ERROR" not in caplog.text
 
         # Assert metrics are emitted
-        delete_incr = metricsmock.filter_records(
-            "incr", stat="tecken.remove_orphaned_files.delete_file"
-        )
-        assert len(delete_incr) == 3
-        # check that all metrics have the correct host tag
-        assert all("host:testnode" in record.tags for record in delete_incr)
+        assert len(metricsmock.filter_records(
+                "incr", stat="tecken.remove_orphaned_files.delete_file",
+                tags=["host:testnode"]
+        )) == 3
         # check that timing is recorded
         metricsmock.assert_timing_once(
             "tecken.remove_orphaned_files.timing", tags=["host:testnode"]
