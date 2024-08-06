@@ -17,6 +17,7 @@
    dev
    contributing
    configuration
+   metrics
    frontend
    redis
    adr_log
