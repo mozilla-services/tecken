@@ -115,31 +115,73 @@ def test_upload_archive_happy_path(
     )
 
     # Check that markus caught timings of the individual file processing
-    assert len(metricsmock.filter_records(
-        "timing", stat="tecken.upload_file_exists", tags=["host:testnode"]
-    )) == 2
+    assert (
+        len(
+            metricsmock.filter_records(
+                "timing", stat="tecken.upload_file_exists", tags=["host:testnode"]
+            )
+        )
+        == 2
+    )
     # There's only one .sym file
-    assert len(metricsmock.filter_records(
-        "timing", stat="tecken.upload_gzip_payload", tags=["host:testnode"]
-    )) == 1
-    assert len(metricsmock.filter_records(
-        "timing", stat="tecken.upload_put_object", tags=["host:testnode"]
-    )) == 2
-    assert len(metricsmock.filter_records(
-        "timing", stat="tecken.upload_dump_and_extract", tags=["host:testnode"]
-    )) == 1
-    assert len(metricsmock.filter_records(
-        "incr", stat="tecken.upload_file_upload_upload", tags=["host:testnode"]
-    )) == 2
-    assert len(metricsmock.filter_records(
-        "timing", stat="tecken.upload_file_upload", tags=["host:testnode"]
-    )) == 2
-    assert len(metricsmock.filter_records(
-        "incr", stat="tecken.upload_uploads", tags=["try:False", AnyTagValue("bucket"), "host:testnode"]
-    )) == 1
-    assert len(metricsmock.filter_records(
-        "timing", stat="tecken.upload_archive", tags=["host:testnode"]
-    )) == 1
+    assert (
+        len(
+            metricsmock.filter_records(
+                "timing", stat="tecken.upload_gzip_payload", tags=["host:testnode"]
+            )
+        )
+        == 1
+    )
+    assert (
+        len(
+            metricsmock.filter_records(
+                "timing", stat="tecken.upload_put_object", tags=["host:testnode"]
+            )
+        )
+        == 2
+    )
+    assert (
+        len(
+            metricsmock.filter_records(
+                "timing", stat="tecken.upload_dump_and_extract", tags=["host:testnode"]
+            )
+        )
+        == 1
+    )
+    assert (
+        len(
+            metricsmock.filter_records(
+                "incr", stat="tecken.upload_file_upload_upload", tags=["host:testnode"]
+            )
+        )
+        == 2
+    )
+    assert (
+        len(
+            metricsmock.filter_records(
+                "timing", stat="tecken.upload_file_upload", tags=["host:testnode"]
+            )
+        )
+        == 2
+    )
+    assert (
+        len(
+            metricsmock.filter_records(
+                "incr",
+                stat="tecken.upload_uploads",
+                tags=["try:False", AnyTagValue("bucket"), "host:testnode"],
+            )
+        )
+        == 1
+    )
+    assert (
+        len(
+            metricsmock.filter_records(
+                "timing", stat="tecken.upload_archive", tags=["host:testnode"]
+            )
+        )
+        == 1
+    )
 
 
 def test_upload_try_symbols_happy_path(
@@ -1008,10 +1050,16 @@ class Test_remove_orphaned_files:
         assert "ERROR" not in caplog.text
 
         # Assert metrics are emitted
-        assert len(metricsmock.filter_records(
-                "incr", stat="tecken.remove_orphaned_files.delete_file",
-                tags=["host:testnode"]
-        )) == 3
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    stat="tecken.remove_orphaned_files.delete_file",
+                    tags=["host:testnode"],
+                )
+            )
+            == 3
+        )
         # check that timing is recorded
         metricsmock.assert_timing_once(
             "tecken.remove_orphaned_files.timing", tags=["host:testnode"]

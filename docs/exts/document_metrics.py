@@ -24,13 +24,13 @@ def build_table(table):
     yield "  ".join("=" * width for width in col_size)
     yield "  ".join(
         header + (" " * (width - len(header)))
-        for header, width in zip(table[0], col_size)
+        for header, width in zip(table[0], col_size, strict=True)
     )
     yield "  ".join("=" * width for width in col_size)
     for row in table[1:]:
         yield "  ".join(
             col + (" " * (width - len(col)))
-            for col, width in zip(row, col_size)
+            for col, width in zip(row, col_size, strict=True)
         )
     yield "  ".join("=" * width for width in col_size)
 
@@ -53,7 +53,7 @@ class AutoMetricsDirective(Directive):
         module = sys.modules[modpath]
         metrics = getattr(module, name)
 
-        sourcename = "metrics of %s" % clspath
+        sourcename = f"metrics of {clspath}"
 
         # First build a table of metric items
         self.add_line("Table of metrics:", sourcename)
@@ -62,7 +62,7 @@ class AutoMetricsDirective(Directive):
         table = []
         table.append(("Key", "Type"))
         for key, metric in metrics.items():
-            table.append((":py:data:`%s`" % key, metric.stat_type))
+            table.append((f":py:data:`{key}`", metric["type"]))
 
         for line in build_table(table):
             self.add_line(line, sourcename)
@@ -72,14 +72,14 @@ class AutoMetricsDirective(Directive):
         self.add_line("", sourcename)
 
         for key, metric in metrics.items():
-            self.add_line(".. py:data:: %s" % key, sourcename)
+            self.add_line(f".. py:data:: {key}", sourcename)
             self.add_line("", sourcename)
             self.add_line("", sourcename)
-            self.add_line("   Type: %s" % metric.stat_type, sourcename)
+            self.add_line(f"   **Type**: ``{metric['type']}``", sourcename)
             self.add_line("", sourcename)
             self.add_line("", sourcename)
-            for line in textwrap.dedent(metric.description).splitlines():
-                self.add_line("   " + line, sourcename)
+            for line in textwrap.dedent(metric["description"]).splitlines():
+                self.add_line(f"   {line}", sourcename)
             self.add_line("", sourcename)
             self.add_line("", sourcename)
 

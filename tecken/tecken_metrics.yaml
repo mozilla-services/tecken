@@ -1,0 +1,159 @@
+# statsd metrics emitted using Markus.
+#
+# When adding a new metric, make sure to add it here first.
+---
+
+tecken.api:
+  type: "timing"
+  description: |
+    Timer for how long it takes to handle an API request.
+
+    Tags:
+
+    * ``endpoint``: the API endpoint name
+
+tecken.api_stats:
+  type: "timing"
+  description: |
+    Timer for how long it takes to compute upload API stats.
+
+tecken.download_symbol:
+  type: "timing"
+  description: |
+    Timer for how long it takes to handle a download API request.
+
+tecken.download_symbol_code_id_lookup:
+  type: "incr"
+  description: |
+    Counter for successful symbol code id lookups in download API.
+
+tecken.gunicorn_worker_abort:
+  type: "incr"
+  description: |
+    Counter for number of gunicorn workers were terminated.
+
+tecken.remove_orphaned_files.delete_file:
+  type: "incr"
+  description: |
+    Counter for successfully deleted orphaned files.
+
+tecken.remove_orphaned_files.delete_file_error:
+  type: "incr"
+  description: |
+    Counter for errors encountered when deleting orphaned files.
+
+tecken.remove_orphaned_files.timing:
+  type: "timing"
+  description: |
+    Timer for how long it took to run the ``remove_orphaned_files`` Django
+    command.
+
+tecken.symboldownloader_exists:
+  type: "timing"
+  description: |
+    Timer for retrieving object metadata indicating the symbols file exists
+    in storage.
+
+tecken.symboldownloader.file_age_days:
+  type: "histogram"
+  description: |
+    Histogram for how long the file has been in storage. Value is in days.
+
+tecken.syminfo.lookup.cached:
+  type: "incr"
+  description: |
+    Counter for symbol information lookup.
+
+    Tags:
+
+    * ``result``: true or false as to whether symbol information came from the
+      cache
+
+tecken.syminfo.lookup.timing:
+  type: "timing"
+  description: |
+    Timer for how long it takes to look up symbol information.
+
+tecken.upload_archive:
+  type: "timing"
+  description: |
+    Timer for how long it takes to handle an upload API request.
+
+tecken.upload_download_by_url:
+  type: "timing"
+  description: |
+    Timer for how long it takes to download the symbols zip archive from the
+    download url indicated in the upload API payload.
+
+tecken.upload_dump_and_extract:
+  type: "timing"
+  description: |
+    Timer for how long it takes to unzip the symbols zip archive and extract
+    files to a temporary directory on disk.
+
+tecken.upload_file_exists:
+  type: "timing"
+  description: |
+    Timer for retrieving object metadata for a file.
+
+tecken.upload_file_upload:
+  type: "timing"
+  description: |
+    Timer for how long it takes to handle uploading a file to storage. This
+    includes determining whether the file already exists,
+    compressing/decompressing it, saving a record to the database, and any
+    other processing required.
+
+tecken.upload_file_upload_skip:
+  type: "incr"
+  description: |
+    Counter for files to be uploaded to storage but were skipped because
+    they're already there.
+
+tecken.upload_file_upload_upload:
+  type: "incr"
+  description: |
+    Counter for each file successfully uploaded to storage.
+
+tecken.upload_gzip_payload:
+  type: "timing"
+  description: |
+    Timer for how long it takes to gzip a file before uploading to storage.
+
+tecken.upload_put_object:
+  type: "timing"
+  description: |
+    Timer for uploading a file to storage.
+
+tecken.upload_skip_early_compressed:
+  type: "incr"
+  description: |
+    Counter for each time we skip uploading a *compressed* symbol file because
+    it exists in storage already.
+
+tecken.upload_skip_early_uncompressed:
+  type: "incr"
+  description: |
+    Counter for each time we skip uploading an *uncompressed* symbol file
+    because it exists in storage already.
+
+tecken.upload_uploads:
+  type: "incr"
+  description: |
+    Counter for upload API requests that were successfully completed.
+
+    Tags:
+
+    * ``try``: whether or not it was a try upload
+    * ``bucket``: the storage bucket name files were uploaded to
+
+tecken.useradmin_is_blocked_in_auth0:
+  type: "timing"
+  description: |
+    Timer for how long it takes to determine if the user is blocked in Auth0.
+
+tecken.sentry_scrub_error:
+  type: "incr"
+  description: |
+    Emitted when there are errors scrubbing Sentry events. Monitor these
+    because it means we're missing Sentry event data.
