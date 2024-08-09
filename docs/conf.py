@@ -76,8 +76,8 @@ master_doc = "index"
 
 # General information about the project.
 project = "Tecken: Symbols at Mozilla"
-copyright = "2016-2022 Mozilla Foundation"
-author = "Tecken team"
+copyright = "2016-2024 Mozilla Foundation"
+author = "Observability Team"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

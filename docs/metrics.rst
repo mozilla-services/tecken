@@ -4,7 +4,10 @@
 Metrics
 =======
 
-Metrics in Tecken
-=================
+StatsD Metrics in Tecken
+========================
 
-.. autometrics:: tecken.libmarkus.TECKEN_METRICS
+Tecken uses `StatsD <https://github.com/statsd/statsd>`__ with
+`DogStatsD extensions <https://docs.datadoghq.com/developers/dogstatsd/?tab=hostagent>`__.
+
+.. autometrics:: tecken.libmarkus.STATSD_METRICS
