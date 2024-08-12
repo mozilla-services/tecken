@@ -9,7 +9,7 @@ from markus.filters import AddTagFilter, RegisteredMetricsFilter
 import yaml
 
 
-_IS_MARKUS_SETUP = False
+_IS_MARKUS_SET_UP = False
 
 METRICS = markus.get_metrics("tecken")
 
@@ -27,9 +27,9 @@ def _load_registered_metrics():
 STATSD_METRICS = _load_registered_metrics()
 
 
-def set_up_markus(backends, hostname, debug=False):
-    global _IS_MARKUS_SETUP, METRICS
-    if _IS_MARKUS_SETUP:
+def set_up_metrics(backends, hostname, debug=False):
+    global _IS_MARKUS_SET_UP, METRICS
+    if _IS_MARKUS_SET_UP:
         return
 
     markus.configure(backends)
@@ -46,4 +46,4 @@ def set_up_markus(backends, hostname, debug=False):
         # Define host tag here instead of in the backend so it shows up in tests
         METRICS.filters.append(AddTagFilter(f"host:{hostname}"))
 
-    _IS_MARKUS_SETUP = True
+    _IS_MARKUS_SET_UP = True

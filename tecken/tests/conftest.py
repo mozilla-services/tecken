@@ -19,12 +19,12 @@ from django.core.cache import caches
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
-from tecken.libmarkus import set_up_markus
+from tecken.libmarkus import set_up_metrics
 from tecken.libstorage import StorageBackend
 
 
 def pytest_sessionstart(session):
-    set_up_markus(
+    set_up_metrics(
         backends=[{"class": "markus.backends.logging.LoggingMetrics"}],
         hostname=settings.HOSTNAME,
         debug=True,

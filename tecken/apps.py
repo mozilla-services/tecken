@@ -21,7 +21,7 @@ from django.conf import settings
 from django.apps import AppConfig
 
 from tecken.libdockerflow import get_release_name
-from tecken.libmarkus import METRICS, set_up_markus
+from tecken.libmarkus import METRICS, set_up_metrics
 
 
 logger = logging.getLogger("django")
@@ -104,7 +104,7 @@ class TeckenAppConfig(AppConfig):
 
     @staticmethod
     def _configure_markus():
-        set_up_markus(
+        set_up_metrics(
             backends=settings.MARKUS_BACKENDS,
             hostname=settings.HOSTNAME,
             debug=settings.LOCAL_DEV_ENV or settings.TEST_ENV,
