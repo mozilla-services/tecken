@@ -12,13 +12,23 @@ from markus.testing import MetricsMock
 import pytest
 import requests_mock
 
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.cache import caches
 
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.ext.gcs.storage import GCSStorage
 from tecken.ext.s3.storage import S3Storage
+from tecken.libmarkus import set_up_markus
 from tecken.libstorage import StorageBackend
+
+
+def pytest_sessionstart(session):
+    set_up_markus(
+        backends=[{"class": "markus.backends.logging.LoggingMetrics"}],
+        hostname=settings.HOSTNAME,
+        debug=True,
+    )
 
 
 @pytest.fixture(autouse=True)
