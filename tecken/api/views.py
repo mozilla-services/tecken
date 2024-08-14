@@ -22,7 +22,6 @@ from tecken.base.decorators import (
     set_cors_headers,
 )
 from tecken.base.form_utils import filter_form_dates, ORM_OPERATORS, PaginationForm
-from tecken.base.symbolstorage import symbol_storage
 from tecken.download.views import cached_lookup_by_syminfo
 from tecken.tokens.models import Token
 from tecken.upload.models import Upload, FileUpload
@@ -86,22 +85,6 @@ def auth(request):
             reverse("oidc_authentication_init")
         )
         context["user"] = None
-    return http.JsonResponse(context)
-
-
-@api_login_required
-@METRICS.timer_decorator("api", tags=["endpoint:possible_upload_urls"])
-def possible_upload_urls(request):
-    upload_backend = symbol_storage().get_upload_backend(False)
-    context = {
-        "urls": [
-            {
-                "bucket_name": upload_backend.bucket,
-                "prefix": upload_backend.prefix,
-                "default": True,
-            }
-        ]
-    }
     return http.JsonResponse(context)
 
 
