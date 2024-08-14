@@ -209,6 +209,9 @@ class FileUploadsForm(UploadsForm):
     size = forms.CharField(required=False)
     created_at = forms.CharField(required=False)
     completed_at = forms.CharField(required=False)
+    upload_type = forms.ChoiceField(
+        choices=[("", ""), ("try", "try"), ("regular", "regular")], required=False
+    )
     key = forms.CharField(required=False)
     update = forms.BooleanField(required=False)
     compressed = forms.BooleanField(required=False)

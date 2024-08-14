@@ -853,6 +853,62 @@ def test_upload_files(client, settings):
 
 
 @pytest.mark.django_db
+def test_upload_files_filter_upload_type(client, settings):
+    url = reverse("api:upload_files")
+
+    user = User.objects.create(username="user1", email="user1@example.com")
+    user.set_password("secret")
+    user.save()
+    assert client.login(username="user1", password="secret")
+
+    permission = Permission.objects.get(codename="view_all_uploads")
+    user.user_permissions.add(permission)
+
+    # Create upload data
+    regular_upload = Upload.objects.create(user=user, size=123_456)
+    regular_file = FileUpload.objects.create(
+        upload=regular_upload,
+        size=1234,
+        bucket_name="symbols-public",
+        key="bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
+    )
+
+    try_upload = Upload.objects.create(user=user, size=123_456, try_symbols=True)
+    try_file = FileUpload.objects.create(
+        upload=try_upload,
+        size=100,
+        bucket_name="symbols-public",
+        key="v1/libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
+    )
+
+    # Request all files--should return both files
+    response = client.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["files"]
+    all_ids = {regular_file.id, try_file.id}
+    assert {x["id"] for x in data["files"]} == all_ids
+
+    # Request upload_type=""--should return both files
+    response = client.get(url, {"upload_type": ""})
+    assert response.status_code == 200
+    data = response.json()
+    assert {x["id"] for x in data["files"]} == all_ids
+
+    # Request upload_type="try"--should return only try file
+    response = client.get(url, {"upload_type": "try"})
+    assert response.status_code == 200
+    data = response.json()
+    assert {x["id"] for x in data["files"]} == {try_file.id}
+
+    # Request upload_type="regular"--should return only regular file
+    response = client.get(url, {"upload_type": "regular"})
+    assert response.status_code == 200
+    data = response.json()
+    assert {x["id"] for x in data["files"]} == {regular_file.id}
+
+
+@pytest.mark.django_db
 def test_upload_files_count(client):
     url = reverse("api:upload_files")
     user = User.objects.create(username="user1", email="user1@example.com")
@@ -863,14 +919,23 @@ def test_upload_files_count(client):
     assert client.login(username="user1", password="secret")
 
     # Create data
-    upload = Upload.objects.create(user=user, size=123_456)
-    file_upload_1 = FileUpload.objects.create(
-        upload=upload,
+    regular_upload = Upload.objects.create(user=user, size=123_456)
+    regular_file_upload = FileUpload.objects.create(
+        upload=regular_upload,
         size=1234,
         bucket_name="symbols-public",
-        key="v1/bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
+        key="bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
     )
-    file_upload_2 = FileUpload.objects.create(
+
+    try_upload = Upload.objects.create(user=user, size=123_456, try_symbols=True)
+    try_file_upload = FileUpload.objects.create(
+        upload=try_upload,
+        size=50,
+        bucket_name="symbols-public",
+        key="libxul.so/9B6C6BD630483C5F453471EE0EEEB09A0/libxul.so.sym",
+    )
+
+    file_upload = FileUpload.objects.create(
         size=100,
         bucket_name="symbols-public",
         key="libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
@@ -883,7 +948,7 @@ def test_upload_files_count(client):
     data = response.json()
     assert data["files"] == [
         {
-            "id": file_upload_2.id,
+            "id": file_upload.id,
             "key": "libxul.so/A772CC9A3E852CF48965ED79FB65E3150/libxul.so.sym",
             "update": False,
             "compressed": True,
@@ -894,7 +959,24 @@ def test_upload_files_count(client):
             "upload": None,
         },
         {
-            "id": file_upload_1.id,
+            "bucket_name": "symbols-public",
+            "completed_at": None,
+            "compressed": False,
+            "created_at": ANY,
+            "id": try_file_upload.id,
+            "key": "libxul.so/9B6C6BD630483C5F453471EE0EEEB09A0/libxul.so.sym",
+            "size": 50,
+            "update": False,
+            "upload": {
+                "created_at": ANY,
+                "id": try_upload.id,
+                "try_symbols": True,
+                "upload_type": "try",
+                "user": {"id": user.id, "email": "user1@example.com"},
+            },
+        },
+        {
+            "id": regular_file_upload.id,
             "key": "bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
             "update": False,
             "compressed": False,
@@ -903,8 +985,9 @@ def test_upload_files_count(client):
             "completed_at": None,
             "created_at": ANY,
             "upload": {
-                "id": upload.id,
+                "id": regular_upload.id,
                 "try_symbols": False,
+                "upload_type": "regular",
                 "user": {"id": user.id, "email": "user1@example.com"},
                 "created_at": ANY,
             },
@@ -925,14 +1008,15 @@ def test_upload_files_count(client):
             "completed_at": None,
             "compressed": False,
             "created_at": ANY,
-            "id": file_upload_1.id,
+            "id": regular_file_upload.id,
             "key": "bar.pdb/46A0ADB3F299A70B4C4C44205044422E1/bar.sym",
             "size": 1234,
             "update": False,
             "upload": {
                 "created_at": ANY,
-                "id": upload.id,
+                "id": regular_upload.id,
                 "try_symbols": False,
+                "upload_type": "regular",
                 "user": {
                     "email": "user1@example.com",
                     "id": user.id,

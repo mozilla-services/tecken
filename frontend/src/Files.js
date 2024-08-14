@@ -201,6 +201,7 @@ class DisplayFiles extends React.PureComponent {
     const filter = this.props.filter;
     this.refs.key.value = filter.key || "";
     this.refs.size.value = filter.size || "";
+    this.refs.upload_type.value = filter.upload_type || "";
     this.refs.created_at.value = filter.created_at || "";
     this.refs.bucketName.value = filter.bucket_name || "";
   }
@@ -209,6 +210,7 @@ class DisplayFiles extends React.PureComponent {
     event.preventDefault();
     const key = this.refs.key.value.trim();
     const size = this.refs.size.value.trim();
+    const upload_type = this.refs.upload_type.value.trim();
     const created_at = this.refs.created_at.value.trim();
     const bucketName = this.refs.bucketName.value.trim();
     this.props.updateFilter({
@@ -217,6 +219,7 @@ class DisplayFiles extends React.PureComponent {
       size,
       created_at,
       bucket_name: bucketName,
+      upload_type: upload_type,
     });
   };
 
@@ -224,6 +227,7 @@ class DisplayFiles extends React.PureComponent {
     this.refs.key.value = "";
     this.refs.size.value = "";
     this.refs.bucketName.value = "";
+    this.refs.upload_type.value = "";
     this.refs.created_at.value = "";
     this.submitForm(event);
   };
@@ -238,6 +242,7 @@ class DisplayFiles extends React.PureComponent {
               <th>Key</th>
               <th>Size</th>
               <th>Bucket</th>
+              <th>Upload type</th>
               <th>Uploaded</th>
               <th
                 className="bool-row is-clipped"
@@ -254,6 +259,7 @@ class DisplayFiles extends React.PureComponent {
               <th>Time to complete</th>
             </tr>
           </thead>
+
           <tfoot>
             <tr>
               <td>
@@ -281,6 +287,15 @@ class DisplayFiles extends React.PureComponent {
                   placeholder="filter bucket ..."
                   style={{ width: 140 }}
                 />
+              </td>
+              <td>
+                <span className="select">
+                  <select name="upload_type" ref="upload_type">
+                    <option></option>
+                    <option>regular</option>
+                    <option>try</option>
+                  </select>
+                </span>
               </td>
               <td>
                 <input
@@ -317,6 +332,20 @@ class DisplayFiles extends React.PureComponent {
                   <td>{formatFileSize(file.size)}</td>
                   <td>{file.bucket_name}</td>
                   <td>
+                    {file.upload && file.upload.upload_type === "try" ? (
+                      <span className="tag is-info" title="try symbol upload">
+                        try
+                      </span>
+                    ) : (
+                      <span
+                        className="tag"
+                        title="{file.upload.upload_type} symbol upload"
+                      >
+                        {file.upload.upload_type}
+                      </span>
+                    )}
+                  </td>
+                  <td>
                     {file.upload ? (
                       <Link
                         to={`/uploads/upload/${file.upload.id}`}
@@ -327,14 +356,6 @@ class DisplayFiles extends React.PureComponent {
                     ) : (
                       <DisplayDate date={file.created_at} />
                     )}{" "}
-                    {file.upload && file.upload.try_symbols ? (
-                      <span
-                        className="tag is-info"
-                        title="Part of a Try build upload"
-                      >
-                        Try
-                      </span>
-                    ) : null}
                   </td>
                   <td>{BooleanIcon(file.update)}</td>
                   <td>{BooleanIcon(file.compressed)}</td>
