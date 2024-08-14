@@ -387,16 +387,19 @@ def _upload_files_build_qs(request):
     form = forms.FileUploadsForm(request.GET)
     if not form.is_valid():
         return http.JsonResponse({"errors": form.errors}, status=400)
+
     qs = FileUpload.objects.all()
     for operator, value in form.cleaned_data["size"]:
         orm_operator = "size__{}".format(ORM_OPERATORS[operator])
         qs = qs.filter(**{orm_operator: value})
+
     qs = filter_form_dates(qs, form, ("created_at", "completed_at"))
     if form.cleaned_data.get("key"):
         key_q = Q(key__icontains=form.cleaned_data["key"][0])
         for other in form.cleaned_data["key"][1:]:
             key_q &= Q(key__icontains=other)
         qs = qs.filter(key_q)
+
     include_bucket_names = []
     for operator, bucket_name in form.cleaned_data["bucket_name"]:
         if operator == "!":
@@ -405,6 +408,14 @@ def _upload_files_build_qs(request):
             include_bucket_names.append(bucket_name)
     if include_bucket_names:
         qs = qs.filter(bucket_name__in=include_bucket_names)
+
+    if form.cleaned_data.get("upload_type", ""):
+        # NOTE(willkg): we have two upload types: try and regular. The try_symbols field
+        # is a boolean where try=True and regular=False, so we convert from a general
+        # upload types domain to the boolean domain of whether it's try upload or not.
+        # In the future, we may want to support other types by fixing the Upload model.
+        try_symbols = form.cleaned_data["upload_type"] == "try"
+        qs = qs.filter(upload__try_symbols=try_symbols)
     return qs
 
 
@@ -455,6 +466,7 @@ def _upload_files_content(request, qs):
                 upload = uploads[upload_id]
                 uploads_cache[upload_id] = {
                     "id": upload.id,
+                    "upload_type": "try" if upload.try_symbols else "regular",
                     "try_symbols": upload.try_symbols,
                     "user": {"id": upload.user.id, "email": upload.user.email},
                     "created_at": upload.created_at,
