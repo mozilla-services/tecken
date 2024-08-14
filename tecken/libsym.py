@@ -34,21 +34,22 @@ def extract_sym_header_data(file_path):
                     data["debug_filename"] = debug_filename
                     data["debug_id"] = debug_id.upper()
 
-                elif line.startswith("INFO CODE_ID"):
+                elif line.startswith("INFO"):
                     parts = line.strip().split()
-                    # NOTE(willkg): Non-Windows module sym files don't have a code_file
-                    if len(parts) == 3:
-                        _, _, code_id = parts
-                        code_file = ""
-                    elif len(parts) == 4:
-                        _, _, code_id, code_file = parts
+                    if parts[1] == "CODE_ID":
+                        # NOTE(willkg): Non-Windows module sym files don't have a code_file
+                        if len(parts) == 3:
+                            _, _, code_id = parts
+                            code_file = ""
+                        elif len(parts) == 4:
+                            _, _, code_id, code_file = parts
 
-                    data["code_file"] = code_file
-                    data["code_id"] = code_id.upper()
+                        data["code_file"] = code_file
+                        data["code_id"] = code_id.upper()
 
-                elif line.startswith("INFO GENERATOR"):
-                    _, _, generator = line.strip().split(maxsplit=2)
-                    data["generator"] = generator
+                    elif parts[1] == "GENERATOR":
+                        _, _, generator = line.strip().split(maxsplit=2)
+                        data["generator"] = generator
 
                 else:
                     break
