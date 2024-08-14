@@ -362,6 +362,7 @@ Upload: /upload/
    :statuscode 500: there's an error with the server; sleep for a bit and
        retry; if retrying doesn't work, then please file a bug report
    :statuscode 502: sleep for a bit and retry
+   :statuscode 503: sleep for a bit and retry
    :statuscode 504: the request is taking too long to complete; sleep for a bit
        and retry
 
