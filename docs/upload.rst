@@ -282,7 +282,7 @@ To get access to our stage server:
    <https://symbols.stage.mozaws.net/>`__. When you log in, an account will be
    created automatically.
 
-2. Ask a Tecken admin (currently willkg) to grant you upload permissions.
+2. Ask a Tecken admin to grant you upload permissions.
 
    We hang out in `#crashreporting matrix channel
    <https://chat.mozilla.org/#/room/#crashreporting:mozilla.org>`_.
