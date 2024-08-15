@@ -1136,8 +1136,42 @@ def test_file_upload_try_upload(client):
     url = reverse("api:upload_file", args=(file_upload.id,))
     response = client.get(url)
     assert response.status_code == 200
-    data = response.json()["file"]
-    assert data["url"] == "/foo.pdb/deadbeaf123/foo.sym?try"
+    data = response.json()
+    assert data == {
+        "file": {
+            "bucket_name": "",
+            "code_file": None,
+            "code_id": None,
+            "completed_at": None,
+            "compressed": False,
+            "created_at": ANY,
+            "debug_filename": None,
+            "debug_id": None,
+            "generator": None,
+            "id": file_upload.id,
+            "key": "foo.pdb/deadbeaf123/foo.sym",
+            "size": 1234,
+            "update": False,
+            "upload": {
+                "bucket_name": "",
+                "completed_at": None,
+                "created_at": ANY,
+                "download_url": None,
+                "filename": "",
+                "id": upload.id,
+                "ignored_keys": [],
+                "redirect_urls": [],
+                "size": 123_456,
+                "skipped_keys": [],
+                "try_symbols": True,
+                "user": {
+                    "email": "peterbe@example.com",
+                    "id": user.id,
+                },
+            },
+            "url": "/foo.pdb/deadbeaf123/foo.sym?try",
+        }
+    }
 
 
 class Test_syminfo:
