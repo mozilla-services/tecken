@@ -557,6 +557,7 @@ def upload_file(request, id):
             "user": {"id": upload_obj.user.id, "email": upload_obj.user.email},
             "size": upload_obj.size,
             "bucket_name": upload_obj.bucket_name,
+            "try_symbols": upload_obj.try_symbols,
             "skipped_keys": upload_obj.skipped_keys or [],
             "ignored_keys": upload_obj.ignored_keys or [],
             "download_url": upload_obj.download_url,
