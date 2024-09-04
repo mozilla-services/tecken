@@ -6,7 +6,7 @@
 import logging
 import os
 import tempfile
-from typing import Generator
+from typing import Callable, Generator
 
 import pytest
 
@@ -143,21 +143,15 @@ def fake_data_bucket(pytestconfig: pytest.Config) -> FakeDataBucket:
     return FakeDataBucket(bucket_name, public_url, credentials_path)
 
 
-@pytest.fixture(scope="class")
-def zip_archive(
-    request: pytest.FixtureRequest,
-) -> Generator[FakeZipArchive, None, None]:
-    size, platform = request.param
-    sym_file_size = size // 2
-    zip = FakeZipArchive(size, sym_file_size, platform)
+@pytest.fixture
+def create_zip_archive() -> Generator[Callable[[int, str], FakeZipArchive], None, None]:
     os.makedirs(TMP_DIR, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=TMP_DIR) as tmp_dir:
-        zip.create(tmp_dir)
-        yield zip
 
+        def _create_zip_archive(size: int, platform: str) -> FakeZipArchive:
+            sym_file_size = size // 2
+            zip = FakeZipArchive(size, sym_file_size, platform)
+            zip.create(tmp_dir)
+            return zip
 
-@pytest.fixture(scope="class")
-def zip_archive_url(
-    zip_archive: FakeZipArchive, fake_data_bucket: FakeDataBucket
-) -> str:
-    return fake_data_bucket.upload_scratch(zip_archive.file_name)
+        yield _create_zip_archive
