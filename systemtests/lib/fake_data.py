@@ -114,7 +114,6 @@ class FakeZipArchive:
 
         self.file_name: Optional[str] = None
         self.members: list[FakeSymFile] = []
-        self.uploaded = False
 
     def create(self, tmp_dir: os.PathLike):
         LOGGER.info(

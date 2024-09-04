@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from typing import Callable
 from unittest.mock import ANY
 from urllib.parse import unquote
 
@@ -14,129 +15,127 @@ from systemtests.lib.tecken_client import TeckenClient
 # Mark all tests in this module as upload tests
 pytestmark = pytest.mark.upload
 
-small_archive_param = pytest.param((2**19, "windows"), id="small")
-large_archive_param = pytest.param(
-    (2**30, "linux"), id="large", marks=pytest.mark.large_files
+
+# Upload sizes
+SMALL = 2**16
+LARGE = 2**30
+
+
+@pytest.mark.parametrize(
+    ["size", "platform"],
+    [
+        pytest.param(SMALL, "windows", id="small"),
+        pytest.param(LARGE, "linux", id="large", marks=pytest.mark.large_files),
+    ],
 )
+def test_upload_and_download(
+    size: int,
+    platform: str,
+    tecken_client: TeckenClient,
+    create_zip_archive: Callable[[int, str], FakeZipArchive],
+):
+    zip_archive = create_zip_archive(size, platform)
+    response = tecken_client.upload(zip_archive.file_name)
+    assert response.status_code == 201
 
-small_and_large_archives = pytest.mark.parametrize(
-    "zip_archive", [small_archive_param, large_archive_param], indirect=True
-)
-small_archive = pytest.mark.parametrize(
-    "zip_archive", [small_archive_param], indirect=True
-)
-
-
-class TestDirectUpload:
-    # Tests within a class scope are executed in definition order.
-
-    @small_and_large_archives
-    def test_upload(self, tecken_client: TeckenClient, zip_archive: FakeZipArchive):
-        response = tecken_client.upload(zip_archive.file_name)
-        assert response.status_code == 201
-        zip_archive.uploaded = True
-
-    @small_and_large_archives
-    def test_download(self, tecken_client: TeckenClient, zip_archive: FakeZipArchive):
-        if not zip_archive.uploaded:
-            pytest.skip("upload failed")
-
-        for sym_file in zip_archive.members:
-            response = tecken_client.download(sym_file.key())
-            assert response.status_code == 200
-            [redirect] = response.history
-            assert redirect.status_code == 302
-
-    @small_archive
-    def test_head_request(
-        self, tecken_client: TeckenClient, zip_archive: FakeZipArchive
-    ):
-        if not zip_archive.uploaded:
-            pytest.skip("upload failed")
-
-        for sym_file in zip_archive.members:
-            response = tecken_client.download(sym_file.key(), method="HEAD")
-            assert response.status_code == 200
-            assert not response.history
-
-    @small_archive
-    @pytest.mark.nginx
-    def test_headers(self, tecken_client: TeckenClient, zip_archive: FakeZipArchive):
-        if not zip_archive.uploaded:
-            pytest.skip("upload failed")
-
-        # These are exclusively security headers added by nginx
-        expected_tecken_headers = {
-            "X-Content-Type-Options": "nosniff",
-            "X-Frame-Options": "DENY",
-            "Content-Security-Policy": ANY,
-            "Strict-Transport-Security": "max-age=31536000",
-        }
-        # These are headers sent by the storage backend (S3 or GCS)
-        expected_storage_headers = {
-            "Content-Encoding": "gzip",
-            "Content-Length": ANY,
-        }
-        response = tecken_client.download(zip_archive.members[0].key())
+    for sym_file in zip_archive.members:
+        response = tecken_client.download(sym_file.key())
+        assert response.status_code == 200
         [redirect] = response.history
-
-        actual_tecken_headers = {
-            name: redirect.headers[name] for name in expected_tecken_headers
-        }
-        assert actual_tecken_headers == expected_tecken_headers
-
-        actual_storage_headers = {
-            name: response.headers[name] for name in expected_storage_headers
-        }
-        assert actual_storage_headers == expected_storage_headers
-
-    @small_archive
-    def test_code_info_lookup(
-        self, tecken_client: TeckenClient, zip_archive: FakeZipArchive
-    ):
-        if not zip_archive.uploaded:
-            pytest.skip("upload failed")
-
-        for sym_file in zip_archive.members:
-            response = tecken_client.download(
-                sym_file.code_info_key(), allow_redirects=False
-            )
-            assert response.status_code == 302
-            redirect_key = unquote(response.headers["location"])[1:]
-            assert redirect_key == sym_file.key()
+        assert redirect.status_code == 302
 
 
-class TestDirectTryUpload:
-    # Tests within a class scope are executed in definition order.
+def test_head_request(
+    tecken_client: TeckenClient,
+    create_zip_archive: Callable[[int, str], FakeZipArchive],
+):
+    zip_archive = create_zip_archive(SMALL, "windows")
+    response = tecken_client.upload(zip_archive.file_name)
+    response.raise_for_status()
 
-    @small_archive
-    def test_upload(self, tecken_client: TeckenClient, zip_archive: FakeZipArchive):
-        response = tecken_client.upload(zip_archive.file_name, try_storage=True)
-        assert response.status_code == 201
-        zip_archive.uploaded = True
+    for sym_file in zip_archive.members:
+        response = tecken_client.download(sym_file.key(), method="HEAD")
+        assert response.status_code == 200
+        assert not response.history
 
-    @small_archive
-    def test_download(self, tecken_client: TeckenClient, zip_archive: FakeZipArchive):
-        if not zip_archive.uploaded:
-            pytest.skip("upload failed")
 
-        for sym_file in zip_archive.members:
-            # regular download should fail
-            key = sym_file.key()
-            response = tecken_client.download(key)
-            assert response.status_code == 404
+@pytest.mark.nginx
+def test_headers(
+    tecken_client: TeckenClient,
+    create_zip_archive: Callable[[int, str], FakeZipArchive],
+):
+    zip_archive = create_zip_archive(SMALL, "windows")
+    response = tecken_client.upload(zip_archive.file_name)
+    response.raise_for_status()
 
-            # download using `?try` query parameter
-            response = tecken_client.download(key, try_storage=True)
-            assert response.status_code == 200
-            [redirect] = response.history
-            assert redirect.status_code == 302
+    # These are exclusively security headers added by nginx
+    expected_tecken_headers = {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Content-Security-Policy": ANY,
+        "Strict-Transport-Security": "max-age=31536000",
+    }
+    # These are headers sent by the storage backend (S3 or GCS)
+    expected_storage_headers = {
+        "Content-Encoding": "gzip",
+        "Content-Length": ANY,
+    }
+    response = tecken_client.download(zip_archive.members[0].key())
+    [redirect] = response.history
 
-            # download by prefixing the key with try/
-            response = tecken_client.download(f"try/{key}")
-            assert response.status_code == 200
-            [redirect] = response.history
-            assert redirect.status_code == 302
+    actual_tecken_headers = {
+        name: redirect.headers[name] for name in expected_tecken_headers
+    }
+    assert actual_tecken_headers == expected_tecken_headers
+
+    actual_storage_headers = {
+        name: response.headers[name] for name in expected_storage_headers
+    }
+    assert actual_storage_headers == expected_storage_headers
+
+
+def test_code_info_lookup(
+    tecken_client: TeckenClient,
+    create_zip_archive: Callable[[int, str], FakeZipArchive],
+):
+    zip_archive = create_zip_archive(SMALL, "windows")
+    response = tecken_client.upload(zip_archive.file_name)
+    response.raise_for_status()
+
+    for sym_file in zip_archive.members:
+        response = tecken_client.download(
+            sym_file.code_info_key(), allow_redirects=False
+        )
+        assert response.status_code == 302
+        redirect_key = unquote(response.headers["location"])[1:]
+        assert redirect_key == sym_file.key()
+
+
+def test_try_upload_and_download(
+    tecken_client: TeckenClient,
+    create_zip_archive: Callable[[int, str], FakeZipArchive],
+):
+    zip_archive = create_zip_archive(SMALL, "windows")
+    response = tecken_client.upload(zip_archive.file_name, try_storage=True)
+    assert response.status_code == 201
+
+    for sym_file in zip_archive.members:
+        # regular download should fail
+        key = sym_file.key()
+        response = tecken_client.download(key)
+        assert response.status_code == 404
+
+        # download using `?try` query parameter
+        response = tecken_client.download(key, try_storage=True)
+        assert response.status_code == 200
+        [redirect] = response.history
+        assert redirect.status_code == 302
+
+        # download by prefixing the key with try/
+        response = tecken_client.download(f"try/{key}")
+        assert response.status_code == 200
+        [redirect] = response.history
+        assert redirect.status_code == 302
 
 
 def test_no_token(tecken_client: TeckenClient):
