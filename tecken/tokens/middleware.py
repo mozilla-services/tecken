@@ -8,6 +8,7 @@ from functools import partial
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in
 from django.core.exceptions import MiddlewareNotUsed, PermissionDenied
+from django.utils.cache import patch_vary_headers
 
 from .models import Token
 
@@ -21,16 +22,23 @@ def has_perm(all, codename, obj=None):
 
 
 class APITokenAuthenticationMiddleware:
-    def __init__(self, get_response=None):
+    def __init__(self, get_response):
         if not settings.ENABLE_TOKENS_AUTHENTICATION:  # pragma: no cover
             logger.warning("API Token authentication disabled")
             raise MiddlewareNotUsed
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.process_request(request)
-        if not response:
-            response = self.get_response(request)
+        key = request.headers.get("Auth-Token")
+        if key:
+            try:
+                self.authenticate(request, key)
+            except PermissionDenied:
+                self.force_full_request_body_read(request)
+                raise
+        response = self.get_response(request)
+        if key:
+            patch_vary_headers(response, ["Auth-Token"])
         return response
 
     def force_full_request_body_read(self, request):
@@ -56,28 +64,20 @@ class APITokenAuthenticationMiddleware:
         except Exception as exc:
             logging.info("force_full_request_body_read: exception thrown: %r", exc)
 
-    def process_request(self, request):
-        key = request.META.get("HTTP_AUTH_TOKEN")
-        if not key:
-            return
-
+    def authenticate(self, request, key):
         # Auth tokens allow for a "comment" which is anything after the first "-";
         # peel it off and ignore it
-        if "-" in key:
-            key = key.split("-", 1)[0]
+        key = key.partition("-")[0]
 
         try:
             token = Token.objects.select_related("user").get(key=key)
             if token.is_expired:
-                self.force_full_request_body_read(request)
                 raise PermissionDenied("API Token found but expired")
         except Token.DoesNotExist as exc:
-            self.force_full_request_body_read(request)
             raise PermissionDenied("API Token not matched") from exc
 
         user = token.user
         if not user.is_active:
-            self.force_full_request_body_read(request)
             raise PermissionDenied("API Token matched but user not active")
 
         # Overwrite the has_perm method so that it's restricted to only

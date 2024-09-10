@@ -63,6 +63,7 @@ def test_client_homepage_with_valid_token(client):
     assert response.status_code == 200
     assert "sign_in_url" not in response.json()["user"]
     assert response.json()["user"]["email"] == user.email
+    assert response.headers.get("Vary").lower() == "auth-token"
     user.refresh_from_db()
     assert user.last_login
 
@@ -72,6 +73,7 @@ def test_client_homepage_with_valid_token(client):
     assert response.status_code == 200
     assert "sign_in_url" not in response.json()["user"]
     assert response.json()["user"]["email"] == user.email
+    assert response.headers.get("Vary").lower() == "auth-token"
     user.refresh_from_db()
     assert user.last_login
 
