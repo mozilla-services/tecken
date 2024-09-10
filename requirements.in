@@ -19,7 +19,7 @@ psycopg2==2.9.9
 pytest==8.3.2
 pytest-django==4.8.0
 python-dateutil==2.9.0.post0
-PyYAML==6.0.1
+PyYAML==6.0.2
 redis==5.0.8
 requests-mock==1.12.1
 requests==2.32.3
@@ -28,8 +28,8 @@ sentry-sdk==2.10.0
 Sphinx==7.3.7
 sphinx-rtd-theme==2.0.0
 sphinxcontrib-httpdomain==1.8.1
-werkzeug==3.0.3
+werkzeug==3.0.4
 whitenoise==6.7.0
 
 # NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
-Django==4.2.15
+Django==4.2.16
