@@ -9,7 +9,7 @@ encore==0.8.0
 everett==3.3.0
 fillmore==2.0.0
 google-cloud-storage==2.18.0
-gunicorn==22.0.0
+gunicorn==23.0.0
 honcho==1.1.0
 markus[datadog]==5.0.0
 mozilla-django-oidc==4.0.1
