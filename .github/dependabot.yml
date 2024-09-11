@@ -4,18 +4,21 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     rebase-strategy: "disabled"
+    open-pull-requests-limit: 10
 
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     rebase-strategy: "disabled"
+    open-pull-requests-limit: 10
 
   # Set update schedule for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     rebase-strategy: "disabled"
+    open-pull-requests-limit: 10
