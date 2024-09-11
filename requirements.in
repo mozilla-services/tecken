@@ -32,4 +32,4 @@ werkzeug==3.0.4
 whitenoise==6.7.0
 
 # NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
-Django==4.2.16
+Django==5.1.1
