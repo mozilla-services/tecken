@@ -20,9 +20,9 @@ babel==2.13.1 \
     --hash=sha256:33e0952d7dd6374af8dbf6768cc4ddf3ccfefc244f9986d4074704f2fbd18900 \
     --hash=sha256:7077a4984b02b6727ac10f1f7294484f737443d7e2e66c5e4380e41a3ae0b4ed
     # via sphinx
-boto3==1.34.151 \
-    --hash=sha256:30498a76b6f651ee2af7ae8edc1704379279ab8b91f1a8dd1f4ddf51259b0bc2 \
-    --hash=sha256:35bc76faacf1667d3fbb66c1966acf2230ef26206557efc26d9d9d79337bef43
+boto3==1.34.162 \
+    --hash=sha256:873f8f5d2f6f85f1018cbb0535b03cceddc7b655b61f66a0a56995238804f41f \
+    --hash=sha256:d6f6096bdab35a0c0deff469563b87d184a28df7689790f7fe7be98502b7c590
     # via -r requirements.in
 botocore==1.34.162 \
     --hash=sha256:2d918b02db88d27a75b48275e6fb2506e9adaaddbec1ffa6a8a0898b34e769be \
@@ -267,9 +267,9 @@ everett==3.3.0 \
     --hash=sha256:acb7b8f3c5fc9692a8ba14fb257e4649f87bea4856e7406c2e9b6c2cab889105 \
     --hash=sha256:d3ecc55cc1bdf2408ca82bc8db5a3fc588fc4c0f236a6ab9599938f41970b814
     # via -r requirements.in
-fillmore==2.0.0 \
-    --hash=sha256:840901d80799ce50db49c3e377815424a356c3e81c6cea5111684c58113d7ad1 \
-    --hash=sha256:fd1a2c2e829073cef3d49f032033d78dbee48f377eb4b915f29084e76f6facb4
+fillmore==2.0.1 \
+    --hash=sha256:28c1c47063d116909009e4b31f40098702ce1944df7793e8f47642c7c39a78cf \
+    --hash=sha256:a1f194416133b32656bb9918225cd1599359042eb7c63f7c4842ff0b312017ed
     # via -r requirements.in
 google-api-core==2.15.0 \
     --hash=sha256:2aa56d2be495551e66bbff7f729b790546f87d5c90e74781aa77233bcb395a8a \
@@ -738,9 +738,9 @@ s3transfer==0.10.1 \
     --hash=sha256:5683916b4c724f799e600f41dd9e10a9ff19871bf87623cc8f491cb4f5fa0a19 \
     --hash=sha256:ceb252b11bcf87080fb7850a224fb6e05c8a776bab8f2b64b7f25b969464839d
     # via boto3
-sentry-sdk==2.13.0 \
-    --hash=sha256:6beede8fc2ab4043da7f69d95534e320944690680dd9a963178a49de71d726c6 \
-    --hash=sha256:8d4a576f7a98eb2fdb40e13106e41f330e5c79d72a68be1316e7852cf4995260
+sentry-sdk==2.14.0 \
+    --hash=sha256:1e0e2eaf6dad918c7d1e0edac868a7bf20017b177f242cefe2a6bcd47955961d \
+    --hash=sha256:b8bc3dc51d06590df1291b7519b85c75e2ced4f28d9ea655b6d54033503b5bf4
     # via
     #   -r requirements.in
     #   fillmore
