@@ -26,7 +26,7 @@ requests==2.32.3
 ruff==0.6.8
 sentry-sdk==2.15.0
 Sphinx==7.3.7
-sphinx-rtd-theme==2.0.0
+sphinx-rtd-theme==3.0.0
 sphinxcontrib-httpdomain==1.8.1
 werkzeug==3.0.4
 whitenoise==6.7.0
