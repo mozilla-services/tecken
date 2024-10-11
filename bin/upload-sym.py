@@ -6,7 +6,7 @@
 
 # Upload a single sym file.
 #
-# Usage: ./bin/upload-sym.py [SYMFILE]
+# Usage: ./bin/upload-sym.py [SYMFILE ...]
 
 import datetime
 import json
@@ -34,39 +34,50 @@ CONNECTION_TIMEOUT = 600
     default="https://symbols.mozilla.org/",
     help="Base url to use for downloading SYM files.",
 )
-@click.argument("symfile")
+@click.argument("symfile", nargs=-1)
 @click.pass_context
 def upload_sym_file(ctx, auth_token, base_url, symfile):
     """Uploads a sym file."""
-    with open(symfile, "r") as fp:
-        lines = fp.readlines()
 
-    firstline = lines[0]
-    if not firstline.startswith("MODULE"):
-        click.echo(click.style(f"{symfile} doesn't appear to be a sym file.", fg="red"))
+    if not symfile:
+        click.echo("Requires sym files.")
         ctx.exit(1)
 
-    parts = firstline.split(" ")
-    debugid = parts[3].strip()
-    debugfilename = parts[4].strip()
-    if debugfilename.endswith(".pdb"):
-        sym_file = debugfilename[:-4] + ".sym"
-    else:
-        sym_file = debugfilename + ".sym"
-
-    path = f"{debugfilename}/{debugid}/{sym_file}"
     with tempfile.TemporaryDirectory(prefix="symbols") as tmpdirname:
         zip_filename = datetime.datetime.now().strftime("symbols_%Y%m%d_%H%M%S.zip")
         zip_path = os.path.join(tmpdirname, zip_filename)
 
         click.echo(f"Generating zip file {zip_path} ...")
-        click.echo(f"Adding {symfile} {path} ...")
-        with zipfile.ZipFile(zip_path, mode="w") as fp:
-            fp.write(
-                symfile,
-                arcname=path,
-                compress_type=zipfile.ZIP_DEFLATED,
-            )
+
+        with zipfile.ZipFile(zip_path, mode="w") as zip_fp:
+            for fn in symfile:
+                with open(fn, "r") as fp:
+                    lines = fp.readlines()
+
+                firstline = lines[0]
+                if not firstline.startswith("MODULE"):
+                    click.echo(
+                        click.style(
+                            f"{fn} doesn't appear to be a sym file. Skipping.", fg="red"
+                        )
+                    )
+                    continue
+
+                parts = firstline.split(" ")
+                debugid = parts[3].strip()
+                debugfilename = parts[4].strip()
+                if debugfilename.endswith(".pdb"):
+                    sym_file = debugfilename[:-4] + ".sym"
+                else:
+                    sym_file = debugfilename + ".sym"
+
+                path = f"{debugfilename}/{debugid}/{sym_file}"
+                click.echo(f"Adding {fn} {path} ...")
+                zip_fp.write(
+                    fn,
+                    arcname=path,
+                    compress_type=zipfile.ZIP_DEFLATED,
+                )
 
         url = urljoin(base_url, "/upload/")
         headers = {"auth-token": auth_token, "User-Agent": "tecken-upload-sym"}
