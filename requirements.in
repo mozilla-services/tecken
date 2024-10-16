@@ -24,7 +24,7 @@ redis==5.0.8
 requests-mock==1.12.1
 requests==2.32.3
 ruff==0.6.9
-sentry-sdk==2.15.0
+sentry-sdk==2.16.0
 Sphinx==7.3.7
 sphinx-rtd-theme==2.0.0
 sphinxcontrib-httpdomain==1.8.1
