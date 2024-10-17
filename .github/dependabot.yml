@@ -14,6 +14,9 @@ updates:
       interval: "weekly"
     rebase-strategy: "disabled"
     open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: python
+        versions: [">=3.12"]
 
   # Set update schedule for GitHub Actions
   - package-ecosystem: "github-actions"
