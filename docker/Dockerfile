@@ -9,6 +9,8 @@ WORKDIR /app
 RUN bin/build_frontend.sh
 
 
+# NOTE(smarnach): To upgrade Python to a new minor or major version, see
+# https://tecken.readthedocs.io/en/latest/dev.html#how-to-upgrade-the-python-version
 FROM --platform=linux/amd64 python:3.11.10-slim-bullseye@sha256:f6a64ef0a5cc14855b15548056a8fc77f4c3526b79883fa6709a8e23f676ac34
 
 ARG userid=10001
