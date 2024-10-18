@@ -358,6 +358,19 @@ We use postgresql. To open a psql shell, do:
 
 Note that it tells you the password to use.
 
+How to upgrade the Python version
+---------------------------------
+
+To upgrade Python to a new minor or major version, you need to change the version in
+these files:
+
+* ``.devcontainer/Dockerfile``
+* ``.github/dependabot.yml``
+* ``.readthedocs.yaml``
+* ``docker/Dockerfile``
+* ``docker/images/fakesentry/Dockerfile``
+* ``pyproject.toml``
+* ``tecken/tests/test_sentry.py``
 
 Bugs / Issues
 =============
