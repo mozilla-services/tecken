@@ -1,5 +1,4 @@
 ---
-version: '2.4'
 services:
   # Base container is used for development tasks like tests, linting,
   # and building docs.
@@ -80,6 +79,7 @@ services:
         groupid: ${USE_GID:-10001}
     image: tecken-devcontainer
     entrypoint: ["sleep", "inf"]
+    stop_signal: SIGKILL  # Doesn't seem to respond to anything else
     env_file:
       - docker/config/local_dev.env
       - docker/config/test.env
@@ -196,6 +196,7 @@ services:
     ports:
       - "${EXPOSE_SENTRY_PORT:-8090}:8090"
     command: run --host 0.0.0.0 --port 8090
+    stop_signal: SIGINT
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8090/"]
       interval: 1s
@@ -209,6 +210,9 @@ services:
     image: local/tecken_oidcprovider
     ports:
       - "${EXPOSE_OIDC_PORT:-8080}:8080"
+    # The next line can be removed if this PR is included in the image we use:
+    # https://github.com/mozilla/docker-test-mozilla-django-oidc/pull/84
+    stop_signal: SIGKILL
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
       interval: 2s

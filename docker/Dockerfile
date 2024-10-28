@@ -39,8 +39,7 @@ RUN apt-get update && \
         git \
         libpq-dev \
         gettext \
-        libffi-dev \
-        tini && \
+        libffi-dev && \
     apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -70,6 +69,6 @@ USER app
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.
 # https://github.com/docker/compose/issues/2301#issuecomment-154450785 has additional background.
-ENTRYPOINT ["tini", "--", "/bin/bash", "/app/bin/entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/app/bin/entrypoint.sh"]
 
 CMD ["web"]
