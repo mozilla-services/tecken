@@ -22,15 +22,6 @@ RUN if [ $userid -ne 1000 ]; then \
         chown app:app /app/; \
     fi
 
-# install tini
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        apt-transport-https \
-        tini && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 ADD frontend/yarn.lock /yarn.lock
 ADD frontend/package.json /package.json
 RUN yarn
@@ -43,5 +34,5 @@ EXPOSE 35729
 # NOTE(willkg): use $userid here because we don't know what the user name is
 USER $userid
 
-ENTRYPOINT ["tini", "--", "/bin/bash", "/app/bin/run_frontend.sh"]
+ENTRYPOINT ["/bin/bash", "/app/bin/run_frontend.sh"]
 CMD ["start"]

@@ -37,9 +37,8 @@ See https://prettier.io/docs/en/editors.html#content
 
 case $1 in
   start)
-    # The `| cat` is to trick Node that this is an non-TTY terminal
-    # then react-scripts won't clear the console.
-    yarn start | cat
+    # With CI=true react-scripts won't clear the console.
+    CI=true exec yarn start
     ;;
   lint)
     # The --list-different (alias -l) will error the execution if there
