@@ -303,6 +303,22 @@ The auth token is sent as an ``Auth-Token`` HTTP header in the HTTP POST.
    created on stage won't work in production.
 
 
+Improving symbol upload success rate
+====================================
+
+Tecken tries to do as much as it can when handling the symbol upload request.
+Subsequent attempts will pick up where they left off--files that have been
+processed won't be reprocessed.
+
+If you find your symbols upload job is getting HTTP 429 or 5xx responses often
+or it doesn't seem like symbol uploads are being completed, try these tips:
+
+1. break up the zip file into smaller zip files to upload
+2. increase the amount of time you're giving to uploading symbols, increase the
+   number of retry attempts, and increase the time between retry attempts
+3. change the time of day that you're doing symbol uploads
+
+
 Upload: /upload/
 ================
 
@@ -342,16 +358,13 @@ Upload: /upload/
    :statuscode 403: your auth token is invalid and you need to get a new one
    :statuscode 413: your upload is too large; split it into smaller files or switch to
        upload by download url
-   :statuscode 429: wait and retry
-   :statuscode 500: wait and retry; if retrying continues to fail, then please
-       file a bug report
-   :statuscode 503: wait and retry
-
-
-.. Note::
-
-   For retrying, we suggest waiting 15 seconds between retry attempts. This
-   gives the service time to scale up and recover from ephemeral issues.
+   :statuscode 429: your request has been rate-limited; sleep for a bit and retry
+   :statuscode 500: there's an error with the server; sleep for a bit and
+       retry; if retrying doesn't work, then please file a bug report
+   :statuscode 502: sleep for a bit and retry
+   :statuscode 503: sleep for a bit and retry
+   :statuscode 504: the request is taking too long to complete; sleep for a bit
+       and retry
 
 
 Symbols processing
