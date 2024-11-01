@@ -310,8 +310,8 @@ Tecken tries to do as much as it can when handling the symbol upload request.
 Subsequent attempts will pick up where they left off--files that have been
 processed won't be reprocessed.
 
-If you find your job is getting HTTP 429s or 504s frequently or it doesn't seem
-like symbol uploads are being completed, try these tips:
+If you find your symbols upload job is getting HTTP 429 or 5xx responses often
+or it doesn't seem like symbol uploads are being completed, try these tips:
 
 1. break up the zip file into smaller zip files to upload
 2. increase the amount of time you're giving to uploading symbols, increase the
