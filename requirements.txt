@@ -267,9 +267,9 @@ encore==0.8.0 \
     --hash=sha256:74fd648f8119f4745e3dba750f7d1b5676f67df3606a408da0885b4b5a4cc436 \
     --hash=sha256:adfe42680bcb40edc99501f8d4aff169d38844b02fbae465f1f363bd39403454
     # via -r requirements.in
-everett==3.3.0 \
-    --hash=sha256:acb7b8f3c5fc9692a8ba14fb257e4649f87bea4856e7406c2e9b6c2cab889105 \
-    --hash=sha256:d3ecc55cc1bdf2408ca82bc8db5a3fc588fc4c0f236a6ab9599938f41970b814
+everett==3.4.0 \
+    --hash=sha256:f403c4a41764a6301fb31e2558d6e9718999f0eab9e260d986b894fa2e6b6871 \
+    --hash=sha256:f8c29c7300702f47b7323b75348e2b86647246694fda7ad410c2a2bfaa980ff7
     # via -r requirements.in
 fillmore==2.1.0 \
     --hash=sha256:251ed9154ba7f20f5825e4d757db0ad7b1642e72bda7657fe39fe39031cd2092 \

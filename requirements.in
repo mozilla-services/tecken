@@ -6,7 +6,7 @@ django-admin-cursor-paginator==0.1.6
 django-redis==5.4.0
 dockerflow==2024.4.2
 encore==0.8.0
-everett==3.3.0
+everett==3.4.0
 fillmore==2.1.0
 google-cloud-storage==2.18.2
 gunicorn==23.0.0
