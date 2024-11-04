@@ -28,7 +28,7 @@ sentry-sdk==2.18.0
 Sphinx==8.1.3
 sphinx-rtd-theme==3.0.1
 sphinxcontrib-httpdomain==1.8.1
-werkzeug==3.1.1
+werkzeug==3.1.2
 whitenoise==6.8.2
 
 # NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
