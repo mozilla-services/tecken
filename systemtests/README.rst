@@ -33,3 +33,24 @@ team's 1Password vault.)
 
 You can see all available target environments and custom flags in the "Custom options"
 section of the ``pytest -h`` output.
+
+Rules of system tests
+=====================
+
+1. Don't import anything from ``tecken``.
+
+2. Tests writing to the fake data bucket must be decorated with
+   ``@pytest.mark.write_bucket``.
+
+3. Tests requiring nginx in front of the app must be decorated with
+   ``@pytest.mark.nginx``.
+
+4. Tests uploading, and hence potentially destroying, data must be decoarated with
+   ``@pytest.mark.upload``. If all tests in a file require uploads, you can also use
+
+       pytestmark = pytest.mark.upload
+
+   at the top of the file to mark all tests at once.
+
+5. Since there is hardly anything that can be tested without uploading data first,
+   the system tests should never be run against a production environment.

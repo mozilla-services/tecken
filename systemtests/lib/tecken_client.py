@@ -69,6 +69,8 @@ class TeckenRetry(Retry):
 
 
 class TeckenClient:
+    """A simple Tecken client intended for testing Tecken's public API."""
+
     def __init__(self, target_env: "Environment"):
         self.target_env = target_env
         self.base_url = target_env.base_url.removesuffix("/")
