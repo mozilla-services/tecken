@@ -32,6 +32,16 @@ class Random(random.Random):
 
 
 class FakeSymFile:
+    """
+    Create a fake Breakpad symbol file.
+
+    The file has a valid header with MODULE and INFO lines followed by random, invalid
+    gibberish. Tecken currently only looks at the header of uploaded files, so for the
+    time being this is enough.
+    """
+
+    # TODO(smarnach): Create valid, platform-specific symbol files.
+
     DEBUG_FILE_EXTENSIONS = {
         "linux": ".so",
         "mac": ".dylib",
@@ -97,6 +107,7 @@ class FakeSymFile:
 
 
 def _format_file_size(size: int) -> str:
+    """Format a file size in human-readable format."""
     for factor, unit in [(2**30, "GiB"), (2**20, "MiB"), (2**10, "KiB")]:
         if size >= factor:
             return f"{size / factor:.1f} {unit}"
@@ -104,6 +115,8 @@ def _format_file_size(size: int) -> str:
 
 
 class FakeZipArchive:
+    """Generate a zip archive with fake symbol files."""
+
     def __init__(
         self, size: int, sym_file_size: int, platform: str, seed: Optional[int] = None
     ):
@@ -136,6 +149,17 @@ class FakeZipArchive:
 
 
 class FakeDataBucket:
+    """
+    Interface for a storage bucket to host fake data.
+
+    The Google Cloud Storage bucket can be used to upload locally generated data to test
+    Tecken's upload-by-download feature. It can also be used to host pre-generated data,
+    but that feature is currently unused.
+
+    You need a credentials file for the bucket to be able to write data. Since the test
+    bucket is public, reading is possible without credentials.
+    """
+
     zip_files_prefix = "zip-files/"
     sym_files_prefix = "sym-files/"
     scratch_prefix = "scratch/"
