@@ -46,7 +46,7 @@ Rules of system tests
    ``@pytest.mark.nginx``.
 
 4. Tests uploading, and hence potentially destroying, data must be decoarated with
-   ``@pytest.mark.upload``. If all tests in a file require uploads, you can also use
+   ``@pytest.mark.upload``. If all tests in a file require uploads, you can also use::
 
        pytestmark = pytest.mark.upload
 
