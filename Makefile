@@ -128,3 +128,7 @@ rebuildreqs: .env .docker-build  ## | Rebuild requirements.txt file after requir
 .PHONY: updatereqs
 updatereqs: .env .docker-build  ## | Update deps in requirements.txt file.
 	${DC} run --rm --no-deps web bash pip-compile --generate-hashes -U
+
+.PHONY: servicestatus
+servicestatus: .env .docker-build  ## | Update deps in requirements.txt file.
+	${DC} run --rm --no-deps web bash service-status

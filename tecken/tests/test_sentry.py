@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import os
 import shlex
 import subprocess
 from unittest.mock import ANY
@@ -13,7 +12,7 @@ from werkzeug.test import Client
 
 from django.contrib.auth.models import User
 
-from bin.sentry_wrap import get_release_name
+from obs_common.sentry_wrap import get_release_name
 from tecken.apps import count_sentry_scrub_error
 from tecken.tokens.models import Token
 from tecken.wsgi import application
@@ -234,19 +233,16 @@ def test_count_sentry_scrub_error(metricsmock):
 
 
 def test_sentry_wrap_non_app_error_has_release():
-    port = os.environ.get("EXPOSE_SENTRY_PORT", 8090)
-    fakesentry_url = f"http://fakesentry:{port}/"
+    fakesentry_url = "http://fakesentry:8090/"
 
     # Flush fakesentry to ensure we fetch only the desired error downstream
     requests.post(f"{fakesentry_url}api/flush/")
 
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = os.path.join(os.path.dirname(current_dir), "..")
-    expected_release = get_release_name(base_dir)
+    expected_release = get_release_name()
 
-    # Pass a non-Django command that will error to sentry_wrap
+    # Pass a non-Django command that will error to sentry-wrap
     non_app_command = "ls -2"
-    sentry_wrap_command = f"python bin/sentry_wrap.py wrap-process -- {non_app_command}"
+    sentry_wrap_command = f"sentry-wrap wrap-process -- {non_app_command}"
     cmd_args = shlex.split(sentry_wrap_command)
     subprocess.run(cmd_args, timeout=10)
 
