@@ -29,13 +29,13 @@ else
 
     echo ">>> license check (${PYTHON_VERSION})"
     if [[ -d ".git" ]]; then
-        # If the .git directory exists, we can let license-check.py do
+        # If the .git directory exists, we can let license-check do
         # git ls-files.
-        python bin/license-check.py
+        license-check
     else
         # The .git directory doesn't exist, so run it on all the Python
         # files in the tree.
-        python bin/license-check.py .
+        license-check .
     fi
 
     # NOTE(willkg): linting frontend files is done in another script

@@ -320,15 +320,15 @@ How to manipulate the local dev environment GCS bucket
 We use `fake-gcs-server <https://github.com/fsouza/fake-gcs-server>`__ for GCS
 emulation.
 
-Use the ``bin/gcs_cli.py`` script:
+Use the ``gcs-cli`` script:
 
 .. code-block:: shell
 
    $ make shell
-   app@xxx:/app$ ./bin/gcs_cli.py --help
-   Usage: gcs_cli.py [OPTIONS] COMMAND [ARGS]...
+   app@5a9103973085:/app$ gcs-cli --help
+   Usage: gcs-cli [OPTIONS] COMMAND [ARGS]...
 
-   Local dev environment GCS manipulation script
+     Local dev environment GCS manipulation script
 
    Options:
      --help  Show this message and exit.
@@ -336,8 +336,9 @@ Use the ``bin/gcs_cli.py`` script:
    Commands:
      create        Creates a bucket
      delete        Deletes a bucket
-     list_buckets  List GCS buckets
-     list_objects  List contents of a bucket
+     list-buckets  List GCS buckets
+     list-objects  List contents of a bucket
+     upload        Upload files to a bucket
 
 
 How to access the database

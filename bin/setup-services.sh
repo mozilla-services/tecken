@@ -11,8 +11,8 @@ python bin/s3_cli.py delete "${UPLOAD_S3_BUCKET}"
 python bin/s3_cli.py create "${UPLOAD_S3_BUCKET}"
 
 # Set up GCS
-python bin/gcs_cli.py delete "${UPLOAD_GCS_BUCKET}"
-python bin/gcs_cli.py create "${UPLOAD_GCS_BUCKET}"
+gcs-cli delete "${UPLOAD_GCS_BUCKET}"
+gcs-cli create "${UPLOAD_GCS_BUCKET}"
 
 # Set up db
 python bin/db.py drop || true
