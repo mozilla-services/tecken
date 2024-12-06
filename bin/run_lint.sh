@@ -29,7 +29,7 @@ else
 
     echo ">>> license check (${PYTHON_VERSION})"
     if [[ -d ".git" ]]; then
-        # If the .git directory exists, we can let license-check.py do
+        # If the .git directory exists, we can let license-check do
         # git ls-files.
         license-check
     else
