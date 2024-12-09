@@ -2,7 +2,7 @@
 #
 # NOTE(willkg): We're using node 14 because of this issue:
 # https://github.com/docker/for-mac/issues/5831
-FROM --platform=linux/amd64 node:16.10.0-slim@sha256:9bec98898848c3e3a1346bc74ab04c2072da9d0149d8be1ea0485dbf39fd658f as frontend
+FROM --platform=linux/amd64 node:22.12.0-slim@sha256:a4b757cd491c7f0b57f57951f35f4e85b7e1ad54dbffca4cf9af0725e1650cd8 as frontend
 
 COPY . /app
 WORKDIR /app
