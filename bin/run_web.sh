@@ -8,6 +8,7 @@
 : "${PORT:=8000}"
 : "${GUNICORN_WORKERS:=4}"
 : "${GUNICORN_TIMEOUT:=600}"
+: "${GUNICORN_GRACEFUL_TIMEOUT:=600}"
 
 export PROCESS_NAME=webapp
 
@@ -20,8 +21,10 @@ else
     echo "GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT}"
     echo "PORT=${PORT}"
     ${CMD_PREFIX} gunicorn \
+        --pid /tmp/gunicorn.pid \
         --bind 0.0.0.0:"${PORT}" \
         --timeout "${GUNICORN_TIMEOUT}" \
+        --graceful-timeout "${GUNICORN_GRACEFUL_TIMEOUT}" \
         --workers "${GUNICORN_WORKERS}" \
         --config=tecken/gunicornhooks.py \
         --access-logfile - \
