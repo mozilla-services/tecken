@@ -29,6 +29,6 @@ tag_name_template = "v%Y.%m.%d"
 [tool.service-status]
 main_branch = "main"
 hosts = [
-    "stage=https://symbols.stage.mozaws.net",
+    "stage=https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
     "prod=https://symbols.mozilla.org"
 ]
