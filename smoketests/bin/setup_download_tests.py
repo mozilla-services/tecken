@@ -194,7 +194,9 @@ def get_subset_to_zip(is_try, sym_file_type_to_filename):
 
 class StdoutMetrics(BackendBase):
     def emit(self, record):
-        click.echo(f"metric: {record.stat_type} {record.key} {record.value/1000:,.2f}s")
+        click.echo(
+            f"metric: {record.stat_type} {record.key} {record.value / 1000:,.2f}s"
+        )
 
 
 markus.configure([{"class": StdoutMetrics}], raise_errors=True)

@@ -46,7 +46,7 @@ class UploadByDownloadForm(forms.Form):
         if not settings.ALLOW_UPLOAD_BY_ANY_DOMAIN:
             if netloc_wo_port not in settings.ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS:
                 raise forms.ValidationError(
-                    f"Not an allowed domain ({netloc_wo_port!r}) " "to download from."
+                    f"Not an allowed domain ({netloc_wo_port!r}) to download from."
                 )
 
     def clean(self):

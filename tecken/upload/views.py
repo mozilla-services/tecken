@@ -209,11 +209,7 @@ def upload_archive(request, upload_workspace):
                         )
             else:
                 return http.JsonResponse(
-                    {
-                        "error": (
-                            "Must be multipart form data with at " "least one file"
-                        )
-                    },
+                    {"error": ("Must be multipart form data with at least one file")},
                     status=400,
                 )
     except zipfile.BadZipfile as exception:

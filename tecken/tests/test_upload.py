@@ -633,7 +633,7 @@ def test_upload_client_bad_request(client, db, uploaderuser, settings):
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 400
         error_msg = (
-            "Invalid character in filename " "'xpcfoo.dbg/A7D6F1BB18CD4CB48/p%eter.sym'"
+            "Invalid character in filename 'xpcfoo.dbg/A7D6F1BB18CD4CB48/p%eter.sym'"
         )
         assert response.json()["error"] == error_msg
 

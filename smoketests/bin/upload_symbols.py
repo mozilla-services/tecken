@@ -30,7 +30,9 @@ SLEEP_TIMEOUT = 15
 
 class StdoutMetrics(BackendBase):
     def emit(self, record):
-        click.echo(f"metric: {record.stat_type} {record.key} {record.value/1000:,.2f}s")
+        click.echo(
+            f"metric: {record.stat_type} {record.key} {record.value / 1000:,.2f}s"
+        )
 
 
 markus.configure([{"class": StdoutMetrics}], raise_errors=True)
@@ -79,7 +81,7 @@ def upload_symbols(ctx, expect_code, auth_token, base_url, symbolsfile):
     for i in range(MAX_ATTEMPTS):
         click.echo(
             click.style(
-                f"Uploading {symbolsfile} to {api_url} ({i+1}/{MAX_ATTEMPTS}) ...",
+                f"Uploading {symbolsfile} to {api_url} ({i + 1}/{MAX_ATTEMPTS}) ...",
                 fg="yellow",
             )
         )
