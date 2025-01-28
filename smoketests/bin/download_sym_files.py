@@ -32,7 +32,9 @@ STORAGE_BACKEND_RESPONSE_HEADERS = {
 
 class StdoutMetrics(BackendBase):
     def emit(self, record):
-        click.echo(f"metric: {record.stat_type} {record.key} {record.value/1000:,.2f}s")
+        click.echo(
+            f"metric: {record.stat_type} {record.key} {record.value / 1000:,.2f}s"
+        )
 
 
 markus.configure([{"class": StdoutMetrics}], raise_errors=True)

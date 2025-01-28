@@ -35,7 +35,7 @@ def test_is_blocked_in_auth0_command(requestsmock):
     )
 
     requestsmock.get(
-        "https://auth.example.com/api/v2/users?q=email%3A%22" "not%40example.com%22",
+        "https://auth.example.com/api/v2/users?q=email%3A%22not%40example.com%22",
         json=[{"name": "Not"}],
         status_code=200,
     )
@@ -46,8 +46,7 @@ def test_is_blocked_in_auth0_command(requestsmock):
     assert "NOT blocked" in output
 
     requestsmock.get(
-        "https://auth.example.com/api/v2/users?q=email%3A%22"
-        "blocked%40example.com%22",
+        "https://auth.example.com/api/v2/users?q=email%3A%22blocked%40example.com%22",
         json=[{"name": "Something", "blocked": True}],
         status_code=200,
     )
@@ -58,8 +57,7 @@ def test_is_blocked_in_auth0_command(requestsmock):
     assert "BLOCKED!" in output
 
     requestsmock.get(
-        "https://auth.example.com/api/v2/users?q=email%3A%22"
-        "notfound%40example.com%22",
+        "https://auth.example.com/api/v2/users?q=email%3A%22notfound%40example.com%22",
         json=[],
         status_code=200,
     )
@@ -94,8 +92,7 @@ def test_not_blocked_in_auth0(client, requestsmock, settings):
     )
 
     requestsmock.get(
-        "https://auth.example.com/api/v2/users?q=email%3A%22"
-        "peterbe%40example.com%22",
+        "https://auth.example.com/api/v2/users?q=email%3A%22peterbe%40example.com%22",
         json=[{"name": "Fine", "blocked": False}],
         status_code=200,
     )
@@ -121,8 +118,7 @@ def test_blocked_in_auth0(client, requestsmock, settings):
     )
 
     requestsmock.get(
-        "https://auth.example.com/api/v2/users?q=email%3A%22"
-        "peterbe%40example.com%22",
+        "https://auth.example.com/api/v2/users?q=email%3A%22peterbe%40example.com%22",
         json=[{"name": "Fine", "blocked": True}],
         status_code=200,
     )
