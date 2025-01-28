@@ -9,6 +9,9 @@
 
 set -euo pipefail
 
+# Wait 30 seconds for HAProxy to remove the pod from its backend list.
+sleep 30
+
 pid=$(cat /tmp/gunicorn.pid)
 
 if [ -n "$pid" ]; then
