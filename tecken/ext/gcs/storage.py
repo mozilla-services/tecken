@@ -126,7 +126,7 @@ class GCSStorage(StorageBackend):
             content_encoding=blob.content_encoding,
             original_content_length=original_content_length,
             original_md5_sum=gcs_metadata.get("original_md5_hash"),
-            last_modified=blob.updated,
+            last_modified=blob.custom_time or blob.updated,
         )
         return metadata
 
