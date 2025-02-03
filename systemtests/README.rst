@@ -18,7 +18,7 @@ The system tests should be run from inside the "web" container to make sure all
 requirements are available. They are invoked by running pytest in the ``systemtests/``
 directory::
 
-    $ make shell
+    $ just shell
     app@132812ebe909:/app$ cd systemtests/
     app@132812ebe909:/app/systemtests$ pytest --target-env stage
 

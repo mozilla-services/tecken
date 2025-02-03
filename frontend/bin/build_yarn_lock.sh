@@ -18,4 +18,4 @@ rm yarn.lock
 yarn install | cat
 rm -rf node_modules
 
-echo "Run 'make build' now."
+echo "Run 'just build' now."

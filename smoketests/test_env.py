@@ -108,7 +108,7 @@ Available environments:
 
 \b
 Usage:
-1. run "make shell" to get a shell in the container
+1. run "just shell" to get a shell in the container
 2. then do "cd smoketests"
 3. run "./setup_tests.py" if you are running the tests for the first time.
 4. run "./test_env.py [{"|".join(ENVIRONMENTS)}]"

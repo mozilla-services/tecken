@@ -9,7 +9,7 @@ Development
 Setup quickstart
 ================
 
-1. Install required software: Docker, make, and git.
+1. Install required software: Docker, just, and git.
 
    **Linux**:
 
@@ -19,17 +19,17 @@ Setup quickstart
 
        Install `Docker for Mac <https://docs.docker.com/docker-for-mac/>`_.
 
-       Use `homebrew <https://brew.sh>`_ to install make and git:
+       Use `homebrew <https://brew.sh>`_ to install just and git:
 
        .. code-block:: shell
 
-          $ brew install make git
+          $ brew install just git
 
    **Other**:
 
        Install `Docker <https://docs.docker.com/engine/installation/>`_.
 
-       Install `make <https://www.gnu.org/software/make/>`_.
+       Install `just <https://github.com/casey/just?tab=readme-ov-file#installation>`_.
 
        Install `git <https://git-scm.com/>`_.
 
@@ -45,13 +45,13 @@ Setup quickstart
 
    .. code-block:: shell
 
-      $ make .env
+      $ just _env
 
    Then edit the file and set the ``APP_UID`` and ``APP_GID`` variables. These
    will get used when creating the app user in the base image.
 
    If you ever want different values, change them in ``.env`` and re-run
-   ``make build``.
+   ``just build``.
 
 4. Build Docker images for Socorro services.
 
@@ -59,7 +59,7 @@ Setup quickstart
 
    .. code-block:: shell
 
-      $ make build
+      $ just build
 
    That will build the app Docker image required for development.
 
@@ -69,7 +69,7 @@ Setup quickstart
 
    .. code-block:: shell
 
-      $ make setup
+      $ just setup
 
    This creates the Postgres database and sets up tables, integrity rules, and
    a bunch of other things.
@@ -82,7 +82,7 @@ To run the webapp service, do:
 
 .. code-block:: shell
 
-   $ make run
+   $ just run
 
 
 The Symbols Service webapp is at: http://localhost:3000
@@ -108,7 +108,7 @@ first run:
 
 .. code-block:: shell
 
-   $ make devcontainerbuild
+   $ just build devcontainer
 
 
 What services are running in a local dev environment
@@ -150,12 +150,12 @@ similar services, for example:
    EXPOSE_STATSD_PORT=8281
    EXPOSE_GCS_EMULATOR_PORT=4443
 
-If you are using a development container for VS Code, you make need to restart
+If you are using a development container for VS Code, you may need to restart
 the container to pick up changes:
 
 .. code-block:: shell
 
-   $ make devcontainer
+   $ just run devcontainer
 
 
 How to create a script to recreate your local dev environment
@@ -165,7 +165,7 @@ Run:
 
 .. code-block:: shell
 
-   $ make slick.sh
+   $ just slick-sh
 
 Then edit the ``slick.sh`` script filling in:
 
@@ -284,7 +284,7 @@ Do this:
 
 .. code-block:: shell
 
-   $ make shell
+   $ just shell
    app@xxx:/app$ ./manage.py makemigration --name "BUGID_desc" APP
 
 
@@ -298,7 +298,7 @@ Use the ``bin/s3_cli.py`` script:
 
 .. code-block:: shell
 
-   $ make shell
+   $ just shell
    app@xxx:/app$ ./bin/s3_cli.py --help
    Usage: s3_cli.py [OPTIONS] COMMAND [ARGS]...
 
@@ -324,7 +324,7 @@ Use the ``gcs-cli`` script:
 
 .. code-block:: shell
 
-   $ make shell
+   $ just shell
    app@5a9103973085:/app$ gcs-cli --help
    Usage: gcs-cli [OPTIONS] COMMAND [ARGS]...
 
@@ -348,7 +348,7 @@ We use postgresql. To open a psql shell, do:
 
 .. code-block:: shell
 
-   $ make psql
+   $ just psql
    NOTE: Password is 'postgres'.
    /usr/bin/docker compose run --rm db psql -h db -U postgres -d tecken
    Password for user postgres:
@@ -407,7 +407,7 @@ Pull requests
 Pull request summary should indicate the bug the pull request addresses. Use a hyphen between "bug" and the bug ID(s). For
 example::
 
-    bug-nnnnnnn: removed frog from tree class
+   bug-nnnnnnn: removed frog from tree class
 
 For multiple bugs fixed within a single pull request, list the bugs out individually. For example::
 
@@ -476,14 +476,14 @@ To lint all the code, do:
 
 .. code-block:: bash
 
-   $ make lint
+   $ just lint
 
 
 To reformat all the code, do:
 
 .. code-block:: bash
 
-   $ make lintfix
+   $ just lint --fix
 
 
 HTML/CSS conventions
@@ -535,13 +535,13 @@ To add a new dependency, add it to the file and then do:
 
 .. code-block:: shell
 
-   $ make rebuildreqs
+   $ just rebuild-reqs
 
 Then rebuild your docker environment:
 
 .. code-block:: shell
 
-   $ make build
+   $ just build
 
 If there are problems, it'll tell you.
 
@@ -550,7 +550,7 @@ dependencies. To do this, run:
 
 .. code-block:: shell
 
-   $ make updatereqs
+   $ just updatereqs
 
 
 JavaScript dependencies (Symbols Service)
@@ -592,7 +592,7 @@ To build the docs, do:
 
 .. code-block:: shell
 
-   $ make docs
+   $ just docs
 
 Then view ``docs/_build/html/index.html`` in your browser.
 
@@ -609,7 +609,7 @@ To run the tests, do:
 
 .. code-block:: shell
 
-   $ make test
+   $ just test
 
 Tests for the Symbols Service webapp go in ``tecken/tests/``.
 
@@ -618,7 +618,7 @@ the testshell:
 
 .. code-block:: shell
 
-   $ make testshell
+   $ just test-shell
    app@xxx:/app$ pytest
 
    <pytest output>
@@ -691,12 +691,12 @@ Before we start doing local Upload By Download URL, you need to make your
 instance less secure since you'll be using URLs like ``http://localhost:9090``.
 Add ``DJANGO_ALLOW_UPLOAD_BY_ANY_DOMAIN=True`` to your ``.env`` file.
 
-To serve them locally, first start the dev server (``make run``). Then
+To serve them locally, first start the dev server (``just run``). Then
 you need to start a bash shell in the current running web container:
 
 .. code-block:: shell
 
-   $ make shell
+   $ just shell
 
 Now, you need some ``.zip`` files in the root of the project since it's
 mounted and can be seen by the containers. Once they're there, start a
@@ -735,7 +735,7 @@ To simulate that Redis is "struggling" you can use the
 
 .. code-block:: shell
 
-   $ make redis-cache-cli
+   $ just redis-cache-cli
    redis-cache:6379> client pause 30000
    OK
 

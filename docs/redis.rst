@@ -50,14 +50,14 @@ To go into CLI of the Redis database use this shortcuts:
 
 .. code-block:: shell
 
-    $ make redis-cache-cli
+    $ just redis-cache-cli
 
 From there you can see exactly what's stored. For example, to see the list
 of all symbols stored in the LRU cache:
 
 .. code-block:: shell
 
-    $ make redis-cache-cli
+    $ just redis-cache-cli
 
     redis-cache:6379> keys *
     1) ":1:d0f08e5ed1882049b74f1962103df580"

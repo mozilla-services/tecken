@@ -19,7 +19,7 @@ Before running the smoke tests, you need to `build a local dev environment
 
 Then set up the tests this way::
 
-    $ make shell
+    $ just shell
     root@e62fb7ae586f:/app# cd smoketests
     root@e62fb7ae586f:/app/smoketests# ./setup_tests.py
 
@@ -35,7 +35,7 @@ Running tests
 The smoke tests are run using the ``test_env.py`` Python script. You can get
 help about the command-line invocation of that script using::
 
-    $ make shell
+    $ just shell
     root@e62fb7ae586f:/app# cd smoketests
     root@e62fb7ae586f:/app/smoketests# ./test_env.py --help
 

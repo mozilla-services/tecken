@@ -30,7 +30,7 @@ shift
 
 case ${SERVICE} in
 web)  ## Run Tecken web service
-    exec honcho -f /app//Procfile --no-prefix start
+    exec honcho -f /app/Procfile --no-prefix start
     ;;
 bash)  ## Open a bash shell or run something else
     if [ -z "$*" ]; then

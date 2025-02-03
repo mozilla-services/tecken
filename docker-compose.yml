@@ -29,28 +29,8 @@ services:
       localstack: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
-    volumes:
-      - $PWD:/app
-    command: ["web", "--dev"]
+    command: ["web"]
 
-  # Container specifically for running tests.
-  test-ci:
-    extends:
-      service: base
-    env_file:
-      - docker/config/local_dev.env
-      - docker/config/test.env
-    depends_on:
-      db: *condition_service_healthy
-      gcs-emulator: *condition_service_healthy
-      fakesentry: *condition_service_healthy
-      redis-cache: *condition_service_healthy
-      localstack: *condition_service_healthy
-      oidcprovider: *condition_service_healthy
-      statsd: *condition_service_healthy
-
-  # TODO(2024-01-30): This configuration can be simplified using `extends: test-ci` once the fix for
-  # https://github.com/docker/compose/issues/11413 is available in all relevant environments.
   test:
     extends:
       service: base
@@ -65,8 +45,6 @@ services:
       localstack: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
-    volumes:
-      - $PWD:/app
 
   # Dev container https://containers.dev/, e.g. for VS Code
   devcontainer:
@@ -105,25 +83,17 @@ services:
       redis-cache: *condition_service_healthy
     command: web
 
-  # Same as 'frontend' but no volumes or command
-  frontend-ci:
+  frontend:
     build:
-      context: .
       dockerfile: frontend/Dockerfile
       args:
         userid: ${USE_UID:-10001}
         groupid: ${USE_GID:-10001}
-
-  frontend:
-    extends:
-      frontend-ci
     environment:
       - NODE_ENV=development
     ports:
       - "3000:3000"
       - "35729:35729"
-    volumes:
-      - $PWD/frontend:/app
     command: start
 
   # https://hub.docker.com/_/postgres/
