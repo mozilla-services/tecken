@@ -21,13 +21,10 @@ FAKETOKEN="c7c1f8cab79545b6a06bc4122f0eb3cb"
 FAKETOKEN_TRY="ebc447f574924b099e1be15527b62436"
 
 # Build Tecken
-make build
-
-# Start services
-docker compose up -d --remove-orphans db redis-cache statsd localstack oidcprovider fakesentry
+just build
 
 # Run setup
-make setup
+just setup
 
 # Set up user
 docker compose exec oidcprovider /code/manage.py createuser "${FAKEUSERNAME}" "${FAKEPASSWORD}" "${FAKEEMAIL}"
@@ -39,4 +36,4 @@ docker compose run --rm web bash python manage.py createtoken "--try-upload" "${
 curl -X POST http://localhost:8090/api/flush/
 
 # Reset Redis
-make clear-cache
+just clear-cache

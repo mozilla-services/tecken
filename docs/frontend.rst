@@ -68,7 +68,7 @@ color coded and able to spit out any warnings or compilation errors. When run
 in docker, with non-TTY terminal, all output from the dev server is sent to
 ``stdout`` one line at a time.
 
-When you start Docker for development (again ``make run`` or
+When you start Docker for development (again ``just run`` or
 ``docker compose up web worker frontend``) it starts the dev server on port
 ``:3000`` and it also exposes a WebSocket on port ``:35729``.
 
@@ -124,7 +124,7 @@ Watch out for ``node_modules``!
 If you ever run and build the frontend outside of Docker you end up with
 a directory ``frontend/node_modules`` which is ignored by git but is still
 part of the current working directory that Docker serves up and will
-cause things like ``make build`` be excessively slow since the directory
+cause things like ``just build`` be excessively slow since the directory
 can end up north of 100MB.
 
 If you have a ``frontend/node_modules`` directory, feel free to delete it.

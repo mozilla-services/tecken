@@ -16,7 +16,16 @@ FILES="bin tecken smoketests systemtests"
 PYTHON_VERSION=$(python --version)
 
 
-if [[ $1 == "--fix" ]]; then
+if [[ "${1:-}" == "--help" ]]; then
+    echo "Usage: $0 [OPTIONS]"
+    echo
+    echo "  Lint code"
+    echo
+    echo "Options:"
+    echo "  --help  Show this message and exit."
+    echo "  --fix   Reformat code."
+
+elif [[ $1 == "--fix" ]]; then
     echo ">>> ruff fix (${PYTHON_VERSION})"
     ruff format $FILES
     ruff check --fix $FILES
@@ -38,5 +47,6 @@ else
         license-check .
     fi
 
-    # NOTE(willkg): linting frontend files is done in another script
+    # NOTE(willkg): linting frontend files is done in another script because
+    # it has to run in the frontend container
 fi

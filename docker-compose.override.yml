@@ -1,0 +1,15 @@
+# define volumes in docker-compose.override.yml so that can be ignored in CI
+---
+services:
+  base:
+    volumes:
+      - .:/app
+  web:
+    volumes:
+      - .:/app
+  test:
+    volumes:
+      - .:/app
+  frontend:
+    volumes:
+      - ./frontend:/app

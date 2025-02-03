@@ -12,7 +12,7 @@
 
 export PROCESS_NAME=webapp
 
-if [ "$1" == "--dev" ]; then
+if [ "$LOCAL_DEV_ENV" == "true" ]; then
     python manage.py migrate --noinput
     python manage.py runserver 0.0.0.0:${PORT}
 
