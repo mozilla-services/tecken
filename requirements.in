@@ -29,7 +29,7 @@ Sphinx==8.1.3
 sphinx-rtd-theme==3.0.2
 sphinxcontrib-httpdomain==1.8.1
 werkzeug==3.1.3
-whitenoise==6.8.2
+whitenoise==6.9.0
 
 # NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
 Django==4.2.18
