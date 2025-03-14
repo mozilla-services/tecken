@@ -59,10 +59,10 @@ jobs:
         run: |
           just docs
 
-      - name: Set Docker image tag to "latest" for updates of the main branch
+      - name: Set Docker image tag to the shortened commit sha for updates of the main branch
         if: github.ref == 'refs/heads/main'
         run: |
-          echo IMAGE_TAG=latest >> "$GITHUB_ENV"
+          echo IMAGE_TAG=$(git rev-parse --short=10 "$GITHUB_SHA") >> "$GITHUB_ENV"
       - name: Set Docker image tag to "test" for updates of the build-test-image branch
         if: github.ref == 'refs/heads/build-test-image'
         run: |
