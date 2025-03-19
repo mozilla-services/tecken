@@ -29,6 +29,43 @@ tecken.cleanup.remove_stale_contenttypes_timing:
     Timer for how long it takes to clear stale content types in the
     tecken_cleanup management command.
 
+tecken.clearuploads.count_timing:
+  type: "timing"
+  description: |
+    Timer for how long it takes to count uploads and file uploads in the
+    clearuploads management command.
+
+tecken.clearuploads.delete_timing:
+  type: "timing"
+  description: |
+    Timer for how long it takes to delete records in the clearuploads
+    management command.
+
+    Tags:
+
+    * ``storage``: "try" or "regular"
+
+tecken.clearuploads.record_count:
+  type: "gauge"
+  description: |
+    Total number of records in the fileuploads table when running the
+    clearuploads management command.
+
+    Tags:
+
+    * ``table``: "uploads" or "fileuploads"
+
+tecken.clearuploads.records_deleted:
+  type: "gauge"
+  description: |
+    Number of records in the fileuploads table that were deleted when running
+    the clearuploads management command.
+
+    Tags:
+
+    * ``storage``: "try" or "regular"
+    * ``table``: "uploads" or "fileuploads"
+
 tecken.download_symbol:
   type: "timing"
   description: |
