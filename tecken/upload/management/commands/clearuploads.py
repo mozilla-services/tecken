@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection, reset_queries
 from django.utils import timezone
 
-from tecken.libtiming import record_timing
+from tecken.libmarkus import METRICS
 from tecken.upload.models import Upload, FileUpload
 
 
@@ -58,8 +58,19 @@ class Command(BaseCommand):
             del_query = uploads._chain()
             upload_count = uploads._raw_delete(using=del_query.db)
 
+        storage = "try" if is_try else "regular"
+        METRICS.gauge(
+            "clearuploads.records_deleted",
+            upload_count,
+            tags=[f"storage:{storage}", "table:uploads"],
+        )
+        METRICS.gauge(
+            "clearuploads.records_deleted",
+            fileupload_count,
+            tags=[f"storage:{storage}", "table:fileuploads"],
+        )
         self.stdout.write(
-            f">>> try={is_try}, cutoff={cutoff.date()}: "
+            f">>> storage={storage}, cutoff={cutoff.date()}: "
             + f"deleted upload={upload_count}, fileupload={fileupload_count}"
         )
 
@@ -76,20 +87,28 @@ class Command(BaseCommand):
         if is_dry_run:
             self.stdout.write(">>> THIS IS A DRY RUN.")
 
-        with record_timing("count", self.stdout):
+        with METRICS.timer("clearuploads.count_timing"):
             upload_count = Upload.objects.all().count()
             fileupload_count = FileUpload.objects.all().count()
+            METRICS.gauge(
+                "clearuploads.record_count", upload_count, tags=["table:uploads"]
+            )
+            METRICS.gauge(
+                "clearuploads.record_count",
+                fileupload_count,
+                tags=["table:fileuploads"],
+            )
             self.stdout.write(
                 ">>> count before clearing: "
                 + f"upload={upload_count}, fileupload={fileupload_count}"
             )
 
-        with record_timing("delete", self.stdout):
+        with METRICS.timer("clearuploads.delete_timing", tags=["storage:try"]):
             # First clear try records
             try_cutoff = today - datetime.timedelta(days=TRY_RECORD_AGE_CUTOFF)
             self.delete_records(is_dry_run=is_dry_run, is_try=True, cutoff=try_cutoff)
 
-        with record_timing("delete", self.stdout):
+        with METRICS.timer("clearuploads.delete_timing", tags=["storage:regular"]):
             # Now clear regular records
             cutoff = today - datetime.timedelta(days=REGULAR_RECORD_AGE_CUTOFF)
             self.delete_records(is_dry_run=is_dry_run, is_try=False, cutoff=cutoff)
