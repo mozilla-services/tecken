@@ -17,6 +17,18 @@ tecken.api_stats:
   description: |
     Timer for how long it takes to compute upload API stats.
 
+tecken.cleanup.clearsessions_timing:
+  type: "timing"
+  description: |
+    Timer for how long it takes to clear stale sessions in the tecken_cleanup
+    management command.
+
+tecken.cleanup.remove_stale_contenttypes_timing:
+  type: "timing"
+  description: |
+    Timer for how long it takes to clear stale content types in the
+    tecken_cleanup management command.
+
 tecken.download_symbol:
   type: "timing"
   description: |
