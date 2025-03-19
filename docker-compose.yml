@@ -98,7 +98,7 @@ services:
 
   # https://hub.docker.com/_/postgres/
   db:
-    image: postgres:12.7
+    image: postgres:17.4
     environment:
       # Create the superuser account
       - POSTGRES_USER=postgres
