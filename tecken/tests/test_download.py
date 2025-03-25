@@ -159,51 +159,47 @@ def test_client_404(client, db, symbol_storage):
     assert response.status_code == 404
 
 
-def test_client_with_bad_filenames(client, db, symbol_storage):
-    url = reverse(
-        "download:download_symbol",
-        args=(
+@pytest.mark.parametrize(
+    "debug_filename, debug_id, filename",
+    [
+        (
             "xül.pdb",  # <-- note the extended ascii char
             "44E4EC8C2F41492B9369D6B9A059577C2",
             "xul.sym",
         ),
-    )
-    response = client.get(url)
-    assert response.status_code == 400
-
-    url = reverse(
-        "download:download_symbol",
-        args=(
+        (
             "x%l.pdb",  # <-- note the %
             "44E4EC8C2F41492B9369D6B9A059577C2",
             "xul.sym",
         ),
-    )
-    response = client.get(url)
-    assert response.status_code == 400
-
-    url = reverse(
-        "download:download_symbol",
-        args=(
+        (
             "xul.pdb",
             "44E4EC8C2F41492B9369D6B9A059577C2",
             "xul#.ex_",  # <-- note the #
         ),
-    )
-    response = client.get(url)
-    assert response.status_code == 400
-
-    url = reverse(
-        "download:download_symbol",
-        args=(
+        (
             "crypt3\x10.pdb",
             "3D0443BF4FF5446B83955512615FD0942",
             "crypt3\x10.pd_",
+        ),
+    ],
+)
+def test_client_with_invalid_keys(
+    client, db, symbol_storage, debug_filename, debug_id, filename
+):
+    url = reverse(
+        "download:download_symbol",
+        args=(
+            debug_filename,
+            debug_id,
+            filename,
         ),
     )
     response = client.get(url)
     assert response.status_code == 400
 
+
+def test_client_with_bad_filenames(client, db, symbol_storage):
     # There are many more characters that can cause a 400 response because the symbol or
     # the filename contains, what's considered, invalid characters. But there are some
     # that actually work that might be a bit surprising.
