@@ -17,7 +17,7 @@ msgpack==1.1.0
 pip-tools==7.4.1
 psycopg2==2.9.9
 pytest==8.3.5
-pytest-django==4.10.0
+pytest-django==4.11.1
 python-dateutil==2.9.0.post0
 PyYAML==6.0.2
 redis==5.0.8
