@@ -869,9 +869,9 @@ s3transfer==0.10.1 \
     --hash=sha256:5683916b4c724f799e600f41dd9e10a9ff19871bf87623cc8f491cb4f5fa0a19 \
     --hash=sha256:ceb252b11bcf87080fb7850a224fb6e05c8a776bab8f2b64b7f25b969464839d
     # via boto3
-sentry-sdk==2.24.1 \
-    --hash=sha256:36baa6a1128b9d98d2adc5e9b2f887eff0a6af558fc2b96ed51919042413556d \
-    --hash=sha256:8ba3c29990fa48865b908b3b9dc5ae7fa7e72407c7c9e91303e5206b32d7b8b1
+sentry-sdk==2.25.1 \
+    --hash=sha256:60b016d0772789454dc55a284a6a44212044d4a16d9f8448725effee97aaf7f6 \
+    --hash=sha256:f9041b7054a7cf12d41eadabe6458ce7c6d6eea7a97cfe1b760b6692e9562cf0
     # via
     #   -r requirements.in
     #   fillmore
