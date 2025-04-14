@@ -11,7 +11,7 @@ RUN bin/build_frontend.sh
 
 # NOTE(smarnach): To upgrade Python to a new minor or major version, see
 # https://tecken.readthedocs.io/en/latest/dev.html#how-to-upgrade-the-python-version
-FROM --platform=linux/amd64 python:3.11.11-slim-bookworm@sha256:7029b00486ac40bed03e36775b864d3f3d39dcbdf19cd45e6a52d541e6c178f0
+FROM --platform=linux/amd64 python:3.11.12-slim-bookworm@sha256:82c07f2f6e35255b92eb16f38dbd22679d5e8fb523064138d7c6468e7bf0c15b
 
 ARG userid=10001
 ARG groupid=10001
