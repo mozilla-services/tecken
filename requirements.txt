@@ -644,8 +644,8 @@ msgpack==1.1.0 \
     --hash=sha256:f80bc7d47f76089633763f952e67f8214cb7b3ee6bfa489b3cb6a84cfac114cd \
     --hash=sha256:fd2906780f25c8ed5d7b323379f6138524ba793428db5d0e9d226d3fa6aa1788
     # via -r requirements.in
-obs-common==2025.5.6 \
-    --hash=sha256:eee6d1cd20e564a1f2a98952ee58555889a3be2eb8793bcd8eb0dc52c62c47bd
+obs-common==2025.5.20 \
+    --hash=sha256:06338403c65e9144563a0451f61cf369ded53b72d872da23cbe153c87bf65cc6
     # via -r requirements.in
 opentelemetry-api==1.28.2 \
     --hash=sha256:6fcec89e265beb258fe6b1acaaa3c8c705a934bd977b9f534a2b7c0d2d4275a6 \
