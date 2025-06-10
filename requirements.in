@@ -23,7 +23,7 @@ PyYAML==6.0.2
 redis==5.0.8
 requests-mock==1.12.1
 requests==2.32.4
-ruff==0.11.12
+ruff==0.11.13
 sentry-sdk==2.29.1
 Sphinx==8.2.3
 sphinx-rtd-theme==3.0.2
