@@ -18,8 +18,8 @@ class Help extends PureComponent {
         <h2>Usage as a symbol server for Microsoft Debuggers</h2>
         <p>
           To use this as a symbol server for Microsoft debuggers, see{" "}
-          <a href="https://developer.mozilla.org/en-US/docs/Mozilla/Using_the_Mozilla_symbol_server">
-            this MDN article
+          <a href="https://firefox-source-docs.mozilla.org/toolkit/crashreporter/crashreporter/Using_the_Mozilla_symbol_server.html">
+            the relevant section in the Firefox Source Docs
           </a>{" "}
           for instructions on how to configure your debugger.
         </p>
