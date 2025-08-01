@@ -307,9 +307,9 @@ google-cloud-pubsub==2.27.1 \
     --hash=sha256:3ca8980c198a847ee464845ab60f05478d4819cf693c9950ee89da96f0b80a41 \
     --hash=sha256:7119dbc5af4b915ecdfa1289919f791a432927eaaa7bbfbeb740e6d7020c181e
     # via obs-common
-google-cloud-storage==3.1.1 \
-    --hash=sha256:ba7e6ae2be5a7a08742f001e23ec6a0c17d78c620f63bf8e0e7c2cbdddb407de \
-    --hash=sha256:f9c8f965cafd1d38509f8e2b070339e0e9e5bf050774653bf36213d4ea6104c0
+google-cloud-storage==3.2.0 \
+    --hash=sha256:decca843076036f45633198c125d1861ffbf47ebf5c0e3b98dcb9b2db155896c \
+    --hash=sha256:ff7a9a49666954a7c3d1598291220c72d3b9e49d9dfcf9dfaecb301fc4fb0b24
     # via
     #   -r requirements.in
     #   obs-common
