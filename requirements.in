@@ -11,10 +11,10 @@ fillmore==2.1.0
 google-cloud-storage==3.2.0
 gunicorn==23.0.0
 honcho==2.0.0
-markus[datadog]==5.0.0
+markus[datadog]==5.1.0
 mozilla-django-oidc==4.0.1
 msgpack==1.1.0
-pip-tools==7.4.1
+pip-tools==7.5.0
 psycopg2==2.9.9
 pytest==8.4.1
 pytest-django==4.11.1
@@ -23,7 +23,7 @@ PyYAML==6.0.2
 redis==5.0.8
 requests-mock==1.12.1
 requests==2.32.4
-ruff==0.12.7
+ruff==0.12.8
 sentry-sdk==2.34.1
 Sphinx==8.2.3
 sphinx-rtd-theme==3.0.2
@@ -36,4 +36,4 @@ Django==4.2.23
 
 # Mozilla obs-team libraries that are published to GAR instead of pypi
 --extra-index-url https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/simple/
-obs-common==2025.6.24
+obs-common==2025.8.5
