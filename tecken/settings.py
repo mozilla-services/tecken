@@ -528,7 +528,14 @@ CONN_MAX_AGE = _config(
     parser=int,
     doc="Maximum age in minutes for connections.",
 )
+CONN_HEALTH_CHECKS = _config(
+    "CONN_HEALTH_CHECKS",
+    default="true",
+    parser=bool,
+    doc="Existing persistent database connections will be health checked before they are reused in each request performing database access.",
+)
 DATABASES["default"]["CONN_MAX_AGE"] = CONN_MAX_AGE
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = CONN_HEALTH_CHECKS
 
 if not LOCAL_DEV_ENV and not TEST_ENV:
     DATABASES["default"].setdefault("OPTIONS", {})["sslmode"] = "require"
