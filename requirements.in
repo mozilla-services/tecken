@@ -8,23 +8,23 @@ dockerflow==2024.4.2
 encore==0.8.0
 everett==3.5.0
 fillmore==2.2.0
-google-cloud-storage==3.6.0
+google-cloud-storage==3.7.0
 gunicorn==23.0.0
 honcho==2.0.0
 markus[datadog]==5.2.0
-mozilla-django-oidc==4.0.1
+mozilla-django-oidc==5.0.2
 msgpack==1.1.2
 pip-tools==7.4.1
 psycopg2==2.9.11
-pytest==9.0.1
+pytest==9.0.2
 pytest-django==4.11.1
 python-dateutil==2.9.0.post0
 PyYAML==6.0.3
 redis==5.0.8
 requests-mock==1.12.1
 requests==2.32.5
-ruff==0.14.7
-sentry-sdk==2.46.0
+ruff==0.14.10
+sentry-sdk==2.48.0
 Sphinx==8.2.3
 sphinx-rtd-theme==3.0.2
 sphinxcontrib-httpdomain==1.8.1
@@ -32,7 +32,7 @@ werkzeug==3.1.4
 whitenoise==6.11.0
 
 # NOTE(willkg): We stick with LTS releases and the next one is 5.2 (2025).
-Django==4.2.27
+Django==5.0.14
 
 # Mozilla obs-team libraries that are published to GAR instead of pypi
 --extra-index-url https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/simple/
