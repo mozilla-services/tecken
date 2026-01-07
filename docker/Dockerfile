@@ -49,7 +49,10 @@ COPY requirements.txt /tmp/
 # Switch to /tmp to install dependencies outside home dir
 WORKDIR /tmp
 
-RUN pip install -U 'pip>=20' && \
+# 23.5 is incompatible with pip-tools < 7.5.3 due to
+# https://github.com/jazzband/pip-tools/issues/2252, and we can't upgrade
+# pip-tools due to this regression: https://github.com/jazzband/pip-tools/issues/2220.
+RUN pip install -U 'pip>=20,<23.5' && \
     pip install --no-cache-dir --no-deps -r requirements.txt && \
     pip check --disable-pip-version-check
 
