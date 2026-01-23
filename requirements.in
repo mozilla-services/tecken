@@ -8,8 +8,8 @@ dockerflow==2024.4.2
 encore==0.8.0
 everett==3.5.0
 fillmore==2.2.0
-google-cloud-storage==3.7.0
-gunicorn==23.0.0
+google-cloud-storage==3.8.0
+gunicorn==24.0.0
 honcho==2.0.0
 markus[datadog]==5.2.0
 mozilla-django-oidc==5.0.2
@@ -23,10 +23,10 @@ PyYAML==6.0.3
 redis==5.0.8
 requests-mock==1.12.1
 requests==2.32.5
-ruff==0.14.11
-sentry-sdk==2.49.0
+ruff==0.14.14
+sentry-sdk==2.50.0
 Sphinx==8.2.3
-sphinx-rtd-theme==3.0.2
+sphinx-rtd-theme==3.1.0
 sphinxcontrib-httpdomain==1.8.1
 werkzeug==3.1.5
 whitenoise==6.11.0
@@ -36,4 +36,4 @@ Django==4.2.27
 
 # Mozilla obs-team libraries that are published to GAR instead of pypi
 --extra-index-url https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/simple/
-obs-common==2026.1.8
+obs-common==2026.1.21
