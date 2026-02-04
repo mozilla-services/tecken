@@ -111,7 +111,7 @@ LOGGING = {
     },
     "formatters": {
         "json": {
-            "()": "dockerflow.logging.JsonLogFormatter",
+            "()": "dockerflow.logging.MozlogFormatter",
             "logger_name": "tecken",
         },
         "human": {
