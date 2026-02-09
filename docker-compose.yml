@@ -71,6 +71,7 @@ services:
       statsd: *condition_service_healthy
     volumes:
       - $PWD:/app
+      - /app/.venv
 
   # Web container is a prod-like fully-functioning container.
   gunicorn:

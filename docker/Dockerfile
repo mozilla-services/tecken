@@ -4,22 +4,23 @@
 # https://github.com/docker/for-mac/issues/5831
 FROM --platform=linux/amd64 node:16.10.0-slim@sha256:9bec98898848c3e3a1346bc74ab04c2072da9d0149d8be1ea0485dbf39fd658f as frontend
 
-COPY . /app
+COPY frontend /app/frontend
+COPY bin/build_frontend.sh /app/bin/
 WORKDIR /app
 RUN bin/build_frontend.sh
 
 
 # NOTE(smarnach): To upgrade Python to a new minor or major version, see
 # https://tecken.readthedocs.io/en/latest/dev.html#how-to-upgrade-the-python-version
-FROM --platform=linux/amd64 python:3.11.14-slim-bookworm@sha256:bcbbec29f7a3f9cbee891e3cd69d7fe4dec7e281daf36cbd415ddd8ee2ba0077
-
+FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.11-bookworm-slim@sha256:4f5d923c9dcea037f57bda425dd209f3ec643da2f0b74227f68d09dab0b3bb36
 ARG userid=10001
 ARG groupid=10001
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/ \
-    PORT=8000
+    PORT=8000 \
+    UV_PYTHON_DOWNLOADS=0
 
 EXPOSE $PORT
 
@@ -44,30 +45,20 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+USER app
+
 # Install Python dependencies
-COPY requirements.txt /tmp/
-# Switch to /tmp to install dependencies outside home dir
-WORKDIR /tmp
+RUN --mount=type=cache,uid=$userid,gid=$groupid,target=/home/app/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked
+ENV PATH="/app/.venv/bin:$PATH"
 
-# 23.5 is incompatible with pip-tools < 7.5.3 due to
-# https://github.com/jazzband/pip-tools/issues/2252, and we can't upgrade
-# pip-tools due to this regression: https://github.com/jazzband/pip-tools/issues/2220.
-RUN pip install -U 'pip>=20,<23.5' && \
-    pip install --no-cache-dir --no-deps -r requirements.txt && \
-    pip check --disable-pip-version-check
-
-COPY . /app
-
-# Switch back to home directory
-WORKDIR /app
+COPY --chown=app:app . /app
 
 # Copy static assets
-COPY --from=frontend /app/frontend/build /app/frontend/build
+COPY --from=frontend --chown=app:app /app/frontend/build /app/frontend/build
 RUN /app/bin/run_collectstatic.sh
-
-RUN chown -R app:app /app
-
-USER app
 
 # Using /bin/bash as the entrypoint works around some volume mount issues on Windows
 # where volume-mounted files do not have execute bits set.
