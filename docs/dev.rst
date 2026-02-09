@@ -367,11 +367,11 @@ these files:
 
 * ``.devcontainer/Dockerfile``
 * ``.github/dependabot.yml``
+* ``.python-version``
 * ``.readthedocs.yaml``
 * ``docker/Dockerfile``
 * ``docker/images/fakesentry/Dockerfile``
 * ``pyproject.toml``
-* ``tecken/tests/test_sentry.py``
 
 Bugs / Issues
 =============
@@ -527,21 +527,22 @@ Managing dependencies
 Python dependencies
 -------------------
 
-Python dependencies are maintained in the ``requirements.in`` file and
-"compiled" with hashes and dependencies of dependencies in the
-``requirements.txt`` file.
+Python dependencies are maintained in the ``pyproject.toml`` file; ``uv`` keeps
+exact versions and build hashes in ``uv.lock``.
 
-To add a new dependency, add it to the file and then do:
-
-.. code-block:: shell
-
-   $ just rebuild-reqs
-
-Then rebuild your docker environment:
+Most ``uv`` commands should be run inside the container, which can be done
+using ``just uv``. To add a new dependency, you can run:
 
 .. code-block:: shell
 
-   $ just build
+   $ just uv add my-new-dependency
+
+Then install the new dependency in the managed virtual environment in the
+container, you can run
+
+.. code-block:: shell
+
+   $ just uv sync
 
 If there are problems, it'll tell you.
 
@@ -550,7 +551,7 @@ dependencies. To do this, run:
 
 .. code-block:: shell
 
-   $ just updatereqs
+   $ just uv lock --upgrade
 
 
 JavaScript dependencies (Symbols Service)
