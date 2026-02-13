@@ -21,7 +21,7 @@ slick-sh:
     chmod 755 slick.sh
 
 # Build docker images.
-build *args='base web frontend fakesentry db redis-cache localstack statsd oidcprovider gcs-emulator': _env
+build *args='base frontend fakesentry db redis-cache localstack statsd oidcprovider gcs-emulator': _env
     docker compose --progress plain build {{args}}
 
 # Set up services.
