@@ -4,12 +4,15 @@ services:
   base:
     volumes:
       - .:/app
+      - /app/.venv
   web:
     volumes:
       - .:/app
+      - /app/.venv
   test:
     volumes:
       - .:/app
+      - /app/.venv
   frontend:
     volumes:
       - ./frontend:/app

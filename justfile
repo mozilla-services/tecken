@@ -21,7 +21,7 @@ slick-sh:
     chmod 755 slick.sh
 
 # Build docker images.
-build *args='base web frontend fakesentry db redis-cache localstack statsd oidcprovider gcs-emulator': _env
+build *args='base frontend fakesentry db redis-cache localstack statsd oidcprovider gcs-emulator': _env
     docker compose --progress plain build {{args}}
 
 # Set up services.
@@ -69,13 +69,9 @@ docs: _env
     docker compose run --rm --no-deps web bash make -C docs/ clean
     docker compose run --rm --no-deps web bash make -C docs/ html
 
-# Rebuild requirements.txt file after requirements.in changes.
-rebuildreqs *args: _env
-	docker compose run --rm --no-deps web bash pip-compile --generate-hashes {{args}}
-
-# Verify that the requirements file is built by the version of Python that runs in the container.
-verify-reqs: _env
-    docker compose run --rm --no-deps web bash ./bin/run_verify_reqs.sh
+# Run uv inside the container
+uv *args: _env
+	docker compose run --rm --no-deps web bash uv {{args}}
 
 # Check how far behind different server environments are from main tip.
 service-status *args: _env
