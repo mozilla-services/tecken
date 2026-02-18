@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import shlex
+import site
 import subprocess
 from unittest.mock import ANY
 
@@ -17,6 +18,8 @@ from tecken.apps import count_sentry_scrub_error
 from tecken.tokens.models import Token
 from tecken.wsgi import application
 
+
+[SITE_PACKAGES] = site.getsitepackages()
 
 # NOTE(willkg): If this changes, we should update it and look for new things that should
 # be scrubbed. Use ANY for things that change between tests like timestamps, source code
@@ -75,7 +78,8 @@ BROKEN_EVENT = {
                 "stacktrace": {
                     "frames": [
                         {
-                            "abs_path": "/usr/local/lib/python3.11/site-packages/django/core/handlers/exception.py",
+                            "abs_path": SITE_PACKAGES
+                            + "/django/core/handlers/exception.py",
                             "context_line": ANY,
                             "filename": "django/core/handlers/exception.py",
                             "function": "inner",
@@ -91,7 +95,7 @@ BROKEN_EVENT = {
                             },
                         },
                         {
-                            "abs_path": "/usr/local/lib/python3.11/site-packages/django/core/handlers/base.py",
+                            "abs_path": SITE_PACKAGES + "/django/core/handlers/base.py",
                             "context_line": ANY,
                             "filename": "django/core/handlers/base.py",
                             "function": "_get_response",

@@ -1,3 +1,68 @@
+[project]
+name = "tecken"
+description = "The Mozilla Symbol Server"
+readme = "README.rst"
+version = "1.0.0"  # Required, but unused
+requires-python = "==3.11.*"
+dependencies = [
+    "boto3",
+    "botocore",
+    "click",
+    "dj-database-url",
+    "django~=4.2.28",
+    "django-admin-cursor-paginator",
+    "django-redis",
+    "dockerflow",
+    "encore",
+    "everett",
+    "fillmore",
+    "google-cloud-storage",
+    "gunicorn",
+    "honcho",
+    "markus[datadog]",
+    "mozilla-django-oidc",
+    "msgpack",
+    "obs-common",
+    "psycopg2",
+    "pytest",
+    "pytest-django",
+    "python-dateutil",
+    "pyyaml",
+    "redis",
+    "requests",
+    "requests-mock",
+    "ruff",
+    "sentry-sdk",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "sphinxcontrib-httpdomain",
+    "werkzeug",
+    "whitenoise",
+]
+
+[dependency-groups]
+devcontainer = [
+    "ipython",
+]
+
+[project.urls]
+Homepage = "https://github.com/mozilla-services/tecken"
+
+[tool.uv]
+environments = ["""
+    sys_platform == 'linux' and
+    platform_machine == 'x86_64' and
+    implementation_name == 'cpython'
+"""]
+package = false
+
+[[tool.uv.index]]
+name = "cavendish"
+url = "https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/simple/"
+
+[tool.uv.sources]
+obs-common = { index = "cavendish" }
+
 [tool.ruff]
 line-length = 88
 target-version = "py311"
