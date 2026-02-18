@@ -2,7 +2,6 @@
 name = "tecken"
 description = "The Mozilla Symbol Server"
 readme = "README.rst"
-authors = [{name = "Mozilla", email = "peterbe@mozilla.com"}]
 version = "1.0.0"  # Required, but unused
 requires-python = "==3.11.*"
 dependencies = [
