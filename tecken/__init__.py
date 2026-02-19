@@ -3,4 +3,3 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 
-default_app_config = "tecken.apps.TeckenAppConfig"

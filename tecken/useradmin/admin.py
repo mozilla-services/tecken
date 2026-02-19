@@ -34,17 +34,24 @@ class UserAdminBetter(UserAdmin):
         "last_login",
     ]
 
+    @admin.display(
+        description="Groups"
+    )
     def in_groups(self, obj):
         """Return comma-separated list of groups this user is in."""
         return ", ".join(obj.groups.values_list("name", flat=True))
 
-    in_groups.short_description = "Groups"
 
+    @admin.display(
+        description="# Uploads"
+    )
     def num_uploads(self, obj):
         return Upload.objects.filter(user=obj).count()
 
-    num_uploads.short_description = "# Uploads"
 
+    @admin.display(
+        description="Last upload"
+    )
     def last_upload(self, obj):
         """Returns most recent upload date or None."""
         data = (
@@ -55,9 +62,10 @@ class UserAdminBetter(UserAdmin):
         )
         return data
 
-    last_upload.short_description = "Last upload"
 
+    @admin.display(
+        description="# Tokens"
+    )
     def num_api_tokens(self, obj):
         return Token.objects.filter(user=obj).count()
 
-    num_api_tokens.short_description = "# Tokens"

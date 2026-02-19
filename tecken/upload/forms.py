@@ -28,7 +28,7 @@ class UploadByDownloadRemoteError(Exception):
 
 
 class UploadByDownloadForm(forms.Form):
-    url = forms.URLField()
+    url = forms.URLField(assume_scheme="https")
 
     def clean_url(self):
         url = self.cleaned_data["url"]
