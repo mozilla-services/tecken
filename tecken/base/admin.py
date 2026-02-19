@@ -76,13 +76,9 @@ class LogEntryAdmin(admin.ModelAdmin):
                 pass
         return object_link
 
-
-    @admin.display(
-        description="change message"
-    )
+    @admin.display(description="change message")
     def get_change_message(self, obj):
         return obj.get_change_message()
-
 
     def has_add_permission(self, request):
         return False
