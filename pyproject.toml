@@ -5,8 +5,10 @@ readme = "README.rst"
 version = "1.0.0"  # Required, but unused
 requires-python = "==3.11.*"
 dependencies = [
-    "boto3",
-    "botocore",
+    # Note(smarnach) AWS code is unused and will be removed soon; Upgrading boto3
+    # causes test failures, and we don't want to spend time fixing unused code.
+    "boto3==1.34.162",
+    "botocore==1.34.162",
     "click",
     "dj-database-url",
     "django~=4.2.28",
