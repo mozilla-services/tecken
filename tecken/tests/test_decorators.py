@@ -17,11 +17,11 @@ def test_set_request_debug():
     response = myview(request)
     assert response.content == b"debug=False"
 
-    request = RequestFactory(HTTP_DEBUG="true").get("/")
+    request = RequestFactory(headers={"debug": "true"}).get("/")
     response = myview(request)
     assert response.content == b"debug=True"
 
-    request = RequestFactory(HTTP_DEBUG="0").get("/")
+    request = RequestFactory(headers={"debug": "0"}).get("/")
     response = myview(request)
     assert response.content == b"debug=False"
 

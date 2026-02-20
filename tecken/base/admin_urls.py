@@ -2,12 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from django.urls import re_path
+from django.urls import path
 
 from tecken.base import admin
 
 
 app_name = "siteadmin"
 urlpatterns = [
-    re_path("^sitestatus/$", admin.site_status, name="site_status"),
+    path("sitestatus/", admin.site_status, name="site_status"),
 ]

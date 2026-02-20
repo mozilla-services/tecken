@@ -90,7 +90,7 @@ def set_request_debug(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         trueish = ("1", "true", "yes")
-        debug = request.META.get("HTTP_DEBUG", "").lower() in trueish
+        debug = request.headers.get("debug", "").lower() in trueish
         request._request_debug = debug
         return view_func(request, *args, **kwargs)
 
