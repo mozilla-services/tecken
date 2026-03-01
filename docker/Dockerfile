@@ -2,7 +2,7 @@
 #
 # NOTE(willkg): We're using node 14 because of this issue:
 # https://github.com/docker/for-mac/issues/5831
-FROM --platform=linux/amd64 node:16.10.0-slim@sha256:9bec98898848c3e3a1346bc74ab04c2072da9d0149d8be1ea0485dbf39fd658f as frontend
+FROM --platform=linux/amd64 node:25.7.0-slim@sha256:e07427bc8f075386eafa62c1ddab758815f1fd11dd8eaacb61919e8b09ab00b3 as frontend
 
 COPY frontend /app/frontend
 COPY bin/build_frontend.sh /app/bin/
