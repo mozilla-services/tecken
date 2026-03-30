@@ -122,6 +122,8 @@ def upload_file_upload(
     file_path: str,
     upload: Upload,
 ) -> Optional[FileUpload]:
+    # NOTE(smarnach): This function is run in a thread and should not access the database.
+
     with METRICS.timer("upload_file_exists"):
         # FIXME(smarnach): Use symbol_storage().get_metadata() so we don't upload a file that
         # already exists in regular storage to try storage.
@@ -195,8 +197,22 @@ def upload_file_upload(
         except SymParseError as exc:
             logging.debug("symparseerror: %s", exc)
 
-    file_upload = FileUpload.objects.create(
+    created_at = timezone.now()
+    metadata.content_length = size
+    logger.debug(f"Uploading file {key_name!r} into {backend.bucket!r}")
+    with METRICS.timer("upload_put_object"):
+        with open(file_path, "rb") as f:
+            backend.upload(key_name, f, metadata)
+    completed_at = timezone.now()
+    logger.info(f"Uploaded key {key_name}")
+    METRICS.incr("upload_file_upload_upload", 1)
+
+    # This only creates an in-memory instance of `FileUpload`. It's saved to the database
+    # in the main thread.
+    return FileUpload(
         upload=upload,
+        created_at=created_at,
+        completed_at=completed_at,
         bucket_name=backend.bucket,
         key=key_name,
         update=bool(existing_metadata),
@@ -209,14 +225,3 @@ def upload_file_upload(
         code_id=sym_data.get("code_id"),
         generator=sym_data.get("generator"),
     )
-
-    metadata.content_length = size
-    logger.debug(f"Uploading file {key_name!r} into {backend.bucket!r}")
-    with METRICS.timer("upload_put_object"):
-        with open(file_path, "rb") as f:
-            backend.upload(key_name, f, metadata)
-    FileUpload.objects.filter(id=file_upload.id).update(completed_at=timezone.now())
-    logger.info(f"Uploaded key {key_name}")
-    METRICS.incr("upload_file_upload_upload", 1)
-
-    return file_upload

@@ -10,6 +10,7 @@ import os
 import re
 from tempfile import TemporaryDirectory
 import time
+from typing import Optional
 import zipfile
 
 from django import http
@@ -26,7 +27,7 @@ from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
 from tecken.upload import executor
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
-from tecken.upload.models import Upload
+from tecken.upload.models import FileUpload, Upload
 from tecken.upload.utils import (
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
@@ -299,8 +300,9 @@ def upload_archive(request, upload_workspace):
     # Now lets wait for them all to finish and we'll see which ones
     # were skipped and which ones were created.
     for future in concurrent.futures.as_completed(future_to_key):
-        file_upload = future.result()
+        file_upload: Optional[FileUpload] = future.result()
         if file_upload:
+            file_upload.save()
             file_uploads_created += 1
             uploaded_symbol_keys.append(key_to_symbol_keys[file_upload.key])
         else:

@@ -416,10 +416,8 @@ def test_upload_archive_one_uploaded_one_errored(
     assert upload.user == uploaderuser
     assert not upload.completed_at
 
-    assert FileUpload.objects.all().count() == 1
-    assert FileUpload.objects.get(
-        upload=upload, key="xpcshell.dbg/A7D6F1BB18CD4CB48/xpcshell.sym"
-    )
+    # Failed file uploads are not recorded in the database.
+    assert FileUpload.objects.all().count() == 0
 
 
 def test_upload_archive_with_cache_invalidation(
