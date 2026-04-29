@@ -7,6 +7,7 @@ import logging
 from django.conf import settings
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
 
 
 logger = logging.getLogger("tecken")
@@ -133,7 +134,7 @@ class FileUpload(models.Model):
     compressed = models.BooleanField(default=False)
     size = models.PositiveIntegerField()
     completed_at = models.DateTimeField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
 
     # NOTE(willkg): This used to be used when this upload belongs to a Microsoft proxy
     # download, but that code was removed, so now this does nothing and can be removed.
