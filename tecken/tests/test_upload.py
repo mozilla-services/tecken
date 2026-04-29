@@ -75,6 +75,7 @@ def test_upload_archive_happy_path(
     with open(ZIP_FILE, "rb") as fp:
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
+        upload_response = response.json()["upload"]
 
     (upload,) = Upload.objects.all()
     assert upload.user == uploaderuser
@@ -87,6 +88,18 @@ def test_upload_archive_happy_path(
     assert upload.bucket_name == bucket_name
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ["build-symbols.txt"]
+
+    assert upload_response["id"] == upload.id
+    assert upload_response["size"] == 70398
+    assert upload_response["filename"] == "file.zip"
+    assert upload_response["bucket"] == bucket_name
+    assert upload_response["download_url"] is None
+    assert not upload_response["try_symbols"]
+    assert upload_response["redirect_urls"] == []
+    assert upload_response["completed_at"]
+    assert upload_response["created_at"]
+    assert upload_response["user"] == uploaderuser.email
+    assert upload_response["skipped_keys"] == []
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
@@ -203,6 +216,7 @@ def test_upload_try_symbols_happy_path(
     with open(ZIP_FILE, "rb") as f:
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
+        upload_response = response.json()["upload"]
 
     (upload,) = Upload.objects.all()
     assert upload.user == uploaderuser
@@ -216,6 +230,18 @@ def test_upload_try_symbols_happy_path(
     assert upload.skipped_keys is None
     assert upload.ignored_keys == ["build-symbols.txt"]
     assert upload.try_symbols is True
+
+    assert upload_response["id"] == upload.id
+    assert upload_response["size"] == 70398
+    assert upload_response["filename"] == "file.zip"
+    assert upload_response["bucket"] == bucket_name
+    assert upload_response["download_url"] is None
+    assert upload_response["try_symbols"]
+    assert upload_response["redirect_urls"] == []
+    assert upload_response["completed_at"]
+    assert upload_response["created_at"]
+    assert upload_response["user"] == uploaderuser.email
+    assert upload_response["skipped_keys"] == []
 
     assert FileUpload.objects.all().count() == 2
     file_upload = FileUpload.objects.get(
@@ -265,6 +291,7 @@ def test_upload_archive_one_uploaded_one_skipped(
     with open(ZIP_FILE, "rb") as fp:
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
+        upload_response = response.json()["upload"]
 
     (upload,) = Upload.objects.all()
     assert upload.user == uploaderuser
@@ -277,6 +304,8 @@ def test_upload_archive_one_uploaded_one_skipped(
     assert upload.bucket_name == bucket_name
     assert upload.skipped_keys == ["flag/deadbeef/flag.jpeg"]
     assert upload.ignored_keys == ["build-symbols.txt"]
+
+    assert upload_response["skipped_keys"] == ["flag/deadbeef/flag.jpeg"]
 
     assert FileUpload.objects.all().count() == 1
     assert FileUpload.objects.get(

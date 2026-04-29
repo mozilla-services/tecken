@@ -314,11 +314,10 @@ def upload_archive(request, upload_workspace):
     else:
         logger.info(f"No file uploads created for {upload_obj!r}")
 
-    Upload.objects.filter(id=upload_obj.id).update(
-        skipped_keys=skipped_keys or None,
-        ignored_keys=ignored_keys or None,
-        completed_at=timezone.now(),
-    )
+    upload_obj.skipped_keys = skipped_keys or None
+    upload_obj.ignored_keys = ignored_keys or None
+    upload_obj.completed_at = timezone.now()
+    upload_obj.save(update_fields=["skipped_keys", "ignored_keys", "completed_at"])
 
     METRICS.incr(
         "upload_uploads", tags=[f"try:{is_try_upload}", f"bucket:{backend.bucket}"]
