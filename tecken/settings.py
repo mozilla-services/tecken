@@ -748,3 +748,31 @@ DOWNLOAD_FILE_EXTENSIONS_ALLOWED = _config(
         "the most common."
     ),
 )
+
+CLIENT_OTEL_SERVICE_ACCOUNT = (
+    _config(
+        "CLIENT_OTEL_SERVICE_ACCOUNT",
+        default="",
+        raise_error=False,
+        doc=(
+            "The GCP service account used to let the upload-symbols CLI tool submit "
+            "telemetry to Google's OTLP endpoint."
+        ),
+    )
+    or None
+)
+
+if CLIENT_OTEL_SERVICE_ACCOUNT:
+    CLIENT_OTEL_GCP_PROJECT = _config(
+        "CLIENT_OTEL_GCP_PROJECT",
+        doc=(
+            "The destination GCP project the upload-symbols CLI tool submits "
+            "telemetry to."
+        ),
+    )
+
+    CLIENT_OTEL_LOG_LEVEL = _config(
+        "CLIENT_OTEL_LOG_LEVEL",
+        default="info",
+        doc="The telemetry verbosity of the upload-symbols CLI tool.",
+    )

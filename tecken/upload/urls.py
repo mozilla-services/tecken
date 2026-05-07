@@ -9,4 +9,7 @@ from . import views
 
 app_name = "upload"
 
-urlpatterns = [path("", views.upload_archive, name="upload_archive")]
+urlpatterns = [
+    path("", views.upload_archive, name="upload_archive"),
+    path("auth_info/", views.upload_auth_info, name="upload_auth_info"),
+]

@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from tecken.libstorage import ObjectMetadata, StorageBackend, StorageError
 from tecken.tokens.models import Token
-from tecken.upload import utils
+from tecken.upload import client_otel, utils
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import Upload, FileUpload
 
@@ -1182,3 +1182,31 @@ class Test_remove_orphaned_files:
             metricsmock.assert_not_incr(
                 "tecken.remove_orphaned_files.delete_file_error"
             )
+
+
+def test_upload_auth_info(client, db, uploaderuser):
+    token = Token.objects.create(user=uploaderuser, preferred_upload_api_version=2)
+    token.permissions.add(Permission.objects.get(codename="upload_try_symbols"))
+
+    client_otel.init(
+        service_account="otel-service-account@my-gcp-project.iam.gserviceaccount.com",
+        gcp_project="my-gcp-project",
+        log_level="info",
+        iam_client=client_otel.MockIAMCredentialsClient("some-access-token"),
+    )
+
+    url = reverse("upload:upload_auth_info")
+    response = client.post(url, HTTP_AUTH_TOKEN=token.key)
+    assert response.status_code == 200
+    assert response.json() == {
+        "email": uploaderuser.email,
+        "try_symbols": True,
+        "token_expires_at": int(token.expires_at.timestamp()),
+        "upload_api_version": 2,
+        "opentelemetry": {
+            "endpoint": "https://telemetry.googleapis.com/",
+            "headers": {"Authorization": "Bearer some-access-token"},
+            "resource_attributes": {"gcp.project_id": "my-gcp-project"},
+            "log_level": "info",
+        },
+    }

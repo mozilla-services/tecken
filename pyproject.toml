@@ -18,6 +18,7 @@ dependencies = [
     "encore",
     "everett",
     "fillmore",
+    "google-cloud-iam",
     "google-cloud-storage",
     "gunicorn",
     "honcho",
