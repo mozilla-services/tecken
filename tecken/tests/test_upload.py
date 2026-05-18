@@ -8,6 +8,7 @@ import logging
 import os
 from unittest import mock
 
+from google.cloud import iam_credentials
 from markus.testing import AnyTagValue
 import pytest
 from requests.exceptions import ConnectionError, RetryError
@@ -1184,29 +1185,59 @@ class Test_remove_orphaned_files:
             )
 
 
+class MockIAMCredentialsClient:
+    """A mock implementation of IAMCredentialsClient for tests."""
+
+    def __init__(self, access_token):
+        self.access_token = access_token
+
+    def generate_access_token(
+        self, *, name: str, scope: list[str]
+    ) -> iam_credentials.GenerateAccessTokenResponse:
+        return iam_credentials.GenerateAccessTokenResponse(
+            access_token=self.access_token,
+            expire_time=datetime.datetime.now() + datetime.timedelta(seconds=3600),
+        )
+
+
 def test_upload_auth_info(client, db, uploaderuser):
     token = Token.objects.create(user=uploaderuser, preferred_upload_api_version=2)
     token.permissions.add(Permission.objects.get(codename="upload_try_symbols"))
 
-    client_otel.init(
+    config_provider = client_otel.ClientOTelConfigProvider(
         service_account="otel-service-account@my-gcp-project.iam.gserviceaccount.com",
         gcp_project="my-gcp-project",
         log_level="info",
-        iam_client=client_otel.MockIAMCredentialsClient("some-access-token"),
+        iam_client=MockIAMCredentialsClient("some-access-token"),
     )
+    with mock.patch("tecken.upload.client_otel.CONFIG", config_provider):
+        url = reverse("upload:upload_auth_info")
+        response = client.post(url, HTTP_AUTH_TOKEN=token.key)
+        assert response.status_code == 200
+        assert response.json() == {
+            "email": uploaderuser.email,
+            "try_symbols": True,
+            "token_expires_at": int(token.expires_at.timestamp()),
+            "upload_api_version": 2,
+            "opentelemetry": {
+                "endpoint": "https://telemetry.googleapis.com/",
+                "headers": {"Authorization": "Bearer some-access-token"},
+                "resource_attributes": {"gcp.project_id": "my-gcp-project"},
+                "log_level": "info",
+            },
+        }
+
+
+def test_upload_auth_info_no_otel(client, db, uploaderuser):
+    token = Token.objects.create(user=uploaderuser, preferred_upload_api_version=1)
+    token.permissions.add(Permission.objects.get(codename="upload_symbols"))
 
     url = reverse("upload:upload_auth_info")
     response = client.post(url, HTTP_AUTH_TOKEN=token.key)
     assert response.status_code == 200
     assert response.json() == {
         "email": uploaderuser.email,
-        "try_symbols": True,
+        "try_symbols": False,
         "token_expires_at": int(token.expires_at.timestamp()),
-        "upload_api_version": 2,
-        "opentelemetry": {
-            "endpoint": "https://telemetry.googleapis.com/",
-            "headers": {"Authorization": "Bearer some-access-token"},
-            "resource_attributes": {"gcp.project_id": "my-gcp-project"},
-            "log_level": "info",
-        },
+        "upload_api_version": 1,
     }
