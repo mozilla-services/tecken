@@ -14,6 +14,7 @@ class TokenAdmin(admin.ModelAdmin):
         "get_user_email",
         "get_permissions",
         "expires_at",
+        "preferred_upload_api_version",
         "notes",
     ]
 

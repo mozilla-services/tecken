@@ -35,6 +35,7 @@ BROKEN_EVENT = {
                     'SELECT "tokens_token"."id", "tokens_token"."user_id", '
                     + '"tokens_token"."key", "tokens_token"."expires_at", '
                     + '"tokens_token"."notes", "tokens_token"."created_at", '
+                    + '"tokens_token"."preferred_upload_api_version", '
                     + '"auth_user"."id", "auth_user"."password", '
                     + '"auth_user"."last_login", "auth_user"."is_superuser", '
                     + '"auth_user"."username", "auth_user"."first_name", '

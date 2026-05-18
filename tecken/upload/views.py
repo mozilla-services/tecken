@@ -25,7 +25,7 @@ from tecken.base.decorators import (
 )
 from tecken.base.symbolstorage import symbol_storage
 from tecken.base.utils import filesizeformat, invalid_key_name_characters
-from tecken.upload import executor
+from tecken.upload import client_otel, executor
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import FileUpload, Upload
 from tecken.upload.utils import (
@@ -340,3 +340,29 @@ def _serialize_upload(upload):
         "user": upload.user.email,
         "skipped_keys": upload.skipped_keys or [],
     }
+
+
+@api_require_POST
+@api_login_required
+@api_any_permission_required("upload.upload_symbols", "upload.upload_try_symbols")
+def upload_auth_info(request):
+    """Return user and API information to the upload-symbols CLI tool.
+
+    This endpoint is used by the upload-symbols CLI tool before sending any upload
+    requests. It lets the tool verify that the token is valid and has upload
+    permissions, indicates whether the upload will be a try or regular upload,
+    indicates the upload API version the CLI should use and returns OpenTelemetry
+    settings so the client can submit telemetry.
+
+    This endpoint requires a POST request because it generates a new access token for
+    the OpenTelemetry service account.
+    """
+    response_data = {
+        "email": request.user.email,
+        "try_symbols": bool(request.user.has_perm("upload.upload_try_symbols")),
+        "token_expires_at": int(request.token.expires_at.timestamp()),
+        "upload_api_version": request.token.preferred_upload_api_version,
+    }
+    if client_otel.CONFIG:
+        response_data["opentelemetry"] = client_otel.CONFIG.get()
+    return http.JsonResponse(response_data)

@@ -86,4 +86,5 @@ class APITokenAuthenticationMiddleware:
         # User is valid. Set request.user and persist user in the request
         # by logging the user in.
         request.user = user
+        request.token = token
         user_logged_in.send(sender=user.__class__, request=request, user=user)

@@ -22,12 +22,21 @@ def get_future():
 
 
 class Token(models.Model):
+    class UploadApiVersion(models.IntegerChoices):
+        V1 = 1
+        V2 = 2
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     key = models.CharField(max_length=32, default=make_key)
     expires_at = models.DateTimeField(default=get_future)
     permissions = models.ManyToManyField(Permission)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    preferred_upload_api_version = models.IntegerField(
+        choices=UploadApiVersion,
+        default=UploadApiVersion.V1,
+        db_default=UploadApiVersion.V1,
+    )
 
     class Meta:
         permissions = (("manage_tokens", "Manage Your API Tokens"),)
