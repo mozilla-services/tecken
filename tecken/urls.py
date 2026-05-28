@@ -49,7 +49,6 @@ urlpatterns = [
     path("upload/", include("tecken.upload.urls", namespace="upload")),
     path("api/", include("tecken.api.urls", namespace="api")),
     path("", include("tecken.download.urls", namespace="download")),
-    path("contribute.json", views.contribute_json, name="contribute_json"),
     path("favicon.ico", views.favicon, name="favicon"),
     path("manifest.json", views.manifest_json, name="manifest_json"),
     # Static pages in admin

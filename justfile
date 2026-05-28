@@ -13,7 +13,7 @@ _env:
     fi
 
 
-SERVICES := "db redis-cache localstack statsd oidcprovider gcs-emulator"
+SERVICES := "db redis-cache statsd oidcprovider gcs-emulator"
 
 # Create a slick.sh file
 slick-sh:
@@ -21,7 +21,7 @@ slick-sh:
     chmod 755 slick.sh
 
 # Build docker images.
-build *args='base frontend fakesentry db redis-cache localstack statsd oidcprovider gcs-emulator': _env
+build *args='base frontend fakesentry db redis-cache statsd oidcprovider gcs-emulator': _env
     docker compose --progress plain build {{args}}
 
 # Set up services.

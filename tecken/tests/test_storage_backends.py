@@ -14,7 +14,7 @@ from tecken.tests.utils import Upload, UPLOADS
 
 @pytest.mark.parametrize("try_storage", [False, True])
 @pytest.mark.parametrize("upload", UPLOADS.values(), ids=UPLOADS.keys())
-@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn", "s3"])
+@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn"])
 def test_upload_and_download(
     get_storage_backend, storage_kind: str, upload: Upload, try_storage: bool
 ):
@@ -38,21 +38,21 @@ def test_upload_and_download(
     assert metadata.original_md5_sum == upload.metadata.original_md5_sum
 
 
-@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn", "s3"])
+@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn"])
 def test_non_exsiting_bucket(get_storage_backend, storage_kind: str):
     backend = get_storage_backend(storage_kind)
     assert not backend.exists()
 
 
-@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn", "s3"])
+@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn"])
 def test_storageerror_msg(get_storage_backend, storage_kind: str):
     backend = get_storage_backend(storage_kind)
     error = StorageError("storage error message", backend=backend)
     assert repr(backend) in str(error)
 
 
-@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn", "s3"])
-def test_s3_download_url(bucket_name: str, get_storage_backend, storage_kind: str):
+@pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn"])
+def test_download_url(bucket_name: str, get_storage_backend, storage_kind: str):
     backend = get_storage_backend(storage_kind)
     backend.clear()
     upload = UPLOADS["special_chars"]

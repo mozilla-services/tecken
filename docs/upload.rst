@@ -268,8 +268,8 @@ The auth token is sent as an ``Auth-Token`` HTTP header in the HTTP POST.
 Testing symbol uploads with our stage environment
 =================================================
 
-:stage:          https://symbols.stage.mozaws.net/
-:create a token: https://symbols.stage.mozaws.net/tokens
+:stage:          https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/
+:create a token: https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/tokens
 
 If you're testing symbol uploads out, testing something that uses symbol files,
 testing a symbol upload script, or something like that, you might want to use
@@ -279,8 +279,8 @@ potentially everyone using production.
 To get access to our stage server:
 
 1. Log into `Mozilla Symbols Server (stage)
-   <https://symbols.stage.mozaws.net/>`__. When you log in, an account will be
-   created automatically.
+   <https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/>`__. When you
+   log in, an account will be created automatically.
 
 2. Ask a Tecken admin to grant you upload permissions.
 
@@ -292,8 +292,8 @@ To get access to our stage server:
 
 Once you have permission to upload symbols, you will additionally need an auth
 token. Once you log in, you can `create an API token
-<https://symbols.stage.mozaws.net/tokens>`__.  It needs to have the "Upload
-Symbols" or "Upload Try Symbols" permission.
+<https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/tokens>`__.  It
+needs to have the "Upload Symbols" or "Upload Try Symbols" permission.
 
 The auth token is sent as an ``Auth-Token`` HTTP header in the HTTP POST.
 
@@ -375,18 +375,10 @@ Tecken processes ZIP files in a couple of steps.
 First, it validates the ZIP file. See section below on "Checks and Validation".
 
 Once the ZIP file is validated, Tecken uploads the files in the ZIP file. For
-files that are already in AWS S3, it skips the uploading step and just logs the
-filename.
+files that are already in the storage backend, it skips the uploading step and
+just logs the filename.
 
 Records of the upload and what files were in it are available on the website.
-
-
-Which S3 Bucket
-===============
-
-The S3 bucket for symbols is configured by ``DJANGO_UPLOAD_DEFAULT_URL``. For
-example: ``https://s3-us-west-2.amazonaws.com/org-mozilla-symbols-public``.
-From the URL the bucket name is deduced and that's the default S3 bucket used.
 
 
 Checks and Validations
@@ -397,8 +389,8 @@ at least one file.
 
 Then, Tecken iterates over the files in the ZIP file and checks if any file
 contains the list of strings in ``settings.DISALLOWED_SYMBOLS_SNIPPETS``.  This
-check is a block list check to make sure proprietary files are never uploaded
-in S3 buckets that might be exposed publicly.
+check is a block list check to make sure proprietary files are never exposed
+publicly.
 
 To override this amend the ``DJANGO_DISALLOWED_SYMBOLS_SNIPPETS`` environment
 variable as a comma separated list. But be aware to include the existing
@@ -421,18 +413,18 @@ The final check is to make sure that each file in the ZIP file is either:
 Gzip
 ====
 
-Certain files get gzipped before being uploaded into S3. At the time of writing
-that list is all ``.sym`` files. S3, unlike something like Nginx, doesn't do
-content encoding on the fly based on the client's capabilities. Instead, we
-manually gzip the file in memory in Tecken and set the additional
-``ContentEncoding`` header to ``gzip``. Since these ``.sym`` files are always
-text based, it saves a lot of memory in the S3 storage.
+Certain files get gzipped before being uploaded to the storage backend. At the
+time of writing that list is all ``.sym`` files. Object storage backends,
+unlike something like Nginx, don't do content encoding on the fly based on the
+client's capabilities. Instead, we manually gzip the file in memory in Tecken
+and set the additional ``Content-Encoding`` header to ``gzip``. Since these
+``.sym`` files are always text based, it saves a lot of storage space.
 
 Additionally, the ``.sym`` files get their content type (aka. mime type) set
-when uploading to S3 to ``text/plain``.  Because S3 can't know in advance that
-the files are actually ASCII plain text, if you try to open them in a browser
-it will set the ``Content-Type`` to ``application/octet-stream`` which makes it
-hard to quickly look at its content in a browser.
+when uploading to ``text/plain``.  Because the stroage backend can't know in
+advance that the files are actually ASCII plain text, if you try to open them
+in a browser it will set the ``Content-Type`` to ``application/octet-stream``
+which makes it hard to quickly look at its content in a browser.
 
 Both the gzip and the mimetype overrides can be changed by setting the
 ``DJANGO_COMPRESS_EXTENSIONS`` and ``DJANGO_MIME_OVERRIDES`` environment

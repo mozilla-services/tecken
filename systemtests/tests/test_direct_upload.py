@@ -75,7 +75,7 @@ def test_headers(
         "Content-Security-Policy": ANY,
         "Strict-Transport-Security": "max-age=31536000",
     }
-    # These are headers sent by the storage backend (S3 or GCS)
+    # These are headers sent by the storage backend (GCS)
     expected_storage_headers = {
         "Content-Encoding": "gzip",
         "Content-Length": ANY,

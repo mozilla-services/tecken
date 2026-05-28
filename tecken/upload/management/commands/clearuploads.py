@@ -14,7 +14,7 @@ from tecken.upload.models import Upload, FileUpload
 
 # Number of days to keep records--anything with a modified older than this will
 # get deleted. These should match (close-enough) the expiration settings on
-# the related S3 buckets.
+# the related storage buckets.
 TRY_RECORD_AGE_CUTOFF = 30
 REGULAR_RECORD_AGE_CUTOFF = 365 * 2
 
@@ -22,7 +22,7 @@ REGULAR_RECORD_AGE_CUTOFF = 365 * 2
 class Command(BaseCommand):
     """Clean out expired upload and fileupload records.
 
-    The S3 buckets expire old objects, so we should expire the related records in these
+    The storage buckets expire old objects, so we should expire the related records in these
     tables as well.
 
     """

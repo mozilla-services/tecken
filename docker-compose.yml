@@ -26,7 +26,6 @@ services:
       fakesentry: *condition_service_healthy
       gcs-emulator: *condition_service_healthy
       redis-cache: *condition_service_healthy
-      localstack: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
     command: ["web"]
@@ -42,7 +41,6 @@ services:
       gcs-emulator: *condition_service_healthy
       fakesentry: *condition_service_healthy
       redis-cache: *condition_service_healthy
-      localstack: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
 
@@ -66,7 +64,6 @@ services:
       gcs-emulator: *condition_service_healthy
       fakesentry: *condition_service_healthy
       redis-cache: *condition_service_healthy
-      localstack: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
     volumes:
@@ -149,15 +146,6 @@ services:
     image: local/tecken_gcs_cdn
     ports:
       - "${EXPOSE_CDN_PORT:-8002}:8002"
-
-  # https://hub.docker.com/r/localstack/localstack/
-  # localstack running a fake AWS S3
-  localstack:
-    image: localstack/localstack:2.2.0
-    environment:
-      - LOCALSTACK_HOST=localstack
-    ports:
-      - "${EXPOSE_LOCALSTACK_PORT:-4566}:4566"
 
   # https://github.com/willkg/kent
   fakesentry:

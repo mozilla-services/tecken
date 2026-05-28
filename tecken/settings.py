@@ -12,7 +12,6 @@ import os
 import socket
 
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 from dockerflow.version import get_version
 from everett.manager import ConfigManager, ListOf
 
@@ -71,7 +70,8 @@ if TOOL_ENV:
         ("OIDC_OP_USER_ENDPOINT", "http://example.com/"),
         ("DATABASE_URL", "postgresql://postgres:postgres@db/tecken"),
         ("REDIS_URL", "redis://redis-cache:6379/0"),
-        ("UPLOAD_S3_BUCKET", "bucket"),
+        ("UPLOAD_GCS_BUCKET", "bucket"),
+        ("UPLOAD_GCS_PUBLIC_URL", "https://bucket.storage.googleapis.com/"),
     ]
     for key, val in fake_values:
         os.environ[key] = val
@@ -433,16 +433,16 @@ else:
     }
 
 STORAGE_CONNECT_TIMEOUT = _config(
-    "S3_LOOKUP_CONNECT_TIMEOUT",
+    "STORAGE_CONNECT_TIMEOUT",
     default="5",
     parser=int,
-    doc="S3 connection timeout in seconds.",
+    doc="Object storage connection timeout in seconds.",
 )
 STORAGE_READ_TIMEOUT = _config(
-    "S3_LOOKUP_READ_TIMEOUT",
+    "STORAGE_READ_TIMEOUT",
     default="5",
     parser=int,
-    doc="S3 read timeout in seconds.",
+    doc="Object storage read timeout in seconds.",
 )
 
 
@@ -451,14 +451,9 @@ UPLOAD_FILE_UPLOAD_MAX_WORKERS = _config(
     default="0",
     parser=int,
     doc=(
-        "When we upload a .zip file, we iterate over the content and for each "
-        "file within (that isn't immediately ignorable) we kick off a "
-        "function which figures out what (and how) to process the file. "
-        "That function involves doing a S3 GET (technically ListObjectsV2), "
-        "(possible) gzipping the payload and (possibly) a S3 PUT. "
-        "All of these function calls get put in a "
-        "concurrent.futures.ThreadPoolExecutor pool. This setting is about "
-        "how many of these to start, max."
+        "Upload requests can be handled in parallel in a thread pool. This setting "
+        "determines the number of threads in the pool. Setting this to 0 uses the "
+        "number of local CPUs as the thread pool size."
     ),
 )
 
@@ -573,112 +568,38 @@ DOCKERFLOW_CHECKS = [
 ]
 
 
-CLOUD_SERVICE_PROVIDER = _config(
-    "CLOUD_SERVICE_PROVIDER",
-    default="AWS",
-    doc="The cloud service provider Tecken is using. Either AWS or GCP.",
-).upper()
+UPLOAD_GCS_BUCKET = _config(
+    "UPLOAD_GCS_BUCKET",
+    doc="The GCS bucket name for uploads and downloads.",
+)
 
-if CLOUD_SERVICE_PROVIDER == "GCS":
-    UPLOAD_GCS_BUCKET = _config(
-        "UPLOAD_GCS_BUCKET",
-        doc="The GCS bucket name for uploads and downloads.",
-    )
-    UPLOAD_GCS_PUBLIC_URL = _config(
-        "UPLOAD_GCS_PUBLIC_URL",
-        doc="The base URL for downloading files from the upload bucket.",
-    )
-    DOWNLOAD_S3_BUCKET = _config(
-        "DOWNLOAD_S3_BUCKET",
-        raise_error=False,
-        doc="The S3 bucket name for downloads.",
-    )
-    DOWNLOAD_S3_REGION = (
-        _config(
-            "DOWNLOAD_S3_REGION",
-            raise_error=False,
-            doc="The region of the S3 download bucket.",
-        )
-        or None
-    )
-    UPLOAD_BACKEND = {
-        "class": "tecken.ext.gcs.storage.GCSStorage",
-        "options": {
-            "bucket": UPLOAD_GCS_BUCKET,
-            "prefix": "v1",
-            "try_symbols": False,
-            "public_url": UPLOAD_GCS_PUBLIC_URL,
-        },
-    }
-    TRY_UPLOAD_BACKEND = {
-        "class": "tecken.ext.gcs.storage.GCSStorage",
-        "options": {
-            "bucket": UPLOAD_GCS_BUCKET,
-            "prefix": "try/v1",
-            "try_symbols": True,
-            "public_url": UPLOAD_GCS_PUBLIC_URL,
-        },
-    }
-    DOWNLOAD_BACKENDS = []
-    if DOWNLOAD_S3_BUCKET:
-        DOWNLOAD_BACKENDS = [
-            {
-                "class": "tecken.ext.s3.storage.S3Storage",
-                "options": {
-                    "bucket": DOWNLOAD_S3_BUCKET,
-                    "prefix": "v1",
-                    "try_symbols": False,
-                    "anonymous": True,
-                    "region": DOWNLOAD_S3_REGION,
-                },
-            },
-            {
-                "class": "tecken.ext.s3.storage.S3Storage",
-                "options": {
-                    "bucket": DOWNLOAD_S3_BUCKET,
-                    "prefix": "try/v1",
-                    "try_symbols": True,
-                    "anonymous": True,
-                    "region": DOWNLOAD_S3_REGION,
-                },
-            },
-        ]
-elif CLOUD_SERVICE_PROVIDER == "AWS":
-    UPLOAD_S3_BUCKET = _config(
-        "UPLOAD_S3_BUCKET",
-        doc="The S3 bucket name for uploads and downloads.",
-    )
-    UPLOAD_S3_REGION = (
-        _config(
-            "UPLOAD_S3_REGION",
-            raise_error=False,
-            doc="The region of the S3 download bucket.",
-        )
-        or None
-    )
-    UPLOAD_BACKEND = {
-        "class": "tecken.ext.s3.storage.S3Storage",
-        "options": {
-            "bucket": UPLOAD_S3_BUCKET,
-            "prefix": "v1",
-            "try_symbols": False,
-            "region": UPLOAD_S3_REGION,
-        },
-    }
-    TRY_UPLOAD_BACKEND = {
-        "class": "tecken.ext.s3.storage.S3Storage",
-        "options": {
-            "bucket": UPLOAD_S3_BUCKET,
-            "prefix": "try/v1",
-            "try_symbols": True,
-            "region": UPLOAD_S3_REGION,
-        },
-    }
-    DOWNLOAD_BACKENDS = []
-else:
-    raise ImproperlyConfigured(
-        f"invalid value for CLOUD_SERVICE_PROVIDER: {CLOUD_SERVICE_PROVIDER}"
-    )
+UPLOAD_GCS_PUBLIC_URL = _config(
+    "UPLOAD_GCS_PUBLIC_URL",
+    doc="The base URL for downloading files from the upload bucket.",
+)
+
+UPLOAD_BACKEND = {
+    "class": "tecken.ext.gcs.storage.GCSStorage",
+    "options": {
+        "bucket": UPLOAD_GCS_BUCKET,
+        "prefix": "v1",
+        "try_symbols": False,
+        "public_url": UPLOAD_GCS_PUBLIC_URL,
+    },
+}
+
+TRY_UPLOAD_BACKEND = {
+    "class": "tecken.ext.gcs.storage.GCSStorage",
+    "options": {
+        "bucket": UPLOAD_GCS_BUCKET,
+        "prefix": "try/v1",
+        "try_symbols": True,
+        "public_url": UPLOAD_GCS_PUBLIC_URL,
+    },
+}
+
+DOWNLOAD_BACKENDS = []
+
 
 COMPRESS_EXTENSIONS = _config(
     "COMPRESS_EXTENSIONS",
@@ -696,8 +617,8 @@ MIME_OVERRIDES = _config(
     parser=dict_parser,
     doc=(
         "For specific file uploads, override the mimetype.\n\n"
-        "For .sym files, for example, if S3 knows them as 'text/plain' "
-        "they become really handy to open in a browser and view directly."
+        "For .sym files, for example, if the object storage knows them as "
+        "'text/plain' they become really handy to open in a browser and view directly."
     ),
 )
 

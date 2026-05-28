@@ -6,10 +6,6 @@
 
 set -eo pipefail
 
-# Set up S3
-python bin/s3_cli.py delete "${UPLOAD_S3_BUCKET}"
-python bin/s3_cli.py create "${UPLOAD_S3_BUCKET}"
-
 # Set up GCS
 gcs-cli delete "${UPLOAD_GCS_BUCKET}"
 gcs-cli create "${UPLOAD_GCS_BUCKET}"

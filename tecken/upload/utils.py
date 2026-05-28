@@ -13,7 +13,7 @@ import logging
 from django.conf import settings
 from django.utils import timezone
 
-from tecken.ext.s3.storage import S3Storage
+from tecken.libstorage import StorageBackend
 from tecken.libstorage import ObjectMetadata
 from tecken.upload.models import FileUpload, Upload
 from tecken.libmarkus import METRICS
@@ -117,7 +117,7 @@ def get_key_content_type(key_name):
 
 @METRICS.timer_decorator("upload_file_upload")
 def upload_file_upload(
-    backend: S3Storage,
+    backend: StorageBackend,
     key_name: str,
     file_path: str,
     upload: Upload,
@@ -148,7 +148,7 @@ def upload_file_upload(
         metadata.content_encoding = "gzip"
 
         # Before we compress *this* to compare its compressed size with
-        # the compressed size in S3, let's first compare the possible
+        # the compressed size in storage, let's first compare the possible
         # metadata and see if it's an opportunity for an early exit.
         if (
             existing_metadata
@@ -182,7 +182,7 @@ def upload_file_upload(
             # If a symbol file was (gzipped and) uploaded but without
             # the fancy metadata (see a couple of lines above), then
             # there is one last possibility to compare the size of the
-            # exising file in S3 when this local file has been compressed
+            # exising file in storage when this local file has been compressed
             # too.
             METRICS.incr("upload_skip_early_compressed_legacy", 1)
             return

@@ -69,27 +69,13 @@ ENVIRONMENTS = {
     ),
     "stage": Environment(
         name="stage",
-        base_url="https://symbols.stage.mozaws.net/",
+        base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
         destructive_tests=True,
         bad_token_test=True,
         test_headers=True,
     ),
     "prod": Environment(
         name="prod",
-        base_url="https://symbols.mozilla.org/",
-        destructive_tests=False,
-        bad_token_test=False,
-        test_headers=True,
-    ),
-    "gcp_stage": Environment(
-        name="gcp_stage",
-        base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
-        destructive_tests=True,
-        bad_token_test=True,
-        test_headers=True,
-    ),
-    "gcp_prod": Environment(
-        name="gcp_prod",
         base_url="https://tecken-prod.symbols.prod.webservices.mozgcp.net/",
         destructive_tests=False,
         bad_token_test=False,

@@ -12,7 +12,6 @@ from fillmore.scrubber import (
     build_scrub_query_string,
     SCRUB_RULES_DEFAULT,
 )
-from sentry_sdk.integrations.boto3 import Boto3Integration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.logging import ignore_logger
@@ -76,7 +75,6 @@ def configure_sentry():
             host_id=settings.HOSTNAME,
             integrations=[
                 DjangoIntegration(),
-                Boto3Integration(),
                 RedisIntegration(),
             ],
             before_send=scrubber,

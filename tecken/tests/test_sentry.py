@@ -158,7 +158,6 @@ BROKEN_EVENT = {
         "integrations": [
             "argv",
             "atexit",
-            "boto3",
             "dedupe",
             "django",
             "excepthook",

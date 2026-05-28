@@ -16,7 +16,7 @@ logger = logging.getLogger("tecken")
 class Upload(models.Model):
     """
     Record of every uploaded archive file (e.g. .zip) that is uploaded,
-    then placed in S3 and then, as a background task, processed such
+    then placed in storage and then, as a background task, processed such
     that each file within is uploaded to the right destination.
 
     Note that, which bucket to upload depends on which user uploaded.

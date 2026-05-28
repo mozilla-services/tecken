@@ -35,11 +35,6 @@ ENVIRONMENTS = [
     ),
     Environment(
         name="stage",
-        base_url="https://symbols.stage.mozaws.net/",
-        include_marks={"upload", "nginx"},
-    ),
-    Environment(
-        name="gcp_stage",
         base_url="https://tecken-stage.symbols.nonprod.webservices.mozgcp.net/",
         include_marks={"upload", "nginx"},
     ),

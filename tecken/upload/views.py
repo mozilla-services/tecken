@@ -94,7 +94,7 @@ def _ignore_member_file(filename):
     be completely ignored in the upload process.
 
     At the moment the list is "allow-list based", meaning all files are
-    processed and uploaded to S3 unless it meets certain checks.
+    processed and uploaded to storage unless it meets certain checks.
     """
     if filename.lower().endswith("-symbols.txt"):
         return True
@@ -255,7 +255,7 @@ def upload_archive(request, upload_workspace):
     content = "\n".join(
         f"{x.name}:{x.size}" for x in sorted(file_listing, key=lambda x: x.name)
     )
-    # The MD5 is just used to make the temporary S3 file unique in name
+    # The MD5 is just used to make the temporary file unique in name
     # if the client uploads with the same filename in quick succession.
     content_hash = hashlib.md5(content.encode("utf-8")).hexdigest()[:30]  # nosec
 
