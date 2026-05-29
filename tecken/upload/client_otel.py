@@ -12,15 +12,17 @@ class ClientOTelConfigProvider:
         self,
         service_account: str,
         gcp_project: str,
+        gcp_region: str,
         log_level: str,
         iam_client=None,
     ):
         self.service_account = service_account
         self.gcp_project = gcp_project
+        self.gcp_region = gcp_region
         self.log_level = log_level
         self.iam_client = iam_client or iam_credentials.IAMCredentialsClient()
 
-    def get(self) -> dict:
+    def get(self, user_id: int) -> dict:
         """Return the OTel config.
 
         Each call to this function generates a new access token for the OTel service
@@ -37,7 +39,11 @@ class ClientOTelConfigProvider:
         return {
             "endpoint": "https://telemetry.googleapis.com/",
             "headers": {"Authorization": f"Bearer {access_token}"},
-            "resource_attributes": {"gcp.project_id": self.gcp_project},
+            "resource_attributes": {
+                "gcp.project_id": self.gcp_project,
+                "location": self.gcp_region,
+                "user.id": user_id,
+            },
             "log_level": self.log_level,
         }
 
@@ -45,7 +51,9 @@ class ClientOTelConfigProvider:
 CONFIG: ClientOTelConfigProvider | None = None
 
 
-def init(service_account: str, gcp_project: str, log_level: str):
+def init(service_account: str, gcp_project: str, gcp_region: str, log_level: str):
     """Initialize the global OTel config provider."""
     global CONFIG
-    CONFIG = ClientOTelConfigProvider(service_account, gcp_project, log_level)
+    CONFIG = ClientOTelConfigProvider(
+        service_account, gcp_project, gcp_region, log_level
+    )

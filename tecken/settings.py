@@ -692,6 +692,12 @@ if CLIENT_OTEL_SERVICE_ACCOUNT:
         ),
     )
 
+    CLIENT_OTEL_GCP_REGION = _config(
+        "CLIENT_OTEL_GCP_REGION",
+        default="us-west1",
+        doc="The GCP region for metrics submitted by clients.",
+    )
+
     CLIENT_OTEL_LOG_LEVEL = _config(
         "CLIENT_OTEL_LOG_LEVEL",
         default="info",

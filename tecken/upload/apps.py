@@ -49,9 +49,10 @@ class UploadAppConfig(AppConfig):
         post_migrate.connect(create_default_groups, sender=self)
         if settings.CLIENT_OTEL_SERVICE_ACCOUNT:
             client_otel.init(
-                settings.CLIENT_OTEL_SERVICE_ACCOUNT,
-                settings.CLIENT_OTEL_GCP_PROJECT,
-                settings.CLIENT_OTEL_LOG_LEVEL,
+                service_account=settings.CLIENT_OTEL_SERVICE_ACCOUNT,
+                gcp_project=settings.CLIENT_OTEL_GCP_PROJECT,
+                gcp_region=settings.CLIENT_OTEL_GCP_REGION,
+                log_level=settings.CLIENT_OTEL_LOG_LEVEL,
             )
         executor.init(
             settings.SYNCHRONOUS_UPLOAD_FILE_UPLOAD,
