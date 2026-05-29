@@ -1193,6 +1193,7 @@ def test_upload_auth_info(client, db, uploaderuser):
     config_provider = client_otel.ClientOTelConfigProvider(
         service_account="otel-service-account@my-gcp-project.iam.gserviceaccount.com",
         gcp_project="my-gcp-project",
+        gcp_region="us-west1",
         log_level="info",
         iam_client=MockIAMCredentialsClient("some-access-token"),
     )
@@ -1202,13 +1203,18 @@ def test_upload_auth_info(client, db, uploaderuser):
         assert response.status_code == 200
         assert response.json() == {
             "email": uploaderuser.email,
+            "user_id": uploaderuser.id,
             "try_symbols": True,
             "token_expires_at": int(token.expires_at.timestamp()),
             "upload_api_version": 2,
             "opentelemetry": {
                 "endpoint": "https://telemetry.googleapis.com/",
                 "headers": {"Authorization": "Bearer some-access-token"},
-                "resource_attributes": {"gcp.project_id": "my-gcp-project"},
+                "resource_attributes": {
+                    "gcp.project_id": "my-gcp-project",
+                    "location": "us-west1",
+                    "user.id": uploaderuser.id,
+                },
                 "log_level": "info",
             },
         }
@@ -1223,6 +1229,7 @@ def test_upload_auth_info_no_otel(client, db, uploaderuser):
     assert response.status_code == 200
     assert response.json() == {
         "email": uploaderuser.email,
+        "user_id": uploaderuser.id,
         "try_symbols": False,
         "token_expires_at": int(token.expires_at.timestamp()),
         "upload_api_version": 1,

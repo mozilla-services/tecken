@@ -359,10 +359,11 @@ def upload_auth_info(request):
     """
     response_data = {
         "email": request.user.email,
+        "user_id": request.user.id,
         "try_symbols": bool(request.user.has_perm("upload.upload_try_symbols")),
         "token_expires_at": int(request.token.expires_at.timestamp()),
         "upload_api_version": request.token.preferred_upload_api_version,
     }
     if client_otel.CONFIG:
-        response_data["opentelemetry"] = client_otel.CONFIG.get()
+        response_data["opentelemetry"] = client_otel.CONFIG.get(request.user.id)
     return http.JsonResponse(response_data)
