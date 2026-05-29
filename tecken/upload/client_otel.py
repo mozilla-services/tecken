@@ -42,7 +42,7 @@ class ClientOTelConfigProvider:
             "resource_attributes": {
                 "gcp.project_id": self.gcp_project,
                 "location": self.gcp_region,
-                "user.id": user_id,
+                "user.id": str(user_id),
             },
             "log_level": self.log_level,
         }
