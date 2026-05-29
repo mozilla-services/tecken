@@ -158,12 +158,11 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
         url = metadata.download_url
         if request.get_host() == "localhost:8000":
             # If doing local development, with Docker, you're most likely running
-            # localstack as a fake S3. It runs on its own hostname that is only
+            # an object storage emulator. It runs on its own hostname that is only
             # available from other Docker containers. But to make it really convenient,
             # for testing symbol download we'll rewrite the URL to one that is possible
             # to reach from the host.
             url = url.replace("http://gcs-cdn:8002/", "http://localhost:8002/")
-            url = url.replace("http://localstack:4566/", "http://localhost:4566/")
         response = http.HttpResponseRedirect(url)
         if request._request_debug:
             response["Debug-Time"] = elapsed_time

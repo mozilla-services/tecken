@@ -336,11 +336,7 @@ def test_upload_archive_key_lookup_cached(client, db, symbol_storage, uploaderus
         assert Upload.objects.all().count() == 1
         assert FileUpload.objects.all().count() == 2
 
-    # Upload the same file again. This time some of the S3 HeadObject operations should
-    # benefit from a cache.
-    #
-    # FIXME(willkg): we're not testing whether some of the lookups were from the cache
-    # or not
+    # Upload the same file again.
     with open(ZIP_FILE, "rb") as fp:
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
@@ -348,11 +344,7 @@ def test_upload_archive_key_lookup_cached(client, db, symbol_storage, uploaderus
         assert Upload.objects.all().count() == 2
         assert FileUpload.objects.all().count() == 2
 
-    # Upload the same file again. This time some of the S3 HeadObject operations should
-    # benefit from a cache.
-    #
-    # FIXME(willkg): we're not testing whether some of the lookups were from the cache
-    # or not
+    # Upload the same file again.
     with open(ZIP_FILE, "rb") as fp:
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
@@ -380,10 +372,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         assert Upload.objects.all().count() == 1
         assert FileUpload.objects.all().count() == 2
 
-    # Upload the same file again. This time some of the S3 HeadObject operations should
-    # benefit from a cache.
-    #
-    # FIXME(willkg): we're not verifying the caching
+    # Upload the same file again.
     with open(ZIP_FILE, "rb") as fp:
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
@@ -391,10 +380,7 @@ def test_upload_archive_key_lookup_cached_without_metadata(
         assert Upload.objects.all().count() == 2
         assert FileUpload.objects.all().count() == 2
 
-    # Upload the same file again. This time some of the S3 HeadObject operations should
-    # benefit from a cache.
-    #
-    # FIXME(willkg): we're not verifying the caching
+    # Upload the same file again.
     with open(ZIP_FILE, "rb") as fp:
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
@@ -408,7 +394,7 @@ def test_upload_archive_one_uploaded_one_errored(
 ):
     class AnyUnrecognizedError(Exception):
         """Doesn't matter much what the exception is. What matters is that
-        it happens during a boto call."""
+        it happens during a storage backend call."""
 
     token = Token.objects.create(user=uploaderuser)
     (permission,) = Permission.objects.filter(codename="upload_symbols")

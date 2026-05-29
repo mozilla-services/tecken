@@ -18,7 +18,6 @@ from django.core.cache import caches
 
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.ext.gcs.storage import GCSStorage
-from tecken.ext.s3.storage import S3Storage
 from tecken.libmarkus import set_up_metrics
 from tecken.libstorage import StorageBackend
 
@@ -113,20 +112,6 @@ def uploaderuser(django_user_model):
     return user
 
 
-def clear_s3_storage(self: S3Storage):
-    """Make sure the S3 bucket exists and delete all files under the prefix."""
-    # NOTE(smarnach): This gets patched into S3Storage as a method. I don't want this to exist in
-    # production code, since it should never get called there.
-    client = self._get_client()
-    client.create_bucket(Bucket=self.bucket)
-    response = client.list_objects_v2(Bucket=self.bucket, Prefix=self.prefix)
-    for object in response.get("Contents", []):
-        client.delete_object(Bucket=self.bucket, Key=object["Key"])
-
-
-S3Storage.clear = clear_s3_storage
-
-
 def clear_gcs_storage(self: GCSStorage):
     """Make sure the GCS bucket exists and delete all files under the prefix."""
     # NOTE(smarnach): This gets patched into GCSStorage as a method. I don't want this to exist in
@@ -161,7 +146,7 @@ def get_storage_backend(bucket_name):
     """Return a function to create a unique storage backend for the current test."""
 
     def _get_storage_backend(
-        kind: Literal["gcs", "gcs-cdn", "s3"], try_symbols: bool = False
+        kind: Literal["gcs", "gcs-cdn"], try_symbols: bool = False
     ) -> StorageBackend:
         prefix = "try/" * try_symbols + "v1"
         match kind:
@@ -172,13 +157,11 @@ def get_storage_backend(bucket_name):
                 return GCSStorage(
                     bucket_name, prefix, try_symbols, public_url=public_url
                 )
-            case "s3":
-                return S3Storage(bucket_name, prefix, try_symbols)
 
     return _get_storage_backend
 
 
-@pytest.fixture(params=["gcs", "gcs-cdn", "s3"])
+@pytest.fixture(params=["gcs", "gcs-cdn"])
 def symbol_storage_no_create(request, get_storage_backend):
     """Replace the global SymbolStorage instance with a new instance.
 

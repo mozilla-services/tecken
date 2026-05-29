@@ -11,8 +11,6 @@ from django.core.cache import cache
 from django.shortcuts import redirect
 from django.conf import settings
 
-from tecken.base.decorators import api_require_safe
-
 
 @csrf_exempt
 def dashboard(request):
@@ -65,14 +63,6 @@ def csrf_failure(request, reason=""):
     return http.JsonResponse(
         {"error": reason or "CSRF failure", "csrf_error": True}, status=403
     )
-
-
-@api_require_safe
-def contribute_json(request):
-    """Services the contribute.json file as JSON"""
-    path = Path(settings.BASE_DIR) / "contribute.json"
-    data = path.open("rb")
-    return http.FileResponse(data)
 
 
 @cache_control(max_age=60 * 60 * (not settings.DEBUG))

@@ -34,7 +34,7 @@ The symbols webapp handles upload and download of symbols.
   and when. It exposes an interface for debugging symbol upload problems.
 
 * **download:** The webapp handles download API requests by finding the
-  symbol file in one of the AWS S3 buckets and returning an HTTP redirect
+  symbol file in one of the storage backends and returning an HTTP redirect
   to the final location.
 
 
