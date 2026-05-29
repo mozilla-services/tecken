@@ -35,6 +35,7 @@ BASE_DIR = os.path.dirname(THIS_DIR)
 
 VERSION_FILE = get_version(BASE_DIR)
 
+LOGOUT_REDIRECT_URL = "/"
 
 LOCAL_DEV_ENV = _config(
     "LOCAL_DEV_ENV",
