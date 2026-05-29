@@ -1213,7 +1213,7 @@ def test_upload_auth_info(client, db, uploaderuser):
                 "resource_attributes": {
                     "gcp.project_id": "my-gcp-project",
                     "location": "us-west1",
-                    "user.id": uploaderuser.id,
+                    "user.id": str(uploaderuser.id),
                 },
                 "log_level": "info",
             },
