@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 import datetime
 from io import BufferedReader
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 from django.utils.module_loading import import_string
 
@@ -37,6 +37,11 @@ class StorageBackend:
 
     # Whether the backend handles try symboles
     try_symbols: bool
+
+    # The name of the protocol for upload sessions started with initiate_upload. This name is
+    # passed on to clients together with the upload session URL, and each protocol name should
+    # be documented in the service documentation.
+    upload_session_protocol: ClassVar[str]
 
     def exists(self) -> bool:
         """Check that this storage exists.
@@ -72,6 +77,23 @@ class StorageBackend:
         :raises StorageError: an unexpected backend-specific error was raised
         """
         raise NotImplementedError("upload() must be implemented by the concrete class")
+
+    def initiate_upload(self, key: str, metadata: ObjectMetadata) -> str:
+        """Initiate uploading an object with the given key to the storage backend.
+
+        This function starts an upload session for the given key, and returns a URL that can be
+        used to upload the object data using the protocol named in the upload_session_protocol
+        class variable.
+
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+            ``<debug-file>/<debug-id>/<symbols-file>``.
+        :arg metadata: An ObjectMetadata instance with the metadata.
+
+        :raises StorageError: an unexpected backend-specific error was raised
+        """
+        raise NotImplementedError(
+            "initiate_upload() must be implemented by the concrete class"
+        )
 
 
 class StorageError(Exception):

@@ -9,6 +9,8 @@ from io import BytesIO
 import os
 from typing import Optional
 
+import requests
+
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.libstorage import ObjectMetadata, StorageBackend
 from tecken.libsym import extract_sym_header_data
@@ -74,6 +76,21 @@ class Upload:
     def upload_to_backend(self, backend: StorageBackend):
         self.backend = backend
         backend.upload(self.key, BytesIO(self.body), self.metadata)
+
+    def upload_session_to_backend(self, backend: StorageBackend):
+        self.backend = backend
+        url = backend.initiate_upload(self.key, self.metadata)
+        self.upload_to_session_url(url)
+
+    def upload_to_session_url(self, url: str):
+        # NOTE(smarnach): The GCS emulator incorrectly ignores the Content-Type header in the
+        # request initiating the upload session. As a mitigation, we pass it again in the upload
+        # request. This isn't required when using the actual GCS.
+        headers = {}
+        if self.metadata.content_type:
+            headers["Content-Type"] = self.metadata.content_type
+        response = requests.put(url, self.body, headers=headers)
+        response.raise_for_status()
 
     def upload(self, storage: SymbolStorage, try_storage: bool = False):
         backend = storage.get_upload_backend(try_storage)
