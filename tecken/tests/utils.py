@@ -77,15 +77,17 @@ class Upload:
         self.backend = backend
         backend.upload(self.key, BytesIO(self.body), self.metadata)
 
-    def upload_session_to_backend(self, backend: StorageBackend):
+    def upload_to_backend_with_session(self, backend: StorageBackend):
         self.backend = backend
         url = backend.initiate_upload(self.key, self.metadata)
         self.upload_to_session_url(url)
 
     def upload_to_session_url(self, url: str):
-        # NOTE(smarnach): The GCS emulator incorrectly ignores the Content-Type header in the
-        # request initiating the upload session. As a mitigation, we pass it again in the upload
-        # request. This isn't required when using the actual GCS.
+        # NOTE(smarnach): GCS resumable uploads allow setting the Content-Type header either on
+        # the request initiating the upload session or on the request uploading the data. We
+        # include the Content-Type header in the request initiating the upload session, but the
+        # emulator ignores it on that request, so the object ends up with a default content type
+        # once the upload finishes. As a mitigation, we pass it again in the upload request.
         headers = {}
         if self.metadata.content_type:
             headers["Content-Type"] = self.metadata.content_type

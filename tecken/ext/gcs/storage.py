@@ -22,7 +22,7 @@ class GCSStorage(StorageBackend):
     An implementation of the StorageBackend interface for Google Cloud Storage.
     """
 
-    # Upload seesions are GCS resumable uploads as documented in
+    # Upload sessions are GCS resumable uploads as documented in
     # https://docs.cloud.google.com/storage/docs/resumable-uploads.
     upload_session_protocol = "gcs-resumable"
 

@@ -28,7 +28,7 @@ def test_upload_and_download(
     assert backend.exists()
 
     if use_upload_session:
-        upload.upload_session_to_backend(backend)
+        upload.upload_to_backend_with_session(backend)
     else:
         upload.upload_to_backend(backend)
     metadata = backend.get_object_metadata(upload.key)
