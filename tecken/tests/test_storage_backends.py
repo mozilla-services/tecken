@@ -12,17 +12,25 @@ from tecken.libstorage import StorageError
 from tecken.tests.utils import Upload, UPLOADS
 
 
+@pytest.mark.parametrize("use_upload_session", [False, True])
 @pytest.mark.parametrize("try_storage", [False, True])
 @pytest.mark.parametrize("upload", UPLOADS.values(), ids=UPLOADS.keys())
 @pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn"])
 def test_upload_and_download(
-    get_storage_backend, storage_kind: str, upload: Upload, try_storage: bool
+    get_storage_backend,
+    storage_kind: str,
+    upload: Upload,
+    try_storage: bool,
+    use_upload_session: bool,
 ):
     backend = get_storage_backend(storage_kind, try_storage)
     backend.clear()
     assert backend.exists()
 
-    upload.upload_to_backend(backend)
+    if use_upload_session:
+        upload.upload_to_backend_with_session(backend)
+    else:
+        upload.upload_to_backend(backend)
     metadata = backend.get_object_metadata(upload.key)
     response = requests.get(metadata.download_url)
     response.raise_for_status()

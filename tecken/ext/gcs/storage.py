@@ -22,6 +22,10 @@ class GCSStorage(StorageBackend):
     An implementation of the StorageBackend interface for Google Cloud Storage.
     """
 
+    # Upload sessions are GCS resumable uploads as documented in
+    # https://docs.cloud.google.com/storage/docs/resumable-uploads.
+    upload_session_protocol = "gcs-resumable"
+
     def __init__(
         self,
         bucket: str,
@@ -130,15 +134,10 @@ class GCSStorage(StorageBackend):
         )
         return metadata
 
-    def upload(self, key: str, body: BufferedReader, metadata: ObjectMetadata):
-        """Upload the object with the given key and body to the storage backend.
+    def _prepare_upload_blob(self, key: str, metadata: ObjectMetadata) -> storage.Blob:
+        """Helper function for upload() and initiate_upload().
 
-        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
-            ``<debug-file>/<debug-id>/<symbols-file>``.
-        :arg body: A stream yielding the symbols file contents.
-        :arg metadata: An ObjectMetadata instance with the metadata.
-
-        :raises StorageError: an unexpected backend-specific error was raised
+        This function can be inlined once we remove the upload() method.
         """
         bucket = self._get_bucket()
         blob = bucket.blob(f"{self.prefix}/{key}")
@@ -153,9 +152,43 @@ class GCSStorage(StorageBackend):
         blob.content_encoding = metadata.content_encoding
         # Prevent "decompressive transcoding" on download. See bug 1827506.
         blob.cache_control = "no-transform"
+        return blob
+
+    def upload(self, key: str, body: BufferedReader, metadata: ObjectMetadata):
+        """Upload the object with the given key and body to the storage backend.
+
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+            ``<debug-file>/<debug-id>/<symbols-file>``.
+        :arg body: A stream yielding the symbols file contents.
+        :arg metadata: An ObjectMetadata instance with the metadata.
+
+        :raises StorageError: an unexpected backend-specific error was raised
+        """
+        blob = self._prepare_upload_blob(key, metadata)
         try:
             blob.upload_from_file(
                 body, size=metadata.content_length, timeout=self.timeout
+            )
+        except ClientError as exc:
+            raise StorageError(str(exc), backend=self) from exc
+
+    def initiate_upload(self, key: str, metadata: ObjectMetadata) -> str:
+        """Initiate uploading an object with the given key to the storage backend.
+
+        This function starts an upload session for the given key, and returns a URL that can be
+        used to upload the object data using the protocol named in the upload_session_protocol
+        class variable.
+
+        :arg key: the key of the symbol file not including the prefix, i.e. the key in the format
+            ``<debug-file>/<debug-id>/<symbols-file>``.
+        :arg metadata: An ObjectMetadata instance with the metadata.
+
+        :raises StorageError: an unexpected backend-specific error was raised
+        """
+        blob = self._prepare_upload_blob(key, metadata)
+        try:
+            return blob.create_resumable_upload_session(
+                size=metadata.content_length, timeout=self.timeout
             )
         except ClientError as exc:
             raise StorageError(str(exc), backend=self) from exc
