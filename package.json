@@ -1,5 +1,5 @@
 {
-  "name": "tecken",
+  "name": "@mozilla/tecken",
   "description": "The Mozilla Symbol Server",
   "private": true,
   "repository": {
