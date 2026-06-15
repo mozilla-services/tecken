@@ -24,11 +24,12 @@ from tecken.base.decorators import (
     api_require_POST,
 )
 from tecken.base.symbolstorage import symbol_storage
-from tecken.base.utils import filesizeformat, invalid_key_name_characters
+from tecken.base.utils import filesizeformat, validate_key
 from tecken.upload import client_otel, executor
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import FileUpload, Upload
 from tecken.upload.utils import (
+    FileMember,
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
     DuplicateFileDifferentSize,
@@ -47,46 +48,38 @@ _not_hex_characters = re.compile(r"[^a-f0-9]", re.I)
 # over the extracted zip.
 # The names of files in this list are considered harmless and something that
 # can simply be ignored.
-_ignorable_filenames = (".DS_Store",)
+_ignorable_filenames = [".DS_Store"]
 
 
-def check_symbols_archive_file_listing(file_listings):
+def check_symbols_archive_file_listing(file_listings: list[FileMember]) -> str | None:
     """return a string (the error) if there was something not as expected"""
     for file_listing in file_listings:
+        key = file_listing.name
+        # TODO(smarnach): This looks wrong to me. The documentation of
+        # `DISALLOWED_SYMBOLS_SNIPPETS` appears to imply this should be looked up in
+        # the contents of symbols files rather than in their names. I don't have any
+        # context on this, though.
         for snippet in settings.DISALLOWED_SYMBOLS_SNIPPETS:
-            if snippet in file_listing.name:
+            if snippet in key:
                 return (
                     f"Content of archive file contains the snippet "
                     f"'{snippet}' which is not allowed"
                 )
         # Now check that the filename is matching according to these rules:
-        # 1. Either /<name1>/hex/<name2>,
-        # 2. Or, /<name>-symbols.txt
+        # 1. Either <name1>/hex/<name2>,
+        # 2. Or, <name>-symbols.txt
         # Anything else should be considered and unrecognized file pattern
         # and thus rejected.
-        split = file_listing.name.split("/")
-        if split[-1] in _ignorable_filenames:
+        if "/" not in key and key.lower().endswith("-symbols.txt"):
             continue
-        if len(split) == 3:
-            # Check the symbol and the filename part of it to make sure
-            # it doesn't contain any, considered, invalid S3 characters
-            # when it'd become a key.
-            if invalid_key_name_characters(split[0] + split[2]):
-                return f"Invalid character in filename {file_listing.name!r}"
-            # Check that the middle part is only hex characters.
-            if not _not_hex_characters.findall(split[1]):
-                continue
-        elif len(split) == 1:
-            if file_listing.name.lower().endswith("-symbols.txt"):
-                continue
-
-        # If it didn't get "continued" above, it's an unrecognized file
-        # pattern.
-        return (
-            "Unrecognized file pattern. Should only be <module>/<hex>/<file> "
-            "or <name>-symbols.txt and nothing else. "
-            f"(First unrecognized pattern was {file_listing.name})"
-        )
+        if key.rpartition("/")[2] in _ignorable_filenames:
+            continue
+        if not validate_key(key):
+            return (
+                "Unrecognized file pattern. Should only be <module>/<hex>/<file> "
+                "or <name>-symbols.txt and nothing else. "
+                f"(First unrecognized pattern was {key!r})"
+            )
 
 
 def _ignore_member_file(filename):

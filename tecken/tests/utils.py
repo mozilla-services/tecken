@@ -38,7 +38,7 @@ class Upload:
 
     @property
     def key(self) -> str:
-        return SymbolStorage.make_key(self.debug_file, self.debug_id, self.sym_file)
+        return f"{self.debug_file}/{self.debug_id}/{self.sym_file}"
 
     @classmethod
     def uncompressed(cls, sym_file: str) -> "Upload":
@@ -47,7 +47,7 @@ class Upload:
         metadata = ObjectMetadata(content_length=len(data["body"]))
         return cls(
             debug_file=data.get("debug_filename", ""),
-            debug_id=data.get("debug_id", ""),
+            debug_id=data.get("debug_id", "").upper(),
             sym_file=sym_file,
             body=data["body"],
             metadata=metadata,
@@ -66,7 +66,7 @@ class Upload:
         )
         return cls(
             debug_file=data.get("debug_filename", ""),
-            debug_id=data.get("debug_id", ""),
+            debug_id=data.get("debug_id", "").upper(),
             sym_file=sym_file,
             body=compressed_body,
             metadata=metadata,

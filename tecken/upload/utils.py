@@ -82,7 +82,7 @@ def dump_and_extract(root_dir, file_buffer, name):
 class FileMember:
     __slots__ = ["path", "name"]
 
-    def __init__(self, path, name):
+    def __init__(self, path: str, name: str):
         self.path = path
         self.name = name
 

@@ -8,45 +8,26 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    "debug_filename, filename",
+    "key",
     [
-        (
-            "xül.pdb",  # <-- note the extended ascii char
-            "xul.sym",
-        ),
-        (
-            "x%l.pdb",  # <-- note the %
-            "xul.sym",
-        ),
-        (
-            "xul.pdb",
-            "xul#.ex_",  # <-- note the #
-        ),
-        (
-            "crypt3\x10.pdb",
-            "crypt3\x10.pd_",
-        ),
+        "xül.pdb/1A2B3C4/xul.sym",  # <-- note the extended ascii char
+        "x%l.pdb/1A2B3C4/xul.sym",  # <-- note the %
+        "xul.pdb/1A2B3C/xul#.ex_",  # <-- note the #
+        "xul.so/1A2B3G4E/xul.sym",  # <-- note the G in the debug id
+        "crypt3\x10.pdb/1A2B3C/crypt3\x10.pd_",
     ],
 )
-def test_invalid_keys(debug_filename, filename):
-    key = debug_filename + filename
-    assert utils.invalid_key_name_characters(key) is True
+def test_invalid_keys(key):
+    assert not utils.validate_key(key)
 
 
 @pytest.mark.parametrize(
-    "debug_filename, filename",
+    "key",
     [
-        (
-            "xul.so",
-            "xul.sym",
-        ),
-        (
-            # bug 1954518: ~ is a valid character
-            "libgallium-24.2.8-1~bpo12+rpt1.so",
-            "libgallium-24.2.8-1~bpo12+rpt1.sym",
-        ),
+        "xul.so/1A2B3C/xul.sym",
+        # bug 1954518: ~ is a valid character
+        "libgallium-24.2.8-1~bpo12+rpt1.so/1a2b3c/libgallium-24.2.8-1~bpo12+rpt1.sym",
     ],
 )
-def test_valid_keys(debug_filename, filename):
-    key = debug_filename + filename
-    assert utils.invalid_key_name_characters(key) is False
+def test_valid_keys(key):
+    assert utils.validate_key(key)

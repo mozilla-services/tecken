@@ -6,6 +6,7 @@ from django.urls import register_converter, path, include
 
 from tecken.base import admin_site
 from tecken import views
+from tecken.base.utils import VALID_HEX_CHARS
 
 # These handlers are for dealing with exceptions raised from within
 # Django. Most other 4xx errors happen explicitly in the view functions.
@@ -29,10 +30,10 @@ register_converter(FrontendRoutesPrefixConverter, "frontendroutes")
 
 
 class MixedCaseHexConverter:
-    regex = "[0-9A-Fa-f]+"
+    regex = VALID_HEX_CHARS
 
     def to_python(self, value):
-        return value
+        return value.upper()
 
     def to_url(self, value):
         return value
