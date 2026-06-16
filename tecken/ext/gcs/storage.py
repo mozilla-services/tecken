@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import base64
 from io import BufferedReader
 import threading
 from typing import Optional
@@ -114,11 +115,16 @@ class GCSStorage(StorageBackend):
             raise StorageError(str(exc), backend=self) from exc
         gcs_metadata = blob.metadata or {}
         original_content_length = gcs_metadata.get("original_size")
-        if original_content_length is not None:
+        if original_content_length is None:
+            original_content_length = blob.size
+        else:
             try:
                 original_content_length = int(original_content_length)
             except ValueError:
                 original_content_length = None
+        original_md5_sum = gcs_metadata.get("original_md5_hash")
+        if original_md5_sum is None and blob.md5_hash:
+            original_md5_sum = base64.b64decode(blob.md5_hash).hex()
         if self.public_url:
             download_url = f"{self.public_url}/{quote(gcs_key)}"
         else:
@@ -129,7 +135,7 @@ class GCSStorage(StorageBackend):
             content_length=blob.size,
             content_encoding=blob.content_encoding,
             original_content_length=original_content_length,
-            original_md5_sum=gcs_metadata.get("original_md5_hash"),
+            original_md5_sum=original_md5_sum,
             last_modified=blob.custom_time or blob.updated,
         )
         return metadata

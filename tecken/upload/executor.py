@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from collections.abc import Iterator
 from concurrent.futures import Executor, Future, ThreadPoolExecutor
 from typing import Callable, Optional, TypeVar
 
@@ -28,3 +29,7 @@ T = TypeVar("T")
 def submit(fn: Callable[..., T], /, *args, **kwargs) -> Future[T]:
     """Submit a job to the executor."""
     return EXECUTOR.submit(fn, *args, **kwargs)
+
+
+def map(fn: Callable[..., T], /, *args, **kwargs) -> Iterator[T]:
+    return EXECUTOR.map(fn, *args, **kwargs)

@@ -19,7 +19,7 @@ _here = os.path.dirname(__file__)
 
 
 def test_client_happy_path(client, db, symbol_storage, metricsmock):
-    upload = UPLOADS["compressed"]
+    upload = UPLOADS["ssltunnel/8A07C88A3DA44E20A3490D88791183060/ssltunnel.sym"]
     upload.upload(symbol_storage)
     url = reverse(
         "download:download_symbol",
@@ -49,7 +49,7 @@ def test_client_try_download(client, db, symbol_storage, metricsmock):
     Suppose there's a file that doesn't exist in any of the regular storage backends but does
     exist in try storage, then to reach that file you need to use ?try on the URL.
     """
-    upload = UPLOADS["compressed"]
+    upload = UPLOADS["ssltunnel/8A07C88A3DA44E20A3490D88791183060/ssltunnel.sym"]
     upload.upload(symbol_storage, try_storage=True)
 
     url = reverse(
@@ -93,7 +93,7 @@ def test_client_try_download(client, db, symbol_storage, metricsmock):
 
 
 def test_client_with_debug(client, db, symbol_storage):
-    upload = UPLOADS["compressed"]
+    upload = UPLOADS["ssltunnel/8A07C88A3DA44E20A3490D88791183060/ssltunnel.sym"]
     upload.upload(symbol_storage)
     url = reverse(
         "download:download_symbol",
@@ -209,7 +209,7 @@ def test_client_with_bad_filenames(client, db, symbol_storage):
 def test_get_code_id_lookup(client, db, metricsmock, symbol_storage):
     code_file = "xul.dll"
     code_id = "651C9AF99241000"
-    upload = UPLOADS["compressed"]
+    upload = UPLOADS["ssltunnel/8A07C88A3DA44E20A3490D88791183060/ssltunnel.sym"]
     upload.upload(symbol_storage)
 
     # Upload a file into the regular bucket
@@ -264,7 +264,7 @@ def test_get_code_id_lookup(client, db, metricsmock, symbol_storage):
 def test_get_code_id_lookup_fail(client, db, metricsmock, symbol_storage):
     code_file = "xul.dll"
     code_id = "651C9AF99241000"
-    upload = UPLOADS["compressed"]
+    upload = UPLOADS["ssltunnel/8A07C88A3DA44E20A3490D88791183060/ssltunnel.sym"]
 
     # Try normal download API url
     url = reverse(
@@ -301,9 +301,9 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, symbol_storage):
 
 
 def test_head_code_id_lookup(client, db, metricsmock, symbol_storage):
-    code_file = "xul.dll"
+    code_file = "ShowSSEConfig.exe"
     code_id = "651C9AF99241000"
-    upload = UPLOADS["compressed"]
+    upload = UPLOADS["ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym"]
     upload.upload(symbol_storage)
 
     # Upload a file into the regular bucket

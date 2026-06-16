@@ -1,0 +1,1117 @@
+MODULE Linux x86_64 B2E65520F14FB5332E38A5A5189839AD0 c++filt
+INFO CODE_ID 2055E6B24FF133B52E38A5A5189839AD0C7BD1CC
+INFO GENERATOR mozilla/dump_syms 2.3.7
+FILE 0 sysdeps/x86_64/start.S
+FILE 1 /cross-installation/usr/include/x86_64-linux-gnu/bits/stdio.h
+FILE 2 /cross-installation/usr/include/x86_64-linux-gnu/bits/stdio2.h
+FILE 3 /usr/lib/debug/source/bootstrap/binutils.bst/binutils/cxxfilt.c
+FILE 4 /usr/lib/debug/source/bootstrap/binutils.bst/binutils/bucomm.c
+FILE 5 /usr/lib/debug/source/bootstrap/binutils.bst/bst_build_dir/bfd/bfd.h
+FILE 6 /cross-installation/usr/include/x86_64-linux-gnu/bits/string_fortified.h
+FILE 7 /cross-installation/usr/include/stdlib.h
+FILE 8 /usr/lib/debug/source/bootstrap/binutils.bst/binutils/version.c
+FILE 9 /usr/lib/debug/source/bootstrap/binutils.bst/binutils/filemode.c
+FILE 10 /usr/lib/debug/source/bootstrap/binutils.bst/libiberty/argv.c
+INLINE_ORIGIN 0 <name omitted>
+INLINE_ORIGIN 1 print_demangler_list
+PUBLIC 2000 0 _init
+PUBLIC 2020 0 <.plt ELF section in c++filt>
+PUBLIC 2410 0 <.plt.got ELF section in c++filt>
+PUBLIC 2420 0 <.plt.sec ELF section in c++filt>
+FUNC m 2800 1f 0 bfd_get_archive_filename
+2800 1f 669 4
+FUNC m 2820 2d3 0 main
+INLINE 0 204 3 0 2989 11
+INLINE 0 232 3 0 29d0 e
+INLINE 0 239 3 0 2a2a 7 2a39 7
+INLINE 0 253 3 0 2a57 e
+INLINE 0 190 3 0 2ac3 26
+2820 11 142 3
+2831 7 155 3
+2838 7 142 3
+283f 3 147 3
+2842 4 142 3
+2846 7 147 3
+284d 5 148 3
+2852 c 149 3
+285e d 151 3
+286b 2b 153 3
+2896 12 155 3
+28a8 c 181 3
+28b4 2 182 3
+28b6 f 260 3
+28c5 7 175 3
+28cc 2 176 3
+28ce c 187 3
+28da 8 188 3
+28e2 7 194 3
+28e9 2 195 3
+28eb a 169 3
+28f5 5 170 3
+28fa 7 166 3
+2901 5 167 3
+2906 a 163 3
+2910 5 164 3
+2915 7 178 3
+291c 5 179 3
+2921 a 184 3
+292b 5 185 3
+2930 a 172 3
+293a 5 173 3
+293f b 199 3
+294a 22 210 3
+296c e 224 3
+297a f 203 3
+2989 11 84 1
+299a 19 201 3
+29b3 1d 210 3
+29d0 e 49 1
+29de 10 234 3
+29ee 12 230 3
+2a00 1d 234 3
+2a1d 9 236 3
+2a26 4 238 3
+2a2a 7 49 1
+2a31 4 238 3
+2a35 4 234 3
+2a39 7 49 1
+2a40 5 234 3
+2a45 3 245 3
+2a48 5 244 3
+2a4d 5 245 3
+2a52 5 248 3
+2a57 e 84 1
+2a65 9 254 3
+2a6e 11 255 3
+2a7f 5 242 3
+2a84 3 245 3
+2a87 5 244 3
+2a8c 5 245 3
+2a91 2 248 3
+2a93 c 258 3
+2a9f 5 259 3
+2aa4 e 161 3
+2ab2 11 158 3
+2ac3 26 111 2
+2ae9 a 192 3
+FUNC m 2b00 26 0 _start
+2b00 4 57 0
+2b04 2 62 0
+2b06 3 78 0
+2b09 1 84 0
+2b0a 3 87 0
+2b0d 4 89 0
+2b11 1 92 0
+2b12 1 96 0
+2b13 3 99 0
+2b16 2 100 0
+2b18 7 103 0
+2b1f 6 115 0
+2b25 1 117 0
+PUBLIC 2b30 0 deregister_tm_clones
+PUBLIC 2b60 0 register_tm_clones
+PUBLIC 2ba0 0 __do_global_dtors_aux
+PUBLIC 2be0 0 frame_dummy
+FUNC m 2bf0 14e 0 usage
+INLINE 0 97 3 0 2bf1 9 2c02 5 2c11 c
+INLINE 0 99 3 0 2c1d 1d
+INLINE 0 103 3 0 2c3a 1d
+INLINE 0 106 3 0 2c57 19
+INLINE 0 113 3 1 2c70 61
+INLINE 1 84 3 0 2c70 1d
+INLINE 1 89 3 0 2ca0 14 2cb8 5
+INLINE 1 91 3 0 2cc4 d
+INLINE 0 114 3 0 2cd1 19
+INLINE 0 116 3 0 2cea 19
+INLINE 0 124 3 0 2d23 1b
+2bf0 1 96 3
+2bf1 9 111 2
+2bfa 8 96 3
+2c02 5 111 2
+2c07 a 96 3
+2c11 c 111 2
+2c1d 1d 111 2
+2c3a 1d 111 2
+2c57 19 111 2
+2c70 1d 111 2
+2c8d a 87 3
+2c97 9 86 3
+2ca0 14 111 2
+2cb4 4 88 3
+2cb8 5 111 2
+2cbd 7 87 3
+2cc4 d 111 2
+2cd1 19 111 2
+2cea 19 111 2
+2d03 5 123 3
+2d08 8 125 3
+2d10 13 124 3
+2d23 1b 111 2
+FUNC m 2d40 b3 0 demangle_it
+INLINE 0 74 3 0 2d89 16
+INLINE 0 69 3 0 2dc0 a 2dcb 5 2dd2 2 2dd5 b
+INLINE 0 73 3 0 2de0 13
+2d40 7 54 3
+2d47 3 61 3
+2d4a 3 54 3
+2d4d e 61 3
+2d5b 13 63 3
+2d6e 11 66 3
+2d7f 5 68 3
+2d84 5 72 3
+2d89 16 118 2
+2d9f 1 77 3
+2da0 3 75 3
+2da3 3 77 3
+2da6 a 75 3
+2db0 3 64 3
+2db3 d 66 3
+2dc0 a 118 2
+2dca 1 77 3
+2dcb 5 118 2
+2dd0 2 77 3
+2dd2 2 118 2
+2dd4 1 77 3
+2dd5 b 118 2
+2de0 13 84 1
+FUNC m 2e00 97 0 template_in_dir
+INLINE 0 516 4 0 2e2f c 2e3e 5
+INLINE 0 533 4 0 2e5d 11
+2e00 1 494 4
+2e01 5 496 4
+2e06 d 494 4
+2e13 5 496 4
+2e18 5 512 4
+2e1d 3 514 4
+2e20 4 515 4
+2e24 3 514 4
+2e27 8 515 4
+2e2f c 29 6
+2e3b 3 515 4
+2e3e 5 29 6
+2e43 c 525 4
+2e4f e 533 4
+2e5d 11 29 6
+2e6e 12 536 4
+2e80 17 529 4
+FUNC m 2ea0 4b 0 endian_string
+INLINE 0 230 4 0 2ea9 17
+2ea0 9 232 4
+2ea9 17 236 4
+2ec0 18 235 4
+2ed8 13 234 4
+FUNC m 2ef0 9a 0 bfd_nonfatal
+INLINE 0 48 4 0 2f3c 6 2f43 5 2f4a 9 2f54 c
+INLINE 0 50 4 0 2f70 a 2f7b 5 2f82 2 2f85 5
+2ef0 e 38 4
+2efe 5 40 4
+2f03 4 42 4
+2f07 16 43 4
+2f1d c 46 4
+2f29 e 48 4
+2f37 5 47 4
+2f3c 6 111 2
+2f42 1 51 4
+2f43 5 111 2
+2f48 2 51 4
+2f4a 9 111 2
+2f53 1 51 4
+2f54 c 111 2
+2f60 10 45 4
+2f70 a 111 2
+2f7a 1 51 4
+2f7b 5 111 2
+2f80 2 51 4
+2f82 2 111 2
+2f84 1 51 4
+2f85 5 111 2
+FUNC m 2f90 1d2 0 do_display_target
+INLINE 0 278 4 0 2fe4 3 2ff5 7 3002 d
+INLINE 0 283 4 0 3058 18
+INLINE 0 308 4 0 30d9 16
+2f90 1b 266 4
+2fab 6 271 4
+2fb1 3 272 4
+2fb4 3 271 4
+2fb7 b 272 4
+2fc2 6 273 4
+2fc8 c 275 4
+2fd4 4 277 4
+2fd8 4 275 4
+2fdc 8 277 4
+2fe4 3 59 6
+2fe7 3 278 4
+2fea 7 277 4
+2ff1 4 278 4
+2ff5 7 59 6
+2ffc 6 278 4
+3002 d 59 6
+300f 4 279 4
+3013 c 281 4
+301f 4 283 4
+3023 b 281 4
+302e 2a 283 4
+3058 18 118 2
+3070 f 287 4
+307f 9 288 4
+3088 8 293 4
+3090 5 305 4
+3095 9 293 4
+309e e 295 4
+30ac 8 313 4
+30b4 4 315 4
+30b8 18 316 4
+30d0 9 308 4
+30d9 16 118 2
+30ef 19 309 4
+3108 8 305 4
+3110 18 306 4
+3128 9 290 4
+3131 8 291 4
+3139 4 316 4
+313d 5 291 4
+3142 b 316 4
+314d 8 297 4
+3155 8 298 4
+315d 5 312 4
+FUNC m 3170 17 0 bfd_fatal
+3170 8 108 4
+3178 5 109 4
+317d a 110 4
+FUNC m 3190 6a 0 report
+INLINE 0 117 4 0 31ad 21
+INLINE 0 118 4 0 31ce 17
+3190 11 115 4
+31a1 c 116 4
+31ad 21 111 2
+31ce 17 166 2
+31e5 7 119 4
+31ec 1 120 4
+31ed 5 119 4
+31f2 3 120 4
+31f5 5 119 4
+FUNC m 3200 ab 0 fatal
+3200 68 124 4
+3268 4 127 4
+326c 7 129 4
+3273 29 127 4
+329c 5 129 4
+32a1 a 131 4
+FUNC m 32b0 ba 0 non_fatal
+32b0 68 136 4
+3318 4 139 4
+331c 7 141 4
+3323 29 139 4
+334c 5 141 4
+3351 19 143 4
+FUNC m 3370 1b 0 bfd_xalloc
+3370 8 151 4
+3378 5 152 4
+337d 5 153 4
+3382 2 156 4
+3384 7 154 4
+FUNC m 3390 59 0 set_default_bfd_target
+3390 5 165 4
+3395 7 169 4
+339c 8 165 4
+33a4 9 169 4
+33ad 6 172 4
+33b3 36 170 4
+FUNC m 33f0 a3 0 list_matching_formats
+INLINE 0 182 4 0 3424 19
+INLINE 0 185 4 0 3450 7 345b 13
+33f0 d 180 4
+33fd 7 181 4
+3404 1 180 4
+3405 5 181 4
+340a 1a 182 4
+3424 19 111 2
+343d 9 184 4
+3446 a 183 4
+3450 7 111 2
+3457 4 185 4
+345b 13 111 2
+346e 8 184 4
+3476 8 186 4
+347e 7 187 4
+3485 1 188 4
+3486 5 187 4
+348b 3 188 4
+348e 5 187 4
+FUNC m 34a0 d2 0 list_supported_targets
+INLINE 0 201 4 0 34d3 15
+INLINE 0 205 4 0 3500 c 3510 a
+INLINE 0 206 4 0 3523 d
+INLINE 0 199 4 0 355b 17
+34a0 14 194 4
+34b4 c 198 4
+34c0 13 201 4
+34d3 15 111 2
+34e8 5 203 4
+34ed 3 204 4
+34f0 3 203 4
+34f3 d 204 4
+3500 c 111 2
+350c 4 204 4
+3510 a 111 2
+351a 9 204 4
+3523 d 111 2
+3530 4 208 4
+3534 3 207 4
+3537 6 208 4
+353d b 207 4
+3548 13 199 4
+355b 17 111 2
+FUNC m 3580 d2 0 list_supported_architectures
+INLINE 0 221 4 0 35b3 15
+INLINE 0 224 4 0 35e0 c 35f0 a
+INLINE 0 225 4 0 3602 d
+INLINE 0 219 4 0 363b 17
+3580 14 214 4
+3594 c 218 4
+35a0 13 221 4
+35b3 15 111 2
+35c8 18 223 4
+35e0 c 111 2
+35ec 4 223 4
+35f0 a 111 2
+35fa 8 223 4
+3602 d 111 2
+360f 4 227 4
+3613 3 226 4
+3616 6 227 4
+361c c 226 4
+3628 13 219 4
+363b 17 111 2
+FUNC m 3660 373 0 display_info
+INLINE 0 432 4 0 3695 16
+INLINE 0 434 4 0 36ab 45
+INLINE 0 436 4 0 3728 2a6
+INLINE 1 401 4 0 3761 f
+INLINE 1 407 4 0 378a 4 3798 4a 3971 e
+INLINE 1 409 4 0 37e2 1d 397f 4a
+INLINE 1 410 4 0 37ff 3c 39c9 5
+INLINE 2 354 4 0 381b 12 3831 5
+INLINE 1 411 4 0 383b c 384c 5
+INLINE 1 417 4 0 38a5 19
+INLINE 1 420 4 0 38be 83
+INLINE 2 375 4 0 38ee 11
+INLINE 2 371 4 0 3920 11
+INLINE 1 421 4 0 3941 c 3950 5
+3660 5 429 4
+3665 9 432 4
+366e 10 429 4
+367e 17 432 4
+3695 16 118 2
+36ab 7 321 4
+36b2 b 327 4
+36bd 8 322 4
+36c5 4 321 4
+36c9 8 324 4
+36d1 8 325 4
+36d9 5 327 4
+36de 9 329 4
+36e7 9 330 4
+36f0 a 435 4
+36fa 9 438 4
+3703 3 439 4
+3706 22 440 4
+3728 3 388 4
+372b 5 390 4
+3730 9 392 4
+3739 8 393 4
+3741 7 394 4
+3748 8 390 4
+3750 c 399 4
+375c 5 400 4
+3761 f 483 7
+3770 4 402 4
+3774 5 403 4
+3779 e 405 4
+3787 3 407 4
+378a 4 338 4
+378e a 407 4
+3798 28 338 4
+37c0 4 343 4
+37c4 e 338 4
+37d2 b 340 4
+37dd 5 341 4
+37e2 1d 118 2
+37ff 18 353 4
+3817 4 354 4
+381b 12 118 2
+382d 4 353 4
+3831 5 118 2
+3836 5 353 4
+383b c 84 1
+3847 5 413 4
+384c 5 84 1
+3851 2f 413 4
+3880 1c 415 4
+389c 9 417 4
+38a5 19 118 2
+38be 6 363 4
+38c4 14 365 4
+38d8 c 366 4
+38e4 a 374 4
+38ee 11 84 1
+38ff 7 365 4
+3906 3 366 4
+3909 8 365 4
+3911 5 369 4
+3916 a 370 4
+3920 11 84 1
+3931 6 370 4
+3937 a 374 4
+3941 c 84 1
+394d 3 413 4
+3950 5 84 1
+3955 9 413 4
+395e 13 405 4
+3971 e 338 4
+397f 1d 118 2
+399c 10 118 2
+39ac 1d 118 2
+39c9 5 353 4
+39ce 5 440 4
+FUNC m 39e0 1a8 0 print_arelt_descr
+INLINE 0 476 4 0 3a3a b
+INLINE 0 486 4 0 3a60 d
+INLINE 0 483 4 0 3a99 1f
+INLINE 0 465 4 0 3ad7 27
+INLINE 0 470 4 0 3b11 30
+INLINE 0 462 4 0 3b63 20
+39e0 2c 448 4
+3a0c 4 451 4
+3a10 2a 453 4
+3a3a b 111 2
+3a45 5 478 4
+3a4a 16 480 4
+3a60 d 111 2
+3a6d 23 487 4
+3a90 9 482 4
+3a99 1f 111 2
+3ab8 7 457 4
+3abf 7 458 4
+3ac6 7 457 4
+3acd 5 458 4
+3ad2 5 461 4
+3ad7 27 30 2
+3afe f 467 4
+3b0d 4 468 4
+3b11 30 111 2
+3b41 f 111 2
+3b50 13 462 4
+3b63 20 30 2
+3b83 5 487 4
+FUNC m 3b90 46 0 make_tempname
+3b90 e 543 4
+3b9e 5 544 4
+3ba3 3 548 4
+3ba6 3 544 4
+3ba9 5 548 4
+3bae 5 556 4
+3bb3 4 562 4
+3bb7 9 564 4
+3bc0 3 558 4
+3bc3 2 560 4
+3bc5 5 558 4
+3bca a 559 4
+3bd4 2 560 4
+FUNC m 3be0 50 0 make_tempdir
+3be0 d 571 4
+3bed 5 572 4
+3bf2 3 576 4
+3bf5 3 572 4
+3bf8 5 576 4
+3bfd 5 587 4
+3c02 e 593 4
+3c10 c 589 4
+3c1c e 590 4
+3c2a 6 593 4
+FUNC m 3c30 76 0 parse_vma
+3c30 5 600 4
+3c35 2 604 4
+3c37 1d 600 4
+3c54 9 604 4
+3c5d 9 606 4
+3c66 18 610 4
+3c7e 23 607 4
+3ca1 5 610 4
+FUNC m 3cb0 12c 0 get_file_size
+3cb0 21 618 4
+3cd1 9 621 4
+3cda 17 624 4
+3cf1 16 632 4
+3d07 7 634 4
+3d0e d 636 4
+3d1b 25 658 4
+3d40 c 635 4
+3d4c 14 633 4
+3d60 10 622 4
+3d70 5 626 4
+3d75 c 627 4
+3d81 7 626 4
+3d88 30 629 4
+3db8 e 637 4
+3dc6 11 633 4
+3dd7 5 658 4
+FUNC m 3de0 ee 0 bfd_get_archive_filename
+INLINE 0 676 4 0 3e01 6
+INLINE 0 675 4 0 3e12 3
+INLINE 0 684 4 0 3e48 1d 3e9a 3 3ea7 11
+3de0 11 664 4
+3df1 9 669 4
+3dfa 7 671 4
+3e01 6 2293 5
+3e07 5 671 4
+3e0c 6 672 4
+3e12 3 2293 5
+3e15 c 675 4
+3e21 3 676 4
+3e24 3 675 4
+3e27 5 676 4
+3e2c 7 677 4
+3e33 5 675 4
+3e38 5 677 4
+3e3d b 680 4
+3e48 1d 30 2
+3e65 7 686 4
+3e6c 14 687 4
+3e80 5 679 4
+3e85 10 681 4
+3e95 5 682 4
+3e9a 3 2293 5
+3e9d a 682 4
+3ea7 11 2293 5
+3eb8 16 680 4
+FUNC m 3ed0 1e5 0 bfd_nonfatal_message
+INLINE 0 81 4 0 3f70 13
+INLINE 0 88 4 0 3f96 3
+INLINE 0 91 4 0 3f9e 22
+INLINE 0 93 4 0 3fc0 1d
+INLINE 0 99 4 0 3fe2 7 3fed a 3ffe 7 4027 5
+INLINE 0 100 4 0 402c 1b
+INLINE 0 103 4 0 4047 1d
+3ed0 71 70 4
+3f41 5 73 4
+3f46 8 75 4
+3f4e 16 76 4
+3f64 c 79 4
+3f70 13 111 2
+3f83 5 83 4
+3f88 9 85 4
+3f91 5 87 4
+3f96 3 854 5
+3f99 5 90 4
+3f9e 22 111 2
+3fc0 1d 111 2
+3fdd 5 95 4
+3fe2 7 111 2
+3fe9 4 98 4
+3fed a 111 2
+3ff7 7 98 4
+3ffe 7 111 2
+4005 22 98 4
+4027 5 111 2
+402c 1b 166 2
+4047 1d 111 2
+4064 2c 104 4
+4090 10 78 4
+40a0 10 86 4
+40b0 5 104 4
+FUNC m 40c0 97 0 is_valid_archive_path
+40c0 4 695 4
+40c4 3 698 4
+40c7 2 699 4
+40c9 7 698 4
+40d0 4 701 4
+40d4 c 703 4
+40e0 4 706 4
+40e4 4 707 4
+40e8 7 706 4
+40ef 15 708 4
+4104 4 709 4
+4108 8 708 4
+4110 4 709 4
+4114 c 708 4
+4120 5 712 4
+4125 b 713 4
+4130 c 703 4
+413c 4 706 4
+4140 10 703 4
+4150 2 706 4
+4152 2 699 4
+4154 3 713 4
+FUNC m 4160 70 0 print_version
+INLINE 0 33 8 0 4165 7 416f e 4180 5
+INLINE 0 34 8 0 4198 f
+INLINE 0 35 8 0 41ba f
+4160 5 30 8
+4165 7 118 2
+416c 3 30 8
+416f e 118 2
+417d 3 30 8
+4180 5 118 2
+4185 13 34 8
+4198 f 118 2
+41a7 13 35 8
+41ba f 118 2
+41c9 7 39 8
+FUNC m 41d0 17d 0 mode_string
+INLINE 0 109 9 0 41d4 63
+INLINE 0 119 9 0 42fa 52
+41d0 4 108 9
+41d4 3 184 9
+41d7 5 185 9
+41dc f 184 9
+41eb 5 187 9
+41f0 9 186 9
+41f9 5 189 9
+41fe 9 188 9
+4207 5 191 9
+420c 9 190 9
+4215 5 193 9
+421a 9 192 9
+4223 14 209 9
+4237 2 109 9
+4239 17 110 9
+4250 17 111 9
+4267 a 112 9
+4271 3 113 9
+4274 2 112 9
+4276 3 113 9
+4279 6 112 9
+427f 6 113 9
+4285 3 112 9
+4288 9 113 9
+4291 15 114 9
+42a6 a 115 9
+42b0 3 116 9
+42b3 2 115 9
+42b5 3 116 9
+42b8 6 115 9
+42be 6 116 9
+42c4 3 115 9
+42c7 9 116 9
+42d0 15 117 9
+42e5 15 118 9
+42fa 8 219 9
+4302 15 223 9
+4317 8 229 9
+431f 13 233 9
+4332 8 239 9
+433a 12 243 9
+434c 1 120 9
+FUNC m 4360 aa 0 dupargv
+4360 11 73 10
+4371 c 77 10
+437d 21 81 10
+439e f 82 10
+43ad 4 85 10
+43b1 3 82 10
+43b4 c 85 10
+43c0 a 86 10
+43ca d 85 10
+43d7 a 87 10
+43e1 f 89 10
+43f0 10 81 10
+4400 5 85 10
+4405 5 78 10
+FUNC m 4410 41 0 freeargv
+4410 4 105 10
+4414 5 108 10
+4419 a 105 10
+4423 d 110 10
+4430 5 112 10
+4435 d 110 10
+4442 1 116 10
+4443 3 114 10
+4446 3 116 10
+4449 8 114 10
+FUNC m 4460 2ed 0 buildargv
+INLINE 0 187 10 0 44a4 7 44c0 e
+INLINE 0 276 10 0 4531 21
+4460 c 168 10
+446c 3 176 10
+446f 9 168 10
+4478 c 179 10
+4484 3 171 10
+4487 3 226 10
+448a e 181 10
+4498 3 175 10
+449b 2 173 10
+449d 3 226 10
+44a0 4 181 10
+44a4 7 121 10
+44ab 15 174 10
+44c0 4 123 10
+44c4 a 121 10
+44ce 7 203 10
+44d5 4 271 10
+44d9 9 189 10
+44e2 4 271 10
+44e6 4 189 10
+44ea 9 192 10
+44f3 3 199 10
+44f6 20 200 10
+4516 b 203 10
+4521 9 206 10
+452a 7 274 10
+4531 13 121 10
+4544 4 123 10
+4548 a 121 10
+4552 8 278 10
+455a c 280 10
+4566 1a 283 10
+4580 18 208 10
+4598 2 219 10
+459a 6 220 10
+45a0 7 264 10
+45a7 5 209 10
+45ac 4 267 10
+45b0 5 209 10
+45b5 19 211 10
+45ce 4 217 10
+45d2 a 223 10
+45dc 9 230 10
+45e5 3 234 10
+45e8 6 232 10
+45ee 4 267 10
+45f2 d 238 10
+45ff 1a 209 10
+4619 4 270 10
+461d 1c 271 10
+4639 4 274 10
+463d 4 272 10
+4641 4 274 10
+4645 3 271 10
+4648 10 274 10
+4658 5 224 10
+465d 9 225 10
+4666 43 226 10
+46a9 f 228 10
+46b8 5 241 10
+46bd 6 254 10
+46c3 a 258 10
+46cd 13 260 10
+46e0 10 195 10
+46f0 6 194 10
+46f6 a 195 10
+4700 3 245 10
+4703 a 243 10
+470d 1b 249 10
+4728 a 228 10
+4732 1b 256 10
+FUNC m 4750 fe 0 writeargv
+4750 19 299 10
+4769 f 300 10
+4778 f 303 10
+4787 1d 307 10
+47a4 4 318 10
+47a8 4 307 10
+47ac 1c 311 10
+47c8 12 312 10
+47da 10 315 10
+47ea 5 301 10
+47ef 11 333 10
+4800 9 322 10
+4809 12 326 10
+481b 9 329 10
+4824 c 303 10
+4830 8 332 10
+4838 16 323 10
+FUNC m 4850 3d4 0 expandargv
+INLINE 0 424 10 0 497e f 4990 f
+INLINE 0 452 10 0 4a7b 7 4a8c 3 4a96 4 4aa0 3 4aae 3 4ab6 5
+INLINE 0 454 10 0 4ac2 e 4ad3 a 4ae0 5
+INLINE 0 400 10 0 4bdc d
+INLINE 0 408 10 0 4be9 c 4c06 7 4c10 3 4c1a 5
+4850 2e 360 10
+487e 9 370 10
+4887 6 364 10
+488d 6 370 10
+4893 3 362 10
+4896 a 367 10
+48a0 7 413 10
+48a7 9 364 10
+48b0 16 394 10
+48c6 9 395 10
+48cf d 398 10
+48dc 1b 404 10
+48f7 16 406 10
+490d 12 413 10
+491f 9 414 10
+4928 18 416 10
+4940 f 418 10
+494f a 419 10
+4959 15 421 10
+496e 10 423 10
+497e f 331 2
+498d 3 423 10
+4990 f 331 2
+499f 9 425 10
+49a8 1e 429 10
+49c6 b 435 10
+49d1 8 437 10
+49d9 7 439 10
+49e0 3 437 10
+49e3 13 439 10
+49f6 a 443 10
+4a00 10 442 10
+4a10 4 444 10
+4a14 f 443 10
+4a23 6 457 10
+4a29 f 452 10
+4a38 1e 446 10
+4a56 f 451 10
+4a65 7 450 10
+4a6c 4 451 10
+4a70 b 450 10
+4a7b 7 36 6
+4a82 7 449 10
+4a89 3 453 10
+4a8c 3 36 6
+4a8f 3 449 10
+4a92 4 452 10
+4a96 4 36 6
+4a9a 6 453 10
+4aa0 3 36 6
+4aa3 b 452 10
+4aae 3 36 6
+4ab1 5 452 10
+4ab6 5 36 6
+4abb 7 454 10
+4ac2 e 29 6
+4ad0 3 454 10
+4ad3 a 29 6
+4add 3 454 10
+4ae0 5 29 6
+4ae5 9 457 10
+4aee 7 461 10
+4af5 7 457 10
+4afc 5 461 10
+4b01 c 462 10
+4b0d 3 468 10
+4b10 4 370 10
+4b14 5 468 10
+4b19 5 370 10
+4b1e 12 394 10
+4b30 c 370 10
+4b3c 2c 470 10
+4b68 c 431 10
+4b74 c 432 10
+4b80 8 370 10
+4b88 20 440 10
+4ba8 1b 443 10
+4bc3 2 442 10
+4bc5 10 443 10
+4bd5 7 400 10
+4bdc d 111 2
+4be9 c 111 2
+4bf5 a 409 10
+4bff 7 408 10
+4c06 7 111 2
+4c0d 3 408 10
+4c10 3 111 2
+4c13 7 408 10
+4c1a 5 111 2
+4c1f 5 470 10
+FUNC m 4c30 31 0 countargv
+4c30 4 485 10
+4c34 2 489 10
+4c36 5 488 10
+4c3b 25 490 10
+4c60 1 493 10
+PUBLIC 4c64 0 _fini
+STACK CFI INIT 2b00 26 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI INIT 2020 3f0 .cfa: $rsp 16 + .ra: .cfa -8 + ^
+STACK CFI 2026 .cfa: $rsp 24 +
+STACK CFI INIT 2410 10 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI INIT 2420 3e0 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI INIT 2bf0 14e .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 2bf1 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 2bfd .cfa: $rbp 16 +
+STACK CFI 2bff $r13: .cfa -24 + ^
+STACK CFI 2c09 $r12: .cfa -32 + ^
+STACK CFI 2c11 $rbx: .cfa -40 + ^
+STACK CFI INIT 2d40 b3 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 2d41 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 2d44 .cfa: $rbp 16 +
+STACK CFI 2d47 $r12: .cfa -24 + ^ $rbx: .cfa -32 + ^
+STACK CFI 2da6 .cfa: $rsp 8 +
+STACK CFI 2db0 .cfa: $rbp 16 +
+STACK CFI 2dd5 .cfa: $rsp 8 +
+STACK CFI 2de0 .cfa: $rbp 16 +
+STACK CFI INIT 2820 2d3 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 2825 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 2828 .cfa: $rbp 16 +
+STACK CFI 2831 $r15: .cfa -24 + ^ $r14: .cfa -32 + ^ $r13: .cfa -40 + ^ $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 28c4 .cfa: $rsp 8 +
+STACK CFI 28c5 .cfa: $rbp 16 +
+STACK CFI INIT 2e00 97 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 2e01 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 2e09 .cfa: $rbp 16 +
+STACK CFI 2e0b $r14: .cfa -24 + ^
+STACK CFI 2e13 $r13: .cfa -32 + ^ $r12: .cfa -40 + ^ $rbx: .cfa -48 + ^
+STACK CFI 2e79 .cfa: $rsp 8 +
+STACK CFI 2e80 .cfa: $rbp 16 +
+STACK CFI INIT 2ea0 4b .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI INIT 2ef0 9a .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 2ef5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 2ef8 .cfa: $rbp 16 +
+STACK CFI 2efa $r12: .cfa -24 + ^
+STACK CFI 2efe $rbx: .cfa -32 + ^
+STACK CFI 2f54 .cfa: $rsp 8 +
+STACK CFI 2f60 .cfa: $rbp 16 +
+STACK CFI 2f85 .cfa: $rsp 8 +
+STACK CFI INIT 2f90 1d2 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 2f95 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 2f98 .cfa: $rbp 16 +
+STACK CFI 2f9c $r15: .cfa -24 + ^ $r14: .cfa -32 + ^
+STACK CFI 2fa1 $r13: .cfa -40 + ^
+STACK CFI 2fab $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 30c6 .cfa: $rsp 8 +
+STACK CFI 30d0 .cfa: $rbp 16 +
+STACK CFI 314c .cfa: $rsp 8 +
+STACK CFI 314d .cfa: $rbp 16 +
+STACK CFI INIT 3170 17 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3175 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3178 .cfa: $rbp 16 +
+STACK CFI INIT 3190 6a .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3195 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3198 .cfa: $rbp 16 +
+STACK CFI 319a $r12: .cfa -24 + ^
+STACK CFI 319e $rbx: .cfa -32 + ^
+STACK CFI 31f5 .cfa: $rsp 8 +
+STACK CFI INIT 3200 ab .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3205 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3208 .cfa: $rbp 16 +
+STACK CFI INIT 32b0 ba .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 32b5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 32b8 .cfa: $rbp 16 +
+STACK CFI 3364 .cfa: $rsp 8 +
+STACK CFI 3365 .cfa: $rbp 16 +
+STACK CFI INIT 3370 1b .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3375 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3378 .cfa: $rbp 16 +
+STACK CFI 3383 .cfa: $rsp 8 +
+STACK CFI 3384 .cfa: $rbp 16 +
+STACK CFI INIT 3390 59 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3395 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 339f .cfa: $rbp 16 +
+STACK CFI 33a4 $rbx: .cfa -24 + ^
+STACK CFI 33b2 .cfa: $rsp 8 +
+STACK CFI 33b3 .cfa: $rbp 16 +
+STACK CFI INIT 33f0 a3 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 33f5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 33f8 .cfa: $rbp 16 +
+STACK CFI 33fa $r12: .cfa -24 + ^
+STACK CFI 3405 $rbx: .cfa -32 + ^
+STACK CFI 348e .cfa: $rsp 8 +
+STACK CFI INIT 34a0 d2 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 34a5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 34a8 .cfa: $rbp 16 +
+STACK CFI 34ac $r13: .cfa -24 + ^ $r12: .cfa -32 + ^
+STACK CFI 34b4 $rbx: .cfa -40 + ^
+STACK CFI 353d .cfa: $rsp 8 +
+STACK CFI 3548 .cfa: $rbp 16 +
+STACK CFI INIT 3580 d2 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3585 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3588 .cfa: $rbp 16 +
+STACK CFI 358c $r13: .cfa -24 + ^ $r12: .cfa -32 + ^
+STACK CFI 3594 $rbx: .cfa -40 + ^
+STACK CFI 361c .cfa: $rsp 8 +
+STACK CFI 3628 .cfa: $rbp 16 +
+STACK CFI INIT 3660 373 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3665 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3671 .cfa: $rbp 16 +
+STACK CFI 367e $r15: .cfa -24 + ^ $r14: .cfa -32 + ^ $r13: .cfa -40 + ^ $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 3727 .cfa: $rsp 8 +
+STACK CFI 3728 .cfa: $rbp 16 +
+STACK CFI INIT 39e0 1a8 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 39e5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 39e8 .cfa: $rbp 16 +
+STACK CFI 39ee $r14: .cfa -24 + ^ $r13: .cfa -32 + ^ $r12: .cfa -40 + ^
+STACK CFI 39f2 $rbx: .cfa -48 + ^
+STACK CFI 3a8c .cfa: $rsp 8 +
+STACK CFI 3a90 .cfa: $rbp 16 +
+STACK CFI INIT 3b90 46 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3b95 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3b98 .cfa: $rbp 16 +
+STACK CFI 3b9a $r12: .cfa -24 + ^
+STACK CFI 3b9e $rbx: .cfa -32 + ^
+STACK CFI 3bbe .cfa: $rsp 8 +
+STACK CFI 3bc0 .cfa: $rbp 16 +
+STACK CFI INIT 3be0 50 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3be5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3be8 .cfa: $rbp 16 +
+STACK CFI 3bed $rbx: .cfa -24 + ^
+STACK CFI 3c07 .cfa: $rsp 8 +
+STACK CFI 3c10 .cfa: $rbp 16 +
+STACK CFI 3c2f .cfa: $rsp 8 +
+STACK CFI INIT 3c30 76 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3c35 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3c3a .cfa: $rbp 16 +
+STACK CFI 3c3d $r14: .cfa -24 + ^ $rbx: .cfa -32 + ^
+STACK CFI 3c7d .cfa: $rsp 8 +
+STACK CFI 3c7e .cfa: $rbp 16 +
+STACK CFI INIT 3cb0 12c .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3cb5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3cb8 .cfa: $rbp 16 +
+STACK CFI 3cc2 $r14: .cfa -24 + ^ $rbx: .cfa -32 + ^
+STACK CFI 3d39 .cfa: $rsp 8 +
+STACK CFI 3d40 .cfa: $rbp 16 +
+STACK CFI INIT 3de0 ee .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3de5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3de8 .cfa: $rbp 16 +
+STACK CFI 3df1 $r14: .cfa -24 + ^ $r12: .cfa -32 + ^ $rbx: .cfa -40 + ^
+STACK CFI 3e79 .cfa: $rsp 8 +
+STACK CFI 3e80 .cfa: $rbp 16 +
+STACK CFI INIT 2800 1f .cfa: $rbp 16 + .ra: .cfa -8 + ^ $rbx: .cfa -40 + ^ $rbp: .cfa -16 + ^ $r12: .cfa -32 + ^ $r14: .cfa -24 + ^
+STACK CFI INIT 3ed0 1e5 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 3ed5 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 3ed8 .cfa: $rbp 16 +
+STACK CFI 3eda $r15: .cfa -24 + ^
+STACK CFI 3edf $r14: .cfa -32 + ^
+STACK CFI 3ee4 $r13: .cfa -40 + ^
+STACK CFI 3eea $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 4087 .cfa: $rsp 8 +
+STACK CFI 4090 .cfa: $rbp 16 +
+STACK CFI INIT 40c0 97 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI INIT 4160 70 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 4165 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 4180 .cfa: $rbp 16 +
+STACK CFI INIT 41d0 17d .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI INIT 4360 aa .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 4365 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 4368 .cfa: $rbp 16 +
+STACK CFI 4371 $r13: .cfa -24 + ^ $r12: .cfa -32 + ^ $rbx: .cfa -40 + ^
+STACK CFI 43ee .cfa: $rsp 8 +
+STACK CFI 43f0 .cfa: $rbp 16 +
+STACK CFI INIT 4410 41 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 441a .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 441d .cfa: $rbp 16 +
+STACK CFI 441f $r12: .cfa -24 + ^
+STACK CFI 4423 $rbx: .cfa -32 + ^
+STACK CFI 4449 .cfa: $rsp 8 +
+STACK CFI INIT 4460 2ed .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 4465 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 4468 .cfa: $rbp 16 +
+STACK CFI 446c $r15: .cfa -24 + ^ $r14: .cfa -32 + ^
+STACK CFI 4478 $r13: .cfa -40 + ^ $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 4577 .cfa: $rsp 8 +
+STACK CFI 4580 .cfa: $rbp 16 +
+STACK CFI INIT 4750 fe .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 4755 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 4758 .cfa: $rbp 16 +
+STACK CFI 4765 $r15: .cfa -24 + ^ $r14: .cfa -32 + ^ $r13: .cfa -40 + ^ $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 47fd .cfa: $rsp 8 +
+STACK CFI 4800 .cfa: $rbp 16 +
+STACK CFI INIT 4850 3d4 .cfa: $rsp 8 + .ra: .cfa -8 + ^
+STACK CFI 4855 .cfa: $rsp 16 + $rbp: .cfa -16 + ^
+STACK CFI 4858 .cfa: $rbp 16 +
+STACK CFI 4868 $r15: .cfa -24 + ^ $r14: .cfa -32 + ^ $r13: .cfa -40 + ^ $r12: .cfa -48 + ^ $rbx: .cfa -56 + ^
+STACK CFI 4b60 .cfa: $rsp 8 +
+STACK CFI 4b68 .cfa: $rbp 16 +
+STACK CFI INIT 4c30 31 .cfa: $rsp 8 + .ra: .cfa -8 + ^

@@ -1,0 +1,565 @@
+MODULE windows x86 D57F52D4A2FD56244C4C44205044422E1 ShowSSEConfig.pdb
+INFO CODE_ID 6A4B9A365000 ShowSSEConfig.exe
+INFO GENERATOR mozilla/dump_syms 2.3.7
+FILE 0 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/startup/exe_common.inl
+FILE 1 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/inc/vcstartup_internal.h
+FILE 2 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/startup/exe_wmain.cpp
+FILE 3 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/utility.cpp
+FILE 4 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/ExternalAPIs/WindowsSDKInc/c/Include/10.0.26100.0/um/winnt.h
+FILE 5 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/gs/gs_support.c
+FILE 6 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/matherr.cpp
+FILE 7 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/argv_mode.cpp
+FILE 8 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/file_mode.cpp
+FILE 9 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/eh/tncleanup.cpp
+FILE 10 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/env_mode.cpp
+FILE 11 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/default_precision.cpp
+FILE 12 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/invalid_parameter_handler.cpp
+FILE 13 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/ExternalAPIs/WindowsSDKInc/c/Include/10.0.26100.0/ucrt/corecrt_stdio_config.h
+FILE 14 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/default_local_stdio_options.cpp
+FILE 15 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/matherr_detection.c
+FILE 16 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/dyn_tls_init.c
+FILE 17 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/dyn_tls_dtor.c
+FILE 18 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/utility_desktop.cpp
+FILE 19 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/rtc/initsect.cpp
+FILE 20 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/eh/i386/sehprolg4.asm
+FILE 21 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/eh/i386/chandler4gs.c
+FILE 22 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/i386/cpu_disp.c
+FILE 23 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/ucrt_detection.c
+FILE 24 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/eh/i386/secchk.c
+FILE 25 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/gs/gs_report.c
+FILE 26 /builds/worker/workspace/obj-build/mozglue/tests/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/i386/x86_exception_filter.cpp
+FILE 27 git:github.com/mozilla-firefox/firefox:mozglue/misc/SSE.h:46e9f12a8f9b9b746a71e1b02464fcae95f8da64
+FILE 28 git:github.com/mozilla-firefox/firefox:mozglue/tests/ShowSSEConfig.cpp:46e9f12a8f9b9b746a71e1b02464fcae95f8da64
+FILE 29 /builds/worker/fetches/vs/Windows Kits/10/Include/10.0.26100.0/ucrt/stdio.h
+FILE 30 /builds/worker/fetches/vs/Windows Kits/10/Include/10.0.26100.0/ucrt/corecrt_stdio_config.h
+INLINE_ORIGIN 0 invoke_main()
+INLINE_ORIGIN 1 __scrt_main_policy::set_app_type()
+INLINE_ORIGIN 2 __scrt_file_policy::set_fmode()
+INLINE_ORIGIN 3 __scrt_file_policy::set_commode()
+INLINE_ORIGIN 4 __scrt_wide_argv_policy::configure_argv()
+INLINE_ORIGIN 5 __scrt_wide_environment_policy::initialize_environment()
+INLINE_ORIGIN 6 __scrt_common_main()
+INLINE_ORIGIN 7 NtCurrentTeb()
+INLINE_ORIGIN 8 is_potentially_valid_image_base(void* const)
+INLINE_ORIGIN 9 mozilla::supports_mmx()
+INLINE_ORIGIN 10 mozilla::supports_sse3()
+INLINE_ORIGIN 11 mozilla::supports_ssse3()
+INLINE_ORIGIN 12 mozilla::supports_sse4a()
+INLINE_ORIGIN 13 mozilla::supports_sse4_1()
+INLINE_ORIGIN 14 mozilla::supports_sse4_2()
+INLINE_ORIGIN 15 _vfprintf_l(_iobuf* const, char const* const, __crt_locale_pointers* const, char*)
+FUNC 1000 17f 0 wmain()
+INLINE 0 115 28 9 1024 5
+INLINE 0 118 28 10 109d 5
+INLINE 0 119 28 11 10ca 5
+INLINE 0 120 28 12 10f7 5
+INLINE 0 121 28 13 1124 5
+INLINE 0 122 28 14 1151 5
+1000 5 13 28
+1005 12 14 28
+1017 d 110 28
+1024 5 287 27
+1029 32 115 28
+105b 21 116 28
+107c 21 117 28
+109d 5 317 27
+10a2 28 118 28
+10ca 5 327 27
+10cf 28 119 28
+10f7 5 337 27
+10fc 28 120 28
+1124 5 347 27
+1129 28 121 28
+1151 5 357 27
+1156 23 122 28
+1179 6 123 28
+FUNC 1180 a 0 __local_stdio_printf_options()
+1180 3 90 30
+1183 7 92 30
+FUNC 1190 62 0 printf(char const* const, <NoType>)
+INLINE 0 960 29 15 11b9 27
+1190 19 956 29
+11a9 3 959 29
+11ac d 960 29
+11b9 27 645 29
+11e0 12 962 29
+FUNC 11f2 6 0 __local_stdio_scanf_options()
+11f2 5 102 13
+11f7 1 103 13
+FUNC 1200 ab 0 pre_c_initialization()
+INLINE 0 148 0 1 1201 7
+INLINE 0 150 0 2 1208 b
+INLINE 0 151 0 3 1213 c 1221 2
+INLINE 0 167 0 4 1241 d
+INLINE 0 192 0 5 128f 5
+1200 1 147 0
+1201 7 44 0
+1208 b 59 0
+1213 c 60 0
+121f 4 153 0
+1223 d 153 0
+1230 2 159 0
+1232 5 163 0
+1237 a 164 0
+1241 d 420 1
+124e 4 167 0
+1252 5 170 0
+1257 9 176 0
+1260 b 178 0
+126b 5 182 0
+1270 5 183 0
+1275 5 186 0
+127a c 189 0
+1286 9 191 0
+128f 5 441 1
+1294 5 194 0
+1299 9 196 0
+12a2 1 202 0
+12a3 8 198 0
+FUNC 12b0 8 0 post_pgo_initialization()
+12b0 5 210 0
+12b5 2 212 0
+12b7 1 213 0
+FUNC 12c0 12 0 pre_cpp_initialization()
+12c0 5 220 0
+12c5 c 222 0
+12d1 1 223 0
+FUNC 12d2 185 0 __scrt_common_main_seh()
+INLINE 0 288 0 0 13b3 1f
+12d2 c 236 0
+12de 10 237 0
+12ee 5 240 0
+12f3 7 241 0
+12fa 8 243 0
+1302 10 245 0
+1312 4 249 0
+1316 6 251 0
+131c 15 253 0
+1331 11 254 0
+1342 11 256 0
+1353 a 258 0
+135d 2 259 0
+135f 5 262 0
+1364 9 265 0
+136d 7 270 0
+1374 11 271 0
+1385 10 273 0
+1395 7 278 0
+139c f 279 0
+13ab 8 281 0
+13b3 1f 90 0
+13d2 2 288 0
+13d4 9 294 0
+13dd 4 297 0
+13e1 5 298 0
+13e6 b 301 0
+13f1 b 302 0
+13fc 17 304 0
+1413 9 309 0
+141c 6 312 0
+1422 5 313 0
+1427 a 315 0
+1431 17 317 0
+1448 6 295 0
+144e 9 310 0
+FUNC 1460 a 0 wmainCRTStartup(void*)
+INLINE 0 16 2 6 1460 a
+1460 5 328 0
+1465 5 330 0
+FUNC 146a 15 0 atexit(void (*)())
+146a 3 274 3
+146d 10 275 3
+147d 2 278 3
+FUNC 147f 2e 0 _onexit(int (*)())
+147f 3 256 3
+1482 c 259 3
+148e 7 261 3
+1495 b 267 3
+14a0 d 271 3
+FUNC 14ad 97 0 __scrt_is_nonwritable_in_current_image(void const*)
+INLINE 0 99 3 8 14c0 2d
+14ad c 88 3
+14b9 7 92 3
+14c0 e 35 3
+14ce 5 40 3
+14d3 c 42 3
+14df e 48 3
+14ed a 107 3
+14f7 9 108 3
+1500 4 109 3
+1504 6 116 3
+150a b 121 3
+1515 16 123 3
+152b 19 129 3
+FUNC 1544 32 0 __scrt_acquire_startup_lock()
+INLINE 0 146 3 7 154e 6
+1544 1 139 3
+1545 9 140 3
+154e 6 26098 4
+1554 a 148 3
+155e 4 150 3
+1562 c 148 3
+156e 3 156 3
+1571 1 157 3
+1572 3 152 3
+1575 1 157 3
+FUNC 1576 1d 0 __scrt_release_startup_lock(bool)
+1576 3 160 3
+1579 9 161 3
+1582 6 167 3
+1588 9 172 3
+1591 2 173 3
+FUNC 1593 39 0 __scrt_initialize_crt(__scrt_module_type)
+1593 3 185 3
+1596 6 186 3
+159c 7 188 3
+15a3 5 191 3
+15a8 9 194 3
+15b1 4 206 3
+15b5 9 199 3
+15be 8 201 3
+15c6 2 202 3
+15c8 2 205 3
+15ca 2 206 3
+FUNC 15cc 28 0 __scrt_uninitialize_crt(bool, bool)
+15cc 3 209 3
+15cf f 214 3
+15de 8 220 3
+15e6 a 221 3
+15f0 4 224 3
+FUNC 15f4 87 0 __scrt_initialize_onexit_tables(__scrt_module_type)
+15f4 3 296 3
+15f7 9 297 3
+1600 2 299 3
+1602 3 333 3
+1605 c 302 3
+1611 d 307 3
+161e f 310 3
+162d f 315 3
+163c 4 317 3
+1640 15 327 3
+1655 12 328 3
+1667 7 331 3
+166e 3 332 3
+1671 2 333 3
+1673 8 304 3
+FUNC 167b 42 0 find_pe_section(unsigned char* const, const unsigned int)
+167b 3 61 3
+167e 9 63 3
+1687 9 69 3
+1690 b 70 3
+169b 12 73 3
+16ad 7 71 3
+16b4 3 79 3
+16b7 2 80 3
+16b9 4 75 3
+FUNC 16bd 4b 0 __security_init_cookie()
+16bd 1a 171 5
+16d7 7 184 5
+16de 4 191 5
+16e2 5 193 5
+16e7 2 194 5
+16e9 4 196 5
+16ed a 198 5
+16f7 6 202 5
+16fd b 205 5
+FUNC 1708 4d 0 __get_entropy()
+1708 6 90 5
+170e 12 95 5
+1720 9 100 5
+1729 9 103 5
+1732 9 104 5
+173b a 113 5
+1745 e 124 5
+1753 2 136 5
+FUNC m 1760 3 0 _matherr(_exception*)
+1760 2 22 6
+1762 1 23 6
+FUNC 1763 4 0 _get_startup_argv_mode()
+1763 3 15 7
+1766 1 16 7
+FUNC 1767 6 0 _get_startup_file_mode()
+1767 5 16 8
+176c 1 17 8
+FUNC 176d c 0 __scrt_initialize_type_info()
+176d b 17 9
+1778 1 18 9
+FUNC m 1779 3 0 _should_initialize_environment()
+1779 2 15 10
+177b 1 16 10
+FUNC 177c 21 0 _initialize_default_precision()
+177c 18 20 11
+1794 1 22 11
+1795 8 21 11
+FUNC m 17a0 3 4 _initialize_invalid_parameter_handler()
+17a0 3 17 12
+FUNC 17a3 1d 0 __scrt_initialize_default_local_stdio_options()
+17a3 e 21 14
+17b1 e 22 14
+17bf 1 23 14
+FUNC 17c0 c 0 __scrt_is_user_matherr_present(<NoType>)
+17c0 b 23 15
+17cb 1 24 15
+FUNC 17cc 6 0 __scrt_get_dyn_tls_init_callback(<NoType>)
+17cc 5 20 16
+17d1 1 21 16
+FUNC 17d2 6 0 __scrt_get_dyn_tls_dtor_callback(<NoType>)
+17d2 5 21 17
+17d7 1 22 17
+FUNC 17d8 42 0 __scrt_is_managed_app()
+17d8 8 33 18
+17e0 4 34 18
+17e4 a 37 18
+17ee 5 40 18
+17f3 8 43 18
+17fb b 46 18
+1806 6 53 18
+180c a 58 18
+1816 1 62 18
+1817 2 59 18
+1819 1 62 18
+FUNC 181a 5 0 __scrt_initialize_mta()
+181a 5 83 18
+FUNC 181f c 0 __scrt_set_unhandled_exception_filter()
+181f b 101 18
+182a 1 102 18
+FUNC 182b a 0 __scrt_fastfail(unsigned int)
+182b 3 135 18
+182e 5 137 18
+1833 2 138 18
+FUNC 1840 56 4 __scrt_unhandled_exception_filter(_EXCEPTION_POINTERS* const)
+1840 5 87 18
+1845 5 88 18
+184a 2d 89 18
+1877 4 96 18
+187b 4 97 18
+187f 7 91 18
+1886 a 92 18
+1890 6 93 18
+FUNC 1896 2c 0 _RTC_Initialize()
+1896 2 38 19
+1898 f 41 19
+18a7 6 43 19
+18ad a 45 19
+18b7 9 41 19
+18c0 2 48 19
+FUNC 18d0 2c 0 _RTC_Terminate()
+18d0 2 52 19
+18d2 f 55 19
+18e1 6 57 19
+18e7 a 59 19
+18f1 9 55 19
+18fa 2 62 19
+FUNC 1900 45 0 __SEH_prolog4()
+1900 5 71 20
+1905 7 72 20
+190c 4 73 20
+1910 4 74 20
+1914 4 75 20
+1918 2 76 20
+191a 1 77 20
+191b 1 78 20
+191c 1 79 20
+191d 5 80 20
+1922 3 81 20
+1925 2 82 20
+1927 1 83 20
+1928 3 84 20
+192b 3 85 20
+192e 3 86 20
+1931 7 87 20
+1938 3 88 20
+193b 3 89 20
+193e 6 90 20
+1944 1 91 20
+FUNC 1950 2f 0 _except_handler4(_EXCEPTION_RECORD*, _EXCEPTION_REGISTRATION_RECORD*, _CONTEXT*, void*)
+1950 4 89 21
+1954 a 91 21
+195e 1f 94 21
+197d 2 101 21
+FUNC 197f 31a 0 __isa_available_init(<NoType>)
+197f 3 63 22
+1982 14 65 22
+1996 10 67 22
+19a6 1c 80 22
+19c2 3 82 22
+19c5 19 84 22
+19de 1f 89 22
+19fd 34 93 22
+1a31 7 101 22
+1a38 3 104 22
+1a3b 2 105 22
+1a3d 5 108 22
+1a42 10 110 22
+1a52 1a 112 22
+1a6c 3 113 22
+1a6f f 114 22
+1a7e 2 117 22
+1a80 7 119 22
+1a87 6 122 22
+1a8d 1b 124 22
+1aa8 9 125 22
+1ab1 8 128 22
+1ab9 1a 129 22
+1ad3 3 130 22
+1ad6 3 136 22
+1ad9 5 137 22
+1ade 2d 138 22
+1b0b c 141 22
+1b17 d 143 22
+1b24 8 144 22
+1b2c 15 145 22
+1b41 6 148 22
+1b47 8 154 22
+1b4f 21 155 22
+1b70 17 158 22
+1b87 5 161 22
+1b8c e 165 22
+1b9a 3f 169 22
+1bd9 2c 174 22
+1c05 b 169 22
+1c10 9 177 22
+1c19 10 179 22
+1c29 20 181 22
+1c49 2 185 22
+1c4b 12 187 22
+1c5d 22 188 22
+1c7f 4 189 22
+1c83 12 191 22
+1c95 2 197 22
+1c97 2 199 22
+FUNC 1c99 c 0 __scrt_is_ucrt_dll_in_use(<NoType>)
+1c99 b 23 23
+1ca4 1 24 23
+FUNC 1cb0 e 4 __security_check_cookie(unsigned int)
+1cb0 6 55 24
+1cb6 2 56 24
+1cb8 1 57 24
+1cb9 5 59 24
+FUNC 1cbe 6 0 __report_gsfailure(<NoType>)
+1cbe 5 39 25
+1cc3 1 40 25
+FUNC 1cc4 77 0 _filter_x86_sse2_floating_point_exception_default(const long)
+1cc4 4 19 26
+1cc8 c 23 26
+1cd4 10 29 26
+1ce4 a 70 26
+1cee 4 73 26
+1cf2 7 77 26
+1cf9 5 78 26
+1cfe 2 98 26
+1d00 7 81 26
+1d07 7 85 26
+1d0e 5 86 26
+1d13 2 98 26
+1d15 7 89 26
+1d1c 5 90 26
+1d21 2 98 26
+1d23 d 93 26
+1d30 4 98 26
+1d34 5 82 26
+1d39 2 98 26
+PUBLIC 1d3b 0 __current_exception
+PUBLIC 1d41 0 __current_exception_context
+PUBLIC 1d47 0 _except_handler4_common
+PUBLIC 1d4d 0 __p___argc
+PUBLIC 1d53 0 __p___wargv
+PUBLIC 1d59 0 __p__commode
+PUBLIC 1d5f 0 __setusermatherr
+PUBLIC 1d65 0 _c_exit
+PUBLIC 1d6b 0 _cexit
+PUBLIC 1d71 0 _configthreadlocale
+PUBLIC 1d77 0 _configure_wide_argv
+PUBLIC 1d7d 0 _controlfp_s
+PUBLIC 1d83 0 _crt_atexit
+PUBLIC 1d89 0 _exit
+PUBLIC 1d8f 0 _get_initial_wide_environment
+PUBLIC 1d95 0 _initialize_onexit_table
+PUBLIC 1d9b 0 _initialize_wide_environment
+PUBLIC 1da1 0 _initterm
+PUBLIC 1da7 0 _initterm_e
+PUBLIC 1dad 0 _register_onexit_function
+PUBLIC 1db3 0 _register_thread_local_exe_atexit_callback
+PUBLIC 1db9 0 _seh_filter_exe
+PUBLIC 1dbf 0 _set_app_type
+PUBLIC 1dc5 0 _set_fmode
+PUBLIC 1dcb 0 _set_new_mode
+PUBLIC 1dd1 0 exit
+PUBLIC 1dd7 0 puts
+PUBLIC 1ddd 0 terminate
+PUBLIC 1dde 0 <unknown in ShowSSEConfig.pdb>
+STACK WIN 4 1000 17f 5 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1001 17e 4 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ =
+STACK WIN 4 1003 17c 2 0 0 4 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ =
+STACK WIN 4 1004 17b 1 0 0 8 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ = $edi $T0 8 - ^ =
+STACK WIN 4 1005 17a 0 0 0 c 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ = $edi $T0 8 - ^ = $esi $T0 12 - ^ =
+STACK WIN 4 1180 a 3 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1181 9 2 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ =
+STACK WIN 4 1183 7 0 0 0 4 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ =
+STACK WIN 4 1190 62 9 0 4 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1191 61 8 0 4 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ =
+STACK WIN 4 1193 5f 6 0 4 4 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ =
+STACK WIN 4 1194 5e 5 0 4 8 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ = $ebx $T0 8 - ^ =
+STACK WIN 4 1195 5d 4 0 4 c 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ = $ebx $T0 8 - ^ = $edi $T0 12 - ^ =
+STACK WIN 4 1196 5c 3 0 4 10 0 0 1 $T0 $ebp 4 + = $eip $T0 ^ = $esp $T0 4 + = $ebp $T0 4 - ^ = $ebx $T0 8 - ^ = $edi $T0 12 - ^ = $esi $T0 16 - ^ =
+STACK WIN 4 11f2 6 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1200 ab 1 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1201 2b 0 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $23 $T0 4 - ^ =
+STACK WIN 4 12b0 8 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 12c0 12 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 12d2 185 c 0 0 10 24 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $20 $T0 40 - ^ =  $23 $T0 44 - ^ =  $24 $T0 48 - ^ =
+STACK WIN 4 13fc 14 0 0 0 10 24 0 1 $T0 $ebp = $T2 $esp = $T1 .raSearchStart = $eip $T1 ^ = $ebp $T0 = $esp $T1 4 + =
+STACK WIN 4 1460 a 0 0 4 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 146a 15 3 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 147f 2e 3 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 14ad 97 c 0 4 10 18 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $20 $T0 28 - ^ =  $23 $T0 32 - ^ =  $24 $T0 36 - ^ =
+STACK WIN 4 1515 13 0 0 4 10 18 0 1 $T0 $ebp = $T2 $esp = $T1 .raSearchStart = $eip $T1 ^ = $ebp $T0 = $esp $T1 4 + =
+STACK WIN 4 1544 32 1 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1545 30 0 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $23 $T0 4 - ^ =
+STACK WIN 4 1576 1d 3 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1593 39 3 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 15cc 28 3 0 8 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 15f4 87 3 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1605 6c 0 0 4 4 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $23 $T0 4 - ^ =
+STACK WIN 4 167b 42 7 0 8 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1682 35 0 0 8 4 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $23 $T0 4 - ^ =
+STACK WIN 4 16bd 4b 8 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 16c4 43 1 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $23 $T0 4 - ^ =
+STACK WIN 4 16c5 3b 0 0 0 8 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $23 $T0 4 - ^ =  $24 $T0 8 - ^ =
+STACK WIN 4 1708 4d 6 0 0 0 14 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1760 3 0 0 4 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1763 4 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1767 6 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 176d c 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1779 3 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 177c 21 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 17a0 3 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 17a3 1d 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 17c0 c 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 17cc 6 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 17d2 6 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 17d8 42 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 181a 5 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 181f c 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 182b a 3 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1840 56 5 0 4 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1844 37 1 0 4 4 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $23 $T0 4 - ^ =
+STACK WIN 4 1845 33 0 0 4 8 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $23 $T0 4 - ^ =  $24 $T0 8 - ^ =
+STACK WIN 4 1896 2c 2 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1897 2a 1 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $20 $T0 4 - ^ =
+STACK WIN 4 1898 28 0 0 0 8 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $20 $T0 4 - ^ =  $23 $T0 8 - ^ =
+STACK WIN 4 18a7 18 0 0 0 c 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $20 $T0 4 - ^ =  $23 $T0 8 - ^ =  $24 $T0 12 - ^ =
+STACK WIN 4 18d0 2c 2 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 18d1 2a 1 0 0 4 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $20 $T0 4 - ^ =
+STACK WIN 4 18d2 28 0 0 0 8 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $20 $T0 4 - ^ =  $23 $T0 8 - ^ =
+STACK WIN 4 18e1 18 0 0 0 c 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =  $20 $T0 4 - ^ =  $23 $T0 8 - ^ =  $24 $T0 12 - ^ =
+STACK WIN 4 1950 2f 4 0 10 0 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 1954 29 0 0 10 4 0 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $23 $T0 4 - ^ =
+STACK WIN 4 197f 31a d 0 0 0 28 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =
+STACK WIN 4 19a7 2ee 0 0 0 4 28 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $20 $T0 44 - ^ =
+STACK WIN 4 19a8 2ec 0 0 0 8 28 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $20 $T0 44 - ^ =  $23 $T0 48 - ^ =
+STACK WIN 4 19a9 2ea 0 0 0 c 28 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =  $20 $T0 44 - ^ =  $23 $T0 48 - ^ =  $24 $T0 52 - ^ =
+STACK WIN 4 1c99 c 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1cb0 e 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1cbe 6 0 0 0 0 0 0 1 $T0 .raSearch = $eip $T0 ^ = $esp $T0 4 + =
+STACK WIN 4 1cc4 77 4 0 4 0 4 0 1 $T0 $ebp = $eip $T0 4 + ^ = $ebp $T0 ^ = $esp $T0 8 + =

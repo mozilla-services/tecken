@@ -38,12 +38,15 @@ def test_upload_and_download(
     assert isinstance(metadata.last_modified, datetime)
     assert metadata.content_length == upload.metadata.content_length
     assert metadata.content_encoding == upload.metadata.content_encoding
-    assert (
-        upload.metadata.content_type is None
-        or metadata.content_type == upload.metadata.content_type
-    )
-    assert metadata.original_content_length == upload.metadata.original_content_length
-    assert metadata.original_md5_sum == upload.metadata.original_md5_sum
+    if metadata.content_encoding is None:
+        assert metadata.original_content_length == upload.metadata.content_length
+        assert metadata.original_md5_sum == upload.md5_sum()
+    else:
+        assert metadata.content_type == upload.metadata.content_type
+        assert (
+            metadata.original_content_length == upload.metadata.original_content_length
+        )
+        assert metadata.original_md5_sum == upload.metadata.original_md5_sum
 
 
 @pytest.mark.parametrize("storage_kind", ["gcs", "gcs-cdn"])
@@ -63,13 +66,10 @@ def test_storageerror_msg(get_storage_backend, storage_kind: str):
 def test_download_url(bucket_name: str, get_storage_backend, storage_kind: str):
     backend = get_storage_backend(storage_kind)
     backend.clear()
-    upload = UPLOADS["special_chars"]
+    upload = UPLOADS["c++filt/B2E65520F14FB5332E38A5A5189839AD0/c++filt.sym"]
     upload.upload_to_backend(backend)
     metadata = backend.get_object_metadata(upload.key)
     parsed_url = urlparse(metadata.download_url)
     bucket, _, key = parsed_url.path[1:].partition("/")
     assert bucket == bucket_name
-    assert (
-        key
-        == "v1/teckentest_libc%2B%2Babi.dylib/995DEDE6493B3509A47C85D8BD0AE52B0/teckentest_libc%2B%2Babi.dylib.sym"  # noqa
-    )
+    assert key == "v1/c%2B%2Bfilt/B2E65520F14FB5332E38A5A5189839AD0/c%2B%2Bfilt.sym"

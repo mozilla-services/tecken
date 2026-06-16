@@ -1,0 +1,430 @@
+MODULE windows x86_64 293A285ED25871934C4C44205044422E1 qipcap64.pdb
+INFO CODE_ID 6A4806059000 qipcap64.dll
+INFO GENERATOR mozilla/dump_syms 2.2.0
+FILE 0 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/startup/dll_dllmain.cpp
+FILE 1 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/gs/gs_support.c
+FILE 2 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/eh/tncleanup.cpp
+FILE 3 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/ExternalAPIs/UnifiedCRT/inc/corecrt_stdio_config.h
+FILE 4 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/default_local_stdio_options.cpp
+FILE 5 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/ExternalAPIs/Windows/10/sdk/inc/winnt.h
+FILE 6 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/utility.cpp
+FILE 7 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/inc/vcstartup_internal.h
+FILE 8 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/dyn_tls_init.c
+FILE 9 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/utility_desktop.cpp
+FILE 10 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/rtc/initsect.cpp
+FILE 11 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/guard_support.c
+FILE 12 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/amd64/cpu_disp.c
+FILE 13 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/defaults/argv_mode.cpp
+FILE 14 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/ucrt_detection.c
+FILE 15 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/amd64/guard_dispatch.asm
+FILE 16 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/amd64/guard_xfg_dispatch.asm
+FILE 17 /builds/worker/workspace/obj-build/toolkit/library/dummydll/D:/a/_work/1/s/src/vctools/crt/vcstartup/src/utility/ucrt_stubs.cpp
+FILE 18 hg:hg.mozilla.org/releases/mozilla-esr115:toolkit/library/dummydll/dummydll.cpp:1ae4eda3ce5ebde1d0b4a615ebc814ecaf5e751a
+INLINE_ORIGIN 0 dllmain_raw(HINSTANCE__* const, const unsigned long, void* const)
+INLINE_ORIGIN 1 dllmain_crt_dispatch(HINSTANCE__* const, const unsigned long, void* const)
+INLINE_ORIGIN 2 __get_entropy()
+INLINE_ORIGIN 3 NtCurrentTeb()
+INLINE_ORIGIN 4 __scrt_narrow_argv_policy::configure_argv()
+INLINE_ORIGIN 5 __scrt_narrow_environment_policy::initialize_environment()
+INLINE_ORIGIN 6 is_potentially_valid_image_base(void* const)
+INLINE_ORIGIN 7 find_pe_section(unsigned char* const, const unsigned long long)
+FUNC 1000 19 0 DllMain(void*, unsigned long, void*)
+1000 4 7 18
+1004 5 8 18
+1009 6 9 18
+100f a 11 18
+FUNC 101c 116 0 dllmain_crt_process_attach(HINSTANCE__* const, void* const)
+101c 1b 34 0
+1037 f 35 0
+1046 b 38 0
+1051 3 39 0
+1054 d 42 0
+1061 a 45 0
+106b 9 47 0
+1074 5 51 0
+1079 5 54 0
+107e 5 56 0
+1083 17 58 0
+109a 9 61 0
+10a3 13 64 0
+10b6 a 66 0
+10c0 3 67 0
+10c3 7 71 0
+10ca 5 73 0
+10cf 8 81 0
+10d7 12 82 0
+10e9 18 84 0
+1101 6 87 0
+1107 7 88 0
+110e 2 74 0
+1110 16 89 0
+1126 c 43 0
+FUNC 1134 84 0 dllmain_crt_process_detach(const bool)
+1134 d 158 0
+1141 a 161 0
+114b 2 163 0
+114d b 207 0
+1158 8 166 0
+1160 b 172 0
+116b 9 175 0
+1174 5 180 0
+1179 5 182 0
+117e 5 185 0
+1183 7 188 0
+118a 7 192 0
+1191 11 195 0
+11a2 5 203 0
+11a7 4 206 0
+11ab d 177 0
+FUNC 11c0 50 0 dllmain_crt_dispatch(HINSTANCE__* const, const unsigned long, void* const)
+11c0 4 216 0
+11c4 13 217 0
+11d7 5 225 0
+11dc 5 226 0
+11e1 7 222 0
+11e8 5 221 0
+11ed 8 226 0
+11f5 3 219 0
+11f8 4 226 0
+11fc 5 219 0
+1201 6 220 0
+1207 4 226 0
+120b 5 220 0
+FUNC 1210 131 0 dllmain_dispatch(HINSTANCE__* const, const unsigned long, void* const)
+INLINE 0 272 0 0 124d 22
+INLINE 0 287 0 1 12bb b
+INLINE 0 288 0 0 12c6 1a
+INLINE 0 297 0 0 1300 29
+1210 22 257 0
+1232 c 261 0
+123e 7 263 0
+1245 8 270 0
+124d c 244 0
+1259 a 245 0
+1263 c 247 0
+126f 8 273 0
+1277 13 276 0
+128a 8 277 0
+1292 13 281 0
+12a5 9 284 0
+12ae d 286 0
+12bb b 220 0
+12c6 c 244 0
+12d2 e 247 0
+12e0 9 291 0
+12e9 13 293 0
+12fc 4 294 0
+1300 c 244 0
+130c 9 245 0
+1315 14 247 0
+1329 2 301 0
+132b 6 310 0
+1331 2 313 0
+1333 e 314 0
+FUNC 1350 3d 0 _DllMainCRTStartup(HINSTANCE__* const, const unsigned long, void* const)
+1350 17 324 0
+1367 5 325 0
+136c 5 331 0
+1371 8 334 0
+1379 f 335 0
+1388 5 334 0
+FUNC 1390 ac 0 __security_init_cookie()
+INLINE 0 184 1 2 13b3 5c
+1390 d 158 1
+139d 16 169 1
+13b3 5 92 1
+13b8 a 95 1
+13c2 8 97 1
+13ca c 103 1
+13d6 8 104 1
+13de e 113 1
+13ec 3 115 1
+13ef 20 124 1
+140f 11 191 1
+1420 7 202 1
+1427 15 205 1
+FUNC 143c e 0 __scrt_initialize_type_info()
+143c e 17 2
+FUNC 144c c 0 __scrt_uninitialize_type_info()
+144c c 25 2
+FUNC 1458 1b 0 __scrt_initialize_default_local_stdio_options()
+1458 4 20 4
+145c 9 21 4
+1465 9 22 4
+146e 5 23 4
+FUNC 1474 8 0 __local_stdio_printf_options()
+1474 7 92 3
+147b 1 93 3
+FUNC 147c 8 0 __local_stdio_scanf_options()
+147c 7 102 3
+1483 1 103 3
+FUNC 1484 98 0 __scrt_is_nonwritable_in_current_image(void const*)
+INLINE 0 99 6 6 148b 32
+INLINE 0 108 6 7 14c0 3a
+1484 7 88 6
+148b e 35 6
+1499 11 40 6
+14aa 8 42 6
+14b2 b 48 6
+14bd 3 107 6
+14c0 b 69 6
+14cb c 70 6
+14d7 9 71 6
+14e0 12 73 6
+14f2 6 71 6
+14f8 2 79 6
+14fa 5 109 6
+14ff 4 111 6
+1503 6 116 6
+1509 4 118 6
+150d 4 121 6
+1511 4 101 6
+1515 2 127 6
+1517 5 129 6
+FUNC 151c 39 0 __scrt_acquire_startup_lock()
+INLINE 0 146 6 3 1529 9
+151c 4 139 6
+1520 9 140 6
+1529 9 23964 5
+1532 4 146 6
+1536 2 148 6
+1538 5 150 6
+153d d 148 6
+154a 2 156 6
+154c 5 157 6
+1551 4 152 6
+FUNC 1558 24 0 __scrt_release_startup_lock(bool)
+1558 8 160 6
+1560 b 161 6
+156b 4 167 6
+156f 7 172 6
+1576 6 173 6
+FUNC 157c 49 0 __scrt_initialize_crt(__scrt_module_type)
+157c 6 185 6
+1582 17 186 6
+1599 5 191 6
+159e 9 194 6
+15a7 4 206 6
+15ab 9 199 6
+15b4 7 201 6
+15bb 2 202 6
+15bd 2 205 6
+15bf 6 206 6
+FUNC 15c8 29 0 __scrt_uninitialize_crt(bool, bool)
+15c8 6 209 6
+15ce f 214 6
+15dd 5 220 6
+15e2 7 221 6
+15e9 8 224 6
+FUNC 15f4 8b 0 __scrt_initialize_onexit_tables(__scrt_module_type)
+15f4 6 296 6
+15fa b 297 6
+1605 5 302 6
+160a d 307 6
+1617 10 310 6
+1627 10 315 6
+1637 4 317 6
+163b 1b 327 6
+1656 f 328 6
+1665 7 331 6
+166c 8 333 6
+1674 b 304 6
+FUNC 1680 60 0 __scrt_dllmain_exception_filter(HINSTANCE__*, unsigned long, void*, int (*)(HINSTANCE__*, unsigned long, void*), unsigned long, _EXCEPTION_POINTERS*)
+1680 1f 350 6
+169f e 351 6
+16ad 11 359 6
+16be 9 362 6
+16c7 14 363 6
+16db 5 362 6
+FUNC 16e0 15 0 __scrt_dllmain_before_initialize_c()
+16e0 4 366 6
+16e4 c 367 6
+16f0 5 373 6
+FUNC 16f8 34 0 __scrt_dllmain_after_initialize_c()
+INLINE 0 383 6 4 170c c
+INLINE 0 388 6 5 1720 5
+16f8 4 376 6
+16fc 9 377 6
+1705 5 379 6
+170a 2 380 6
+170c c 418 7
+1718 4 383 6
+171c 4 385 6
+1720 5 439 7
+1725 2 391 6
+1727 5 392 6
+FUNC 172c 30 0 __scrt_dllmain_uninitialize_c()
+172c 4 395 6
+1730 9 396 6
+1739 7 398 6
+1740 4 407 6
+1744 5 398 6
+1749 9 402 6
+1752 5 404 6
+1757 5 407 6
+FUNC 175c 14 0 __scrt_dllmain_uninitialize_critical()
+175c 4 410 6
+1760 7 429 6
+1767 4 431 6
+176b 5 430 6
+FUNC 1770 28 0 __scrt_dllmain_crt_thread_attach()
+1770 4 434 6
+1774 9 436 6
+177d 4 448 6
+1781 9 441 6
+178a 5 443 6
+178f 2 444 6
+1791 2 447 6
+1793 5 448 6
+FUNC 1798 15 0 __scrt_dllmain_crt_thread_detach()
+1798 4 451 6
+179c 5 453 6
+17a1 5 454 6
+17a6 2 455 6
+17a8 5 456 6
+FUNC 17b0 8 0 __scrt_get_dyn_tls_init_callback(<NoType>)
+17b0 7 20 8
+17b7 1 21 8
+FUNC 17b8 8 0 __crt_debugger_hook(int)
+17b8 7 133 9
+17bf 1 134 9
+FUNC 17c0 14b 0 __scrt_fastfail(unsigned int)
+17c0 17 149 9
+17d7 f 152 9
+17e6 4 153 9
+17ea a 160 9
+17f4 11 162 9
+1805 a 191 9
+180f 7 193 9
+1816 13 196 9
+1829 5 198 9
+182e 3c 202 9
+186a 7 213 9
+1871 2b 218 9
+189c 1c 221 9
+18b8 9 223 9
+18c1 16 226 9
+18d7 8 228 9
+18df b 229 9
+18ea 8 233 9
+18f2 8 234 9
+18fa 11 235 9
+FUNC 190c 3c 0 _RTC_Initialize()
+190c a 38 10
+1916 10 41 10
+1926 8 43 10
+192e 6 45 10
+1934 9 41 10
+193d b 48 10
+FUNC 1948 3c 0 _RTC_Terminate()
+1948 a 52 10
+1952 10 55 10
+1962 8 57 10
+196a 6 59 10
+1970 9 55 10
+1979 b 62 10
+FUNC 1990 3 0 _guard_check_icall_nop(unsigned long long)
+1990 3 98 11
+FUNC 1994 1a1 0 __isa_available_init(<NoType>)
+1994 f 79 12
+19a3 f 88 12
+19b2 13 92 12
+19c5 26 101 12
+19eb 2 105 12
+19ed 8 107 12
+19f5 34 113 12
+1a29 14 116 12
+1a3d 7 105 12
+1a44 d 124 12
+1a51 16 125 12
+1a67 4 126 12
+1a6b 2 129 12
+1a6d a 131 12
+1a77 a 137 12
+1a81 7 138 12
+1a88 a 141 12
+1a92 7 143 12
+1a99 b 144 12
+1aa4 c 147 12
+1ab0 11 153 12
+1ac1 b 154 12
+1acc 19 157 12
+1ae5 6 160 12
+1aeb d 162 12
+1af8 6 163 12
+1afe 18 167 12
+1b16 d 171 12
+1b23 12 179 12
+FUNC 1b38 6 0 _get_startup_argv_mode()
+1b38 5 15 13
+1b3d 1 16 13
+FUNC 1b40 c 0 __scrt_is_ucrt_dll_in_use(<NoType>)
+1b40 b 23 14
+1b4b 1 24 14
+FUNC m 1b50 3 0 __scrt_stub_for_acrt_initialize()
+1b50 2 24 17
+1b52 1 25 17
+FUNC 1b54 3 0 __scrt_stub_for_is_c_termination_complete()
+1b54 2 44 17
+1b56 1 45 17
+FUNC 1b70 2 0 _guard_dispatch_icall_nop()
+1b70 2 55 15
+FUNC 1b90 6 0 _guard_xfg_dispatch_icall_nop()
+1b90 6 65 16
+FUNC 1b96 17 0 `dllmain_crt_process_attach'::`1'::fin$0
+1b96 9 68 0
+1b9f e 71 0
+FUNC 1bad 19 0 `dllmain_crt_process_detach'::`1'::fin$0
+1bad 9 189 0
+1bb6 10 192 0
+FUNC 1bc6 14 0 `dllmain_crt_process_detach'::`1'::fin$1
+1bc6 e 200 0
+1bd4 6 203 0
+FUNC 1bda 36 0 `dllmain_dispatch'::`1'::filt$0
+1bda 36 302 0
+FUNC 1c10 18 0 __scrt_is_nonwritable_in_current_image$filt$0
+1c10 18 123 6
+PUBLIC 1c30 0 _C_specific_handler
+PUBLIC 1c40 0 _std_type_info_destroy_list
+PUBLIC 1c50 0 memset
+PUBLIC 1c60 0 cexit
+PUBLIC 1c70 0 configure_narrow_argv
+PUBLIC 1c80 0 execute_onexit_table
+PUBLIC 1c90 0 initialize_narrow_environment
+PUBLIC 1ca0 0 initialize_onexit_table
+PUBLIC 1cb0 0 initterm
+PUBLIC 1cc0 0 initterm_e
+PUBLIC 1cd0 0 seh_filter_dll
+PUBLIC 1cd1 0 <unknown in qipcap64.pdb>
+STACK CFI INIT 1000 19 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 101c 116 .cfa: $rsp 48 + $r14: .cfa 16 - ^ $rbx: .cfa 0 - ^ $rsi: .cfa -8 - ^ $rdi: .cfa -24 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1134 84 .cfa: $rsp 64 + $rdi: .cfa 16 - ^ $rbx: .cfa 0 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 11c0 50 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 1210 131 .cfa: $rsp 96 + $rsi: .cfa 16 - ^ $rdi: .cfa 24 - ^ $r14: .cfa 32 - ^ $rbx: .cfa -24 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1350 3d .cfa: $rsp 48 + $rdi: .cfa 16 - ^ $rbx: .cfa 0 - ^ $rsi: .cfa -8 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1390 ac .cfa: $rsp 48 + $rbp: .cfa 16 - ^ $rbx: .cfa -24 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1458 1b .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 1484 98 .cfa: $rsp 32 + .ra: .cfa 8 - ^
+STACK CFI INIT 151c 39 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 1558 24 .cfa: $rsp 48 + $rbx: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 157c 49 .cfa: $rsp 48 + $rbx: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 15c8 29 .cfa: $rsp 48 + $rbx: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 15f4 8b .cfa: $rsp 48 + $rbx: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1680 60 .cfa: $rsp 48 + $rdi: .cfa 16 - ^ $rbx: .cfa 0 - ^ $rbp: .cfa -8 - ^ $rsi: .cfa -16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 16e0 15 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 16f8 34 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 172c 30 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 175c 14 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 1770 28 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 1798 15 .cfa: $rsp 48 + .ra: .cfa 8 - ^
+STACK CFI INIT 17c0 14b .cfa: $rsp 1488 + $rbp: .cfa 16 - ^ $rbx: .cfa 0 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 190c 3c .cfa: $rsp 48 + $rdi: .cfa 16 - ^ $rbx: .cfa 0 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1948 3c .cfa: $rsp 48 + $rdi: .cfa 16 - ^ $rbx: .cfa 0 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1994 1a1 .cfa: $rsp 32 + $rdi: .cfa 16 - ^ $rbx: .cfa -8 - ^ $rsi: .cfa -16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1b70 2 .cfa: $rsp 8 + .ra: .cfa 8 - ^
+STACK CFI INIT 1b90 6 .cfa: $rsp 8 + .ra: .cfa 8 - ^
+STACK CFI INIT 1b96 17 .cfa: $rsp 48 + $rbp: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1bad 19 .cfa: $rsp 48 + $rbp: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1bc6 14 .cfa: $rsp 48 + $rbp: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1bda 36 .cfa: $rsp 64 + $rbp: .cfa 16 - ^ .ra: .cfa 8 - ^
+STACK CFI INIT 1c10 18 .cfa: $rsp 16 + $rbp: .cfa 16 - ^ .ra: .cfa 8 - ^
