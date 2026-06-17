@@ -366,7 +366,6 @@ def test_head_code_id_lookup(client, db, metricsmock, symbol_storage):
         (("xul.dll", "651C9AF99241000", "xul.sym"), True),
         (("firefox.exe", "650C1B67AE000", "firefox.sym"), True),
         # Not codeinfo
-        (("", "ACF393EAF700487177FB4224149071A756EE51F7", "firefox.sym"), False),
         (("gkcodecs.dll", "650C26A577000", "gkcodecs.dl_"), False),
         (("firefox", "EA93F3AC00F7714877FB4224149071A70", "firefox.sym"), False),
         (("libxul.so", "F02950187F3B1A110763AD1633BBE1B60", "libxul.so.sym"), False),

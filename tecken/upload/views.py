@@ -59,6 +59,7 @@ def check_symbols_archive_file_listing(file_listings: list[FileMember]) -> str |
         # `DISALLOWED_SYMBOLS_SNIPPETS` appears to imply this should be looked up in
         # the contents of symbols files rather than in their names. I don't have any
         # context on this, though.
+        # (See https://bugzilla.mozilla.org/show_bug.cgi?id=2048257)
         for snippet in settings.DISALLOWED_SYMBOLS_SNIPPETS:
             if snippet in key:
                 return (
