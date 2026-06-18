@@ -16,7 +16,6 @@ from tecken.base.decorators import (
     set_cors_headers,
 )
 from tecken.base.symbolstorage import symbol_storage
-from tecken.base.utils import invalid_key_name_characters
 from tecken.libtiming import measure_time
 from tecken.upload.models import FileUpload
 from tecken.libmarkus import METRICS
@@ -28,16 +27,16 @@ logger = logging.getLogger("tecken")
 BOGUS_DEBUG_ID = "000000000000000000000000000000000"
 
 
-def _ignore_symbol(debugfilename, debugid, filename):
+def _ignore_symbol(debug_file, debug_id, symbols_file):
     # The MS debugger will always try to look up these files. We
     # never have them in our symbol stores. So it can be safely ignored.
-    if filename == "file.ptr":
+    if symbols_file == "file.ptr":
         return True
 
-    if debugid == BOGUS_DEBUG_ID:
+    if debug_id == BOGUS_DEBUG_ID:
         return True
 
-    if not filename.endswith(tuple(settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED)):
+    if not symbols_file.endswith(tuple(settings.DOWNLOAD_FILE_EXTENSIONS_ALLOWED)):
         return True
 
     # The default is to NOT ignore it
@@ -103,56 +102,41 @@ def is_maybe_codeinfo(some_file, some_id, filename):
 
     """
     return (
-        bool(filename)
-        and filename.endswith(".sym")
-        and bool(some_file)
-        and bool(some_id)
+        filename.endswith(".sym")
         # NOTE(willkg): debug ids are 33 characters and code ids can vary; further
         # some_id is guaranteed to be hex characters because of the urlpattern
         and len(some_id) < 33
     )
 
 
-def download_symbol_try(request, debugfilename, debugid, filename):
-    return download_symbol(request, debugfilename, debugid, filename, try_symbols=True)
+def download_symbol_try(request, debug_file, debug_id, symbols_file):
+    return download_symbol(
+        request, debug_file, debug_id, symbols_file, try_storage=True
+    )
 
 
 @METRICS.timer_decorator("download_symbol")
 @set_request_debug
 @api_require_http_methods(["GET", "HEAD"])
 @set_cors_headers(origin="*", methods="GET")
-def download_symbol(request, debugfilename, debugid, filename, try_symbols=False):
-    # First there's an opportunity to do some basic pattern matching on the symbol,
-    # debugid, and filename parameters to determine if we can, with confidence, simply
-    # ignore it.
-    #
-    # Not only can we avoid doing a SymbolStorage call, we also don't have to bother
-    # logging that it could not be found.
-    if _ignore_symbol(debugfilename, debugid, filename):
-        logger.debug(f"Ignoring symbol {debugfilename}/{debugid}/{filename}")
+def download_symbol(request, debug_file, debug_id, symbols_file, try_storage=False):
+    # Assemble the key from the components. The individual components have already been
+    # validated by the converters in download/urls.py, and the debug ID is already
+    # converted to uppercase.
+    key = f"{debug_file}/{debug_id}/{symbols_file}"
+
+    if _ignore_symbol(debug_file, debug_id, symbols_file):
+        logger.debug("Ignoring symbol %s", key)
         response = http.HttpResponseNotFound("Symbol Not Found (and ignored)")
         if request._request_debug:
             response["Debug-Time"] = 0
         return response
 
-    if invalid_key_name_characters(debugfilename + filename):
-        logger.debug(f"Invalid character {debugfilename!r}/{debugid}/{filename!r}")
-        response = http.HttpResponseBadRequest(
-            "Symbol name lookup contains invalid characters and will never be found."
-        )
-        if request._request_debug:
-            response["Debug-Time"] = 0
-        return response
-
-    refresh_cache = "_refresh" in request.GET
-
-    try_symbols = "try" in request.GET or try_symbols
+    try_storage |= "try" in request.GET
     metadata, elapsed_time = measure_time(
         symbol_storage().get_metadata,
-        symbol=debugfilename,
-        debugid=debugid,
-        filename=filename,
-        try_storage=try_symbols,
+        key,
+        try_storage=try_storage,
     )
     if metadata:
         url = metadata.download_url
@@ -172,20 +156,21 @@ def download_symbol(request, debugfilename, debugid, filename, try_symbols=False
             response.status_code = 200
         return response
 
-    if is_maybe_codeinfo(debugfilename, debugid, filename):
+    if is_maybe_codeinfo(debug_file, debug_id, symbols_file):
+        refresh_cache = "_refresh" in request.GET
         ret = cached_lookup_by_syminfo(
-            somefile=debugfilename, someid=debugid, refresh_cache=refresh_cache
+            somefile=debug_file, someid=debug_id, refresh_cache=refresh_cache
         )
         if ret:
             # Redirect to the correct debuginfo download url
-            if try_symbols:
+            if try_storage:
                 view_to_use = "download:download_symbol_try"
             else:
                 view_to_use = "download:download_symbol"
 
             new_url = reverse(
                 view_to_use,
-                args=(ret["debug_filename"], ret["debug_id"], filename),
+                args=(ret["debug_filename"], ret["debug_id"], symbols_file),
             )
             if request.GET:
                 new_url = f"{new_url}?{request.GET.urlencode()}"

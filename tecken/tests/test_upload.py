@@ -450,14 +450,14 @@ def test_upload_archive_with_cache_invalidation(
 
     with open(ZIP_FILE, "rb") as fp:
         # First time -- not there
-        assert not symbol_storage.get_metadata(module, debugid, debugfn)
+        assert not symbol_storage.get_metadata(f"{module}/{debugid}/{debugfn}")
 
         url = reverse("upload:upload_archive")
         response = client.post(url, {"file.zip": fp}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 201
 
         # Second time is there
-        assert symbol_storage.get_metadata(module, debugid, debugfn)
+        assert symbol_storage.get_metadata(f"{module}/{debugid}/{debugfn}")
 
 
 def test_upload_archive_by_url(
@@ -630,7 +630,7 @@ def test_upload_client_bad_request(client, db, uploaderuser, settings):
         error_msg = (
             "Unrecognized file pattern. Should only be "
             "<module>/<hex>/<file> or <name>-symbols.txt and nothing else. "
-            "(First unrecognized pattern was xpcshell.sym)"
+            "(First unrecognized pattern was 'xpcshell.sym')"
         )
         assert response.json()["error"] == error_msg
 
@@ -647,7 +647,9 @@ def test_upload_client_bad_request(client, db, uploaderuser, settings):
         response = client.post(url, {"file.zip": f}, HTTP_AUTH_TOKEN=token.key)
         assert response.status_code == 400
         error_msg = (
-            "Invalid character in filename 'xpcfoo.dbg/A7D6F1BB18CD4CB48/p%eter.sym'"
+            "Unrecognized file pattern. Should only be "
+            "<module>/<hex>/<file> or <name>-symbols.txt and nothing else. "
+            "(First unrecognized pattern was 'xpcfoo.dbg/A7D6F1BB18CD4CB48/p%eter.sym')"
         )
         assert response.json()["error"] == error_msg
 

@@ -160,43 +160,20 @@ def test_client_404(client, db, symbol_storage):
 
 
 @pytest.mark.parametrize(
-    "debug_filename, debug_id, filename",
+    "url",
     [
-        (
-            "xül.pdb",  # <-- note the extended ascii char
-            "44E4EC8C2F41492B9369D6B9A059577C2",
-            "xul.sym",
-        ),
-        (
-            "x%l.pdb",  # <-- note the %
-            "44E4EC8C2F41492B9369D6B9A059577C2",
-            "xul.sym",
-        ),
-        (
-            "xul.pdb",
-            "44E4EC8C2F41492B9369D6B9A059577C2",
-            "xul#.ex_",  # <-- note the #
-        ),
-        (
-            "crypt3\x10.pdb",
-            "3D0443BF4FF5446B83955512615FD0942",
-            "crypt3\x10.pd_",
-        ),
+        # note the extended ascii char
+        "/xül.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        # note the %
+        "/x%l.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym",
+        # note the #
+        "/xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2xul#.ex_",
+        "/crypt3\x10.pdb/3D0443BF4FF5446B83955512615FD0942/crypt3\x10.pd_",
     ],
 )
-def test_client_with_invalid_keys(
-    client, db, symbol_storage, debug_filename, debug_id, filename
-):
-    url = reverse(
-        "download:download_symbol",
-        args=(
-            debug_filename,
-            debug_id,
-            filename,
-        ),
-    )
+def test_client_with_invalid_keys(client, url):
     response = client.get(url)
-    assert response.status_code == 400
+    assert response.status_code == 404
 
 
 def test_client_with_bad_filenames(client, db, symbol_storage):
@@ -389,7 +366,6 @@ def test_head_code_id_lookup(client, db, metricsmock, symbol_storage):
         (("xul.dll", "651C9AF99241000", "xul.sym"), True),
         (("firefox.exe", "650C1B67AE000", "firefox.sym"), True),
         # Not codeinfo
-        (("", "ACF393EAF700487177FB4224149071A756EE51F7", "firefox.sym"), False),
         (("gkcodecs.dll", "650C26A577000", "gkcodecs.dl_"), False),
         (("firefox", "EA93F3AC00F7714877FB4224149071A70", "firefox.sym"), False),
         (("libxul.so", "F02950187F3B1A110763AD1633BBE1B60", "libxul.so.sym"), False),

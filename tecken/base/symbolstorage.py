@@ -59,25 +59,10 @@ class SymbolStorage:
             return self.try_upload_backend
         return self.upload_backend
 
-    @staticmethod
-    def make_key(symbol: str, debugid: str, filename: str) -> str:
-        """Generates a symbol file key for the given identifiers.
-
-        :arg symbol:
-        :arg debugid:
-        :arg filename:
-
-        :returns: A key suitable for use with StorageBackend methods.
-        """
-        # There are some legacy use case where the debug ID might not already be
-        # uppercased. If so, we override it. Every debug ID is always in uppercase.
-        return f"{symbol}/{debugid.upper()}/{filename}"
-
     def get_metadata(
-        self, symbol: str, debugid: str, filename: str, try_storage: bool = False
+        self, key: str, try_storage: bool = False
     ) -> Optional[ObjectMetadata]:
         """Return the metadata of the symbols file if it can be found, and None otherwise."""
-        key = self.make_key(symbol=symbol, debugid=debugid, filename=filename)
         for backend in self.get_download_backends(try_storage):
             with METRICS.timer("symboldownloader_exists"):
                 metadata = backend.get_object_metadata(key)
