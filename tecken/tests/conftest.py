@@ -12,8 +12,6 @@ from markus.testing import MetricsMock
 import pytest
 import requests_mock
 
-from django.conf import settings
-from django.contrib.auth.models import Group
 from django.core.cache import caches
 
 from tecken.base.symbolstorage import SymbolStorage
@@ -23,6 +21,8 @@ from tecken.libstorage import StorageBackend
 
 
 def pytest_sessionstart(session):
+    from django.conf import settings
+
     set_up_metrics(
         backends=[{"class": "markus.backends.logging.LoggingMetrics"}],
         hostname=settings.HOSTNAME,
@@ -103,6 +103,8 @@ def fakeuser(django_user_model):
 @pytest.fixture
 def uploaderuser(django_user_model):
     """Creates and returns a fake user in the uploaders group."""
+    from django.contrib.auth.models import Group
+
     user = django_user_model.objects.create(
         username="uploader", email="uploader@example.com"
     )
