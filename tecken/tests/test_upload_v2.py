@@ -1,3 +1,4 @@
+from hashlib import md5
 from typing import Any
 
 from django.contrib.auth.models import Permission, User
@@ -172,17 +173,31 @@ def test_upload_v2_errors(client: Client, uploaderuser: User, metricsmock: Metri
         "xul.so/1A2B3G4E/xul.sym",  # <-- note the G in the debug id
         "crypt3\x10.pdb/1A2B3C/crypt3\x10.pd_",
     ]
-    file_specs = [FileSpecRequest(key, size=5, md5_hash="abc") for key in invalid_keys]
+    invalid_md5_hashes = {
+        "xul.pdb/1/xul.sym": "D41D8CD98F00B204E9800998ECF8427E",  # only lowercase hex digits are allowed
+        "xul.pdb/2/xul.sym": "d41d8cd98f00b204e9800998ecf8427",  # too short
+        "xul.pdb/3/xul.sym": "d41d8cd98f00b204e9800998ecf8427e1",  # too long
+    }
+    valid_md5_hash = md5(b"").hexdigest()
+    file_specs = [
+        FileSpecRequest(key, size=5, md5_hash=valid_md5_hash) for key in invalid_keys
+    ] + [
+        FileSpecRequest(key, size=5, md5_hash=md5_hash)
+        for key, md5_hash in invalid_md5_hashes.items()
+    ]
+    expected_errors = ["invalid key"] * len(invalid_keys) + [
+        "invalid MD5 hex digest"
+    ] * len(invalid_md5_hashes)
     upload_response = perform_uploads(client, token, file_specs)
     assert upload_response["try_symbols"] is False
     assert upload_response["upload_protocol"] == "gcs-resumable"
     assert upload_response["user"] == uploaderuser.email
-    for file_spec_req, file_spec in zip(
-        file_specs, upload_response["files"], strict=True
+    for file_spec_req, file_spec, expected_error in zip(
+        file_specs, upload_response["files"], expected_errors, strict=True
     ):
         assert file_spec["key"] == file_spec_req.key
         assert file_spec["action"]["type"] == "error"
-        assert file_spec["action"]["msg"] == "invalid key"
+        assert file_spec["action"]["msg"] == expected_error
 
     assert_timing_count(metricsmock, "upload_v2", 1)
     assert_timing_count(metricsmock, "initiate_file_upload", len(file_specs))

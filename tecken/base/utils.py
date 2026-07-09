@@ -68,3 +68,12 @@ def validate_key(key: str) -> bool:
     The key is matched against `VALID_KEY_REGEX`.
     """
     return bool(VALID_KEY_REGEX.fullmatch(key))
+
+
+# A regular expression for a lowercase hex representation of an MD5 message digest.
+MD5_HASH_REGEX = re.compile("[0-9a-f]{32}")
+
+
+def validate_md5_lowercase_hex(md5_hash: str) -> bool:
+    """Indicate whether the given string is a valid lowercase hexadeciaml MD5 hash."""
+    return bool(MD5_HASH_REGEX.fullmatch(md5_hash))

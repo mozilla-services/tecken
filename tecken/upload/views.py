@@ -26,7 +26,7 @@ from tecken.base.decorators import (
     api_require_POST,
 )
 from tecken.base.symbolstorage import symbol_storage
-from tecken.base.utils import filesizeformat, validate_key
+from tecken.base.utils import filesizeformat, validate_key, validate_md5_lowercase_hex
 from tecken.libstorage import ObjectMetadata, StorageBackend
 from tecken.upload import client_otel, executor
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
@@ -466,6 +466,9 @@ def initiate_file_upload(
     if not validate_key(key):
         METRICS.incr("upload_file_upload_error", 1)
         return FileSpecResponse(key, ActionError("invalid key"))
+    if not validate_md5_lowercase_hex(file_spec.md5_hash):
+        METRICS.incr("upload_file_upload_error", 1)
+        return FileSpecResponse(key, ActionError("invalid MD5 hex digest"))
 
     with METRICS.timer("upload_file_exists"):
         existing_metadata = symbol_storage().get_metadata(key, backend.try_symbols)
