@@ -422,9 +422,13 @@ class UploadResponse(msgspec.Struct):
 @api_login_required
 @api_any_permission_required("upload.upload_symbols", "upload.upload_try_symbols")
 def upload_v2(request):
-    # TODO: Return a 400 on error
-    # TODO: return a 400 if there are more than 1_000 or so file specs.
-    payload = msgspec.json.decode(request.body, type=UploadRequest)
+    try:
+        payload = msgspec.json.decode(request.body, type=UploadRequest)
+    except (msgspec.DecodeError, msgspec.ValidationError):
+        return http.JsonResponse({"error": "malformed JSON request body"}, status=400)
+    if len(payload.files) > settings.UPLOAD_V2_MAX_FILES_PER_REQUEST:
+        return http.JsonResponse({"error": "too many files"}, status=400)
+
     # User tokens can only have either the permissions to upload regular symbols or the permission
     # to upload try symbols. We determine what the user wants to do based on the permissions of
     # the token they used.

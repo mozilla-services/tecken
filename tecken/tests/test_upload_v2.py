@@ -7,6 +7,7 @@ from django.urls import reverse
 from markus.testing import AnyTagValue, MetricsMock
 import msgspec
 import pytest
+from pytest_django.fixtures import SettingsWrapper
 
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.tests.utils import UPLOADS
@@ -211,3 +212,42 @@ def test_upload_v2_errors(client: Client, uploaderuser: User, metricsmock: Metri
     assert_incr_count(metricsmock, "upload_file_upload_error", len(file_specs))
     assert_incr_count(metricsmock, "upload_file_upload_skip", 0)
     assert_incr_count(metricsmock, "upload_file_upload_upload", 0)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"not JSON",
+        b'{"files": "wrong type"}',
+        b'{"files": [{"key": "missing_md5_hash", size: 123}]}',
+        b'{"files": [{"key": "a/b/c", size: 123, md5_hash: "abc", "surplus": "property"}]}',
+    ],
+)
+def test_upload_v2_invalid_body(client: Client, uploaderuser: User, body: bytes):
+    token = create_token(uploaderuser, False)
+    response = client.post(
+        reverse("upload:upload_v2"),
+        data=body,
+        content_type="application/json",
+        headers={"Auth-Token": token.key},
+    )
+    assert response.status_code == 400
+    error_response = response.json()
+    assert error_response["error"] == "malformed JSON request body"
+
+
+def test_upload_v2_too_many_files(
+    client: Client, uploaderuser: User, settings: SettingsWrapper
+):
+    token = create_token(uploaderuser, False)
+    settings.UPLOAD_V2_MAX_FILES_PER_REQUEST = len(UPLOADS) - 1
+    file_specs = [u.file_spec() for u in UPLOADS.values()]
+    response = client.post(
+        reverse("upload:upload_v2"),
+        data=msgspec.json.encode(UploadRequest(files=file_specs)),
+        content_type="application/json",
+        headers={"Auth-Token": token.key},
+    )
+    assert response.status_code == 400
+    error_response = response.json()
+    assert error_response["error"] == "too many files"

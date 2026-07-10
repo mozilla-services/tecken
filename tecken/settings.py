@@ -704,3 +704,11 @@ if CLIENT_OTEL_SERVICE_ACCOUNT:
         default="info",
         doc="The telemetry verbosity of the upload-symbols CLI tool.",
     )
+
+
+UPLOAD_V2_MAX_FILES_PER_REQUEST = _config(
+    "UPLOAD_V2_MAX_FILES_PER_REQUEST",
+    parser=int,
+    default="1024",
+    doc="The maximum number of files in a upload v2 request.",
+)
