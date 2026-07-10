@@ -444,6 +444,8 @@ def upload_v2(request):
         bucket_name=backend.bucket,
         try_symbols=try_storage,
         skipped_keys=[f.key for f in files if isinstance(f.action, ActionSkip)],
+        # The size is a required field for now, but we can drop it from the model once
+        # we remove v1 of the upload API.
         size=sum(f.size for f in payload.files),
     )
     METRICS.incr(
