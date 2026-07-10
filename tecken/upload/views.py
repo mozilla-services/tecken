@@ -4,19 +4,21 @@
 
 import concurrent.futures
 from functools import wraps
+import functools
 import hashlib
 import logging
 import os
 import re
 from tempfile import TemporaryDirectory
 import time
-from typing import Optional
+from typing import Optional, TypeAlias
 import zipfile
 
 from django import http
 from django.conf import settings
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+import msgspec
 
 from tecken.base.decorators import (
     api_login_required,
@@ -24,7 +26,8 @@ from tecken.base.decorators import (
     api_require_POST,
 )
 from tecken.base.symbolstorage import symbol_storage
-from tecken.base.utils import filesizeformat, validate_key
+from tecken.base.utils import filesizeformat, validate_key, validate_md5_lowercase_hex
+from tecken.libstorage import ObjectMetadata, StorageBackend
 from tecken.upload import client_otel, executor
 from tecken.upload.forms import UploadByDownloadForm, UploadByDownloadRemoteError
 from tecken.upload.models import FileUpload, Upload
@@ -33,6 +36,8 @@ from tecken.upload.utils import (
     dump_and_extract,
     UnrecognizedArchiveFileExtension,
     DuplicateFileDifferentSize,
+    get_key_content_type,
+    should_compressed_key,
     upload_file_upload,
 )
 from tecken.librequests import session_with_retries
@@ -361,3 +366,136 @@ def upload_auth_info(request):
     if client_otel.CONFIG:
         response_data["opentelemetry"] = client_otel.CONFIG.get(request.user.id)
     return http.JsonResponse(response_data)
+
+
+class FileSpecRequest(msgspec.Struct):
+    """Data for a single symbols file in a upload v2 request payload."""
+
+    key: str
+    size: int
+    md5_hash: str
+
+
+class UploadRequest(msgspec.Struct):
+    """The JSON schema of the upload v2 request payload."""
+
+    files: list[FileSpecRequest]
+
+
+class ActionUpload(msgspec.Struct, tag_field="type", tag="upload"):
+    url: str
+    content_encoding: Optional[str]
+
+
+class ActionSkip(msgspec.Struct, tag_field="type", tag="skip"):
+    pass
+
+
+class ActionError(msgspec.Struct, tag_field="type", tag="error"):
+    msg: str
+
+
+"""An action specification for an individual file in the upload v2 response."""
+ActionSpec: TypeAlias = ActionUpload | ActionSkip | ActionError
+
+
+class FileSpecResponse(msgspec.Struct):
+    """The response for an individual file in the upload v2 response."""
+
+    key: str
+    action: ActionSpec
+
+
+class UploadResponse(msgspec.Struct):
+    """The JSON schema of the upload v2 response."""
+
+    id: int
+    created_at: int
+    user: str
+    try_symbols: bool
+    upload_protocol: str
+    files: list[FileSpecResponse]
+
+
+@METRICS.timer_decorator("upload_v2")
+@api_require_POST
+@api_login_required
+@api_any_permission_required("upload.upload_symbols", "upload.upload_try_symbols")
+def upload_v2(request):
+    try:
+        payload = msgspec.json.decode(request.body, type=UploadRequest)
+    except (msgspec.DecodeError, msgspec.ValidationError):
+        return http.JsonResponse({"error": "malformed JSON request body"}, status=400)
+    if len(payload.files) > settings.UPLOAD_V2_MAX_FILES_PER_REQUEST:
+        return http.JsonResponse({"error": "too many files"}, status=400)
+
+    # User tokens can only have either the permissions to upload regular symbols or the permission
+    # to upload try symbols. We determine what the user wants to do based on the permissions of
+    # the token they used.
+    try_storage = not request.user.has_perm("upload.upload_symbols")
+    backend = symbol_storage().get_upload_backend(try_storage)
+    files = list(
+        executor.map(
+            functools.partial(initiate_file_upload, backend=backend), payload.files
+        )
+    )
+    upload_obj = Upload.objects.create(
+        user=request.user,
+        bucket_name=backend.bucket,
+        try_symbols=try_storage,
+        skipped_keys=[f.key for f in files if isinstance(f.action, ActionSkip)],
+        # The size is a required field for now, but we can drop it from the model once
+        # we remove v1 of the upload API.
+        size=sum(f.size for f in payload.files),
+    )
+    METRICS.incr(
+        "upload_uploads", tags=[f"try:{try_storage}", f"bucket:{backend.bucket}"]
+    )
+    response = UploadResponse(
+        id=upload_obj.id,
+        created_at=int(upload_obj.created_at.timestamp()),
+        user=upload_obj.user.email,
+        try_symbols=upload_obj.try_symbols,
+        upload_protocol=backend.upload_session_protocol,
+        files=files,
+    )
+    return http.HttpResponse(
+        msgspec.json.encode(response), status=201, content_type="application/json"
+    )
+
+
+@METRICS.timer_decorator("initiate_file_upload")
+def initiate_file_upload(
+    file_spec: FileSpecRequest, backend: StorageBackend
+) -> FileSpecResponse:
+    key = file_spec.key
+    if not validate_key(key):
+        METRICS.incr("upload_file_upload_error", 1)
+        return FileSpecResponse(key, ActionError("invalid key"))
+    if not validate_md5_lowercase_hex(file_spec.md5_hash):
+        METRICS.incr("upload_file_upload_error", 1)
+        return FileSpecResponse(key, ActionError("invalid MD5 hex digest"))
+
+    with METRICS.timer("upload_file_exists"):
+        existing_metadata = symbol_storage().get_metadata(key, backend.try_symbols)
+    if (
+        existing_metadata
+        and existing_metadata.original_content_length == file_spec.size
+        and existing_metadata.original_md5_sum == file_spec.md5_hash
+    ):
+        METRICS.incr("upload_file_upload_skip", 1)
+        return FileSpecResponse(key, ActionSkip())
+
+    metadata = ObjectMetadata(content_type=get_key_content_type(key))
+    if should_compressed_key(key):
+        metadata.content_encoding = "gzip"
+        metadata.original_content_length = file_spec.size
+        metadata.original_md5_sum = file_spec.md5_hash
+    else:
+        metadata.content_length = file_spec.size
+    url = backend.initiate_upload(key, metadata)
+    if settings.LOCAL_DEV_ENV:
+        # Make the /upload/v2/ endpoint more convenient to use in the local dev env.
+        url = url.replace("http://gcs-emulator", "http://localhost")
+    METRICS.incr("upload_file_upload_upload", 1)
+    return FileSpecResponse(key, ActionUpload(url, metadata.content_encoding))

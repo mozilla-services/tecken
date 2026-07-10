@@ -21,6 +21,7 @@ dependencies = [
     "markus[datadog]",
     "mozilla-django-oidc",
     "msgpack",
+    "msgspec>=0.21.1",
     "obs-common",
     "psycopg2",
     "pytest",

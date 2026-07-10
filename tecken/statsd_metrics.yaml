@@ -81,6 +81,11 @@ tecken.gunicorn_worker_abort:
   description: |
     Counter for number of gunicorn workers were terminated.
 
+tecken.initiate_file_upload:
+  type: "timing"
+  description: |
+    Timer for the iniate_file_upload() function.
+
 tecken.remove_orphaned_files.delete_file:
   type: "incr"
   description: |
@@ -153,6 +158,11 @@ tecken.upload_file_upload:
     compressing/decompressing it, saving a record to the database, and any
     other processing required.
 
+tecken.upload_file_upload_error:
+  type: "incr"
+  description: |
+    Counter for files to be uploaded with invalid storage keys.
+
 tecken.upload_file_upload_skip:
   type: "incr"
   description: |
@@ -195,6 +205,11 @@ tecken.upload_uploads:
 
     * ``try``: whether or not it was a try upload
     * ``bucket``: the storage bucket name files were uploaded to
+
+tecken.upload_v2:
+  type: "timing"
+  description: |
+      Timer for the /upload/v2/ handler.
 
 tecken.useradmin_is_blocked_in_auth0:
   type: "timing"
