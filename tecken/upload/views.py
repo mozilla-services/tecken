@@ -434,20 +434,22 @@ def upload_v2(request):
     # the token they used.
     try_storage = not request.user.has_perm("upload.upload_symbols")
     backend = symbol_storage().get_upload_backend(try_storage)
-    files = list(
-        executor.map(
-            functools.partial(initiate_file_upload, backend=backend), payload.files
-        )
-    )
     upload_obj = Upload.objects.create(
         user=request.user,
         bucket_name=backend.bucket,
         try_symbols=try_storage,
-        skipped_keys=[f.key for f in files if isinstance(f.action, ActionSkip)],
         # The size is a required field for now, but we can drop it from the model once
         # we remove v1 of the upload API.
         size=sum(f.size for f in payload.files),
     )
+    initiate_function = functools.partial(
+        initiate_file_upload,
+        backend=backend,
+        upload_id=upload_obj.id,
+    )
+    files = list(executor.map(initiate_function, payload.files))
+    upload_obj.skipped_keys = [f.key for f in files if isinstance(f.action, ActionSkip)]
+    upload_obj.save()
     METRICS.incr(
         "upload_uploads", tags=[f"try:{try_storage}", f"bucket:{backend.bucket}"]
     )
@@ -466,7 +468,7 @@ def upload_v2(request):
 
 @METRICS.timer_decorator("initiate_file_upload")
 def initiate_file_upload(
-    file_spec: FileSpecRequest, backend: StorageBackend
+    file_spec: FileSpecRequest, backend: StorageBackend, upload_id: int
 ) -> FileSpecResponse:
     key = file_spec.key
     if not validate_key(key):
@@ -486,7 +488,9 @@ def initiate_file_upload(
         METRICS.incr("upload_file_upload_skip", 1)
         return FileSpecResponse(key, ActionSkip())
 
-    metadata = ObjectMetadata(content_type=get_key_content_type(key))
+    metadata = ObjectMetadata(
+        content_type=get_key_content_type(key), upload_id=upload_id
+    )
     if should_compressed_key(key):
         metadata.content_encoding = "gzip"
         metadata.original_content_length = file_spec.size

@@ -125,6 +125,12 @@ class GCSStorage(StorageBackend):
         original_md5_sum = gcs_metadata.get("original_md5_hash")
         if original_md5_sum is None and blob.md5_hash:
             original_md5_sum = base64.b64decode(blob.md5_hash).hex()
+        upload_id = gcs_metadata.get("upload_id")
+        if upload_id:
+            try:
+                upload_id = int(upload_id)
+            except ValueError:
+                upload_id = None
         if self.public_url:
             download_url = f"{self.public_url}/{quote(gcs_key)}"
         else:
@@ -137,6 +143,7 @@ class GCSStorage(StorageBackend):
             original_content_length=original_content_length,
             original_md5_sum=original_md5_sum,
             last_modified=blob.custom_time or blob.updated,
+            upload_id=upload_id,
         )
         return metadata
 
@@ -148,11 +155,13 @@ class GCSStorage(StorageBackend):
         bucket = self._get_bucket()
         blob = bucket.blob(f"{self.prefix}/{key}")
         gcs_metadata = {}
-        if metadata.original_content_length:
+        if metadata.original_content_length is not None:
             # All metadata values must be strings.
             gcs_metadata["original_size"] = str(metadata.original_content_length)
         if metadata.original_md5_sum:
             gcs_metadata["original_md5_hash"] = metadata.original_md5_sum
+        if metadata.upload_id is not None:
+            gcs_metadata["upload_id"] = str(metadata.upload_id)
         blob.metadata = gcs_metadata
         blob.content_type = metadata.content_type
         blob.content_encoding = metadata.content_encoding

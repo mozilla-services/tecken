@@ -24,6 +24,7 @@ class ObjectMetadata:
     original_md5_sum: Optional[str] = None
     last_modified: Optional[datetime.datetime] = None
     download_url: Optional[str] = None
+    upload_id: Optional[int] = None
 
 
 class StorageBackend:

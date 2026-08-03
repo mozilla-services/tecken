@@ -100,6 +100,11 @@ def test_upload_v2(
         assert action.get("content_encoding") == upload.metadata.content_encoding
         assert action["url"].startswith("http://gcs-emulator:")
 
+        upload.upload_to_session_url(action["url"])
+        metadata = symbol_storage.get_metadata(upload.key, try_storage)
+        assert metadata.content_encoding == upload.metadata.content_encoding
+        assert metadata.upload_id == upload_response["id"]
+
     assert_timing_count(metricsmock, "upload_v2", 1)
     assert_timing_count(metricsmock, "initiate_file_upload", len(UPLOADS))
     assert_timing_count(metricsmock, "upload_file_exists", len(UPLOADS))
