@@ -15,7 +15,7 @@ import requests_mock
 from django.core.cache import caches
 
 from tecken.base.symbolstorage import SymbolStorage
-from tecken.ext.gcs.storage import GCSStorage
+from tecken.ext.gcp.storage import GCSStorage
 from tecken.libmarkus import set_up_metrics
 from tecken.libstorage import StorageBackend
 

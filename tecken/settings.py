@@ -580,7 +580,7 @@ UPLOAD_GCS_PUBLIC_URL = _config(
 )
 
 UPLOAD_BACKEND = {
-    "class": "tecken.ext.gcs.storage.GCSStorage",
+    "class": "tecken.ext.gcp.storage.GCSStorage",
     "options": {
         "bucket": UPLOAD_GCS_BUCKET,
         "prefix": "v1",
@@ -590,7 +590,7 @@ UPLOAD_BACKEND = {
 }
 
 TRY_UPLOAD_BACKEND = {
-    "class": "tecken.ext.gcs.storage.GCSStorage",
+    "class": "tecken.ext.gcp.storage.GCSStorage",
     "options": {
         "bucket": UPLOAD_GCS_BUCKET,
         "prefix": "try/v1",
