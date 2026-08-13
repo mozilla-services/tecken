@@ -193,7 +193,8 @@ def upload_file_upload(
         # debug id, code file, and code id to store in the db. We do this before we
         # compress the file.
         try:
-            sym_data = extract_sym_header_data(original_file_path)
+            with open(original_file_path) as fp:
+                sym_data = extract_sym_header_data(fp)
         except SymParseError as exc:
             logging.debug("symparseerror: %s", exc)
 

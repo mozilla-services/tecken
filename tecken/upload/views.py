@@ -428,6 +428,8 @@ def upload_v2(request):
         return http.JsonResponse({"error": "malformed JSON request body"}, status=400)
     if len(payload.files) > settings.UPLOAD_V2_MAX_FILES_PER_REQUEST:
         return http.JsonResponse({"error": "too many files"}, status=400)
+    if len(set(f.key for f in payload.files)) < len(payload.files):
+        return http.JsonResponse({"error": "duplicate keys"}, status=400)
 
     # User tokens can only have either the permissions to upload regular symbols or the permission
     # to upload try symbols. We determine what the user wants to do based on the permissions of
@@ -449,7 +451,14 @@ def upload_v2(request):
     )
     files = list(executor.map(initiate_function, payload.files))
     upload_obj.skipped_keys = [f.key for f in files if isinstance(f.action, ActionSkip)]
-    upload_obj.save()
+    upload_obj.outstanding_file_uploads = sum(
+        isinstance(f.action, ActionUpload) for f in files
+    )
+    if upload_obj.outstanding_file_uploads == 0:
+        upload_obj.completed_at = timezone.now()
+    upload_obj.save(
+        update_fields=["skipped_keys", "outstanding_file_uploads", "completed_at"]
+    )
     METRICS.incr(
         "upload_uploads", tags=[f"try:{try_storage}", f"bucket:{backend.bucket}"]
     )

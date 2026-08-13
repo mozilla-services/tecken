@@ -622,7 +622,7 @@ wheels = [
 
 [[package]]
 name = "obs-common"
-version = "2026.5.4.1"
+version = "2026.8.14"
 source = { registry = "https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/simple/" }
 dependencies = [
     { name = "click" },
@@ -631,7 +631,7 @@ dependencies = [
     { name = "sentry-sdk" },
 ]
 wheels = [
-    { url = "https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/obs-common/obs_common-2026.5.4.1-py3-none-any.whl", hash = "sha256:d23fba53582e2dd12a9442fed5d16c837ed93f87795cf385f3549b9f59891d57" },
+    { url = "https://us-python.pkg.dev/moz-fx-cavendish-prod/cavendish-prod-python/obs-common/obs_common-2026.8.14-py3-none-any.whl", hash = "sha256:61a893660b9c1348bb0d601dd58159fd57d14c2af5b8ceb65f5752fa372c9a44" },
 ]
 
 [[package]]
@@ -1114,39 +1114,40 @@ name = "tecken"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "click" },
-    { name = "dj-database-url" },
-    { name = "django" },
-    { name = "django-admin-cursor-paginator" },
-    { name = "django-redis" },
-    { name = "dockerflow" },
-    { name = "encore" },
-    { name = "everett" },
-    { name = "fillmore" },
-    { name = "google-cloud-iam" },
-    { name = "google-cloud-storage" },
-    { name = "gunicorn" },
-    { name = "honcho" },
-    { name = "markus", extra = ["datadog"] },
-    { name = "mozilla-django-oidc" },
-    { name = "msgpack" },
-    { name = "msgspec" },
-    { name = "obs-common" },
-    { name = "psycopg2" },
-    { name = "pytest" },
-    { name = "pytest-django" },
-    { name = "python-dateutil" },
-    { name = "pyyaml" },
-    { name = "redis" },
-    { name = "requests" },
-    { name = "requests-mock" },
-    { name = "ruff" },
-    { name = "sentry-sdk" },
-    { name = "sphinx" },
-    { name = "sphinx-rtd-theme" },
-    { name = "sphinxcontrib-httpdomain" },
-    { name = "werkzeug" },
-    { name = "whitenoise" },
+    { name = "click", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "dj-database-url", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "django", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "django-admin-cursor-paginator", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "django-redis", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "dockerflow", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "encore", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "everett", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "fillmore", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "google-cloud-iam", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "google-cloud-pubsub", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "google-cloud-storage", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "gunicorn", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "honcho", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "markus", extra = ["datadog"], marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "mozilla-django-oidc", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "msgpack", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "msgspec", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "obs-common", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "psycopg2", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "pytest", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "pytest-django", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "python-dateutil", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "pyyaml", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "redis", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "requests", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "requests-mock", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "ruff", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "sentry-sdk", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "sphinx", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "sphinx-rtd-theme", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "sphinxcontrib-httpdomain", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "werkzeug", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "whitenoise", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
 ]
 
 [package.dev-dependencies]
@@ -1166,6 +1167,7 @@ requires-dist = [
     { name = "everett" },
     { name = "fillmore" },
     { name = "google-cloud-iam" },
+    { name = "google-cloud-pubsub" },
     { name = "google-cloud-storage" },
     { name = "gunicorn" },
     { name = "honcho" },

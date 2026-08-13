@@ -3,6 +3,8 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from hashlib import md5
+import time
+from collections.abc import Callable
 from typing import Any
 
 from django.contrib.auth.models import Permission, User
@@ -16,6 +18,7 @@ from pytest_django import Settings
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.tests.utils import UPLOADS
 from tecken.tokens.models import Token
+from tecken.upload.models import FileUpload, Upload
 from tecken.upload.views import FileSpecRequest, UploadRequest
 
 
@@ -75,13 +78,34 @@ def assert_incr_count(
     )
 
 
+def wait_for_finalization(
+    upload_id: int, worker_result: Callable[[], None], timeout: float = 15
+) -> Upload:
+    """Wait until the finalization worker has processed all files for an upload."""
+    upload = Upload.objects.get(pk=upload_id)
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        worker_result()
+        upload.refresh_from_db()
+        if upload.outstanding_file_uploads == 0:
+            return upload
+        time.sleep(0.05)
+
+    worker_result()
+    pytest.fail(
+        "timeout while wating for finalization worker, "
+        f"{upload.outstanding_file_uploads} uploads outstanding"
+    )
+
+
 @pytest.mark.parametrize("try_storage", [False, True])
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_upload_v2(
     client: Client,
     uploaderuser: User,
     symbol_storage: SymbolStorage,
     metricsmock: MetricsMock,
+    finalization_worker: Callable[[], None],
     try_storage: bool,
 ):
     token = create_token(uploaderuser, try_storage)
@@ -104,6 +128,29 @@ def test_upload_v2(
         metadata = symbol_storage.get_metadata(upload.key, try_storage)
         assert metadata.content_encoding == upload.metadata.content_encoding
         assert metadata.upload_id == upload_response["id"]
+
+    finalized_upload = wait_for_finalization(upload_response["id"], finalization_worker)
+    assert finalized_upload.outstanding_file_uploads == 0
+    assert finalized_upload.completed_at is not None
+
+    file_uploads = {
+        file_upload.key: file_upload
+        for file_upload in FileUpload.objects.filter(upload=finalized_upload)
+    }
+    assert file_uploads.keys() == UPLOADS.keys()
+    for upload in UPLOADS.values():
+        file_upload = file_uploads[upload.key]
+        assert file_upload.bucket_name == finalized_upload.bucket_name
+        assert file_upload.completed_at is not None
+        assert file_upload.update is False
+        assert file_upload.compressed is bool(upload.metadata.content_encoding)
+        assert file_upload.size == upload.metadata.content_length
+
+    parsed_sym = file_uploads[
+        "qipcap64.pdb/293A285ED25871934C4C44205044422E1/qipcap64.sym"
+    ]
+    assert parsed_sym.debug_filename == "qipcap64.pdb"
+    assert parsed_sym.debug_id == "293A285ED25871934C4C44205044422E1"
 
     assert_timing_count(metricsmock, "upload_v2", 1)
     assert_timing_count(metricsmock, "initiate_file_upload", len(UPLOADS))

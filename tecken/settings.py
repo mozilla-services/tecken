@@ -73,6 +73,8 @@ if TOOL_ENV:
         ("REDIS_URL", "redis://redis-cache:6379/0"),
         ("UPLOAD_GCS_BUCKET", "bucket"),
         ("UPLOAD_GCS_PUBLIC_URL", "https://bucket.storage.googleapis.com/"),
+        ("PUBSUB_GCP_PROJECT", "test-project"),
+        ("PUBSUB_SUBSCRIPTION_NAME", "gcs-notifications-sub"),
     ]
     for key, val in fake_values:
         os.environ[key] = val
@@ -600,6 +602,25 @@ TRY_UPLOAD_BACKEND = {
 }
 
 DOWNLOAD_BACKENDS = []
+
+
+PUBSUB_GCP_PROJECT = _config(
+    "PUBSUB_GCP_PROJECT",
+    doc="The GCP project id of the object event notification subscription.",
+)
+
+PUBSUB_SUBSCRIPTION_NAME = _config(
+    "PUBSUB_SUBSCRIPTION_NAME",
+    doc="The name of the object event notification subscription.",
+)
+
+PUBSUB_QUEUE = {
+    "class": "tecken.ext.gcp.pubsub.GoogleNotificationQueue",
+    "options": {
+        "project_id": PUBSUB_GCP_PROJECT,
+        "subscription_name": PUBSUB_SUBSCRIPTION_NAME,
+    },
+}
 
 
 COMPRESS_EXTENSIONS = _config(

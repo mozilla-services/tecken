@@ -7,10 +7,10 @@ class SymParseError(Exception):
     """Any kind of error when parsing a sym file."""
 
 
-def extract_sym_header_data(file_path):
+def extract_sym_header_data(lines):
     """Returns header data from thh sym file header.
 
-    :arg file_path: the path to the sym file
+    :arg lines: an iterator over the lines of the file.
 
     :returns: sym info as a dict
 
@@ -24,37 +24,36 @@ def extract_sym_header_data(file_path):
         "code_id": "",
         "generator": "",
     }
-    with open(file_path, "r") as fp:
-        line = "no line yet"
-        try:
-            for line in fp:
-                if line.startswith("MODULE"):
-                    parts = line.strip().split()
-                    _, opsys, arch, debug_id, debug_filename = parts
-                    data["debug_filename"] = debug_filename
-                    data["debug_id"] = debug_id.upper()
+    line = "no line yet"
+    try:
+        for line in lines:
+            if line.startswith("MODULE"):
+                parts = line.strip().split()
+                _, opsys, arch, debug_id, debug_filename = parts
+                data["debug_filename"] = debug_filename
+                data["debug_id"] = debug_id.upper()
 
-                elif line.startswith("INFO"):
-                    parts = line.strip().split()
-                    if parts[1] == "CODE_ID":
-                        # NOTE(willkg): Non-Windows module sym files don't have a code_file
-                        if len(parts) == 3:
-                            _, _, code_id = parts
-                            code_file = ""
-                        elif len(parts) == 4:
-                            _, _, code_id, code_file = parts
+            elif line.startswith("INFO"):
+                parts = line.strip().split()
+                if parts[1] == "CODE_ID":
+                    # NOTE(willkg): Non-Windows module sym files don't have a code_file
+                    if len(parts) == 3:
+                        _, _, code_id = parts
+                        code_file = ""
+                    elif len(parts) == 4:
+                        _, _, code_id, code_file = parts
 
-                        data["code_file"] = code_file
-                        data["code_id"] = code_id.upper()
+                    data["code_file"] = code_file
+                    data["code_id"] = code_id.upper()
 
-                    elif parts[1] == "GENERATOR":
-                        _, _, generator = line.strip().split(maxsplit=2)
-                        data["generator"] = generator
+                elif parts[1] == "GENERATOR":
+                    _, _, generator = line.strip().split(maxsplit=2)
+                    data["generator"] = generator
 
-                else:
-                    break
+            else:
+                break
 
-        except Exception as exc:
-            raise SymParseError(f"sym parse error {exc!r} with {line!r}") from exc
+    except Exception as exc:
+        raise SymParseError(f"sym parse error {exc!r} with {line!r}") from exc
 
     return data
