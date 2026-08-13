@@ -103,6 +103,9 @@ class FileUpload(models.Model):
 
     class Meta:
         constraints = [
+            # This constraint enforces that each key can occur only once for each upload.
+            # It does not apply to `FileUpload`s that don't reference an `Upload`, i.e.
+            # where `upload_id = NULL`.
             models.UniqueConstraint(
                 fields=["upload", "key"],
                 name="upload_fileupload_upload_key_unique",
