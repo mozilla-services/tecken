@@ -50,8 +50,9 @@ class Upload(models.Model):
     # If the upload by download URL triggered 1 or more redirects, we
     # record that trail here.
     redirect_urls = ArrayField(models.URLField(max_length=500), null=True)
-    # One increment for every attempt of processing the upload.
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    # The number of outstanding file uploads for this upload
+    outstanding_file_uploads = models.PositiveIntegerField(null=True)
 
     class Meta:
         permissions = (
@@ -101,6 +102,15 @@ class FileUpload(models.Model):
     """
 
     class Meta:
+        constraints = [
+            # This constraint enforces that each key can occur only once for each upload.
+            # It does not apply to `FileUpload`s that don't reference an `Upload`, i.e.
+            # where `upload_id = NULL`.
+            models.UniqueConstraint(
+                fields=["upload", "key"],
+                name="upload_fileupload_upload_key_unique",
+            ),
+        ]
         indexes = [
             models.Index(
                 name="upload_fileupload_debuginfo",
