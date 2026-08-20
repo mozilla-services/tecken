@@ -24,12 +24,27 @@ services:
       db: &condition_service_healthy
         condition: service_healthy
       fakesentry: *condition_service_healthy
+      finalization_worker:
+        condition: service_started
       gcs-emulator: *condition_service_healthy
       pubsub: *condition_service_healthy
       redis-cache: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
     command: ["web"]
+
+  # Finalization worker is a prod-like background worker container.
+  finalization_worker:
+    extends:
+      service: base
+    depends_on:
+      db: *condition_service_healthy
+      fakesentry: *condition_service_healthy
+      gcs-emulator: *condition_service_healthy
+      pubsub: *condition_service_healthy
+      statsd: *condition_service_healthy
+    command: ["finalization_worker"]
+    stop_signal: SIGINT
 
   test:
     extends:
