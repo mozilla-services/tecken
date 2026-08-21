@@ -11,7 +11,7 @@ from django.urls import reverse
 from markus.testing import AnyTagValue, MetricsMock
 import msgspec
 import pytest
-from pytest_django.fixtures import SettingsWrapper
+from pytest_django import Settings
 
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.tests.utils import UPLOADS
@@ -241,7 +241,7 @@ def test_upload_v2_invalid_body(client: Client, uploaderuser: User, body: bytes)
 
 
 def test_upload_v2_too_many_files(
-    client: Client, uploaderuser: User, settings: SettingsWrapper
+    client: Client, uploaderuser: User, settings: Settings
 ):
     token = create_token(uploaderuser, False)
     settings.UPLOAD_V2_MAX_FILES_PER_REQUEST = len(UPLOADS) - 1
