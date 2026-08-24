@@ -118,12 +118,12 @@ class Notification:
     # The type of the storage event. Currently supported values:
     #     finalize_new: a new file was fully uploaded.
     #     finalize_update: an file overwriting an existing object was fully uploaded.
-    event_type: Literal["finalize_new"] | Literal["finalize_update"]
+    event_type: Literal["finalize_new", "finalize_update"]
 
     # The timestamp of the event
     event_time: datetime.datetime
 
-    # The key of the uploaded object.
+    # The lookup key of the uploaded symbols file, i.e. <debug_file>/<debug_id>/<sym_file>.
     key: str
 
     # The metadata for the object.

@@ -33,7 +33,9 @@ class GoogleNotificationQueue(NotificationQueue):
         """Subscribe to storage object notifications.
 
         This function calls the provided function for each received notification. If the callback
-        finishes without error, the message is automatically acknowledged.
+        finishes without error, the message is automatically acknowledged. If the callback throws
+        an exception, the message is "nacked", resulting in its eventual redelivery (after the
+        configured back-off time).
 
         :arg process: a function taking and processing a Notification instance.
         :arg stop_event: an optional event used to stop the subscription gracefully.
@@ -42,10 +44,12 @@ class GoogleNotificationQueue(NotificationQueue):
         def callback(message):
             """Callback called for each pub/sub message.
 
-            This function needs to be careful to not throw any exceptions for permanent errors.
-            An exception means the message won't be acked, so we will receive it again. If we
-            throw an exception for a permanent error, i.e. an error that will definitely occur
-            again if the messgae is processed again, we will create an infinite reprocessing loop.
+            This function should only throw exceptions for temporary errors. An exception results
+            in the message being nacked, so we will receive it again, and it's pointless to
+            reprocess a message causing a permanent error, i.e. an error that will definitely
+            occur again next time. (The pub/sub queue is configured with a maximum number of
+            delivery attempts, so permament errors won't cause infinite loops, just unnecessary
+            reprocessing.)
             """
             if message.attributes.get("eventType") != "OBJECT_FINALIZE":
                 # The notifications should be configured to only send messages for events of this
@@ -84,7 +88,14 @@ class GoogleNotificationQueue(NotificationQueue):
                         and backend.try_symbols == try_symbols
                         and backend.bucket == message.attributes["bucketId"]
                     ):
-                        base_url = backend.get_download_url(key)
+                        try:
+                            base_url = backend.get_download_url(key)
+                        except Exception:
+                            # Exceptions during this call are potentially temporary, so we should
+                            # nack the message and bail out.
+                            logger.exception("exception while building download URL")
+                            message.nack()
+                            return
                         # We need to include the object's generation in the URL to avoid potential
                         # race conditions when the same file is uploaded multiple times in rapid
                         # succession.
@@ -106,8 +117,12 @@ class GoogleNotificationQueue(NotificationQueue):
                 key=key,
                 metadata=metadata,
             )
-            process(notification)
-            message.ack()
+            try:
+                process(notification)
+            except Exception:
+                message.nack()
+            else:
+                message.ack()
 
         with pubsub_v1.SubscriberClient() as subscriber:
             subscription_path = subscriber.subscription_path(
