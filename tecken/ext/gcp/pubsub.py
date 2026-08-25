@@ -120,6 +120,7 @@ class GoogleNotificationQueue(NotificationQueue):
             try:
                 process(notification)
             except Exception:
+                logger.exception("exception while processing pub/sub notification")
                 message.nack()
             else:
                 message.ack()

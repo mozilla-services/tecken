@@ -89,8 +89,8 @@ def _process_notification(notification: Notification):
         try:
             prefix = download_sym_file_prefix(metadata.download_url)
             sym_data = extract_sym_header_data(iter(prefix.splitlines()))
-        except (UnicodeDecodeError, zlib.error, SymParseError) as exc:
-            logger.debug("error while parsing .sym file: %s", exc)
+        except (UnicodeDecodeError, zlib.error, SymParseError):
+            logger.exception("error while parsing .sym file: %s")
 
     # Use a database transaction to ensure idempotency.
     with transaction.atomic():
