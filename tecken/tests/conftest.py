@@ -140,22 +140,19 @@ def clear_gcs_storage(self: GCSStorage):
 GCSStorage.clear = clear_gcs_storage
 
 
-def set_up_gcs_notifications(self: GCSStorage, topic_path: str):
+def set_up_gcs_notifications(self: GCSStorage, project: str, topic: str):
     """Create a pub/sub topic and configure GCS notifications."""
-    # This function can't currently use the usual GCS client library functions due to an
-    # incompatibility with the GCS emulator. See bin/setup-services.sh for further details.
-    client = self._get_client()
+    bucket = self._get_bucket()
     # Delete all existing notification configurations first.
-    path = f"/b/{self.bucket}/notificationConfigs"
-    for notification in client._list_resource(path, lambda _iterator, item: item):
-        client._delete_resource("{}/{}".format(path, notification["id"]))
+    for notification in bucket.list_notifications():
+        notification.delete()
     # Create new notification configuration
-    data = {
-        "topic": topic_path,
-        "event_types": ["OBJECT_FINALIZE"],
-        "payload_format": "JSON_API_V1",
-    }
-    client._post_resource(path, data)
+    bucket.notification(
+        topic_project=project,
+        topic_name=topic,
+        event_types=["OBJECT_FINALIZE"],
+        payload_format="JSON_API_V1",
+    ).create()
 
 
 GCSStorage.set_up_notifications = set_up_gcs_notifications
@@ -231,7 +228,7 @@ def gcs_pubsub_subscription(
     ):
         project_id = settings.PUBSUB_GCP_PROJECT
         # Reuse the bucket name as the pub/sub topic and subscription names
-        topic_path = f"projects/{project_id}/topics/{bucket_name}"
+        topic_path = subscriber.topic_path(project_id, bucket_name)
         subscription_path = subscriber.subscription_path(project_id, bucket_name)
         try:
             subscriber.delete_subscription(
@@ -248,7 +245,7 @@ def gcs_pubsub_subscription(
             request={"name": subscription_path, "topic": topic_path}, timeout=10
         )
     backend = symbol_storage.get_upload_backend(False)
-    backend.set_up_notifications(topic_path)
+    backend.set_up_notifications(project_id, bucket_name)
     return bucket_name
 
 
