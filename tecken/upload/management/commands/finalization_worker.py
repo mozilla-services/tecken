@@ -64,7 +64,8 @@ def _process_notification(notification: Notification):
     makes sende to process a message a second time if there is a chance it will succeed when
     retrtying.
     """
-    upload_id = notification.metadata.upload_id
+    metadata = notification.metadata
+    upload_id = metadata.upload_id
     if upload_id is None:
         # During the upload API migration, this probably means the upload was created with upload
         # API v1. We should simply ignore (and ack) the message in that case, since it doesn't.
@@ -83,7 +84,6 @@ def _process_notification(notification: Notification):
         return
 
     logger.info("processing upload id %s, key %s", upload_id, notification.key)
-    metadata = notification.metadata
     sym_data = {}
     if is_sym_file(notification.key) and metadata.download_url:
         try:
