@@ -4,7 +4,7 @@
 
 import codecs
 import logging
-from threading import Event
+import threading
 import zlib
 
 from django.conf import settings
@@ -29,15 +29,9 @@ class Command(BaseCommand):
         run_finalization_worker()
 
 
-SESSION: requests.Session | None = None
-
-
-def run_finalization_worker(stop_event: Event | None = None):
+def run_finalization_worker(stop_event: threading.Event | None = None):
     """Consume finalization notifications until the optional stop event is set."""
-    global SESSION
-
     logger.info("Finalization worker starting...")
-    SESSION = session_with_retries()
     queue = queue_from_config(settings.PUBSUB_QUEUE)
     queue.subscribe(process_notification, stop_event=stop_event)
 
@@ -184,6 +178,22 @@ def _process_notification(notification: Notification):
             )
 
 
+class ThreadLocalSession(threading.local):
+    session: requests.Session
+
+    def get(self) -> requests.Session:
+        try:
+            return self.session
+        except AttributeError:
+            self.session = session_with_retries()
+            return self.session
+
+
+# We want to use `requests.Session` objects to benefit from connection pooling, but they are not
+# thread-safe, so we need to create one per thread.
+SESSION = ThreadLocalSession()
+
+
 def download_sym_file_prefix(url: str, gzipped_bytes: int = 2048) -> str:
     """Download a prefix of the .sym file at the given URL.
 
@@ -195,7 +205,8 @@ def download_sym_file_prefix(url: str, gzipped_bytes: int = 2048) -> str:
         "Range": f"bytes=0-{gzipped_bytes - 1}",
         "Accept-Encoding": "gzip",
     }
-    with SESSION.get(url, headers=headers, stream=True) as response:
+    session = SESSION.get()
+    with session.get(url, headers=headers, stream=True) as response:
         response.raise_for_status()
         # Since we only download a prefix of the file, it won't include the gxip trailer in most
         # cases. To prevent requests from erroring out because of that, we need to tell it not to
