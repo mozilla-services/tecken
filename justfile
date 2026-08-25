@@ -12,9 +12,6 @@ _env:
       ./bin/cp-dist-file.sh docker/config/env-dist .env
     fi
 
-
-SERVICES := "db redis-cache statsd oidcprovider gcs-emulator"
-
 # Create a slick.sh file
 slick-sh:
     ./bin/cp-dist-file.sh docker/config/slick.sh-dist slick.sh
@@ -29,7 +26,7 @@ setup: _env
     docker compose run --rm web bash ./bin/setup-services.sh
 
 # Run webapp and services.
-run *args='--attach web --attach frontend --attach fakesentry web frontend fakesentry': _env
+run *args='--attach web --attach frontend --attach fakesentry --attach finalization_worker web frontend fakesentry finalization_worker': _env
     docker compose up {{args}}
 
 # Stop service containers.
@@ -78,7 +75,7 @@ service-status *args: _env
     docker compose run --rm --no-deps web bash service-status {{args}}
 
 # Open psql cli.
-psql *args: _env
+psql: _env
     @echo "\e[0;32mNOTE: Use password 'postgres'.\e[0m\n"
     docker compose run --rm db psql -h db -U postgres -d tecken
 
