@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import Any
 
 from django.contrib.auth.models import Permission, User
+from django.http.response import re
 from django.test import Client
 from django.urls import reverse
 from markus.testing import AnyTagValue, MetricsMock
@@ -98,6 +99,9 @@ def wait_for_finalization(
     )
 
 
+CODE_ID_REGEX = re.compile("[0-9A-Fa-f]{12,}")
+
+
 @pytest.mark.parametrize("try_storage", [False, True])
 @pytest.mark.django_db(transaction=True)
 def test_upload_v2(
@@ -138,19 +142,19 @@ def test_upload_v2(
         for file_upload in FileUpload.objects.filter(upload=finalized_upload)
     }
     assert file_uploads.keys() == UPLOADS.keys()
-    for upload in UPLOADS.values():
+    for key, upload in UPLOADS.items():
         file_upload = file_uploads[upload.key]
         assert file_upload.bucket_name == finalized_upload.bucket_name
         assert file_upload.completed_at is not None
         assert file_upload.update is False
         assert file_upload.compressed is bool(upload.metadata.content_encoding)
         assert file_upload.size == upload.metadata.content_length
-
-    parsed_sym = file_uploads[
-        "qipcap64.pdb/293A285ED25871934C4C44205044422E1/qipcap64.sym"
-    ]
-    assert parsed_sym.debug_filename == "qipcap64.pdb"
-    assert parsed_sym.debug_id == "293A285ED25871934C4C44205044422E1"
+        if key.endswith(".sym"):
+            debug_file, debug_id, sym_file = key.split("/")
+            assert file_upload.debug_filename == debug_file
+            assert file_upload.debug_id == debug_id
+            assert CODE_ID_REGEX.fullmatch(file_upload.code_id)
+            assert file_upload.generator.startswith("mozilla/dump_syms")
 
     assert_timing_count(metricsmock, "upload_v2", 1)
     assert_timing_count(metricsmock, "initiate_file_upload", len(UPLOADS))

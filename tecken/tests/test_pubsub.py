@@ -120,7 +120,9 @@ def test_callback_backend_error(
     monkeypatch: pytest.MonkeyPatch,
     sentry_helper: SentryTestHelper,
 ):
-    UPLOADS["ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym"].upload(symbol_storage)
+    UPLOADS[
+        "ShowSSEConfig.pdb/D57F52D4A2FD56244C4C44205044422E1/ShowSSEConfig.sym"
+    ].upload(symbol_storage)
 
     def raise_backend_error(self: GCSStorage):
         raise RuntimeError("backend error")
@@ -145,7 +147,9 @@ def test_callback_processing_error(
     gcs_pubsub_subscription: str,
     sentry_helper: SentryTestHelper,
 ):
-    UPLOADS["ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym"].upload(symbol_storage)
+    UPLOADS[
+        "ShowSSEConfig.pdb/D57F52D4A2FD56244C4C44205044422E1/ShowSSEConfig.sym"
+    ].upload(symbol_storage)
     with sentry_helper.reuse() as sentry_client:
         message, notification = pull_and_process(
             settings,

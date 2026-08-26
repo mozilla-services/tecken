@@ -95,8 +95,8 @@ class Upload:
 
 TEST_FILE_KEYS = [
     # Windows executable with accompanying Breakpad symbols file
-    "ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.ex_",
-    "ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym",
+    "ShowSSEConfig.pdb/D57F52D4A2FD56244C4C44205044422E1/ShowSSEConfig.ex_",
+    "ShowSSEConfig.pdb/D57F52D4A2FD56244C4C44205044422E1/ShowSSEConfig.sym",
     # Windows dynamic link library
     "libEGL.dll/6A4B8EEE10000/libEGL.dl_",
     # Windows program database with accompanying Breakpad symbols file
