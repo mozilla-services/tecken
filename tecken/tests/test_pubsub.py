@@ -69,7 +69,7 @@ def pull_and_process(
         ).received_messages
         process_mock = Mock(side_effect=process_error)
         message = MessageWrapper(subscriber, subscription_path, received)
-        pubsub._callback(process_mock, cast(Message, message))
+        pubsub._subscription_callback(process_mock, cast(Message, message))
         if expect_call:
             process_mock.assert_called_once()
             return message, process_mock.call_args.args[0]

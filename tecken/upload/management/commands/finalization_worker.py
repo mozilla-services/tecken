@@ -178,7 +178,7 @@ def _process_notification(notification: Notification):
             )
 
 
-class ThreadLocalSession(threading.local):
+class ThreadLocalSessions(threading.local):
     session: requests.Session
 
     def get(self) -> requests.Session:
@@ -191,7 +191,7 @@ class ThreadLocalSession(threading.local):
 
 # We want to use `requests.Session` objects to benefit from connection pooling, but they are not
 # thread-safe, so we need to create one per thread.
-SESSION = ThreadLocalSession()
+THREAD_LOCAL_SESSIONS = ThreadLocalSessions()
 
 
 def download_sym_file_prefix(url: str, gzipped_bytes: int = 2048) -> str:
@@ -205,7 +205,7 @@ def download_sym_file_prefix(url: str, gzipped_bytes: int = 2048) -> str:
         "Range": f"bytes=0-{gzipped_bytes - 1}",
         "Accept-Encoding": "gzip",
     }
-    session = SESSION.get()
+    session = THREAD_LOCAL_SESSIONS.get()
     with session.get(url, headers=headers, stream=True) as response:
         response.raise_for_status()
         # Since we only download a prefix of the file, it won't include the gxip trailer in most

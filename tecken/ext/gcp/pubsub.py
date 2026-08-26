@@ -38,10 +38,10 @@ class GoogleNotificationQueue(NotificationQueue):
     ):
         """Subscribe to storage object notifications.
 
-        This function calls the provided function for each received notification. If the callback
-        finishes without error, the message is automatically acknowledged. If the callback throws
-        an exception, the message is "nacked", resulting in its eventual redelivery (after the
-        configured back-off time).
+        This function calls the callback provided in the `process` parameter for each received
+        notification. If the callback finishes without error, the message is automatically
+        acknowledged. If the callback throws an exception, the message is "nacked", resulting in
+        its eventual redelivery (after the configured back-off time).
 
         :arg process: a function taking and processing a Notification instance.
         :arg stop_event: an optional event used to stop the subscription gracefully.
@@ -50,7 +50,7 @@ class GoogleNotificationQueue(NotificationQueue):
             subscription_path = subscriber.subscription_path(
                 self.project_id, self.subscription_name
             )
-            callback = functools.partial(_callback, process)
+            callback = functools.partial(_subscription_callback, process)
             future = subscriber.subscribe(subscription_path, callback=callback)
             try:
                 if stop_event is None:
@@ -65,7 +65,7 @@ class GoogleNotificationQueue(NotificationQueue):
                 future.result(timeout=10)
 
 
-def _callback(process: Callable[[Notification], None], message: Message):
+def _subscription_callback(process: Callable[[Notification], None], message: Message):
     """Callback called for each pub/sub message.
 
     This function should only throw exceptions for temporary errors. An exception results in the
