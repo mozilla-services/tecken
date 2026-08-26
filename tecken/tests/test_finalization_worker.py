@@ -58,3 +58,18 @@ def test_process_notification(
 
     # After uploading all outstanding files, completed_at should be set.
     assert upload.completed_at is not None
+
+
+def test_process_v1_notification():
+    """Test processing a notification for a v1 upload.
+
+    The object won't have an upload id in its metadata and doesn't need any finalization. This
+    test only verifies processing returns without an exception.
+    """
+    notification = Notification(
+        event_type="finalize_new",
+        event_time=timezone.now(),
+        key="a/b/c",
+        metadata=ObjectMetadata(),  # upload_id defaults to `None`.
+    )
+    _process_notification(notification)
