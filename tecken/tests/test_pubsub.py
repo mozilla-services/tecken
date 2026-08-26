@@ -5,6 +5,7 @@
 from typing import cast
 from unittest.mock import Mock
 
+from fillmore.test import SentryTestHelper
 from google import pubsub_v1
 from google.cloud.pubsub_v1.subscriber.message import Message
 import pytest
@@ -117,6 +118,7 @@ def test_callback_backend_error(
     symbol_storage: SymbolStorage,
     gcs_pubsub_subscription: str,
     monkeypatch: pytest.MonkeyPatch,
+    sentry_helper: SentryTestHelper,
 ):
     UPLOADS["ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym"].upload(symbol_storage)
 
@@ -124,7 +126,14 @@ def test_callback_backend_error(
         raise RuntimeError("backend error")
 
     monkeypatch.setattr(GCSStorage, "_get_client", raise_backend_error)
-    message, _ = pull_and_process(settings, gcs_pubsub_subscription, expect_call=False)
+    with sentry_helper.reuse() as sentry_client:
+        message, _ = pull_and_process(
+            settings, gcs_pubsub_subscription, expect_call=False
+        )
+        [payload] = sentry_client.envelope_payloads
+        error = payload["exception"]["values"][0]
+        assert error["type"] == "RuntimeError"
+        assert error["value"] == "backend error"
 
     assert not message.acked
     assert message.nacked
@@ -134,13 +143,19 @@ def test_callback_processing_error(
     settings: SettingsWrapper,
     symbol_storage: SymbolStorage,
     gcs_pubsub_subscription: str,
+    sentry_helper: SentryTestHelper,
 ):
     UPLOADS["ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym"].upload(symbol_storage)
-    message, notification = pull_and_process(
-        settings,
-        gcs_pubsub_subscription,
-        process_error=RuntimeError("processing error"),
-    )
+    with sentry_helper.reuse() as sentry_client:
+        message, notification = pull_and_process(
+            settings,
+            gcs_pubsub_subscription,
+            process_error=RuntimeError("processing error"),
+        )
+        [payload] = sentry_client.envelope_payloads
+        error = payload["exception"]["values"][0]
+        assert error["type"] == "RuntimeError"
+        assert error["value"] == "processing error"
 
     assert notification is not None
     assert not message.acked
