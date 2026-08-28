@@ -9,7 +9,7 @@ from fillmore.test import SentryTestHelper
 from google import pubsub_v1
 from google.cloud.pubsub_v1.subscriber.message import Message
 import pytest
-from pytest_django.fixtures import SettingsWrapper
+from pytest_django import Settings
 
 from tecken.base.symbolstorage import SymbolStorage
 from tecken.ext.gcp import pubsub
@@ -56,7 +56,7 @@ class MessageWrapper:
 
 
 def pull_and_process(
-    settings: SettingsWrapper,
+    settings: Settings,
     gcs_pubsub_subscription: str,
     expect_call: bool = True,
     process_error: Exception | None = None,
@@ -81,7 +81,7 @@ def pull_and_process(
 
 @pytest.mark.parametrize(("key", "upload"), UPLOADS.items())
 def test_callback(
-    settings: SettingsWrapper,
+    settings: Settings,
     symbol_storage: SymbolStorage,
     gcs_pubsub_subscription: str,
     key: str,
@@ -114,7 +114,7 @@ def test_callback(
 
 
 def test_callback_backend_error(
-    settings: SettingsWrapper,
+    settings: Settings,
     symbol_storage: SymbolStorage,
     gcs_pubsub_subscription: str,
     monkeypatch: pytest.MonkeyPatch,
@@ -142,7 +142,7 @@ def test_callback_backend_error(
 
 
 def test_callback_processing_error(
-    settings: SettingsWrapper,
+    settings: Settings,
     symbol_storage: SymbolStorage,
     gcs_pubsub_subscription: str,
     sentry_helper: SentryTestHelper,
