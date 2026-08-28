@@ -2,10 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import datetime
 from io import BufferedReader
-from typing import Any, ClassVar, Optional
+from threading import Event
+from typing import Any, ClassVar, Literal, Optional
 
 from django.utils.module_loading import import_string
 
@@ -14,7 +16,7 @@ from django.utils.module_loading import import_string
 class ObjectMetadata:
     """Metadata for an object in a storage.
 
-    For use in the StorageBackend interface.
+    For use in the StorageBackend and NotificationQueue interfaces.
     """
 
     content_type: Optional[str] = None
@@ -24,6 +26,7 @@ class ObjectMetadata:
     original_md5_sum: Optional[str] = None
     last_modified: Optional[datetime.datetime] = None
     download_url: Optional[str] = None
+    upload_id: Optional[int] = None
 
 
 class StorageBackend:
@@ -104,5 +107,50 @@ class StorageError(Exception):
 
 
 def backend_from_config(config: dict[str, Any]) -> StorageBackend:
+    cls = import_string(config["class"])
+    return cls(**config["options"])
+
+
+@dataclass
+class Notification:
+    """Notification data for a storage object event."""
+
+    # The type of the storage event. Currently supported values:
+    #     finalize_new: a new file was fully uploaded.
+    #     finalize_update: an file overwriting an existing object was fully uploaded.
+    event_type: Literal["finalize_new", "finalize_update"]
+
+    # The timestamp of the event
+    event_time: datetime.datetime
+
+    # The lookup key of the uploaded symbols file, i.e. <debug_file>/<debug_id>/<sym_file>.
+    key: str
+
+    # The metadata for the object.
+    metadata: ObjectMetadata
+
+
+class NotificationQueue:
+    """Interface for processing storage object notifications."""
+
+    def subscribe(
+        self,
+        process: Callable[[Notification], None],
+        stop_event: Event | None = None,
+    ):
+        """Subscribe to storage object notifications.
+
+        This function calls the provided function for each received notification. If the callback
+        finishes without error, the message is automatically acknowledged.
+
+        :arg process: a function taking and processing a Notification instance.
+        :arg stop_event: an optional event used to stop the subscription gracefully.
+        """
+        raise NotImplementedError(
+            "subscribe() must be implemented by the concrete class"
+        )
+
+
+def queue_from_config(config: dict[str, Any]) -> NotificationQueue:
     cls = import_string(config["class"])
     return cls(**config["options"])

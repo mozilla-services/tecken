@@ -24,11 +24,27 @@ services:
       db: &condition_service_healthy
         condition: service_healthy
       fakesentry: *condition_service_healthy
+      finalization_worker:
+        condition: service_started
       gcs-emulator: *condition_service_healthy
+      pubsub: *condition_service_healthy
       redis-cache: *condition_service_healthy
       oidcprovider: *condition_service_healthy
       statsd: *condition_service_healthy
     command: ["web"]
+
+  # Finalization worker is a prod-like background worker container.
+  finalization_worker:
+    extends:
+      service: base
+    depends_on:
+      db: *condition_service_healthy
+      fakesentry: *condition_service_healthy
+      gcs-emulator: *condition_service_healthy
+      pubsub: *condition_service_healthy
+      statsd: *condition_service_healthy
+    command: ["finalization_worker"]
+    stop_signal: SIGINT
 
   test:
     extends:
@@ -39,6 +55,7 @@ services:
     depends_on:
       db: *condition_service_healthy
       gcs-emulator: *condition_service_healthy
+      pubsub: *condition_service_healthy
       fakesentry: *condition_service_healthy
       redis-cache: *condition_service_healthy
       oidcprovider: *condition_service_healthy
@@ -62,6 +79,7 @@ services:
     depends_on:
       db: *condition_service_healthy
       gcs-emulator: *condition_service_healthy
+      pubsub: *condition_service_healthy
       fakesentry: *condition_service_healthy
       redis-cache: *condition_service_healthy
       oidcprovider: *condition_service_healthy
@@ -124,6 +142,8 @@ services:
     build:
       context: docker/images/gcs-emulator
     image: local/tecken_gcs_emulator
+    environment:
+      PUBSUB_EMULATOR_HOST: "pubsub:5010"
     command: >-
       -port 8001
       -scheme http
@@ -138,6 +158,27 @@ services:
       retries: 5
     depends_on:
       - gcs-cdn
+
+  # official pubsub emulator
+  pubsub:
+    build:
+      context: docker/images/pubsub-emulator
+    image: local/tecken_pubsub_emulator
+    command:
+      - gcloud
+      - beta
+      - emulators
+      - pubsub
+      - start
+      - --host-port=0.0.0.0:5010
+    ports:
+      - 5010:5010
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5010/"]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    stop_signal: SIGINT
 
   # nginx as a reverse proxy simulating a CDN in front of the GCS emulator.
   gcs-cdn:

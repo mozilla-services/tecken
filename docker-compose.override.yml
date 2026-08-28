@@ -9,6 +9,10 @@ services:
     volumes:
       - .:/app
       - /app/.venv
+  finalization_worker:
+    volumes:
+      - .:/app
+      - /app/.venv
   test:
     volumes:
       - .:/app

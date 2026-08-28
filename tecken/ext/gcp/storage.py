@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import base64
 from io import BufferedReader
 import threading
 from typing import Optional
@@ -14,6 +13,7 @@ from google.api_core.exceptions import ClientError
 from google.cloud import storage
 from requests.exceptions import RequestException
 
+from tecken.ext.gcp.utils import build_object_metadata
 from tecken.librequests import session_with_retries
 from tecken.libstorage import ObjectMetadata, StorageBackend, StorageError
 
@@ -91,7 +91,7 @@ class GCSStorage(StorageBackend):
 
     def get_download_url(self, key: str) -> str:
         """Return the download URL for the given key."""
-        endpoint_url = self.endpoint_url or self._get_client().meta.endpoint_url
+        endpoint_url = self.endpoint_url or self._get_client().api_endpoint
         endpoint_url = endpoint_url.removesuffix("/")
         return f"{endpoint_url}/{self.bucket}/{self.prefix}/{quote(key)}"
 
@@ -113,31 +113,16 @@ class GCSStorage(StorageBackend):
                 return None
         except ClientError as exc:
             raise StorageError(str(exc), backend=self) from exc
-        gcs_metadata = blob.metadata or {}
-        original_content_length = gcs_metadata.get("original_size")
-        if original_content_length is None:
-            original_content_length = blob.size
-        else:
-            try:
-                original_content_length = int(original_content_length)
-            except ValueError:
-                original_content_length = None
-        original_md5_sum = gcs_metadata.get("original_md5_hash")
-        if original_md5_sum is None and blob.md5_hash:
-            original_md5_sum = base64.b64decode(blob.md5_hash).hex()
-        if self.public_url:
-            download_url = f"{self.public_url}/{quote(gcs_key)}"
-        else:
-            download_url = blob.public_url
-        metadata = ObjectMetadata(
-            download_url=download_url,
-            content_type=blob.content_type,
-            content_length=blob.size,
-            content_encoding=blob.content_encoding,
-            original_content_length=original_content_length,
-            original_md5_sum=original_md5_sum,
-            last_modified=blob.custom_time or blob.updated,
+        metadata = build_object_metadata(
+            size=blob.size, md5_hash=blob.md5_hash, gcs_metadata=blob.metadata or {}
         )
+        if self.public_url:
+            metadata.download_url = f"{self.public_url}/{quote(gcs_key)}"
+        else:
+            metadata.download_url = blob.public_url
+        metadata.content_type = blob.content_type
+        metadata.content_encoding = blob.content_encoding
+        metadata.last_modified = blob.custom_time or blob.updated
         return metadata
 
     def _prepare_upload_blob(self, key: str, metadata: ObjectMetadata) -> storage.Blob:
@@ -148,11 +133,13 @@ class GCSStorage(StorageBackend):
         bucket = self._get_bucket()
         blob = bucket.blob(f"{self.prefix}/{key}")
         gcs_metadata = {}
-        if metadata.original_content_length:
+        if metadata.original_content_length is not None:
             # All metadata values must be strings.
             gcs_metadata["original_size"] = str(metadata.original_content_length)
         if metadata.original_md5_sum:
             gcs_metadata["original_md5_hash"] = metadata.original_md5_sum
+        if metadata.upload_id is not None:
+            gcs_metadata["upload_id"] = str(metadata.upload_id)
         blob.metadata = gcs_metadata
         blob.content_type = metadata.content_type
         blob.content_encoding = metadata.content_encoding

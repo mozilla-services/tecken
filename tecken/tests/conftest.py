@@ -4,20 +4,28 @@
 
 import hashlib
 import json
+from collections.abc import Callable, Iterator
+from queue import Empty, Queue
+from threading import Event, Thread
 from typing import Literal
 from unittest import mock
 
-from google.api_core.exceptions import Conflict
+from google.api_core.exceptions import Conflict, NotFound
+from google.cloud import pubsub_v1
 from markus.testing import MetricsMock
 import pytest
 import requests_mock
 
 from django.core.cache import caches
+from django.db import connections
 
 from tecken.base.symbolstorage import SymbolStorage
-from tecken.ext.gcs.storage import GCSStorage
+from tecken.ext.gcp.storage import GCSStorage
 from tecken.libmarkus import set_up_metrics
 from tecken.libstorage import StorageBackend
+from tecken.upload.management.commands.finalization_worker import (
+    run_finalization_worker,
+)
 
 
 def pytest_sessionstart(session):
@@ -132,6 +140,24 @@ def clear_gcs_storage(self: GCSStorage):
 GCSStorage.clear = clear_gcs_storage
 
 
+def set_up_gcs_notifications(self: GCSStorage, project: str, topic: str):
+    """Create a pub/sub topic and configure GCS notifications."""
+    bucket = self._get_bucket()
+    # Delete all existing notification configurations first.
+    for notification in bucket.list_notifications():
+        notification.delete()
+    # Create new notification configuration
+    bucket.notification(
+        topic_project=project,
+        topic_name=topic,
+        event_types=["OBJECT_FINALIZE"],
+        payload_format="JSON_API_V1",
+    ).create()
+
+
+GCSStorage.set_up_notifications = set_up_gcs_notifications
+
+
 @pytest.fixture
 def bucket_name(request):
     """A unique bucket name for the currently running test.
@@ -187,3 +213,85 @@ def symbol_storage(symbol_storage_no_create):
     for backend in symbol_storage_no_create.backends:
         backend.clear()
     return symbol_storage_no_create
+
+
+@pytest.fixture
+def gcs_pubsub_subscription(
+    settings,
+    bucket_name: str,
+    symbol_storage: SymbolStorage,
+) -> str:
+    """Configure GCS pub/sub notifications and return the subscription name."""
+    with (
+        pubsub_v1.PublisherClient() as publisher,
+        pubsub_v1.SubscriberClient() as subscriber,
+    ):
+        project_id = settings.PUBSUB_GCP_PROJECT
+        # Reuse the bucket name as the pub/sub topic and subscription names
+        topic_path = subscriber.topic_path(project_id, bucket_name)
+        subscription_path = subscriber.subscription_path(project_id, bucket_name)
+        try:
+            subscriber.delete_subscription(
+                request={"subscription": subscription_path}, timeout=10
+            )
+        except NotFound:
+            pass
+        try:
+            publisher.delete_topic(request={"topic": topic_path}, timeout=10)
+        except NotFound:
+            pass
+        publisher.create_topic(request={"name": topic_path}, timeout=10)
+        subscriber.create_subscription(
+            request={"name": subscription_path, "topic": topic_path}, timeout=10
+        )
+    backend = symbol_storage.get_upload_backend(False)
+    backend.set_up_notifications(project_id, bucket_name)
+    return bucket_name
+
+
+@pytest.fixture
+def finalization_worker(
+    settings, gcs_pubsub_subscription: str
+) -> Iterator[Callable[[], None]]:
+    """Run a finalization worker for the duration of a test.
+
+    This fixture sets up pub/sub notifications for the bucket belonging to the current test and
+    makes the finalization worker listen for these notifications.
+    """
+
+    worker_errors: Queue[BaseException] = Queue()
+    stop_event = Event()
+
+    def worker_result() -> None:
+        try:
+            error = worker_errors.get_nowait()
+        except Empty:
+            return
+        raise error.with_traceback(error.__traceback__)
+
+    def worker_target() -> None:
+        try:
+            run_finalization_worker(stop_event)
+        except BaseException as error:
+            worker_errors.put(error)
+
+    with (
+        mock.patch.dict(
+            settings.PUBSUB_QUEUE["options"],
+            subscription_name=gcs_pubsub_subscription,
+        ),
+        # Make sure database connections from the worker get closed immediately.
+        mock.patch.dict(connections.settings["default"], CONN_MAX_AGE=0),
+    ):
+        thread = None
+        try:
+            thread = Thread(target=worker_target, name="test-finalization-worker")
+            thread.start()
+            yield worker_result
+        finally:
+            stop_event.set()
+            if thread is not None:
+                thread.join(timeout=10)
+        if thread is not None and thread.is_alive():
+            pytest.fail("finalization worker did not stop within 10 seconds")
+        worker_result()

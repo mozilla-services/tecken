@@ -10,6 +10,8 @@
 #
 # web: runs the webapp
 #
+# finalization_worker: runs the upload finalization worker
+#
 # bash: if no additional arguments, runs the bash shell; if additional
 # arguments, runs that.
 
@@ -31,6 +33,9 @@ shift
 case ${SERVICE} in
 web)  ## Run Tecken web service
     exec honcho -f /app/Procfile --no-prefix start
+    ;;
+finalization_worker)  ## Run upload finalization worker
+    exec /app/bin/run_finalization_worker.sh
     ;;
 bash)  ## Open a bash shell or run something else
     if [ -z "$*" ]; then

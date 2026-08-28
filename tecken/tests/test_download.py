@@ -303,7 +303,9 @@ def test_get_code_id_lookup_fail(client, db, metricsmock, symbol_storage):
 def test_head_code_id_lookup(client, db, metricsmock, symbol_storage):
     code_file = "ShowSSEConfig.exe"
     code_id = "651C9AF99241000"
-    upload = UPLOADS["ShowSSEConfig.exe/6A4B9A365000/ShowSSEConfig.sym"]
+    upload = UPLOADS[
+        "ShowSSEConfig.pdb/D57F52D4A2FD56244C4C44205044422E1/ShowSSEConfig.sym"
+    ]
     upload.upload(symbol_storage)
 
     # Upload a file into the regular bucket

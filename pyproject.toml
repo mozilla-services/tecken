@@ -15,6 +15,7 @@ dependencies = [
     "everett",
     "fillmore",
     "google-cloud-iam",
+    "google-cloud-pubsub",
     "google-cloud-storage",
     "gunicorn",
     "honcho",

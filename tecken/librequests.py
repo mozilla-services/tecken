@@ -33,11 +33,11 @@ class HTTPAdapterWithTimeout(HTTPAdapter):
 
 
 def session_with_retries(
-    total_retries=5,
-    backoff_factor=0.2,
-    status_forcelist=(429, 500),
-    default_timeout=5.0,
-):
+    total_retries: int = 5,
+    backoff_factor: float = 0.2,
+    status_forcelist: tuple[int, ...] = (429, 500),
+    default_timeout: float = 5.0,
+) -> requests.Session:
     """Returns session that retries on HTTP 429 and 500 with default timeout
 
     :arg int total_retries: total number of times to retry
