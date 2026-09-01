@@ -97,11 +97,11 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.4.2"
+version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/76/d4/81420972a676e8ffea40450d8c8c92943e7218a78fe9b64359836cc9876b/click-8.4.2.tar.gz", hash = "sha256:9a6cea6e60b17ebe0a44c5cc636d94f09bd66142c1cd7d8b4cd731c4917a15f6", size = 338000, upload-time = "2026-06-24T17:45:15.148Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/0e/7fa0ef50764b67090eca4114772a2abf8b6148198475e54c660b97caeee6/click-8.5.0.tar.gz", hash = "sha256:ba0d2089de75ea0310e2dde03160e6ca10009947fb95a182f9b54021bb272e34", size = 382235, upload-time = "2026-08-26T13:33:14.56Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/e2/79c688af8b210d232694e31e59da9f6ec747bae31c3f5946e4e9b98860d5/click-8.4.2-py3-none-any.whl", hash = "sha256:e6f9f66136c816745b9d65817da91d61d957fb16e02e4dcd0552553c5a197b76", size = 119243, upload-time = "2026-06-24T17:45:13.73Z" },
+    { url = "https://files.pythonhosted.org/packages/58/50/6c0d534c5f134586a8e1ba4e330569e32f057e33372ae556463212fb4cd3/click-8.5.0-py3-none-any.whl", hash = "sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360", size = 125251, upload-time = "2026-08-26T13:33:12.928Z" },
 ]
 
 [[package]]
@@ -302,7 +302,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-iam"
-version = "2.24.1"
+version = "2.25.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core", extra = ["grpc"] },
@@ -312,14 +312,14 @@ dependencies = [
     { name = "proto-plus" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/16/d8/ebea2eb4423ee467a50ed7b91ab0a1a0e0749f869151598891456a117a8f/google_cloud_iam-2.24.1.tar.gz", hash = "sha256:2d7edfe48fd24a181f55473a77584c0c947cf52915fc7af835d9ae0408fccae0", size = 561397, upload-time = "2026-08-06T06:24:26.45Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/41/41bc40a72a095feb7b21483b68c40e336314bc4a4d8067442c64fcbdb78f/google_cloud_iam-2.25.0.tar.gz", hash = "sha256:af311f839cb7791e582093940ec114323fc6a92110e9807844026eb09704c479", size = 621407, upload-time = "2026-08-25T19:18:53.051Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/98/11d466009ffdf7abc987d9db8d6a59bbbb2c08543fd9ee4d98514bafbdc4/google_cloud_iam-2.24.1-py3-none-any.whl", hash = "sha256:7122aca0f5e2aa5bac889ff8136629054e9eef761d14dc5111ac1d109f68052a", size = 515093, upload-time = "2026-08-06T06:23:18.659Z" },
+    { url = "https://files.pythonhosted.org/packages/50/df/c6a837dc04bd1ce95f20a41c6a9470fda78f83074704ddc00ec8a7409f0f/google_cloud_iam-2.25.0-py3-none-any.whl", hash = "sha256:adaa7e9a44d48f521e5be7bce7d52f74f9f097885f641865d50caaacc79abf86", size = 567102, upload-time = "2026-08-24T21:55:38.53Z" },
 ]
 
 [[package]]
 name = "google-cloud-pubsub"
-version = "2.37.0"
+version = "2.39.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core", extra = ["grpc"] },
@@ -332,9 +332,9 @@ dependencies = [
     { name = "proto-plus" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/89/558c48382d6875335ea6cd7f6409acfbf256b9f7fbc2ad1c19976aabdb1f/google_cloud_pubsub-2.37.0.tar.gz", hash = "sha256:7c5ba9beb5236e2b83c091dd6171423dc7d6d0e989391bd09f60dbd242b29f10", size = 403391, upload-time = "2026-04-10T00:41:17.799Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/2f/a70b6ba2016acc16ca3e4d357151edda047f63752ddcf8baee29c41e5f94/google_cloud_pubsub-2.39.2.tar.gz", hash = "sha256:934a3ab7496a6da09cd97d866bef3e47092e904688a66f60750895a7484bd585", size = 403181, upload-time = "2026-08-25T19:18:59.568Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/64/f1/bb7162ec50971b1d252e6837d05f64f185d5cfe4e08de8f706e363c305d9/google_cloud_pubsub-2.37.0-py3-none-any.whl", hash = "sha256:dd912422cf66e4ffb423b0d5391ca81bdfa408eb0f21f57adecdb6fb3b1e0bb1", size = 325136, upload-time = "2026-04-10T00:41:01.391Z" },
+    { url = "https://files.pythonhosted.org/packages/62/e1/14519798b767f1ce4adf3c239c31bb1a5af607646e293e92ed1770faaa06/google_cloud_pubsub-2.39.2-py3-none-any.whl", hash = "sha256:b1295c6641032aff1dabbddf495b10642a5b547f6783ee4c6bb3365682e71354", size = 323836, upload-time = "2026-08-24T21:55:46.512Z" },
 ]
 
 [[package]]
@@ -436,11 +436,11 @@ wheels = [
 
 [[package]]
 name = "gunicorn"
-version = "26.1.0"
+version = "26.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/38/b8/ec4ba3f6cace4091c34e27478b576bb80f2f06fab80fd42c0ecc785b308f/gunicorn-26.1.0.tar.gz", hash = "sha256:1413d777bf99d31ebeb08acd354b01f1ecc44db0aa7b811ae7b86c669232e4f7", size = 755923, upload-time = "2026-08-18T11:49:39.438Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/8a/e4ef6ee11701b6cd64702848415ffb69eeff85cb388a3c6c7fe86f22f3f8/gunicorn-26.2.0.tar.gz", hash = "sha256:62b864895d9ebff0b2f9867ba04fe811c93121596540830c9c916d0769668447", size = 787921, upload-time = "2026-08-24T15:05:59.3Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/19/dc/7a55fc605543fd5cb11c003fbbb21a1911d5e88a582cce6c5e063bf5c176/gunicorn-26.1.0-py3-none-any.whl", hash = "sha256:9f45bcddec5e9dc7a25a3bdccb0c6832f11fd5d4739b1ee36c8d2fec25f1dc86", size = 216237, upload-time = "2026-08-18T11:49:38.001Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/85/7522a52e5e2f42faf1a129113ab63e548c42e103e9af395b7bfe65e403e2/gunicorn-26.2.0-py3-none-any.whl", hash = "sha256:bd249d0b3f7972f7432f0a6b6ff3b3ee2d129f70cd1ff6c09a9dd9e29a2b88e3", size = 228389, upload-time = "2026-08-24T15:05:57.67Z" },
 ]
 
 [[package]]
@@ -602,12 +602,12 @@ wheels = [
 
 [[package]]
 name = "msgpack"
-version = "1.2.1"
+version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/31/f9/c0a1c127f9049db9155afc316952ea571720dd01833ff5e4d7e8e6352dbb/msgpack-1.2.1.tar.gz", hash = "sha256:04c721c2c7448767e9e3f2520a475663d8ee0f09c31890f6d2bd70fd636a9647", size = 183960, upload-time = "2026-06-18T16:13:52.594Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/44/ea2100ec54d30c46ee9dba10a3bfb79b655e96c6df237238a3234c75869b/msgpack-1.2.2.tar.gz", hash = "sha256:9eb0b0e602064527a045ea28c4f174ed69383587e29cebe28947e3b84106eb2a", size = 187025, upload-time = "2026-08-27T10:03:47.793Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/8d/671d81534ea0e2b0e8a121be100020da09eb78861fe3aa8f3ef7dcd3bed1/msgpack-1.2.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:a28d076ca7c82b9c8728ad90b7147489449557038bed50e4241eb832395169b4", size = 423843, upload-time = "2026-06-18T16:12:48.19Z" },
-    { url = "https://files.pythonhosted.org/packages/09/11/f8563e471093420cf6478cb3271a0175d8402b82d879783d4035d2d03360/msgpack-1.2.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:67f6dd22fa72a93752643f07889796d62739a13415ee630169a8ce764f86cf9f", size = 421732, upload-time = "2026-06-18T16:12:53.556Z" },
+    { url = "https://files.pythonhosted.org/packages/93/15/17374efe9793f5332c7d4727ab40539f95a1dc9df653531795daca8c4281/msgpack-1.2.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:f11e09f10210a91c169e39c7a5a1f9090eaa73ad75555fafad5023c3053c47ba", size = 422907, upload-time = "2026-08-27T10:01:54.786Z" },
+    { url = "https://files.pythonhosted.org/packages/de/0f/5d1e6d68e516621697a9262b24917d678793e838cf3f331ed4656b3e959d/msgpack-1.2.2-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:cdb6cc6e1127d15879c47a8b3270716243da82d3e7feab1f5946872c75b3d60f", size = 420765, upload-time = "2026-08-27T10:02:01.573Z" },
 ]
 
 [[package]]
@@ -928,25 +928,25 @@ wheels = [
 
 [[package]]
 name = "ruff"
-version = "0.16.3"
+version = "0.16.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/61/b3/3213589383f8f1b3938781bd1278713f6d18621a14992b3e81fefb8a5ef9/ruff-0.16.3.tar.gz", hash = "sha256:e76d33a347661a84b5be6d043d0347fdc745dfdcf825a8f4fed64b5e26eebdf2", size = 4891904, upload-time = "2026-08-13T15:17:13.381Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/85/c8e12473c93018f92d19dd988a294202e1c27426c47ec4de53ffb847b8d8/ruff-0.16.5.tar.gz", hash = "sha256:1b88500f9ffbcab3dedb0082c9f9492e91ec3d618aac1236a3e0189938f7040b", size = 4912003, upload-time = "2026-08-27T16:34:18.258Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/30/4c468429ac195addc5ee1b717b6ab1b66632786737ca3b2ed3443fb0c26a/ruff-0.16.3-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:294b95c4ae0cda9388525c2047778aa758d6b8d4bb876fd4e9eaa3ebc92343eb", size = 11058736, upload-time = "2026-08-13T15:16:48.823Z" },
-    { url = "https://files.pythonhosted.org/packages/35/85/7795f6e817af050e7517bf3e7aa9b061cce70ef33d280aad902c956c1ecf/ruff-0.16.3-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:a2d85c02f9b8e165d85e6779184d38c4132de12603dab59c51c28e22584f9e4d", size = 11626910, upload-time = "2026-08-13T15:17:03.299Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/34/ee245ca55f64443233034b3d02b03236b19242004281247c079390b7facd/ruff-0.16.5-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ef0f69e191a13a3c9816f63163c88790cb12cd157bbbb384e9c44745702ab105", size = 10311656, upload-time = "2026-08-27T16:33:59.12Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/a0/60356d86687b4b666d593df213f4dc3041750d024cb7bf2cfa81cfd65c2e/ruff-0.16.5-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:fb8e3a3c4c6a784150a7ced53b015f4b253fc2bf97a610886419ead64b4756ef", size = 10711653, upload-time = "2026-08-27T16:34:09.712Z" },
 ]
 
 [[package]]
 name = "sentry-sdk"
-version = "2.68.0"
+version = "2.68.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/5b/94/23b7dd072acb9628907bd3f4fbf61794a7b12a9db8f33c1276f70ae5ac92/sentry_sdk-2.68.0.tar.gz", hash = "sha256:648c58e9887311a03470a41539e24bdbbf64a30ca4f5336f7e3dcc87276400b3", size = 1008854, upload-time = "2026-08-13T09:06:21.268Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9a/e7/c504a4bd2d95df2e0ab73714a9161ff1cf6ff1486922685e5f46dfd9eba8/sentry_sdk-2.68.1.tar.gz", hash = "sha256:6a97895230b04bc35d4d8d2e51e3b9e21902dfb0086ccf1f131a80c15c7b997a", size = 1019262, upload-time = "2026-08-24T13:09:38.108Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/9b/e2421d08956d0bc4691d995393d835e563886bff499d8fb10fdefae85a8d/sentry_sdk-2.68.0-py3-none-any.whl", hash = "sha256:538e56c2d03679d42f7c0cb5f1af73a7a510b00abc7e296c13ac49b107b713a4", size = 518670, upload-time = "2026-08-13T09:06:19.735Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/28/465ad9382be98f2172e691f5836cf87f936773913ad7ab85ba1ba1d6706e/sentry_sdk-2.68.1-py3-none-any.whl", hash = "sha256:775b78871783a0ffd758276ad01b3bb2b1ebcdad8f9d2f0a7723f76b73c99b65", size = 520851, upload-time = "2026-08-24T13:09:36.186Z" },
 ]
 
 [[package]]
@@ -1114,40 +1114,40 @@ name = "tecken"
 version = "1.0.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "click", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "dj-database-url", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "django", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "django-admin-cursor-paginator", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "django-redis", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "dockerflow", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "encore", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "everett", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "fillmore", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "google-cloud-iam", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "google-cloud-pubsub", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "google-cloud-storage", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "gunicorn", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "honcho", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "markus", extra = ["datadog"], marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "mozilla-django-oidc", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "msgpack", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "msgspec", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "obs-common", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "psycopg2", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "pytest", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "pytest-django", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "python-dateutil", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "pyyaml", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "redis", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "requests", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "requests-mock", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "ruff", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "sentry-sdk", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "sphinx", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "sphinx-rtd-theme", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "sphinxcontrib-httpdomain", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "werkzeug", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
-    { name = "whitenoise", marker = "implementation_name == 'cpython' and platform_machine == 'x86_64' and sys_platform == 'linux'" },
+    { name = "click" },
+    { name = "dj-database-url" },
+    { name = "django" },
+    { name = "django-admin-cursor-paginator" },
+    { name = "django-redis" },
+    { name = "dockerflow" },
+    { name = "encore" },
+    { name = "everett" },
+    { name = "fillmore" },
+    { name = "google-cloud-iam" },
+    { name = "google-cloud-pubsub" },
+    { name = "google-cloud-storage" },
+    { name = "gunicorn" },
+    { name = "honcho" },
+    { name = "markus", extra = ["datadog"] },
+    { name = "mozilla-django-oidc" },
+    { name = "msgpack" },
+    { name = "msgspec" },
+    { name = "obs-common" },
+    { name = "psycopg2" },
+    { name = "pytest" },
+    { name = "pytest-django" },
+    { name = "python-dateutil" },
+    { name = "pyyaml" },
+    { name = "redis" },
+    { name = "requests" },
+    { name = "requests-mock" },
+    { name = "ruff" },
+    { name = "sentry-sdk" },
+    { name = "sphinx" },
+    { name = "sphinx-rtd-theme" },
+    { name = "sphinxcontrib-httpdomain" },
+    { name = "werkzeug" },
+    { name = "whitenoise" },
 ]
 
 [package.dev-dependencies]
