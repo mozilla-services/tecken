@@ -73,6 +73,35 @@ For example, here's the contents of a symbols ZIP file from a Firefox build::
     xpcshell/B95F899A59E247055C0ED7883D0235A40/xpcshell.sym
 
 
+Android R8/ProGuard mapping files
+---------------------------------
+
+Android builds run the R8 optimizer, which renames classes, methods and fields.
+Turning a stack frame from such a build back into the original names needs the
+``mapping.txt`` file R8 writes alongside the build.
+
+These files use the same three-part structure as symbols files::
+
+    <application id>/<proguard uuid>/mapping.txt
+
+The first component is the Android application id, for example
+``org.mozilla.fenix``. The second is the ProGuard UUID of the build, written as
+32 uppercase hex digits with the dashes removed. So the UUID
+``6fa459ea-ee8a-3ca4-894e-db77e160355e`` becomes
+``6FA459EAEE8A3CA4894EDB77E160355E``. Lowercase hex is accepted on upload, but
+downloads always uppercase the second component, so uploading lowercase makes
+the file unreachable.
+
+Firefox for Android embeds this UUID in its manifest as
+``io.sentry.proguard-uuid``.
+
+Like ``.sym`` files, ``mapping.txt`` files are gzipped by Tecken before they
+reach the storage backend, and their content type is set to ``text/plain``.
+
+Do not name these files so that they end in ``-symbols.txt``: version 1 of the
+upload API treats that suffix as a build manifest and ignores the file.
+
+
 Try symbols
 -----------
 
@@ -414,14 +443,14 @@ Gzip
 ====
 
 Certain files get gzipped before being uploaded to the storage backend. At the
-time of writing that list is all ``.sym`` files. Object storage backends,
+time of writing that list is all ``.sym`` and ``.txt`` files. Object storage backends,
 unlike something like Nginx, don't do content encoding on the fly based on the
 client's capabilities. Instead, we manually gzip the file in memory in Tecken
 and set the additional ``Content-Encoding`` header to ``gzip``. Since these
 ``.sym`` files are always text based, it saves a lot of storage space.
 
-Additionally, the ``.sym`` files get their content type (aka. mime type) set
-when uploading to ``text/plain``.  Because the stroage backend can't know in
+Additionally, the ``.sym`` and ``.txt`` files get their content type (aka. mime
+type) set when uploading to ``text/plain``.  Because the stroage backend can't know in
 advance that the files are actually ASCII plain text, if you try to open them
 in a browser it will set the ``Content-Type`` to ``application/octet-stream``
 which makes it hard to quickly look at its content in a browser.

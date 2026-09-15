@@ -90,3 +90,30 @@ def test_should_compressed_key(settings, key, expected):
 def test_get_key_content_type(settings, key, expected):
     settings.MIME_OVERRIDES = {"html": "text/html"}
     assert get_key_content_type(key) == expected
+
+
+@pytest.mark.parametrize(
+    "key, expected",
+    [
+        ("xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym", True),
+        ("org.mozilla.fenix/6FA459EAEE8A3CA4894EDB77E160355E/mapping.txt", True),
+        ("libEGL.dll/6A4B8EEE10000/libEGL.dl_", False),
+    ],
+)
+def test_should_compressed_key_defaults(key, expected):
+    assert should_compressed_key(key) == expected
+
+
+@pytest.mark.parametrize(
+    "key, expected",
+    [
+        ("xul.pdb/44E4EC8C2F41492B9369D6B9A059577C2/xul.sym", "text/plain"),
+        (
+            "org.mozilla.fenix/6FA459EAEE8A3CA4894EDB77E160355E/mapping.txt",
+            "text/plain",
+        ),
+        ("libEGL.dll/6A4B8EEE10000/libEGL.dl_", None),
+    ],
+)
+def test_get_key_content_type_defaults(key, expected):
+    assert get_key_content_type(key) == expected

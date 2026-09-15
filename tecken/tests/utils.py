@@ -46,7 +46,7 @@ class Upload:
         with open(TEST_FILE_PATH / key, "rb") as f:
             body = f.read()
         original_body = body
-        if key.endswith(".sym"):
+        if key.endswith((".sym", ".txt")):
             body = gzip.compress(body)
             metadata = ObjectMetadata(
                 content_type="text/plain",
@@ -110,5 +110,7 @@ TEST_FILE_KEYS = [
     "libxul_correct_buildid.dylib/BE555D35C9A93D7FBC23ED48502277E30/libxul_correct_buildid.dylib.sym",
     # A file with special characters in the file name
     "c++filt/B2E65520F14FB5332E38A5A5189839AD0/c++filt.sym",
+    # Android R8/ProGuard mapping file, keyed by application id and ProGuard UUID
+    "org.mozilla.fenix/6FA459EAEE8A3CA4894EDB77E160355E/mapping.txt",
 ]
 UPLOADS = {key: Upload.from_test_file(key) for key in TEST_FILE_KEYS}

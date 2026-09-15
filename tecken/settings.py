@@ -625,22 +625,25 @@ PUBSUB_QUEUE = {
 
 COMPRESS_EXTENSIONS = _config(
     "COMPRESS_EXTENSIONS",
-    default="sym",
+    default="sym,txt",
     parser=ListOf(str),
     doc=(
         "During upload, for each file in the archive, if the extension "
-        "matches this list, the file gets gzip compressed before uploading."
+        "matches this list, the file gets gzip compressed before uploading.\n\n"
+        "'txt' covers the Android R8/ProGuard 'mapping.txt' files, which are "
+        "plain text and compress well."
     ),
 )
 
 MIME_OVERRIDES = _config(
     "MIME_OVERRIDES",
-    default='{"sym":"text/plain"}',
+    default='{"sym":"text/plain","txt":"text/plain"}',
     parser=dict_parser,
     doc=(
         "For specific file uploads, override the mimetype.\n\n"
         "For .sym files, for example, if the object storage knows them as "
-        "'text/plain' they become really handy to open in a browser and view directly."
+        "'text/plain' they become really handy to open in a browser and view directly.\n\n"
+        "The same applies to the Android R8/ProGuard '.txt' mapping files."
     ),
 )
 
@@ -680,7 +683,7 @@ ALLOW_UPLOAD_BY_DOWNLOAD_DOMAINS = _config(
 
 DOWNLOAD_FILE_EXTENSIONS_ALLOWED = _config(
     "DOWNLOAD_FILE_EXTENSIONS_ALLOWED",
-    default=".sym,.dl_,.ex_,.pd_,.dbg.gz,.tar.bz2",
+    default=".sym,.dl_,.ex_,.pd_,.dbg.gz,.tar.bz2,.txt",
     parser=ListOf(str),
     doc=(
         "A list of file extensions that if a file is NOT one of these extensions "
@@ -688,7 +691,8 @@ DOWNLOAD_FILE_EXTENSIONS_ALLOWED = _config(
         "else.\n\n"
         "It's case sensitive and has to be lower case.  As a way to get marginal "
         "optimization of this, make sure '.sym' is first in the list since it's "
-        "the most common."
+        "the most common.\n\n"
+        "'.txt' is there for the Android R8/ProGuard 'mapping.txt' files."
     ),
 )
 

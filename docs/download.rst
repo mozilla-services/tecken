@@ -90,7 +90,10 @@ Downloading API
 
    :param hex debug_id: the debug id in hex characters all upper-cased
 
-   :param str symbol_file: the filename of the symbol file; ends with ``.sym``
+   :param str symbol_file: the filename of the symbol file; the extension has to
+                        be one of ``DOWNLOAD_FILE_EXTENSIONS_ALLOWED``, which
+                        covers ``.sym`` and the Android R8/ProGuard
+                        ``mapping.txt`` files
 
    :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
 
@@ -162,7 +165,10 @@ Downloading API
 
    :param hex debug_id: the debug id in hex characters all upper-cased
 
-   :param str symbol_file: the filename of the symbol file; ends with ``.sym``
+   :param str symbol_file: the filename of the symbol file; the extension has to
+                        be one of ``DOWNLOAD_FILE_EXTENSIONS_ALLOWED``, which
+                        covers ``.sym`` and the Android R8/ProGuard
+                        ``mapping.txt`` files
 
    :reqheader Debug: if ``true``, includes a ``Debug-Time`` header in the response.
 
@@ -262,7 +268,10 @@ Downloading API
 
    :param hex code_id: the code id in hex characters all upper-cased
 
-   :param str symbol_file: the filename of the symbol file; ends with ``.sym``
+   :param str symbol_file: the filename of the symbol file; the extension has to
+                        be one of ``DOWNLOAD_FILE_EXTENSIONS_ALLOWED``, which
+                        covers ``.sym`` and the Android R8/ProGuard
+                        ``mapping.txt`` files
 
 
 .. http:get:: SYMBOLFILE
@@ -277,8 +286,8 @@ Downloading API
    :resheader Content-Type: content type of the response after decompressing
        it; will be text/plain for symbol files
    :resheader Content-Encoding: (optional) set to ``gzip`` if the object is
-       gzip-compressed; note that ``.sym`` files are compressed even though the
-       file extension doesn't indicate that
+       gzip-compressed; note that ``.sym`` and ``.txt`` files are compressed
+       even though the file extension doesn't indicate that
 
    :statuscode 404: symbol file was not found
    :statuscode 500: there's an error with the server; sleep for a bit and

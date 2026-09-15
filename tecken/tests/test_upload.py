@@ -7,6 +7,7 @@ from io import BufferedReader, BytesIO, StringIO
 import logging
 import os
 from unittest import mock
+import zipfile
 
 from google.cloud import iam_credentials
 from markus.testing import AnyTagValue
@@ -14,6 +15,7 @@ import pytest
 from requests.exceptions import ConnectionError, RetryError
 
 from django.contrib.auth.models import Permission
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
@@ -56,6 +58,33 @@ def test_upload_archive_with_ignorable_files(client, db, symbol_storage, uploade
         ]
 
     assert FileUpload.objects.all().count() == 2
+
+
+def test_upload_archive_mapping_file(client, db, symbol_storage, uploaderuser):
+    """An Android R8/ProGuard mapping file is accepted and stored gzip compressed."""
+    token = Token.objects.create(user=uploaderuser)
+    (permission,) = Permission.objects.filter(codename="upload_symbols")
+    token.permissions.add(permission)
+
+    key = "org.mozilla.fenix/6FA459EAEE8A3CA4894EDB77E160355E/mapping.txt"
+    body = b"# compiler: R8\norg.mozilla.fenix.HomeActivity -> a.a.a:\n"
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, mode="w") as archive:
+        archive.writestr(key, body)
+    archive_file = SimpleUploadedFile("file.zip", buffer.getvalue())
+
+    url = reverse("upload:upload_archive")
+    response = client.post(url, {"file.zip": archive_file}, HTTP_AUTH_TOKEN=token.key)
+    assert response.status_code == 201
+
+    (upload,) = Upload.objects.all()
+    assert upload.ignored_keys is None
+    FileUpload.objects.get(upload=upload, key=key, compressed=True, update=False)
+
+    metadata = symbol_storage.get_metadata(key)
+    assert metadata.content_encoding == "gzip"
+    assert metadata.content_type == "text/plain"
+    assert metadata.original_content_length == len(body)
 
 
 def test_upload_archive_happy_path(

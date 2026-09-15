@@ -1,0 +1,15 @@
+# compiler: R8
+# compiler_version: 8.5.35
+# min_api: 21
+# common_typos_disable
+# {"id":"com.android.tools.r8.mapping","version":"2.2"}
+# pg_map_id: 1a2b3c4
+# pg_map_hash: SHA-256 0000000000000000000000000000000000000000000000000000000000000000
+org.mozilla.fenix.HomeActivity -> org.mozilla.fenix.HomeActivity:
+# {"id":"sourceFile","fileName":"HomeActivity.kt"}
+    androidx.navigation.NavController navHostController -> C
+    1:1:void <init>():96:96 -> <init>
+    1:4:void onCreate(android.os.Bundle):128:131 -> onCreate
+org.mozilla.fenix.components.Core -> a.a.a.b:
+# {"id":"sourceFile","fileName":"Core.kt"}
+    1:1:mozilla.components.browser.engine.gecko.GeckoEngine getEngine():204:204 -> a

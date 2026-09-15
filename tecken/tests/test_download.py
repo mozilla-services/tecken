@@ -44,6 +44,25 @@ def test_client_happy_path(client, db, symbol_storage, metricsmock):
     assert response["Access-Control-Allow-Methods"] == "GET"
 
 
+def test_client_mapping_file_happy_path(client, db, symbol_storage):
+    upload = UPLOADS["org.mozilla.fenix/6FA459EAEE8A3CA4894EDB77E160355E/mapping.txt"]
+    upload.upload(symbol_storage)
+    url = reverse(
+        "download:download_symbol",
+        args=(upload.debug_file, upload.debug_id, upload.sym_file),
+    )
+
+    response = client.get(url)
+    assert response.status_code == 302
+
+    response = requests.get(response.headers["location"])
+    assert response.status_code == 200
+    assert response.content == upload.original_body
+
+    response = client.head(url)
+    assert response.status_code == 200
+
+
 def test_client_try_download(client, db, symbol_storage, metricsmock):
     """
     Suppose there's a file that doesn't exist in any of the regular storage backends but does
