@@ -1,1 +1,1 @@
-FROM us-docker.pkg.dev/moz-fx-cavendish-prod/cavendish-prod/gcs-emulator:v2026.08.25-1@sha256:c07ebc7c95023bcfe9e1c82d24dd395f9f2aee962418e66673a53809acf66184
+FROM us-docker.pkg.dev/moz-fx-cavendish-prod/cavendish-prod/gcs-emulator:2026.09.15@sha256:dccd10c57fab54ffd97b744ca936183a8878f45150f38f077d71da3f18258d90
